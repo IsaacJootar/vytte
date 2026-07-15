@@ -8,7 +8,7 @@
                 {{ $currentWorkspace->name ?? 'Your workspace' }} · Welcome back
             </p>
         </div>
-        <a href="#"
+        <a href="{{ route('projects.create') }}"
            class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-vytte-800 transition-colors duration-150">
             <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/>
@@ -49,7 +49,7 @@
             <p class="mt-1 text-xs text-slate-400 max-w-xs">
                 Create a project for each health facility or programme you want to diagnose.
             </p>
-            <a href="#"
+            <a href="{{ route('projects.create') }}"
                class="mt-4 inline-flex items-center gap-1.5 px-3.5 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors duration-150">
                 Create first project
             </a>

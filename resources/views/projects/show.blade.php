@@ -1,0 +1,110 @@
+<x-app-layout :title="$project->name">
+
+    {{-- Back + header --}}
+    <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+            <a href="{{ route('projects.index') }}"
+               class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-2">
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clip-rule="evenodd"/>
+                </svg>
+                Projects
+            </a>
+            @php
+                $target   = $project->targets->first();
+                $typeName = $target?->targetType?->target_type_name;
+                $catName  = $target?->category?->category_name;
+                $location = collect([$target?->state, $target?->lga])->filter()->implode(' · ');
+            @endphp
+            @if ($typeName)
+                <p class="text-xs font-semibold text-vytte-700 uppercase tracking-wide mb-1">{{ $typeName }}</p>
+            @endif
+            <h1 class="text-xl font-bold text-slate-900 tracking-tight">{{ $project->name }}</h1>
+            @if ($target)
+                <p class="mt-0.5 text-sm text-slate-500">{{ $target->name }}{{ $location ? ' · ' . $location : '' }}</p>
+            @endif
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+            @if ($project->isArchived())
+                <span class="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-500 rounded-lg">Archived</span>
+            @endif
+            <a href="{{ route('projects.edit', $project) }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all duration-150">
+                Edit
+            </a>
+        </div>
+    </div>
+
+    @if (session('success'))
+        <div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium">
+            <svg class="w-4 h-4 text-green-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
+            </svg>
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {{-- Target info card --}}
+        @if ($target)
+            <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                <h2 class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-3">Target</h2>
+                <div class="flex flex-col gap-2 text-sm">
+                    <div>
+                        <span class="text-slate-400 text-xs">Name</span>
+                        <p class="font-semibold text-slate-900">{{ $target->name }}</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 text-xs">Type</span>
+                        <p class="font-medium text-slate-700">{{ $typeName ?? '—' }}</p>
+                    </div>
+                    @if ($catName)
+                        <div>
+                            <span class="text-slate-400 text-xs">Category</span>
+                            <p class="font-medium text-slate-700">{{ $catName }}</p>
+                        </div>
+                    @endif
+                    @if ($location)
+                        <div>
+                            <span class="text-slate-400 text-xs">Location</span>
+                            <p class="font-medium text-slate-700">{{ $location }}</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
+        {{-- Assessments section --}}
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-sm font-bold text-slate-900">Assessments</h2>
+                <span class="text-xs text-slate-400">Coming in Module 05</span>
+            </div>
+            <div class="px-5 py-12 flex flex-col items-center text-center">
+                <div class="w-10 h-10 rounded-xl bg-vytte-50 flex items-center justify-center mb-3">
+                    <x-heroicon-o-clipboard-document-list class="w-5 h-5 text-vytte-500" />
+                </div>
+                <p class="text-sm font-semibold text-slate-700">No assessments yet</p>
+                <p class="mt-1 text-xs text-slate-400 max-w-xs">
+                    Once the assessment runner is built, you will start assessments from here.
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- Danger zone --}}
+    <div class="mt-5 bg-white rounded-2xl border border-slate-200 p-5">
+        <h2 class="text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-3">Actions</h2>
+        <form method="POST" action="{{ route('projects.archive', $project) }}">
+            @csrf
+            @method('PATCH')
+            <button type="submit"
+                    class="text-sm font-medium {{ $project->isArchived() ? 'text-vytte-700 hover:text-vytte-900' : 'text-slate-500 hover:text-slate-700' }} transition-colors">
+                {{ $project->isArchived() ? 'Reactivate this project' : 'Archive this project' }}
+            </button>
+        </form>
+    </div>
+
+</x-app-layout>

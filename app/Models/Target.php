@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Target extends Model
@@ -17,7 +18,6 @@ class Target extends Model
 
     protected $fillable = [
         'owner_workspace_id',
-        'project_id',
         'target_type_code',
         'name',
         'category_id',
@@ -38,14 +38,20 @@ class Target extends Model
         return $this->belongsTo(Workspace::class, 'owner_workspace_id', 'workspace_id');
     }
 
-    public function project(): BelongsTo
+    public function targetType(): BelongsTo
     {
-        return $this->belongsTo(Project::class, 'project_id', 'project_id');
+        return $this->belongsTo(TargetType::class, 'target_type_code', 'target_type_code');
     }
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(TargetCategory::class, 'category_id', 'category_id');
+    }
+
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_targets', 'target_id', 'project_id')
+            ->withPivot('added_at');
     }
 
     public function assessments(): HasMany

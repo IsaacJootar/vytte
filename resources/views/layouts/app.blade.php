@@ -37,7 +37,7 @@
             >Dashboard</x-sidebar-nav-item>
 
             <x-sidebar-nav-item
-                href="#"
+                href="{{ route('projects.index') }}"
                 icon="folder"
                 :active="request()->routeIs('projects.*')"
             >Projects</x-sidebar-nav-item>
@@ -121,7 +121,7 @@
                 :active="request()->routeIs('dashboard')"
             />
             <x-mobile-nav-item
-                href="#"
+                href="{{ route('projects.index') }}"
                 icon="folder"
                 label="Projects"
                 :active="request()->routeIs('projects.*')"

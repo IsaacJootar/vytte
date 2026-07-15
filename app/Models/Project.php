@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
@@ -34,9 +35,15 @@ class Project extends Model
         return $this->belongsTo(User::class, 'owner_user_id', 'user_id');
     }
 
-    public function targets(): HasMany
+    public function targets(): BelongsToMany
     {
-        return $this->hasMany(Target::class, 'project_id', 'project_id');
+        return $this->belongsToMany(Target::class, 'project_targets', 'project_id', 'target_id')
+            ->withPivot('added_at');
+    }
+
+    public function primaryTarget(): ?Target
+    {
+        return $this->targets->first();
     }
 
     public function assessments(): HasMany
@@ -44,8 +51,18 @@ class Project extends Model
         return $this->hasMany(Assessment::class, 'project_id', 'project_id');
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'project_id';
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'ACTIVE';
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->status === 'ARCHIVED';
     }
 }
