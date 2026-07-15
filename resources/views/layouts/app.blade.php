@@ -57,7 +57,7 @@
             <div class="my-2 mx-1 border-t border-white/[0.08]"></div>
 
             <x-sidebar-nav-item
-                href="#"
+                href="{{ route('modules.index') }}"
                 icon="squares-2x2"
                 :active="request()->routeIs('modules.*')"
             >Modules</x-sidebar-nav-item>

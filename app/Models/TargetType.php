@@ -24,4 +24,9 @@ class TargetType extends Model
     {
         return $this->hasMany(Target::class, 'target_type_code', 'target_type_code');
     }
+
+    public function modules(): HasMany
+    {
+        return $this->hasMany(AssessmentModule::class, 'target_type_code', 'target_type_code');
+    }
 }
