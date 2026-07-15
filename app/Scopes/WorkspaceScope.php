@@ -10,6 +10,10 @@ class WorkspaceScope implements Scope
 {
     public function apply(Builder $builder, Model $model): void
     {
+        if (! app()->bound('current.workspace')) {
+            return;
+        }
+
         $workspace = app('current.workspace');
 
         if (! $workspace) {

@@ -76,7 +76,12 @@ class ProjectController extends Controller
 
     public function show(Project $project): View
     {
-        $project->load(['targets.targetType', 'targets.category', 'owner']);
+        $project->load([
+            'targets.targetType',
+            'targets.category',
+            'owner',
+            'assessments.moduleScope.module',
+        ]);
 
         return view('projects.show', compact('project'));
     }

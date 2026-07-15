@@ -17,7 +17,7 @@ trait BelongsToWorkspace
                 ? $model->getWorkspaceForeignKey()
                 : 'workspace_id';
 
-            if (empty($model->{$column})) {
+            if (empty($model->{$column}) && app()->bound('current.workspace')) {
                 $workspace = app('current.workspace');
                 if ($workspace) {
                     $model->{$column} = $workspace->workspace_id;

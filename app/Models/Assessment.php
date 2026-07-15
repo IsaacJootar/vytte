@@ -65,6 +65,11 @@ class Assessment extends Model
         return $this->hasOne(AssessmentScore::class, 'assessment_id', 'assessment_id');
     }
 
+    public function getRouteKeyName(): string
+    {
+        return 'assessment_id';
+    }
+
     public function isDraft(): bool
     {
         return $this->publish_status === 'DRAFT';

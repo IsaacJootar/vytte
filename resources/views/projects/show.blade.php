@@ -79,17 +79,73 @@
         <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
                 <h2 class="text-sm font-bold text-slate-900">Assessments</h2>
-                <span class="text-xs text-slate-400">Coming in Module 05</span>
+                @if (! $project->isArchived())
+                    <a href="{{ route('assessments.create', $project) }}"
+                       class="inline-flex items-center gap-1 px-3 py-1.5 bg-vytte-700 text-white text-xs font-semibold rounded-lg hover:bg-vytte-800 transition-colors duration-150">
+                        <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/>
+                        </svg>
+                        Start Assessment
+                    </a>
+                @endif
             </div>
-            <div class="px-5 py-12 flex flex-col items-center text-center">
-                <div class="w-10 h-10 rounded-xl bg-vytte-50 flex items-center justify-center mb-3">
-                    <x-heroicon-o-clipboard-document-list class="w-5 h-5 text-vytte-500" />
+            @if ($project->assessments->isEmpty())
+                <div class="px-5 py-10 flex flex-col items-center text-center">
+                    <div class="w-10 h-10 rounded-xl bg-vytte-50 flex items-center justify-center mb-3">
+                        <x-heroicon-o-clipboard-document-list class="w-5 h-5 text-vytte-500" />
+                    </div>
+                    <p class="text-sm font-semibold text-slate-700">No assessments yet</p>
+                    <p class="mt-1 text-xs text-slate-400 max-w-xs">
+                        Start an assessment to diagnose this {{ $target?->targetType?->target_type_name ?? 'target' }}.
+                    </p>
                 </div>
-                <p class="text-sm font-semibold text-slate-700">No assessments yet</p>
-                <p class="mt-1 text-xs text-slate-400 max-w-xs">
-                    Once the assessment runner is built, you will start assessments from here.
-                </p>
-            </div>
+            @else
+                <div class="divide-y divide-slate-100">
+                    @foreach ($project->assessments as $assessment)
+                        @php $scope = $assessment->moduleScope->first(); @endphp
+                        <div class="flex items-center justify-between px-5 py-3.5">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="flex-shrink-0">
+                                    @if ($assessment->status === 'COMPLETE')
+                                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100">
+                                            <svg class="w-3.5 h-3.5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100">
+                                            <svg class="w-3.5 h-3.5 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .414.336.75.75.75h4a.75.75 0 000-1.5h-3.25V5z" clip-rule="evenodd"/>
+                                            </svg>
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-slate-900 truncate">
+                                        {{ $scope?->module?->module_name ?? 'Unknown module' }}
+                                    </p>
+                                    <p class="text-xs text-slate-400">
+                                        {{ $assessment->status === 'COMPLETE' ? 'Completed' : 'In progress' }}
+                                        @if ($assessment->started_at)
+                                            · {{ $assessment->started_at->format('d M Y') }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0 ml-4">
+                                @if ($assessment->status !== 'COMPLETE')
+                                    <a href="{{ route('assessments.run', $assessment) }}"
+                                       class="text-sm font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
+                                        Continue →
+                                    </a>
+                                @else
+                                    <span class="text-xs text-slate-400">Score pending</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
     </div>
