@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\WorkspaceMember;
+use DateTimeZone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,8 +18,28 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $workspace = app()->bound('current.workspace') ? app('current.workspace') : null;
+        $currentMember = $workspace
+            ? WorkspaceMember::where('workspace_id', $workspace->workspace_id)
+                ->where('user_id', $request->user()->user_id)
+                ->first()
+            : null;
+
+        $timezones = collect(DateTimeZone::listIdentifiers())
+            ->filter(fn ($tz) => str_starts_with($tz, 'Africa/') ||
+                str_starts_with($tz, 'Europe/') ||
+                str_starts_with($tz, 'America/') ||
+                str_starts_with($tz, 'Asia/') ||
+                $tz === 'UTC'
+            )
+            ->sort()
+            ->values();
+
         return view('profile.edit', [
             'user' => $request->user(),
+            'workspace' => $workspace,
+            'currentMember' => $currentMember,
+            'timezones' => $timezones,
         ]);
     }
 
