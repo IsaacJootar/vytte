@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             ResolveWorkspace::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            '/billing/webhook/paystack',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -8,11 +8,13 @@ use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ModuleLibraryController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TeamController;
@@ -60,6 +62,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
+    Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
 });
 
 // Platform admin routes
@@ -85,6 +89,10 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::put('questions/{question}', [AdminQuestionController::class, 'update'])->name('questions.update');
     Route::patch('questions/{question}/toggle', [AdminQuestionController::class, 'toggleActive'])->name('questions.toggle');
 });
+
+// Paystack webhook (no auth, no CSRF — signature validated in controller)
+Route::post('/billing/webhook/paystack', [PaystackWebhookController::class, 'handle'])
+    ->name('billing.webhook.paystack');
 
 // Public invitation show (no auth required — shows invite details before accepting)
 Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');

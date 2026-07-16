@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Target;
 use App\Models\TargetType;
+use App\Services\PlanService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,6 +38,13 @@ class ProjectController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $workspace = app('current.workspace');
+
+        if (PlanService::hasReachedProjectLimit($workspace)) {
+            return redirect()->route('billing.index')
+                ->with('limit_error', 'You have reached the project limit on your current plan. Upgrade to create more projects.');
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],

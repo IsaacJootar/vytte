@@ -9,6 +9,7 @@ use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
+use App\Services\PlanService;
 use App\Services\ScoringService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -31,6 +32,13 @@ class AssessmentController extends Controller
 
     public function store(Request $request, Project $project): RedirectResponse
     {
+        $workspace = app('current.workspace');
+
+        if (PlanService::hasReachedAssessmentLimit($workspace, $project)) {
+            return redirect()->route('billing.index')
+                ->with('limit_error', 'You have reached the assessment limit for this project on your current plan. Upgrade to run more assessments.');
+        }
+
         $validated = $request->validate([
             'module_id' => ['required', 'integer', 'exists:assessment_modules,module_id'],
         ]);
