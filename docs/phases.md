@@ -232,6 +232,22 @@
 
 ---
 
+## Module 16 — Consent Capture ✅
+
+**Commit:** `23145b5`
+
+- `requires_consent` boolean on `assessment_modules` (default false); HIVAW flagged true
+- `respondent_consents` table: `consent_id` UUID, `assessment_id`, `module_id`, `consent_text` (verbatim), `consented_by` (user_id), `consented_at`
+- `RespondentConsent` model with UUID PK, FK to assessment + module + user
+- `AssessmentRunner`: detects consent requirement on `mount()`, shows consent screen before first question, blocks `selectOption` without consent, persists consent across page reloads
+- `giveConsent()` action creates the DB record and sets `$consentGiven = true`; idempotent, no-ops for complete assessments
+- Consent text constant stored verbatim in DB for audit trail
+- Dark mode on all consent UI elements
+- Gate is general: any future module can set `requires_consent = true` without code change
+- Tests: 11 new in `ConsentCaptureTest`, 2 updated in `AssessmentTest` — 242 total passing
+
+---
+
 ## Build sequence summary
 
 ```
@@ -250,6 +266,7 @@
 13 Platform Admin    ✅  (5a48664)
 14 Billing           ✅  (e3bb111)
 15 Configurability   ✅  (c80ebec)
+16 Consent Capture   ✅  (23145b5)
 ```
 
-**All 15 modules complete — 231 tests passing.**
+**All 16 modules complete — 242 tests passing.**
