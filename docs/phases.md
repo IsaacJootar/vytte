@@ -282,7 +282,7 @@
 
 ## Module 19 — Question Content Translation ✅
 
-**Commit:** TBD
+**Commit:** `8ec1a35`
 
 - `question_translations` table — question_id + locale UNIQUE, stores translated question_text; cascades on question delete
 - `question_option_translations` table — option_id + locale UNIQUE, stores translated option_label; cascades on option delete
@@ -317,7 +317,7 @@
 16 Consent Capture   ✅  (23145b5)
 17 Progress Tracking ✅  (54ba7fa)
 18 UI Localization    ✅  (4b7417f)
-19 Q. Translation     ✅  (TBD)
+19 Q. Translation     ✅  (8ec1a35)
 ```
 
 **All 19 modules complete — 276 tests passing.**
