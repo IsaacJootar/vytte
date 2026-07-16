@@ -98,6 +98,54 @@ class AssessmentController extends Controller
             ->with('success', 'Assessment submitted.');
     }
 
+    public function results(Assessment $assessment): View|RedirectResponse
+    {
+        $this->authorizeWorkspace($assessment);
+
+        if ($assessment->status !== 'COMPLETE') {
+            return redirect()->route('assessments.run', $assessment);
+        }
+
+        $assessment->load([
+            'project',
+            'target.targetType',
+            'moduleScope.module',
+            'score.maturityLevel',
+        ]);
+
+        $scope = $assessment->moduleScope->first();
+        $module = $scope?->module;
+
+        $subIndexScores = DB::table('sub_index_scores as sis')
+            ->join('sub_indices as si', 'si.sub_index_id', '=', 'sis.sub_index_id')
+            ->join('domains as d', 'd.domain_id', '=', 'si.domain_id')
+            ->where('sis.assessment_id', $assessment->assessment_id)
+            ->where('sis.respondent_type', 'STAFF')
+            ->select('sis.*', 'si.acronym', 'si.full_name', 'si.description', 'd.domain_name', 'd.domain_code')
+            ->orderBy('d.domain_code')
+            ->orderBy('si.acronym')
+            ->get();
+
+        $domainScores = DB::table('domain_scores as ds')
+            ->join('domains as d', 'd.domain_id', '=', 'ds.domain_id')
+            ->where('ds.assessment_id', $assessment->assessment_id)
+            ->select('ds.*', 'd.domain_name', 'd.domain_code')
+            ->orderBy('d.domain_code')
+            ->get();
+
+        $history = collect();
+        if ($module) {
+            $history = Assessment::where('project_id', $assessment->project_id)
+                ->where('status', 'COMPLETE')
+                ->whereHas('moduleScope', fn ($q) => $q->where('module_id', $module->module_id))
+                ->with('score')
+                ->orderBy('completed_at')
+                ->get();
+        }
+
+        return view('assessments.results', compact('assessment', 'subIndexScores', 'domainScores', 'history'));
+    }
+
     private function authorizeWorkspace(Assessment $assessment): void
     {
         $workspace = app('current.workspace');

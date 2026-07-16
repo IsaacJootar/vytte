@@ -25,6 +25,7 @@ Route::middleware('auth')->group(function () {
     Route::post('projects/{project}/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
     Route::get('assessments/{assessment}/run', [AssessmentController::class, 'run'])->name('assessments.run');
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
+    Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

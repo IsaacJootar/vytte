@@ -135,7 +135,7 @@
                             <div class="flex-shrink-0 ml-4 flex items-center gap-3">
                                 @if ($assessment->status === 'COMPLETE')
                                     @php
-                                        $scoreRecord = $assessment->score;
+                                        $scoreRecord  = $assessment->score;
                                         $overallScore = $scoreRecord ? (float) $scoreRecord->overall_score : null;
                                         $band = match (true) {
                                             $overallScore === null => 'uncalibrated',
@@ -160,6 +160,10 @@
                                     @else
                                         <span class="text-xs text-slate-400">Scoring…</span>
                                     @endif
+                                    <a href="{{ route('assessments.results', $assessment) }}"
+                                       class="text-xs font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
+                                        View →
+                                    </a>
                                 @else
                                     <a href="{{ route('assessments.run', $assessment) }}"
                                        class="text-sm font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
