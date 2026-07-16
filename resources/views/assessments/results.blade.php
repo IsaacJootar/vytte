@@ -22,7 +22,7 @@
     {{-- Back + actions --}}
     <div class="mb-6 flex items-start justify-between gap-4 no-print">
         <a href="{{ route('projects.show', $assessment->project_id) }}"
-           class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+           class="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
             <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clip-rule="evenodd"/>
             </svg>
@@ -31,7 +31,7 @@
         <div class="flex items-center gap-2 flex-wrap">
             {{-- PDF export --}}
             <a href="{{ route('assessments.export.pdf', $assessment) }}"
-               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
                 </svg>
@@ -41,7 +41,7 @@
             <form method="POST" action="{{ route('assessments.share', $assessment) }}" class="inline">
                 @csrf
                 <button type="submit"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                     <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
                     </svg>
@@ -50,7 +50,7 @@
             </form>
             {{-- Print --}}
             <button onclick="window.print()"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v5a2 2 0 002 2h1v1a1 1 0 001 1h8a1 1 0 001-1v-1h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a1 1 0 00-1-1H6a1 1 0 00-1 1zm2 0h6v3H7V4zm-1 9a1 1 0 000 2h8a1 1 0 000-2H6zm0-1V9h8v3H6z" clip-rule="evenodd"/>
                 </svg>
@@ -61,11 +61,11 @@
 
     {{-- Share link display --}}
     @if (session('share_link'))
-        <div class="mb-5 p-4 bg-vytte-50 border border-vytte-200 rounded-xl no-print" x-data>
-            <p class="text-sm font-semibold text-vytte-900 mb-2">Shareable report link (expires in 30 days):</p>
+        <div class="mb-5 p-4 bg-vytte-50 dark:bg-vytte-900/20 border border-vytte-200 dark:border-vytte-800 rounded-xl no-print" x-data>
+            <p class="text-sm font-semibold text-vytte-900 dark:text-vytte-300 mb-2">Shareable report link (expires in 30 days):</p>
             <div class="flex items-center gap-2">
                 <input type="text" value="{{ session('share_link') }}" readonly
-                       class="flex-1 text-xs font-mono bg-white border border-vytte-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-vytte-500"
+                       class="flex-1 text-xs font-mono bg-white dark:bg-slate-800 border border-vytte-200 dark:border-vytte-700 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-vytte-500"
                        x-ref="shareUrl"
                        @click="$refs.shareUrl.select()">
                 <button @click="navigator.clipboard.writeText($refs.shareUrl.value); $el.textContent = 'Copied!'"
@@ -73,15 +73,15 @@
                     Copy
                 </button>
             </div>
-            <p class="text-xs text-vytte-700 mt-1.5">Anyone with this link can view the report — no login required.</p>
+            <p class="text-xs text-vytte-700 dark:text-vytte-400 mt-1.5">Anyone with this link can view the report — no login required.</p>
         </div>
     @endif
 
     {{-- Header --}}
     <div class="mb-1">
-        <p class="text-xs font-semibold text-vytte-700 uppercase tracking-wide">Assessment Results</p>
-        <h1 class="text-xl font-bold text-slate-900 mt-0.5">{{ $module?->module_name ?? 'Unknown module' }}</h1>
-        <p class="text-sm text-slate-500 mt-0.5">
+        <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Assessment Results</p>
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white mt-0.5">{{ $module?->module_name ?? 'Unknown module' }}</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             {{ $target?->name }}
             @if ($assessment->completed_at)
                 · Completed {{ $assessment->completed_at->format('d M Y') }}
@@ -90,7 +90,7 @@
     </div>
 
     {{-- Overall score hero --}}
-    <div class="mt-5 bg-white rounded-2xl border border-slate-200 p-6 print-break-avoid">
+    <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 print-break-avoid">
         <div class="flex flex-col sm:flex-row items-center gap-6">
             {{-- Arc meter --}}
             <div class="flex-shrink-0">
@@ -105,7 +105,7 @@
                                 {{ $overall >= 70 ? 'Strong' : ($overall >= 45 ? 'Moderate' : 'Weak') }}
                             </div>
                         @else
-                            <div class="text-[11px] font-semibold text-slate-400 leading-tight text-center px-1">
+                            <div class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 leading-tight text-center px-1">
                                 Not yet<br>calibrated
                             </div>
                         @endif
@@ -115,32 +115,32 @@
 
             {{-- Summary --}}
             <div class="flex-1 min-w-0">
-                <h2 class="text-base font-bold text-slate-900">Overall Score</h2>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">Overall Score</h2>
 
                 @if ($calibStatus === 'NOT_CALIBRATED')
-                    <div class="mt-2 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                        <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                    <div class="mt-2 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                         </svg>
-                        <p class="text-sm text-amber-800">Not enough responses to produce a score. Ensure all required questions are answered and resubmit.</p>
+                        <p class="text-sm text-amber-800 dark:text-amber-300">Not enough responses to produce a score. Ensure all required questions are answered and resubmit.</p>
                     </div>
                 @elseif ($calibStatus === 'PARTIAL')
-                    <div class="mt-2 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                        <svg class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 000-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                    <div class="mt-2 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                        <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                         </svg>
-                        <p class="text-sm text-amber-800">Partial score — some sub-indices have unanswered questions. Score is based on available data only.</p>
+                        <p class="text-sm text-amber-800 dark:text-amber-300">Partial score — some sub-indices have unanswered questions. Score is based on available data only.</p>
                     </div>
                 @else
-                    <p class="mt-1 text-sm text-slate-500">
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         Based on {{ $subIndexScores->count() }} sub-index{{ $subIndexScores->count() !== 1 ? 'es' : '' }}.
                     </p>
                 @endif
 
                 @if ($maturity)
-                    <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-lg">
-                        <span class="text-xs text-slate-500">Maturity level</span>
-                        <span class="text-xs font-bold text-slate-900">{{ $maturity->level_number }} — {{ $maturity->level_name }}</span>
+                    <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg">
+                        <span class="text-xs text-slate-500 dark:text-slate-400">Maturity level</span>
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $maturity->level_number }} — {{ $maturity->level_name }}</span>
                     </div>
                 @endif
             </div>
@@ -149,11 +149,11 @@
 
     {{-- Sub-index breakdown --}}
     @if ($subIndexScores->isNotEmpty())
-        <div class="mt-5 bg-white rounded-2xl border border-slate-200 overflow-hidden print-break-avoid">
-            <div class="px-5 py-3.5 border-b border-slate-100">
-                <h2 class="text-sm font-bold text-slate-900">Sub-index Breakdown</h2>
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden print-break-avoid">
+            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Sub-index Breakdown</h2>
             </div>
-            <div class="divide-y divide-slate-100">
+            <div class="divide-y divide-slate-100 dark:divide-slate-700">
                 @foreach ($subIndexScores as $row)
                     @php
                         $rowScore = $row->score !== null ? (float) $row->score : null;
@@ -173,14 +173,14 @@
                         {{-- Info --}}
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-xs font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">{{ $row->acronym }}</span>
-                                <span class="text-sm font-semibold text-slate-800 truncate">{{ $row->full_name }}</span>
+                                <span class="text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{{ $row->acronym }}</span>
+                                <span class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{{ $row->full_name }}</span>
                             </div>
-                            <p class="mt-0.5 text-xs text-slate-400 truncate">{{ $row->domain_name }} ({{ $row->domain_code }})</p>
+                            <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500 truncate">{{ $row->domain_name }} ({{ $row->domain_code }})</p>
                             @if ($rowStatus === 'NOT_CALIBRATED')
-                                <p class="mt-1 text-xs text-amber-700 font-medium">Not calibrated — no answers recorded for this sub-index.</p>
+                                <p class="mt-1 text-xs text-amber-700 dark:text-amber-400 font-medium">Not calibrated — no answers recorded for this sub-index.</p>
                             @elseif ($rowStatus === 'PARTIAL')
-                                <p class="mt-1 text-xs text-amber-600">Partial — score based on available answers only.</p>
+                                <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">Partial — score based on available answers only.</p>
                             @endif
                         </div>
 
@@ -196,38 +196,40 @@
 
     {{-- Domain breakdown --}}
     @if ($domainScores->isNotEmpty())
-        <div class="mt-5 bg-white rounded-2xl border border-slate-200 overflow-hidden print-break-avoid">
-            <div class="px-5 py-3.5 border-b border-slate-100">
-                <h2 class="text-sm font-bold text-slate-900">Domain Breakdown</h2>
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden print-break-avoid">
+            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Domain Breakdown</h2>
             </div>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-slate-100">
-                        <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wide">Domain</th>
-                        <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wide">Score</th>
-                        <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wide">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @foreach ($domainScores as $row)
-                        @php $ds = $row->score !== null ? (float) $row->score : null; @endphp
-                        <tr>
-                            <td class="px-5 py-3">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{{ $row->domain_code }}</span>
-                                    <span class="font-medium text-slate-800">{{ $row->domain_name }}</span>
-                                </div>
-                            </td>
-                            <td class="px-5 py-3 text-right font-bold text-slate-900 tabular-nums">
-                                {{ $ds !== null ? number_format($ds, 1) : '—' }}
-                            </td>
-                            <td class="px-5 py-3 text-right">
-                                <x-score-pill :score="$ds" />
-                            </td>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-100 dark:border-slate-700">
+                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Domain</th>
+                            <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Score</th>
+                            <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Status</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach ($domainScores as $row)
+                            @php $ds = $row->score !== null ? (float) $row->score : null; @endphp
+                            <tr>
+                                <td class="px-5 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">{{ $row->domain_code }}</span>
+                                        <span class="font-medium text-slate-800 dark:text-slate-200">{{ $row->domain_name }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-5 py-3 text-right font-bold text-slate-900 dark:text-white tabular-nums">
+                                    {{ $ds !== null ? number_format($ds, 1) : '—' }}
+                                </td>
+                                <td class="px-5 py-3 text-right">
+                                    <x-score-pill :score="$ds" />
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     @endif
 
@@ -236,27 +238,30 @@
         $findings = $subIndexScores->filter(fn ($row) => $row->score === null || (float) $row->score < 70);
     @endphp
     @if ($findings->isNotEmpty())
-        <div class="mt-5 bg-white rounded-2xl border border-slate-200 p-5 print-break-avoid">
-            <h2 class="text-sm font-bold text-slate-900 mb-3">Findings</h2>
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Findings</h2>
             <ul class="flex flex-col gap-3">
                 @foreach ($findings as $row)
                     @php
                         $fs = $row->score !== null ? (float) $row->score : null;
                         if ($fs === null || $row->calibration_status === 'NOT_CALIBRATED') {
-                            $icon  = 'text-slate-400';
-                            $bg    = 'bg-slate-50 border-slate-200';
+                            $icon  = 'text-slate-400 dark:text-slate-500';
+                            $bg    = 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600';
                             $label = 'Uncalibrated';
                             $text  = $row->acronym . ' (' . $row->full_name . ') could not be scored — no responses were recorded for this sub-index. Ensure all questions are answered.';
+                            $textCls = 'text-slate-700 dark:text-slate-300';
                         } elseif ($fs < 45) {
-                            $icon  = 'text-red-500';
-                            $bg    = 'bg-red-50 border-red-200';
+                            $icon  = 'text-red-500 dark:text-red-400';
+                            $bg    = 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
                             $label = 'Weak';
                             $text  = $row->acronym . ' (' . $row->full_name . ') scored ' . number_format($fs, 1) . ' — this area needs immediate attention. Review responses and consider targeted interventions.';
+                            $textCls = 'text-slate-700 dark:text-slate-300';
                         } else {
-                            $icon  = 'text-amber-500';
-                            $bg    = 'bg-amber-50 border-amber-200';
+                            $icon  = 'text-amber-500 dark:text-amber-400';
+                            $bg    = 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
                             $label = 'Moderate';
                             $text  = $row->acronym . ' (' . $row->full_name . ') scored ' . number_format($fs, 1) . ' — developing, with room for improvement. Monitor and support this area.';
+                            $textCls = 'text-slate-700 dark:text-slate-300';
                         }
                     @endphp
                     <li class="flex items-start gap-3 p-3 rounded-xl border {{ $bg }}">
@@ -264,8 +269,8 @@
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd"/>
                         </svg>
                         <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wide text-slate-500">{{ $label }}</span>
-                            <p class="text-sm text-slate-700 mt-0.5">{{ $text }}</p>
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $label }}</span>
+                            <p class="text-sm {{ $textCls }} mt-0.5">{{ $text }}</p>
                         </div>
                     </li>
                 @endforeach
@@ -275,41 +280,43 @@
 
     {{-- Score history (only when ≥ 2 assessments for same module on this project) --}}
     @if ($history->count() >= 2)
-        <div class="mt-5 bg-white rounded-2xl border border-slate-200 overflow-hidden print-break-avoid">
-            <div class="px-5 py-3.5 border-b border-slate-100">
-                <h2 class="text-sm font-bold text-slate-900">Score History</h2>
-                <p class="text-xs text-slate-400 mt-0.5">All runs of this module on {{ $assessment->project?->name }}</p>
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden print-break-avoid">
+            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Score History</h2>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">All runs of this module on {{ $assessment->project?->name }}</p>
             </div>
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-slate-100">
-                        <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wide">#</th>
-                        <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 uppercase tracking-wide">Date</th>
-                        <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wide">Score</th>
-                        <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wide">Band</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    @foreach ($history as $i => $h)
-                        @php $hs = $h->score?->overall_score !== null ? (float) $h->score->overall_score : null; @endphp
-                        <tr class="{{ $h->assessment_id === $assessment->assessment_id ? 'bg-vytte-50' : '' }}">
-                            <td class="px-5 py-3 text-xs text-slate-400 tabular-nums">{{ $i + 1 }}</td>
-                            <td class="px-5 py-3 text-slate-700">
-                                {{ $h->completed_at?->format('d M Y') ?? '—' }}
-                                @if ($h->assessment_id === $assessment->assessment_id)
-                                    <span class="ml-1.5 text-[10px] font-bold text-vytte-700 uppercase tracking-wide">Current</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-3 text-right font-bold tabular-nums text-slate-900">
-                                {{ $hs !== null ? number_format($hs, 1) : '—' }}
-                            </td>
-                            <td class="px-5 py-3 text-right">
-                                <x-score-pill :score="$hs" />
-                            </td>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-100 dark:border-slate-700">
+                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">#</th>
+                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Date</th>
+                            <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Score</th>
+                            <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Band</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @foreach ($history as $i => $h)
+                            @php $hs = $h->score?->overall_score !== null ? (float) $h->score->overall_score : null; @endphp
+                            <tr class="{{ $h->assessment_id === $assessment->assessment_id ? 'bg-vytte-50 dark:bg-vytte-900/20' : '' }}">
+                                <td class="px-5 py-3 text-xs text-slate-400 dark:text-slate-500 tabular-nums">{{ $i + 1 }}</td>
+                                <td class="px-5 py-3 text-slate-700 dark:text-slate-200">
+                                    {{ $h->completed_at?->format('d M Y') ?? '—' }}
+                                    @if ($h->assessment_id === $assessment->assessment_id)
+                                        <span class="ml-1.5 text-[10px] font-bold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Current</span>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3 text-right font-bold tabular-nums text-slate-900 dark:text-white">
+                                    {{ $hs !== null ? number_format($hs, 1) : '—' }}
+                                </td>
+                                <td class="px-5 py-3 text-right">
+                                    <x-score-pill :score="$hs" />
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     @endif
 

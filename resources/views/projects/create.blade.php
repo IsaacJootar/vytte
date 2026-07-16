@@ -3,14 +3,14 @@
     {{-- Back link + page header --}}
     <div class="mb-6">
         <a href="{{ route('projects.index') }}"
-           class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors mb-3">
+           class="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors mb-3">
             <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clip-rule="evenodd"/>
             </svg>
             Projects
         </a>
-        <h1 class="text-xl font-bold text-slate-900 tracking-tight">New Project</h1>
-        <p class="mt-0.5 text-sm text-slate-500">Name the project and add the facility, school, or community being assessed.</p>
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">New Project</h1>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Name the project and add the facility, school, or community being assessed.</p>
     </div>
 
     <form method="POST" action="{{ route('projects.store') }}"
@@ -28,8 +28,8 @@
         <div class="max-w-2xl flex flex-col gap-5">
 
             {{-- ===== SECTION 1 — Project details ===== --}}
-            <div class="bg-white rounded-2xl border border-slate-200 p-6">
-                <h2 class="text-sm font-bold text-slate-700 mb-4">Project details</h2>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+                <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">Project details</h2>
 
                 <div class="flex flex-col gap-4">
                     {{-- Name --}}
@@ -55,7 +55,7 @@
                             id="description"
                             name="description"
                             rows="3"
-                            class="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition"
+                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition"
                             placeholder="Any notes about the scope or purpose of this project…"
                         >{{ old('description') }}</textarea>
                         <x-input-error :messages="$errors->get('description')" class="mt-1" />
@@ -64,9 +64,9 @@
             </div>
 
             {{-- ===== SECTION 2 — Target details ===== --}}
-            <div class="bg-white rounded-2xl border border-slate-200 p-6">
-                <h2 class="text-sm font-bold text-slate-700 mb-1">What are you assessing?</h2>
-                <p class="text-xs text-slate-400 mb-4">The specific facility, school, or community this project is diagnosing.</p>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+                <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">What are you assessing?</h2>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">The specific facility, school, or community this project is diagnosing.</p>
 
                 <div class="flex flex-col gap-4">
                     {{-- Target type --}}
@@ -75,7 +75,7 @@
                         <select
                             id="target_type_code"
                             name="target_type_code"
-                            class="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white"
+                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
                             x-model="targetType"
                             x-on:change="onTypeChange()"
                             required
@@ -97,7 +97,7 @@
                         <select
                             id="category_id"
                             name="category_id"
-                            class="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white"
+                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
                             required
                         >
                             <option value="" disabled selected>Select category…</option>
@@ -124,7 +124,7 @@
                             placeholder="e.g. Ikeja Primary Health Centre"
                             required
                         />
-                        <p class="mt-1 text-xs text-slate-400">The official name of this specific facility, school, or community.</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">The official name of this specific facility, school, or community.</p>
                         <x-input-error :messages="$errors->get('target_name')" class="mt-1" />
                     </div>
 
@@ -172,7 +172,7 @@
                     <span x-text="loading ? 'Creating…' : 'Create Project'"></span>
                 </button>
                 <a href="{{ route('projects.index') }}"
-                   class="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors">Cancel</a>
+                   class="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">Cancel</a>
             </div>
 
         </div>

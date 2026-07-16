@@ -13,11 +13,15 @@ use Illuminate\Support\Facades\DB;
 
 class ProjectController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $projects = Project::with(['targets.targetType', 'targets.category'])
-            ->latest()
-            ->paginate(20);
+        $query = Project::with(['targets.targetType', 'targets.category'])->latest();
+
+        if ($request->filled('search')) {
+            $query->whereRaw('LOWER(name) LIKE LOWER(?)', ['%'.$request->search.'%']);
+        }
+
+        $projects = $query->paginate(20)->withQueryString();
 
         return view('projects.index', compact('projects'));
     }

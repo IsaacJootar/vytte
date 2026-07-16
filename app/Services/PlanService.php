@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Assessment;
+use App\Models\PlatformSetting;
 use App\Models\Project;
 use App\Models\Workspace;
 
@@ -25,14 +26,26 @@ class PlanService
     {
         $plan = $workspace->plan ?? 'FREE';
 
-        return array_key_exists($plan, self::LIMITS) ? self::LIMITS[$plan]['projects'] : 1;
+        if ($plan === 'FREE') {
+            return (int) PlatformSetting::get('plan.free_projects', self::LIMITS['FREE']['projects']);
+        }
+
+        if ($plan === 'PRO') {
+            return (int) PlatformSetting::get('plan.pro_projects', self::LIMITS['PRO']['projects']);
+        }
+
+        return array_key_exists($plan, self::LIMITS) ? self::LIMITS[$plan]['projects'] : null;
     }
 
     public static function assessmentLimit(Workspace $workspace): ?int
     {
         $plan = $workspace->plan ?? 'FREE';
 
-        return array_key_exists($plan, self::LIMITS) ? self::LIMITS[$plan]['assessments_per_project'] : 3;
+        if ($plan === 'FREE') {
+            return (int) PlatformSetting::get('plan.free_assessments_per_project', self::LIMITS['FREE']['assessments_per_project']);
+        }
+
+        return array_key_exists($plan, self::LIMITS) ? self::LIMITS[$plan]['assessments_per_project'] : null;
     }
 
     public static function hasReachedProjectLimit(Workspace $workspace): bool

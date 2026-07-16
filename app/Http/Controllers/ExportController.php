@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Models\PlatformSetting;
 use App\Models\Project;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
@@ -81,9 +82,11 @@ class ExportController extends Controller
     {
         $this->authorizeAssessmentAccess($assessment);
 
+        $expiryDays = (int) PlatformSetting::get('sharing.link_expiry_days', 30);
+
         $link = URL::temporarySignedRoute(
             'reports.shared',
-            now()->addDays(30),
+            now()->addDays($expiryDays),
             ['assessment' => $assessment->assessment_id]
         );
 

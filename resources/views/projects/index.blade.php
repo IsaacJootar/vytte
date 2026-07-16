@@ -1,13 +1,13 @@
 <x-app-layout title="Projects">
 
     {{-- Page header --}}
-    <div class="mb-6 flex items-center justify-between gap-4">
+    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h1 class="text-xl font-bold text-slate-900 tracking-tight">Projects</h1>
-            <p class="mt-0.5 text-sm text-slate-500">Each project represents one facility, school, or community you are diagnosing.</p>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Projects</h1>
+            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Each project represents one facility, school, or community you are diagnosing.</p>
         </div>
         <a href="{{ route('projects.create') }}"
-           class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-vytte-800 transition-colors duration-150 flex-shrink-0">
+           class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-vytte-800 transition-colors duration-150 flex-shrink-0 self-start sm:self-auto">
             <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/>
             </svg>
@@ -15,10 +15,30 @@
         </a>
     </div>
 
+    {{-- Search bar --}}
+    <form method="GET" action="{{ route('projects.index') }}" class="mb-5 flex gap-2">
+        <div class="relative flex-1">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
+            </svg>
+            <input type="text"
+                   name="search"
+                   value="{{ request('search') }}"
+                   placeholder="Search projects…"
+                   class="w-full pl-9 pr-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-vytte-700/20 focus:border-vytte-700 transition-shadow">
+        </div>
+        @if (request('search'))
+            <a href="{{ route('projects.index') }}"
+               class="px-3 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 transition-colors">
+                Clear
+            </a>
+        @endif
+    </form>
+
     {{-- Flash message --}}
     @if (session('success'))
-        <div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium">
-            <svg class="w-4 h-4 text-green-600 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+        <div class="mb-5 flex items-center gap-3 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-sm text-green-800 dark:text-green-300 font-medium">
+            <svg class="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
             </svg>
             {{ session('success') }}
@@ -27,18 +47,22 @@
 
     @if ($projects->isEmpty())
         {{-- Empty state --}}
-        <div class="bg-white rounded-2xl border border-slate-200 px-6 py-16 flex flex-col items-center text-center">
-            <div class="w-12 h-12 rounded-2xl bg-vytte-50 border border-vytte-100 flex items-center justify-center mb-4">
-                <x-heroicon-o-folder class="w-6 h-6 text-vytte-600" />
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-6 py-16 flex flex-col items-center text-center">
+            <div class="w-12 h-12 rounded-2xl bg-vytte-50 dark:bg-vytte-900/30 border border-vytte-100 dark:border-vytte-800 flex items-center justify-center mb-4">
+                <x-heroicon-o-folder class="w-6 h-6 text-vytte-600 dark:text-vytte-400" />
             </div>
-            <p class="text-sm font-semibold text-slate-900">No projects yet</p>
-            <p class="mt-1.5 text-sm text-slate-500 max-w-xs leading-relaxed">
-                Create your first project to start diagnosing a health facility, school, or community.
+            <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                {{ request('search') ? 'No projects match "' . request('search') . '"' : 'No projects yet' }}
             </p>
-            <a href="{{ route('projects.create') }}"
-               class="mt-5 inline-flex items-center gap-1.5 px-4 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors duration-150">
-                Create first project
-            </a>
+            <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                {{ request('search') ? 'Try a different search term.' : 'Create your first project to start diagnosing a health facility, school, or community.' }}
+            </p>
+            @unless(request('search'))
+                <a href="{{ route('projects.create') }}"
+                   class="mt-5 inline-flex items-center gap-1.5 px-4 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors duration-150">
+                    Create first project
+                </a>
+            @endunless
         </div>
     @else
         {{-- Project grid --}}
@@ -57,14 +81,14 @@
                         default           => 'question-mark-circle',
                     };
                     $typeColor = match ($target?->target_type_code) {
-                        'HEALTH_FACILITY' => 'bg-vytte-50 text-vytte-700 border-vytte-100',
-                        'SCHOOL'          => 'bg-purple-50 text-purple-700 border-purple-100',
-                        'COMMUNITY'       => 'bg-amber-50 text-amber-700 border-amber-100',
-                        'WATER_POINT'     => 'bg-teal-50 text-teal-700 border-teal-100',
-                        default           => 'bg-slate-50 text-slate-500 border-slate-200',
+                        'HEALTH_FACILITY' => 'bg-vytte-50 text-vytte-700 border-vytte-100 dark:bg-vytte-900/30 dark:text-vytte-400 dark:border-vytte-800',
+                        'SCHOOL'          => 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800',
+                        'COMMUNITY'       => 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
+                        'WATER_POINT'     => 'bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800',
+                        default           => 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600',
                     };
                 @endphp
-                <div class="bg-white rounded-2xl border border-slate-200 flex flex-col hover:border-slate-300 hover:shadow-sm transition-all duration-150">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm transition-all duration-150">
                     {{-- Card body --}}
                     <a href="{{ route('projects.show', $project) }}" class="block p-5 flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-700 rounded-t-2xl">
 
@@ -76,7 +100,7 @@
                                     {{ $typeName }}
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold bg-slate-50 text-slate-400 border-slate-200">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-semibold bg-slate-50 text-slate-400 border-slate-200 dark:bg-slate-700 dark:text-slate-500 dark:border-slate-600">
                                     No target
                                 </span>
                             @endif
@@ -85,12 +109,12 @@
 
                         {{-- Names --}}
                         @if ($target)
-                            <p class="text-[11px] text-slate-400 font-medium leading-none mb-1">{{ $target->name }}</p>
+                            <p class="text-[11px] text-slate-400 dark:text-slate-500 font-medium leading-none mb-1">{{ $target->name }}</p>
                         @endif
-                        <h2 class="text-sm font-bold text-slate-900 leading-snug">{{ $project->name }}</h2>
+                        <h2 class="text-sm font-bold text-slate-900 dark:text-white leading-snug">{{ $project->name }}</h2>
 
                         {{-- Category + location --}}
-                        <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400">
+                        <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500">
                             @if ($catName)
                                 <span>{{ $catName }}</span>
                             @endif
@@ -107,11 +131,11 @@
                     </a>
 
                     {{-- Card footer --}}
-                    <div class="px-5 py-3 border-t border-slate-100 flex items-center justify-between">
+                    <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
                         <div class="flex items-center gap-3 text-[11px]">
-                            <span class="text-slate-400">0 assessments</span>
+                            <span class="text-slate-400 dark:text-slate-500">0 assessments</span>
                             @if ($project->isArchived())
-                                <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-semibold text-[10px]">Archived</span>
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-semibold text-[10px]">Archived</span>
                             @endif
                         </div>
                         <a href="{{ route('projects.edit', $project) }}"

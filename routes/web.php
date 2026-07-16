@@ -11,6 +11,7 @@ use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ModuleLibraryController;
 use App\Http\Controllers\NotificationController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\UserPreferenceController;
 use App\Http\Controllers\WorkspaceSettingsController;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use Illuminate\Support\Facades\Route;
@@ -64,6 +66,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
+
+    Route::post('/preferences/theme', [UserPreferenceController::class, 'setTheme'])->name('preferences.theme');
 });
 
 // Platform admin routes
@@ -90,9 +94,12 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::patch('questions/{question}/toggle', [AdminQuestionController::class, 'toggleActive'])->name('questions.toggle');
 });
 
-// Paystack webhook (no auth, no CSRF — signature validated in controller)
+// Payment webhooks (no auth, no CSRF — signatures validated in controllers)
 Route::post('/billing/webhook/paystack', [PaystackWebhookController::class, 'handle'])
     ->name('billing.webhook.paystack');
+
+Route::post('/billing/webhook/flutterwave', [FlutterwaveWebhookController::class, 'handle'])
+    ->name('billing.webhook.flutterwave');
 
 // Public invitation show (no auth required — shows invite details before accepting)
 Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');

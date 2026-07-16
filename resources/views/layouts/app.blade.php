@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ auth()->user()?->theme === 'dark' ? 'dark' : '' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ isset($title) && $title ? $title . ' · Vytte' : 'Vytte' }}</title>
+    <title>{{ $title ? $title . ' · Vytte' : 'Vytte' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-slate-100 font-sans antialiased">
+<body class="bg-slate-100 dark:bg-slate-900 font-sans antialiased">
 
 <div class="min-h-screen lg:flex">
 
@@ -104,6 +104,28 @@
                 <div class="text-[11px] font-semibold text-white/85 truncate">{{ auth()->user()->name }}</div>
                 <div class="text-[10px] text-white/[0.30] truncate">{{ auth()->user()->email }}</div>
             </div>
+
+            {{-- Theme toggle --}}
+            <form method="POST" action="{{ route('preferences.theme') }}">
+                @csrf
+                <input type="hidden" name="theme" value="{{ auth()->user()->theme === 'dark' ? 'light' : 'dark' }}">
+                <button type="submit"
+                        class="text-white/[0.30] hover:text-white/70 transition-colors duration-100 p-0.5"
+                        title="{{ auth()->user()->theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode' }}">
+                    @if(auth()->user()->theme === 'dark')
+                        {{-- Sun icon --}}
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                        </svg>
+                    @else
+                        {{-- Moon icon --}}
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                        </svg>
+                    @endif
+                </button>
+            </form>
+
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="text-white/[0.30] hover:text-white/70 transition-colors duration-100" title="Log out">
@@ -121,15 +143,35 @@
     <div class="flex-1 flex flex-col min-h-screen lg:ml-52">
 
         {{-- Mobile top bar --}}
-        <header class="lg:hidden sticky top-0 z-30 bg-white border-b border-slate-200 flex items-center justify-between px-4 py-3">
+        <header class="lg:hidden sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 py-3">
             <div class="flex items-center gap-2">
                 <div class="w-7 h-7 rounded-lg bg-vytte-700 flex items-center justify-center flex-shrink-0">
                     <x-vytte-mark class="w-3.5 h-3.5" />
                 </div>
-                <span class="text-sm font-bold text-slate-900">{{ $title ?? 'Vytte' }}</span>
+                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ $title ?: 'Vytte' }}</span>
             </div>
-            <div class="w-7 h-7 rounded-full bg-vytte-700 flex items-center justify-center text-[11px] font-bold text-white uppercase flex-shrink-0">
-                {{ substr(auth()->user()->name, 0, 1) }}
+            <div class="flex items-center gap-2">
+                {{-- Mobile theme toggle --}}
+                <form method="POST" action="{{ route('preferences.theme') }}">
+                    @csrf
+                    <input type="hidden" name="theme" value="{{ auth()->user()->theme === 'dark' ? 'light' : 'dark' }}">
+                    <button type="submit"
+                            class="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                            title="{{ auth()->user()->theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode' }}">
+                        @if(auth()->user()->theme === 'dark')
+                            <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                            </svg>
+                        @else
+                            <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                            </svg>
+                        @endif
+                    </button>
+                </form>
+                <div class="w-7 h-7 rounded-full bg-vytte-700 flex items-center justify-center text-[11px] font-bold text-white uppercase flex-shrink-0">
+                    {{ substr(auth()->user()->name, 0, 1) }}
+                </div>
             </div>
         </header>
 
@@ -139,7 +181,7 @@
         </main>
 
         {{-- Mobile bottom tab bar --}}
-        <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 flex pb-safe">
+        <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex pb-safe">
             <x-mobile-nav-item
                 href="{{ route('dashboard') }}"
                 icon="home"
