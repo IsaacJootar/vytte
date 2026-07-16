@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
@@ -71,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
 
     Route::post('/preferences/theme', [UserPreferenceController::class, 'setTheme'])->name('preferences.theme');
+    Route::post('/locale', [LocaleController::class, 'store'])->name('locale.store');
 });
 
 // Platform admin routes

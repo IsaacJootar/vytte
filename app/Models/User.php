@@ -25,6 +25,7 @@ class User extends Authenticatable
         'platform_role',
         'active_workspace_id',
         'theme',
+        'locale',
     ];
 
     protected $hidden = [

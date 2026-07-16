@@ -265,6 +265,21 @@
 
 ---
 
+## Module 18 — UI Localization Infrastructure ✅
+
+**Commit:** TBD
+
+- `locale` column on `users` table (string, default 'en')
+- `lang/en/runner.php` + `lang/fr/runner.php` — 18 translation keys covering all assessment runner UI strings
+- `SetLocale` middleware — reads `user->locale` (preferred) or `session('locale')`, calls `App::setLocale()`; falls back to 'en' for unsupported locales; appended to the web middleware group
+- `LocaleController::store()` — validates locale against allowlist, writes to session + updates user; `POST /locale` route inside auth group
+- Assessment runner view — all hardcoded strings replaced with `__('runner.*')` helper calls (incl. parametrised strings for question counter and saved-at timestamp)
+- Locale switcher — EN / FR toggle rendered above the Livewire component on `assessments/run.blade.php`; active locale highlighted in vytte-700; POST form with redirect-back
+- Locales supported: `en` (English), `fr` (French); architecture is open — adding a new locale requires only a new `lang/{code}/runner.php` file and adding the code to the allowlist
+- Tests: 11 new in `LocalizationTest` — 267 total passing
+
+---
+
 ## Build sequence summary
 
 ```
@@ -285,6 +300,7 @@
 15 Configurability   ✅  (c80ebec)
 16 Consent Capture   ✅  (23145b5)
 17 Progress Tracking ✅  (54ba7fa)
+18 UI Localization    ✅  (TBD)
 ```
 
-**All 17 modules complete — 256 tests passing.**
+**All 18 modules complete — 267 tests passing.**

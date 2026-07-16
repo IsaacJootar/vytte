@@ -6,7 +6,7 @@
             <svg class="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
             </svg>
-            This assessment has been submitted and is read-only.
+            {{ __('runner.submitted_readonly') }}
         </div>
     @endif
 
@@ -21,8 +21,8 @@
                     </svg>
                 </div>
                 <div>
-                    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">Participant Consent Required</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Read the statement below to the participant before starting.</p>
+                    <h2 class="text-base font-semibold text-slate-900 dark:text-slate-100">{{ __('runner.consent_required') }}</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ __('runner.consent_instruction') }}</p>
                 </div>
             </div>
 
@@ -37,7 +37,7 @@
                         x-model="agreed"
                         class="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-vytte-600 focus:ring-vytte-500">
                     <span class="text-sm text-slate-700 dark:text-slate-300 select-none">
-                        The participant has heard this statement and agreed to take part.
+                        {{ __('runner.consent_agree') }}
                     </span>
                 </label>
 
@@ -48,7 +48,7 @@
                         ? 'bg-vytte-700 hover:bg-vytte-800 text-white cursor-pointer'
                         : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'"
                     class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-vytte-400 focus:ring-offset-1 w-full sm:w-auto justify-center">
-                    Continue to Questions
+                    {{ __('runner.consent_continue') }}
                     <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
                     </svg>
@@ -58,16 +58,16 @@
 
     @elseif (empty($questionData))
         <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-5 py-12 flex flex-col items-center text-center">
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">No questions found</p>
-            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">This module has no active questions.</p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">{{ __('runner.no_questions_title') }}</p>
+            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ __('runner.no_questions_body') }}</p>
         </div>
     @else
 
         {{-- Progress header --}}
         <div class="mb-5">
             <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1.5">
-                <span class="font-semibold">Question {{ $currentIndex + 1 }} of {{ count($questionData) }}</span>
-                <span>{{ $this->answeredCount() }} answered</span>
+                <span class="font-semibold">{{ __('runner.question_counter', ['current' => $currentIndex + 1, 'total' => count($questionData)]) }}</span>
+                <span>{{ __('runner.answered_count', ['count' => $this->answeredCount()]) }}</span>
             </div>
             <div class="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 @php $pct = count($questionData) > 0 ? ($this->answeredCount() / count($questionData)) * 100 : 0; @endphp
@@ -100,7 +100,7 @@
             <p class="text-base font-semibold text-slate-900 dark:text-slate-100 leading-snug mb-5">{{ $q['question_text'] }}</p>
 
             @if (! $q['is_scored'])
-                <p class="text-xs text-amber-600 dark:text-amber-400 font-medium mb-3">This question is not scored — your answer is recorded as a note.</p>
+                <p class="text-xs text-amber-600 dark:text-amber-400 font-medium mb-3">{{ __('runner.not_scored') }}</p>
             @endif
 
             {{-- Answer options --}}
@@ -121,7 +121,7 @@
                     @endforeach
                 </div>
             @else
-                <p class="text-sm text-slate-400 dark:text-slate-500 italic">Open-ended — no answer options.</p>
+                <p class="text-sm text-slate-400 dark:text-slate-500 italic">{{ __('runner.open_ended') }}</p>
             @endif
         </div>
 
@@ -134,7 +134,7 @@
                 <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                     <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd"/>
                 </svg>
-                Previous
+                {{ __('runner.previous') }}
             </button>
 
             {{-- Saved indicator --}}
@@ -144,7 +144,7 @@
                         <svg class="w-3 h-3 text-green-500" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
                         </svg>
-                        Saved {{ $lastSavedAt }}
+                        {{ __('runner.saved_at', ['time' => $lastSavedAt]) }}
                     </span>
                 @endif
             </div>
@@ -153,7 +153,7 @@
                 <button
                     wire:click="goToQuestion({{ $currentIndex + 1 }})"
                     class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors hover:border-slate-300 dark:hover:border-slate-600">
-                    Next
+                    {{ __('runner.next') }}
                     <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/>
                     </svg>
@@ -168,14 +168,14 @@
             <div class="mt-6 pt-5 border-t border-slate-200 dark:border-slate-700">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
-                        <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">All questions answered</p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Submit to finalise the assessment. This cannot be undone.</p>
+                        <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ __('runner.all_answered_title') }}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ __('runner.all_answered_body') }}</p>
                     </div>
                     <form method="POST" action="{{ route('assessments.submit', $assessment) }}">
                         @csrf
                         <button type="submit"
                                 class="inline-flex items-center gap-2 px-5 py-2.5 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors duration-150">
-                            Submit Assessment
+                            {{ __('runner.submit') }}
                             <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                 <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
                             </svg>
@@ -187,7 +187,7 @@
 
         {{-- Question dot navigation (for review / jumping) --}}
         <div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/50">
-            <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">Jump to question</p>
+            <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">{{ __('runner.jump_to_question') }}</p>
             <div class="flex flex-wrap gap-1.5">
                 @foreach ($questionData as $idx => $item)
                     <button
