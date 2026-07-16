@@ -19,6 +19,11 @@ class AssessmentModule extends Model
         'primary_respondent',
         'estimated_duration_minutes',
         'data_collection_methods',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function targetType(): BelongsTo

@@ -1,5 +1,12 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
+use App\Http\Controllers\Admin\ModuleDomainController as AdminModuleDomainController;
+use App\Http\Controllers\Admin\ModuleImportController;
+use App\Http\Controllers\Admin\PlatformSettingController;
+use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
+use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
@@ -10,6 +17,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\WorkspaceSettingsController;
+use App\Http\Middleware\EnsurePlatformAdmin;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -52,6 +60,30 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+});
+
+// Platform admin routes
+Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('workspaces', [AdminWorkspaceController::class, 'index'])->name('workspaces.index');
+    Route::get('workspaces/{workspace}', [AdminWorkspaceController::class, 'show'])->name('workspaces.show');
+
+    Route::get('settings', [PlatformSettingController::class, 'index'])->name('settings.index');
+    Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');
+
+    Route::get('modules', [AdminModuleController::class, 'index'])->name('modules.index');
+    Route::get('modules/import', [ModuleImportController::class, 'create'])->name('modules.import');
+    Route::post('modules/import', [ModuleImportController::class, 'store'])->name('modules.import.store');
+    Route::get('modules/{module}', [AdminModuleController::class, 'show'])->name('modules.show');
+    Route::get('modules/{module}/edit', [AdminModuleController::class, 'edit'])->name('modules.edit');
+    Route::put('modules/{module}', [AdminModuleController::class, 'update'])->name('modules.update');
+    Route::patch('modules/{module}/toggle', [AdminModuleController::class, 'toggleActive'])->name('modules.toggle');
+
+    Route::put('domains/{domain}', [AdminModuleDomainController::class, 'update'])->name('domains.update');
+
+    Route::put('questions/{question}', [AdminQuestionController::class, 'update'])->name('questions.update');
+    Route::patch('questions/{question}/toggle', [AdminQuestionController::class, 'toggleActive'])->name('questions.toggle');
 });
 
 // Public invitation show (no auth required — shows invite details before accepting)
