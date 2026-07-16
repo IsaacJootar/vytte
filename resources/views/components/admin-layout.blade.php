@@ -41,6 +41,7 @@
                     ['route' => 'admin.workspaces.index', 'label' => 'Workspaces'],
                     ['route' => 'admin.modules.index', 'label' => 'Modules'],
                     ['route' => 'admin.geographic-usage.index', 'label' => 'Geographic Usage'],
+                    ['route' => 'admin.plan-features.index', 'label' => 'Plan Features'],
                     ['route' => 'admin.settings.index', 'label' => 'Settings'],
                 ] as $item)
                     <li>

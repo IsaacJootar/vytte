@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\PlatformSetting;
 use App\Models\Project;
+use App\Services\PlanService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -19,7 +20,9 @@ class ExportController extends Controller
     {
         $this->authorizeAssessmentAccess($assessment);
 
+        $workspace = app('current.workspace');
         $data = $this->assessmentReportData($assessment);
+        $data['showWatermark'] = ! PlanService::workspaceCanAccess($workspace, 'pdf_export_no_watermark');
 
         $pdf = Pdf::loadView('exports.assessment-pdf', $data)
             ->setPaper('a4', 'portrait');
@@ -35,6 +38,10 @@ class ExportController extends Controller
 
         if ($project->workspace_id !== $workspace->workspace_id) {
             abort(404);
+        }
+
+        if (! PlanService::workspaceCanAccess($workspace, 'csv_export')) {
+            abort(403, 'CSV export is not available on your current plan. Upgrade to export project data.');
         }
 
         $assessments = Assessment::where('project_id', $project->project_id)
@@ -81,6 +88,11 @@ class ExportController extends Controller
     public function createShareLink(Assessment $assessment): RedirectResponse
     {
         $this->authorizeAssessmentAccess($assessment);
+
+        $workspace = app('current.workspace');
+        if (! PlanService::workspaceCanAccess($workspace, 'shareable_report_links')) {
+            return back()->with('error', 'Shareable report links are not available on your current plan. Upgrade to share assessment results.');
+        }
 
         $expiryDays = (int) PlatformSetting::get('sharing.link_expiry_days', 30);
 

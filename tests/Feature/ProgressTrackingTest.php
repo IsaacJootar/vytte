@@ -15,6 +15,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\ScoringService;
 use Database\Seeders\HivawQuestionsSeeder;
+use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -24,10 +25,16 @@ class ProgressTrackingTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(PlanFeatureSeeder::class);
+    }
+
     private function userWithWorkspace(): array
     {
         $user = User::factory()->create();
-        $workspace = Workspace::factory()->create();
+        $workspace = Workspace::factory()->create(['plan' => 'PRO']);
         WorkspaceMember::create([
             'workspace_id' => $workspace->workspace_id,
             'user_id' => $user->user_id,

@@ -12,6 +12,8 @@ class DatabaseSeeder extends Seeder
             PlatformSettingsSeeder::class,
             ReferenceDataSeeder::class,
             HivawQuestionsSeeder::class,
+            PlanFeatureSeeder::class,
+            DemoAccountSeeder::class,
         ]);
     }
 }

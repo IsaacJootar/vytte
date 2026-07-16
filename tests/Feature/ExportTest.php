@@ -10,6 +10,7 @@ use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\URL;
@@ -23,12 +24,13 @@ class ExportTest extends TestCase
     {
         parent::setUp();
         $this->seed(ReferenceDataSeeder::class);
+        $this->seed(PlanFeatureSeeder::class);
     }
 
     private function createWorkspaceWithOwner(): array
     {
         $user = User::factory()->create();
-        $workspace = Workspace::factory()->create();
+        $workspace = Workspace::factory()->create(['plan' => 'PRO']);
         WorkspaceMember::create([
             'workspace_id' => $workspace->workspace_id,
             'user_id' => $user->user_id,

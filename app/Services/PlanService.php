@@ -6,10 +6,22 @@ use App\Models\Assessment;
 use App\Models\PlatformSetting;
 use App\Models\Project;
 use App\Models\Workspace;
+use Illuminate\Support\Facades\DB;
 
 class PlanService
 {
     const PLANS = ['FREE', 'PRO', 'AGENCY'];
+
+    const FEATURES = [
+        'team_members' => 'Team Members',
+        'shareable_public_links' => 'Shareable Public Links',
+        'shareable_report_links' => 'Shareable Report Links',
+        'progress_maturity_tracking' => 'Progress & Maturity Tracking',
+        'localization' => 'Localization (Multi-language)',
+        'patient_community_voice_module' => 'Patient & Community Voice Module',
+        'pdf_export_no_watermark' => 'PDF Export (No Watermark)',
+        'csv_export' => 'CSV Export',
+    ];
 
     const LIMITS = [
         'FREE' => ['projects' => 1, 'assessments_per_project' => 3],
@@ -92,5 +104,17 @@ class PlanService
         $kobo = self::priceKobo($plan);
 
         return number_format($kobo / 100, 0).' NGN/month';
+    }
+
+    public static function workspaceCanAccess(Workspace $workspace, string $featureKey): bool
+    {
+        $plan = $workspace->plan ?? 'FREE';
+
+        $enabled = DB::table('plan_features')
+            ->where('plan', $plan)
+            ->where('feature_key', $featureKey)
+            ->value('enabled');
+
+        return (bool) $enabled;
     }
 }

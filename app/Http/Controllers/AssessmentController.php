@@ -49,6 +49,13 @@ class AssessmentController extends Controller
             return back()->with('error', 'This project has no target. Please add a target first.');
         }
 
+        $module = AssessmentModule::find($validated['module_id']);
+        if ($module && str_starts_with((string) $module->module_code, 'HIVAW')) {
+            if (! PlanService::workspaceCanAccess($workspace, 'patient_community_voice_module')) {
+                return back()->with('error', 'The Patient & Community Voice module is not available on your current plan. Upgrade to run community voice assessments.');
+            }
+        }
+
         $tier = AssessmentTier::where('tier_code', 'TIER_1')->first();
 
         $assessment = DB::transaction(function () use ($validated, $project, $target, $tier) {

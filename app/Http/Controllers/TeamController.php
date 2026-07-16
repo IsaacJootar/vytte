@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMember;
+use App\Services\PlanService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -38,6 +39,10 @@ class TeamController extends Controller
     {
         $workspace = app('current.workspace');
         $this->requireAdmin($workspace);
+
+        if (! PlanService::workspaceCanAccess($workspace, 'team_members')) {
+            return back()->with('error', 'Your current plan does not include team members. Upgrade to add people to your workspace.');
+        }
 
         $validated = $request->validate([
             'email' => ['required', 'email', 'max:255'],

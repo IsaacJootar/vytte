@@ -8,6 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #1e293b; background: white; }
         .page { padding: 36px 40px; }
+        .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-35deg); font-size: 48px; font-weight: 900; color: rgba(148,163,184,0.18); white-space: nowrap; pointer-events: none; z-index: 1000; letter-spacing: 2px; }
 
         /* Header */
         .header { border-bottom: 2px solid #0369a1; padding-bottom: 14px; margin-bottom: 20px; }
@@ -51,6 +52,9 @@
     </style>
 </head>
 <body>
+@if (!empty($showWatermark))
+<div class="watermark">Vytte Free Plan</div>
+@endif
 <div class="page">
 
     {{-- Header --}}

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\ModuleDomainController as AdminModuleDomainController;
 use App\Http\Controllers\Admin\ModuleImportController;
 use App\Http\Controllers\Admin\ModuleTranslationController;
+use App\Http\Controllers\Admin\PlanFeatureController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
@@ -84,6 +85,9 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     Route::get('geographic-usage', [AdminGeographicUsageController::class, 'index'])->name('geographic-usage.index');
+
+    Route::get('plan-features', [PlanFeatureController::class, 'index'])->name('plan-features.index');
+    Route::put('plan-features', [PlanFeatureController::class, 'update'])->name('plan-features.update');
 
     Route::get('workspaces', [AdminWorkspaceController::class, 'index'])->name('workspaces.index');
     Route::get('workspaces/{workspace}', [AdminWorkspaceController::class, 'show'])->name('workspaces.show');

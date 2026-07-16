@@ -4,14 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Assessment;
 use App\Models\Project;
+use App\Services\PlanService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ProjectProgressController extends Controller
 {
-    public function index(Project $project): View
+    public function index(Project $project): View|RedirectResponse
     {
+        $workspace = app('current.workspace');
+        if (! PlanService::workspaceCanAccess($workspace, 'progress_maturity_tracking')) {
+            return redirect()->route('projects.show', $project)
+                ->with('limit_error', 'Progress tracking is not available on your current plan. Upgrade to view maturity trends over time.');
+        }
+
         $assessments = Assessment::where('project_id', $project->project_id)
             ->where('status', 'COMPLETE')
             ->with(['score.maturityLevel', 'moduleScope.module'])
@@ -39,8 +47,14 @@ class ProjectProgressController extends Controller
         return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains'));
     }
 
-    public function compare(Project $project, Request $request): View
+    public function compare(Project $project, Request $request): View|RedirectResponse
     {
+        $workspace = app('current.workspace');
+        if (! PlanService::workspaceCanAccess($workspace, 'progress_maturity_tracking')) {
+            return redirect()->route('projects.show', $project)
+                ->with('limit_error', 'Assessment comparison is not available on your current plan. Upgrade to compare results.');
+        }
+
         $idA = $request->query('a');
         $idB = $request->query('b');
 

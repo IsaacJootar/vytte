@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMember;
+use Database\Seeders\PlanFeatureSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -14,10 +15,16 @@ class TeamTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(PlanFeatureSeeder::class);
+    }
+
     private function makeOwner(): array
     {
         $user = User::factory()->create();
-        $workspace = Workspace::factory()->create();
+        $workspace = Workspace::factory()->create(['plan' => 'PRO']);
         WorkspaceMember::create([
             'workspace_id' => $workspace->workspace_id,
             'user_id' => $user->user_id,

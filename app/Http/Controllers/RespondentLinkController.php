@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\AssessmentRespondentToken;
 use App\Models\Project;
+use App\Services\PlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 
@@ -17,6 +18,10 @@ class RespondentLinkController extends Controller
 
         if (! $project || $project->workspace_id !== $workspace->workspace_id) {
             abort(404);
+        }
+
+        if (! PlanService::workspaceCanAccess($workspace, 'shareable_public_links')) {
+            return back()->with('error', 'Shareable respondent links are not available on your current plan. Upgrade to share assessments with external respondents.');
         }
 
         if ($assessment->status !== 'IN_PROGRESS') {
