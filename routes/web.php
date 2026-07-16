@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\ModuleDomainController as AdminModuleDomainController;
 use App\Http\Controllers\Admin\ModuleImportController;
+use App\Http\Controllers\Admin\ModuleTranslationController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
@@ -97,6 +98,9 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
 
     Route::put('questions/{question}', [AdminQuestionController::class, 'update'])->name('questions.update');
     Route::patch('questions/{question}/toggle', [AdminQuestionController::class, 'toggleActive'])->name('questions.toggle');
+
+    Route::get('modules/{module}/translations/{locale?}', [ModuleTranslationController::class, 'edit'])->name('modules.translations.edit');
+    Route::post('modules/{module}/translations/{locale?}', [ModuleTranslationController::class, 'update'])->name('modules.translations.update');
 });
 
 // Payment webhooks (no auth, no CSRF — signatures validated in controllers)

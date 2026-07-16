@@ -23,6 +23,10 @@
                     {{ $module->is_active ? 'Deactivate' : 'Reactivate' }}
                 </button>
             </form>
+            <a href="{{ route('admin.modules.translations.edit', [$module, 'fr']) }}"
+               class="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                Translations
+            </a>
             <a href="{{ route('admin.modules.edit', $module) }}"
                class="px-3 py-1.5 text-xs font-semibold bg-vytte-700 text-white rounded-lg hover:bg-vytte-800 transition-colors">
                 Edit

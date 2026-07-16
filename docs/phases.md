@@ -280,6 +280,22 @@
 
 ---
 
+## Module 19 — Question Content Translation ✅
+
+**Commit:** TBD
+
+- `question_translations` table — question_id + locale UNIQUE, stores translated question_text; cascades on question delete
+- `question_option_translations` table — option_id + locale UNIQUE, stores translated option_label; cascades on option delete
+- `QuestionTranslation` + `QuestionOptionTranslation` models — no timestamps, fillable, belongsTo relations
+- `ModuleTranslationController` — `edit()` loads questions + existing translations for the locale; `update()` upserts non-blank translations, deletes blank ones (atomic transaction)
+- Admin translation page (`admin/modules/{module}/translations/{locale}`) — two-column layout: English (read-only) | French (editable); questions with their options; "Save Translations" button; success flash
+- "Translations" button added to module show page header (admin only)
+- `AssessmentRunner::loadQuestions()` — if locale ≠ 'en', loads question and option translations in two bulk queries; overlays them on the English text; falls back to English if no translation exists
+- Route fix: named `modules.translations.edit` / `modules.translations.update` inside the `admin.` group (full names: `admin.modules.translations.edit` / `admin.modules.translations.update`)
+- 9 new tests in `QuestionTranslationTest` — 276 total passing
+
+---
+
 ## Build sequence summary
 
 ```
@@ -301,6 +317,7 @@
 16 Consent Capture   ✅  (23145b5)
 17 Progress Tracking ✅  (54ba7fa)
 18 UI Localization    ✅  (4b7417f)
+19 Q. Translation     ✅  (TBD)
 ```
 
-**All 18 modules complete — 267 tests passing.**
+**All 19 modules complete — 276 tests passing.**

@@ -6,9 +6,12 @@ use App\Models\Assessment;
 use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
 use App\Models\Question;
+use App\Models\QuestionOptionTranslation;
+use App\Models\QuestionTranslation;
 use App\Models\RespondentConsent;
 use App\Models\Response;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\App;
 use Livewire\Component;
 
 class AssessmentRunner extends Component
@@ -58,16 +61,34 @@ class AssessmentRunner extends Component
             ->orderBy('display_order')
             ->get();
 
+        $locale = App::getLocale();
+
+        $questionTranslations = collect();
+        $optionTranslations = collect();
+
+        if ($locale !== 'en' && $questions->isNotEmpty()) {
+            $questionIds = $questions->pluck('question_id');
+            $optionIds = $questions->flatMap(fn ($q) => $q->options->pluck('option_id'));
+
+            $questionTranslations = QuestionTranslation::where('locale', $locale)
+                ->whereIn('question_id', $questionIds)
+                ->pluck('question_text', 'question_id');
+
+            $optionTranslations = QuestionOptionTranslation::where('locale', $locale)
+                ->whereIn('option_id', $optionIds)
+                ->pluck('option_label', 'option_id');
+        }
+
         $this->questionData = $questions->map(fn (Question $q) => [
             'question_id' => $q->question_id,
             'question_code' => $q->question_code,
-            'question_text' => $q->question_text,
+            'question_text' => $questionTranslations->get($q->question_id, $q->question_text),
             'is_scored' => $q->is_scored,
             'domain_label' => $q->moduleDomain?->domain_label ?? '',
             'domain_number' => $q->moduleDomain?->domain_number ?? 0,
             'options' => $q->options->map(fn ($o) => [
                 'option_id' => $o->option_id,
-                'option_label' => $o->option_label,
+                'option_label' => $optionTranslations->get($o->option_id, $o->option_label),
             ])->toArray(),
         ])->toArray();
     }
