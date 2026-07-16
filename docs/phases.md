@@ -248,6 +248,23 @@
 
 ---
 
+## Module 17 — Progress & Maturity Tracking ✅
+
+**Commit:** TBD
+
+- Per-project progress page showing all completed assessment runs in chronological order
+- Runs table: #, Date, Module, Maturity Level (L1–L5 + name), Score, Band, View link
+- Domain score matrix (≥2 runs): domains as rows, assessment runs as columns, colour-coded score pills
+- Compare form on progress page: select any two runs → GET compare route
+- Compare page: side-by-side header cards (date, module, score, maturity level, band) + domain delta table (A score | ↑↓ change | B score); delta computed as B − A; positive = green ↑, negative = red ↓, zero = grey
+- Score history table on results page updated: now shows Maturity Level column + "Full progress →" link
+- "Progress" button on project show page (visible only when ≥1 complete assessment)
+- `ProjectProgressController`: `index()` + `compare()` methods; compare scopes both assessments to the same project (404 on cross-project IDs)
+- Workspace isolation enforced via existing `WorkspaceScope` on Project route binding
+- Tests: 14 new in `ProgressTrackingTest` — 256 total passing
+
+---
+
 ## Build sequence summary
 
 ```
@@ -267,6 +284,7 @@
 14 Billing           ✅  (e3bb111)
 15 Configurability   ✅  (c80ebec)
 16 Consent Capture   ✅  (23145b5)
+17 Progress Tracking ✅  (TBD)
 ```
 
-**All 16 modules complete — 242 tests passing.**
+**All 17 modules complete — 256 tests passing.**

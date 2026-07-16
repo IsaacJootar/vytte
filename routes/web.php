@@ -18,6 +18,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectProgressController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserPreferenceController;
 use App\Http\Controllers\WorkspaceSettingsController;
@@ -33,6 +34,8 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['au
 Route::middleware('auth')->group(function () {
     Route::resource('projects', ProjectController::class)->except('destroy');
     Route::patch('projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
+    Route::get('projects/{project}/progress', [ProjectProgressController::class, 'index'])->name('projects.progress');
+    Route::get('projects/{project}/compare', [ProjectProgressController::class, 'compare'])->name('projects.compare');
 
     Route::get('modules', [ModuleLibraryController::class, 'index'])->name('modules.index');
     Route::get('modules/{module}', [ModuleLibraryController::class, 'show'])->name('modules.show');

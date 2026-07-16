@@ -280,10 +280,19 @@
 
     {{-- Score history (only when ≥ 2 assessments for same module on this project) --}}
     @if ($history->count() >= 2)
-        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden print-break-avoid">
-            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
-                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Score History</h2>
-                <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">All runs of this module on {{ $assessment->project?->name }}</p>
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden print-break-avoid no-print">
+            <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">Score History</h2>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">All runs of this module on {{ $assessment->project?->name }}</p>
+                </div>
+                <a href="{{ route('projects.progress', $assessment->project_id) }}"
+                   class="inline-flex items-center gap-1 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200 transition-colors flex-shrink-0">
+                    Full progress
+                    <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
+                    </svg>
+                </a>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -291,19 +300,33 @@
                         <tr class="border-b border-slate-100 dark:border-slate-700">
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">#</th>
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Date</th>
+                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Maturity Level</th>
                             <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Score</th>
                             <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Band</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                         @foreach ($history as $i => $h)
-                            @php $hs = $h->score?->overall_score !== null ? (float) $h->score->overall_score : null; @endphp
+                            @php
+                                $hs = $h->score?->overall_score !== null ? (float) $h->score->overall_score : null;
+                                $hMaturity = $h->score?->maturityLevel;
+                            @endphp
                             <tr class="{{ $h->assessment_id === $assessment->assessment_id ? 'bg-vytte-50 dark:bg-vytte-900/20' : '' }}">
                                 <td class="px-5 py-3 text-xs text-slate-400 dark:text-slate-500 tabular-nums">{{ $i + 1 }}</td>
                                 <td class="px-5 py-3 text-slate-700 dark:text-slate-200">
                                     {{ $h->completed_at?->format('d M Y') ?? '—' }}
                                     @if ($h->assessment_id === $assessment->assessment_id)
                                         <span class="ml-1.5 text-[10px] font-bold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Current</span>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3">
+                                    @if ($hMaturity)
+                                        <span class="inline-flex items-center gap-1 text-xs text-slate-700 dark:text-slate-300">
+                                            <span class="font-bold text-vytte-700 dark:text-vytte-400">L{{ $hMaturity->level_number }}</span>
+                                            {{ $hMaturity->level_name }}
+                                        </span>
+                                    @else
+                                        <span class="text-xs text-slate-400 dark:text-slate-500">—</span>
                                     @endif
                                 </td>
                                 <td class="px-5 py-3 text-right font-bold tabular-nums text-slate-900 dark:text-white">

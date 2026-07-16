@@ -81,6 +81,13 @@
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Assessments</h2>
                 <div class="flex items-center gap-2">
                     @if ($project->assessments->where('status', 'COMPLETE')->isNotEmpty())
+                        <a href="{{ route('projects.progress', $project) }}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-150">
+                            <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+                            </svg>
+                            Progress
+                        </a>
                         <a href="{{ route('projects.export.csv', $project) }}"
                            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors duration-150">
                             <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

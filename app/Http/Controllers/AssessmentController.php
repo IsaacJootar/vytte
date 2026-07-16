@@ -158,7 +158,7 @@ class AssessmentController extends Controller
             $history = Assessment::where('project_id', $assessment->project_id)
                 ->where('status', 'COMPLETE')
                 ->whereHas('moduleScope', fn ($q) => $q->where('module_id', $module->module_id))
-                ->with('score')
+                ->with('score.maturityLevel')
                 ->orderBy('completed_at')
                 ->get();
         }

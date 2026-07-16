@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Assessment;
+use App\Models\Project;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class ProjectProgressController extends Controller
+{
+    public function index(Project $project): View
+    {
+        $assessments = Assessment::where('project_id', $project->project_id)
+            ->where('status', 'COMPLETE')
+            ->with(['score.maturityLevel', 'moduleScope.module'])
+            ->orderBy('completed_at')
+            ->get();
+
+        $assessmentIds = $assessments->pluck('assessment_id');
+
+        $domainScoresByAssessment = $assessmentIds->isNotEmpty()
+            ? DB::table('domain_scores as ds')
+                ->join('domains as d', 'd.domain_id', '=', 'ds.domain_id')
+                ->whereIn('ds.assessment_id', $assessmentIds)
+                ->where('d.is_operational', true)
+                ->select('ds.assessment_id', 'ds.score', 'd.domain_id', 'd.domain_code', 'd.domain_name', 'd.display_order')
+                ->orderBy('d.display_order')
+                ->get()
+                ->groupBy('assessment_id')
+            : collect();
+
+        $allDomains = DB::table('domains')
+            ->where('is_operational', true)
+            ->orderBy('display_order')
+            ->get();
+
+        return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains'));
+    }
+
+    public function compare(Project $project, Request $request): View
+    {
+        $idA = $request->query('a');
+        $idB = $request->query('b');
+
+        $assessmentA = Assessment::where('project_id', $project->project_id)
+            ->where('assessment_id', $idA)
+            ->where('status', 'COMPLETE')
+            ->with(['score.maturityLevel', 'moduleScope.module'])
+            ->firstOrFail();
+
+        $assessmentB = Assessment::where('project_id', $project->project_id)
+            ->where('assessment_id', $idB)
+            ->where('status', 'COMPLETE')
+            ->with(['score.maturityLevel', 'moduleScope.module'])
+            ->firstOrFail();
+
+        $allDomains = DB::table('domains')
+            ->where('is_operational', true)
+            ->orderBy('display_order')
+            ->get();
+
+        $domainsA = DB::table('domain_scores')
+            ->where('assessment_id', $idA)
+            ->pluck('score', 'domain_id');
+
+        $domainsB = DB::table('domain_scores')
+            ->where('assessment_id', $idB)
+            ->pluck('score', 'domain_id');
+
+        return view('projects.compare', compact('project', 'assessmentA', 'assessmentB', 'allDomains', 'domainsA', 'domainsB'));
+    }
+}
