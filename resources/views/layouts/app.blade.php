@@ -68,6 +68,26 @@
                 :active="request()->routeIs('team.*')"
             >Team</x-sidebar-nav-item>
 
+            {{-- Notifications bell --}}
+            @php $unreadCount = auth()->user()->unreadNotifications()->count(); @endphp
+            <a href="{{ route('notifications.index') }}"
+               class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100 {{ request()->routeIs('notifications.*') ? 'bg-white/[0.12] text-white' : 'text-white/60 hover:bg-white/[0.07] hover:text-white' }}">
+                <div class="relative flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zm0 16a2 2 0 002-2H8a2 2 0 002 2z"/>
+                    </svg>
+                    @if ($unreadCount > 0)
+                        <span class="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white leading-none">
+                            {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+                        </span>
+                    @endif
+                </div>
+                <span>Notifications</span>
+                @if ($unreadCount > 0)
+                    <span class="ml-auto text-[10px] font-bold text-red-400">{{ $unreadCount }}</span>
+                @endif
+            </a>
+
             <x-sidebar-nav-item
                 href="{{ route('profile.edit') }}"
                 icon="cog-6-tooth"

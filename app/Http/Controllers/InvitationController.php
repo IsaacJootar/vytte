@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMember;
+use App\Notifications\MemberJoinedNotification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Notification;
 
 class InvitationController extends Controller
 {
@@ -68,6 +70,16 @@ class InvitationController extends Controller
 
         $user->update(['active_workspace_id' => $invite->workspace_id]);
         app()->instance('current.workspace', $invite->workspace);
+
+        $admins = WorkspaceMember::where('workspace_id', $invite->workspace_id)
+            ->whereIn('role', ['OWNER', 'ADMIN'])
+            ->where('user_id', '!=', $user->user_id)
+            ->with('user')
+            ->get()
+            ->pluck('user')
+            ->filter();
+
+        Notification::send($admins, new MemberJoinedNotification($user, $invite->workspace));
 
         return redirect()->route('dashboard')
             ->with('success', 'Welcome to '.$invite->workspace->name.'!');

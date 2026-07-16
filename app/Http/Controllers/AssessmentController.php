@@ -7,11 +7,14 @@ use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentTier;
 use App\Models\Project;
+use App\Models\WorkspaceMember;
+use App\Notifications\AssessmentCompletedNotification;
 use App\Services\ScoringService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class AssessmentController extends Controller
 {
@@ -93,6 +96,15 @@ class AssessmentController extends Controller
             ->update(['status' => 'COMPLETED', 'completed_at' => now()]);
 
         app(ScoringService::class)->calculate($assessment);
+
+        $admins = WorkspaceMember::where('workspace_id', app('current.workspace')->workspace_id)
+            ->whereIn('role', ['OWNER', 'ADMIN'])
+            ->with('user')
+            ->get()
+            ->pluck('user')
+            ->filter();
+
+        Notification::send($admins, new AssessmentCompletedNotification($assessment));
 
         return redirect()->route('projects.show', $assessment->project_id)
             ->with('success', 'Assessment submitted.');
