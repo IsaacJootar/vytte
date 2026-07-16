@@ -176,7 +176,7 @@
 
 - PDF export: server-side via `barryvdh/laravel-dompdf` v3.1.2
 - CSV export: all assessments + scores for a project
-- Shareable read-only report link: Laravel signed URL, **currently hardcoded 30 days**
+- Shareable read-only report link: Laravel signed URL, expiry configurable via platform admin (default 30 days — see Module 15)
 - Public shared report view (no auth required, resolves via signed middleware)
 - Tests: PDF content-type, CSV column structure, shared link resolves, expired link rejected, cross-workspace isolation — 16 tests
 
@@ -212,6 +212,26 @@
 
 ---
 
+## Module 15 — Platform Configurability + Dark/Light Theme ✅
+
+**Commit:** `dd3c368` / `c80ebec`
+
+- Dark/light theme toggle — server-rendered via `users.theme` column; `<html class="dark">` set per user; toggle is a POST form reload
+- Full dark mode sweep across every Blade view: user app + admin panel
+- Project search by name — GET `?search=` param, `whereRaw LOWER(name) LIKE LOWER(?)` (works on PostgreSQL and SQLite)
+- Share link expiry — configurable via `PlatformSetting::get('sharing.link_expiry_days', 30)`, no longer hardcoded
+- Plan limits (FREE projects, FREE assessments, PRO projects) — all read from `PlatformSetting`, overridable from admin without a code deploy
+- Payment gateway toggles — Paystack and Flutterwave each independently enabled/disabled from platform admin
+- `FlutterwaveWebhookController` — SHA256 `verif-hash` header validation, `charge.completed` event upgrades workspace plan
+- Flutterwave route added to `routes/web.php` (CSRF-exempt, signature-validated)
+- `config/services.php` + `.env.example` updated with Flutterwave keys
+- Platform admin settings page expanded: Email, Shared Reports, Payment Gateways, Plan Limits sections
+- Test DB switched from Docker PostgreSQL to SQLite in-memory (`phpunit.xml`) — no Docker required to run tests
+- All `ilike` queries replaced with `whereRaw('LOWER(name) LIKE LOWER(?)')` for cross-DB compatibility
+- Tests: `ThemeTest` (4), `ProjectSearchTest` (5), `ConfigurabilityTest` (11) — 231 total passing
+
+---
+
 ## Build sequence summary
 
 ```
@@ -229,6 +249,7 @@
 12 Export            ✅  (7d0ef41)
 13 Platform Admin    ✅  (5a48664)
 14 Billing           ✅  (e3bb111)
+15 Configurability   ✅  (c80ebec)
 ```
 
-**All 14 modules complete — 211 tests passing.**
+**All 15 modules complete — 231 tests passing.**
