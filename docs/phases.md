@@ -250,7 +250,7 @@
 
 ## Module 17 — Progress & Maturity Tracking ✅
 
-**Commit:** TBD
+**Commit:** `54ba7fa`
 
 - Per-project progress page showing all completed assessment runs in chronological order
 - Runs table: #, Date, Module, Maturity Level (L1–L5 + name), Score, Band, View link
@@ -284,7 +284,7 @@
 14 Billing           ✅  (e3bb111)
 15 Configurability   ✅  (c80ebec)
 16 Consent Capture   ✅  (23145b5)
-17 Progress Tracking ✅  (TBD)
+17 Progress Tracking ✅  (54ba7fa)
 ```
 
 **All 17 modules complete — 256 tests passing.**
