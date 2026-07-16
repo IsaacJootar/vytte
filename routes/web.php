@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ModuleLibraryController;
 use App\Http\Controllers\NotificationController;
@@ -29,6 +30,9 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/run', [AssessmentController::class, 'run'])->name('assessments.run');
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
+    Route::get('assessments/{assessment}/export/pdf', [ExportController::class, 'assessmentPdf'])->name('assessments.export.pdf');
+    Route::post('assessments/{assessment}/share', [ExportController::class, 'createShareLink'])->name('assessments.share');
+    Route::get('projects/{project}/export/csv', [ExportController::class, 'projectCsv'])->name('projects.export.csv');
 
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::post('/team/invite', [TeamController::class, 'store'])->name('team.invite');
@@ -52,5 +56,10 @@ Route::middleware('auth')->group(function () {
 
 // Public invitation show (no auth required — shows invite details before accepting)
 Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
+
+// Public shared report (signed URL, no auth required, expires in 30 days)
+Route::get('/reports/{assessment}', [ExportController::class, 'sharedReport'])
+    ->middleware('signed')
+    ->name('reports.shared');
 
 require __DIR__.'/auth.php';

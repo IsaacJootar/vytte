@@ -28,14 +28,54 @@
             </svg>
             {{ $assessment->project?->name }}
         </a>
-        <button onclick="window.print()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v5a2 2 0 002 2h1v1a1 1 0 001 1h8a1 1 0 001-1v-1h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a1 1 0 00-1-1H6a1 1 0 00-1 1zm2 0h6v3H7V4zm-1 9a1 1 0 000 2h8a1 1 0 000-2H6zm0-1V9h8v3H6z" clip-rule="evenodd"/>
-            </svg>
-            Print
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+            {{-- PDF export --}}
+            <a href="{{ route('assessments.export.pdf', $assessment) }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+                PDF
+            </a>
+            {{-- Share link --}}
+            <form method="POST" action="{{ route('assessments.share', $assessment) }}" class="inline">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                    <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+                    </svg>
+                    Share
+                </button>
+            </form>
+            {{-- Print --}}
+            <button onclick="window.print()"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v5a2 2 0 002 2h1v1a1 1 0 001 1h8a1 1 0 001-1v-1h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a1 1 0 00-1-1H6a1 1 0 00-1 1zm2 0h6v3H7V4zm-1 9a1 1 0 000 2h8a1 1 0 000-2H6zm0-1V9h8v3H6z" clip-rule="evenodd"/>
+                </svg>
+                Print
+            </button>
+        </div>
     </div>
+
+    {{-- Share link display --}}
+    @if (session('share_link'))
+        <div class="mb-5 p-4 bg-vytte-50 border border-vytte-200 rounded-xl no-print" x-data>
+            <p class="text-sm font-semibold text-vytte-900 mb-2">Shareable report link (expires in 30 days):</p>
+            <div class="flex items-center gap-2">
+                <input type="text" value="{{ session('share_link') }}" readonly
+                       class="flex-1 text-xs font-mono bg-white border border-vytte-200 rounded-lg px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-vytte-500"
+                       x-ref="shareUrl"
+                       @click="$refs.shareUrl.select()">
+                <button @click="navigator.clipboard.writeText($refs.shareUrl.value); $el.textContent = 'Copied!'"
+                        class="text-xs font-semibold px-3 py-2 bg-vytte-700 text-white rounded-lg hover:bg-vytte-800 transition-colors flex-shrink-0">
+                    Copy
+                </button>
+            </div>
+            <p class="text-xs text-vytte-700 mt-1.5">Anyone with this link can view the report — no login required.</p>
+        </div>
+    @endif
 
     {{-- Header --}}
     <div class="mb-1">

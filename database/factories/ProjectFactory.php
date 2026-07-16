@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,6 +19,7 @@ class ProjectFactory extends Factory
             'name' => fake()->words(3, true),
             'description' => fake()->optional()->sentence(),
             'status' => 'ACTIVE',
+            'owner_user_id' => User::factory(),
         ];
     }
 }

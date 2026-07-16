@@ -77,17 +77,28 @@
 
         {{-- Assessments section --}}
         <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 overflow-hidden">
-            <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+            <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between gap-3">
                 <h2 class="text-sm font-bold text-slate-900">Assessments</h2>
-                @if (! $project->isArchived())
-                    <a href="{{ route('assessments.create', $project) }}"
-                       class="inline-flex items-center gap-1 px-3 py-1.5 bg-vytte-700 text-white text-xs font-semibold rounded-lg hover:bg-vytte-800 transition-colors duration-150">
-                        <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/>
-                        </svg>
-                        Start Assessment
-                    </a>
-                @endif
+                <div class="flex items-center gap-2">
+                    @if ($project->assessments->where('status', 'COMPLETE')->isNotEmpty())
+                        <a href="{{ route('projects.export.csv', $project) }}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors duration-150">
+                            <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                            CSV
+                        </a>
+                    @endif
+                    @if (! $project->isArchived())
+                        <a href="{{ route('assessments.create', $project) }}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-vytte-700 text-white text-xs font-semibold rounded-lg hover:bg-vytte-800 transition-colors duration-150">
+                            <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/>
+                            </svg>
+                            Start Assessment
+                        </a>
+                    @endif
+                </div>
             </div>
             @if ($project->assessments->isEmpty())
                 <div class="px-5 py-10 flex flex-col items-center text-center">
