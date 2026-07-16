@@ -15,7 +15,7 @@ class WorkspaceController extends Controller
             ->with('ownerMember.user');
 
         if ($request->filled('search')) {
-            $query->where('name', 'ilike', '%'.$request->search.'%');
+            $query->whereRaw('LOWER(name) LIKE LOWER(?)', ['%'.$request->search.'%']);
         }
 
         if ($request->filled('plan')) {
