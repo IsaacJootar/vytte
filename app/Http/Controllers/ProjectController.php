@@ -81,6 +81,7 @@ class ProjectController extends Controller
             'targets.category',
             'owner',
             'assessments.moduleScope.module',
+            'assessments.score',
         ]);
 
         return view('projects.show', compact('project'));

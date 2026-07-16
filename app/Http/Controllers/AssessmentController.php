@@ -7,6 +7,7 @@ use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentTier;
 use App\Models\Project;
+use App\Services\ScoringService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,6 +91,8 @@ class AssessmentController extends Controller
 
         AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
             ->update(['status' => 'COMPLETED', 'completed_at' => now()]);
+
+        app(ScoringService::class)->calculate($assessment);
 
         return redirect()->route('projects.show', $assessment->project_id)
             ->with('success', 'Assessment submitted.');

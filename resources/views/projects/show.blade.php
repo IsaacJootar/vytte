@@ -132,14 +132,39 @@
                                     </p>
                                 </div>
                             </div>
-                            <div class="flex-shrink-0 ml-4">
-                                @if ($assessment->status !== 'COMPLETE')
+                            <div class="flex-shrink-0 ml-4 flex items-center gap-3">
+                                @if ($assessment->status === 'COMPLETE')
+                                    @php
+                                        $scoreRecord = $assessment->score;
+                                        $overallScore = $scoreRecord ? (float) $scoreRecord->overall_score : null;
+                                        $band = match (true) {
+                                            $overallScore === null => 'uncalibrated',
+                                            $overallScore >= 70.0  => 'strong',
+                                            $overallScore >= 45.0  => 'moderate',
+                                            default                => 'weak',
+                                        };
+                                        $pillClass = match ($band) {
+                                            'strong'       => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                            'moderate'     => 'bg-amber-50 text-amber-700 border-amber-200',
+                                            'weak'         => 'bg-red-50 text-red-700 border-red-200',
+                                            default        => 'bg-slate-100 text-slate-400 border-slate-200',
+                                        };
+                                    @endphp
+                                    @if ($overallScore !== null)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border {{ $pillClass }}">
+                                            {{ number_format($overallScore, 1) }}
+                                            <span class="font-normal capitalize">{{ $band }}</span>
+                                        </span>
+                                    @elseif ($scoreRecord && $scoreRecord->calibration_status === 'NOT_CALIBRATED')
+                                        <span class="text-xs text-slate-400 italic">Not yet calibrated</span>
+                                    @else
+                                        <span class="text-xs text-slate-400">Scoring…</span>
+                                    @endif
+                                @else
                                     <a href="{{ route('assessments.run', $assessment) }}"
                                        class="text-sm font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
                                         Continue →
                                     </a>
-                                @else
-                                    <span class="text-xs text-slate-400">Score pending</span>
                                 @endif
                             </div>
                         </div>
