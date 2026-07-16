@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\ModuleLibraryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -26,9 +28,20 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
 
+    Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+    Route::post('/team/invite', [TeamController::class, 'store'])->name('team.invite');
+    Route::patch('/team/members/{user}/role', [TeamController::class, 'updateRole'])->name('team.role');
+    Route::delete('/team/members/{user}', [TeamController::class, 'destroy'])->name('team.destroy');
+    Route::delete('/team/invitations/{invitation}', [TeamController::class, 'cancelInvite'])->name('team.invite.cancel');
+
+    Route::get('/invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Public invitation show (no auth required — shows invite details before accepting)
+Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 
 require __DIR__.'/auth.php';

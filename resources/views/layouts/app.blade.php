@@ -63,6 +63,12 @@
             >Modules</x-sidebar-nav-item>
 
             <x-sidebar-nav-item
+                href="{{ route('team.index') }}"
+                icon="users"
+                :active="request()->routeIs('team.*')"
+            >Team</x-sidebar-nav-item>
+
+            <x-sidebar-nav-item
                 href="{{ route('profile.edit') }}"
                 icon="cog-6-tooth"
                 :active="request()->routeIs('profile.*') || request()->routeIs('settings.*')"
