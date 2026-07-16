@@ -267,7 +267,7 @@
 
 ## Module 18 — UI Localization Infrastructure ✅
 
-**Commit:** TBD
+**Commit:** `4b7417f`
 
 - `locale` column on `users` table (string, default 'en')
 - `lang/en/runner.php` + `lang/fr/runner.php` — 18 translation keys covering all assessment runner UI strings
@@ -300,7 +300,7 @@
 15 Configurability   ✅  (c80ebec)
 16 Consent Capture   ✅  (23145b5)
 17 Progress Tracking ✅  (54ba7fa)
-18 UI Localization    ✅  (TBD)
+18 UI Localization    ✅  (4b7417f)
 ```
 
 **All 18 modules complete — 267 tests passing.**
