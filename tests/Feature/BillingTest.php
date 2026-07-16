@@ -134,6 +134,7 @@ class BillingTest extends TestCase
                 'target_name' => 'Test Target',
                 'target_type_code' => 'COMMUNITY',
                 'category_id' => TargetCategory::value('category_id'),
+                'country' => 'Nigeria',
             ]);
 
         $response->assertRedirect();
@@ -173,6 +174,7 @@ class BillingTest extends TestCase
                 'target_name' => 'Test Target',
                 'target_type_code' => 'COMMUNITY',
                 'category_id' => TargetCategory::value('category_id'),
+                'country' => 'Nigeria',
             ])
             ->assertRedirect();
 

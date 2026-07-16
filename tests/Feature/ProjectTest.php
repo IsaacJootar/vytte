@@ -89,8 +89,9 @@ class ProjectTest extends TestCase
             'target_name' => 'Ikeja PHC',
             'target_type_code' => 'HEALTH_FACILITY',
             'category_id' => $categoryId,
-            'state' => 'Lagos',
-            'lga' => 'Ikeja',
+            'country' => 'Nigeria',
+            'region' => 'Lagos',
+            'sub_region' => 'Ikeja',
         ])->assertRedirect();
 
         $project = Project::first();
@@ -103,8 +104,32 @@ class ProjectTest extends TestCase
         $this->assertNotNull($target);
         $this->assertEquals('Ikeja PHC', $target->name);
         $this->assertEquals('HEALTH_FACILITY', $target->target_type_code);
-        $this->assertEquals('Lagos', $target->state);
+        $this->assertEquals('Nigeria', $target->country);
+        $this->assertEquals('Lagos', $target->region);
+        $this->assertEquals('Ikeja', $target->sub_region);
         $this->assertEquals($workspace->workspace_id, $target->owner_workspace_id);
+    }
+
+    public function test_store_creates_non_nigeria_target(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $this->seedReferenceData();
+
+        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
+
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Nairobi Assessment',
+            'target_name' => 'Westlands Community',
+            'target_type_code' => 'COMMUNITY',
+            'category_id' => $categoryId,
+            'country' => 'Kenya',
+            'region' => 'Nairobi County',
+        ])->assertRedirect();
+
+        $target = Project::first()->targets->first();
+        $this->assertEquals('Kenya', $target->country);
+        $this->assertEquals('Nairobi County', $target->region);
+        $this->assertNull($target->sub_region);
     }
 
     public function test_store_validates_required_fields(): void
@@ -114,7 +139,7 @@ class ProjectTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('projects.store'), [])
-            ->assertSessionHasErrors(['name', 'target_name', 'target_type_code', 'category_id']);
+            ->assertSessionHasErrors(['name', 'target_name', 'target_type_code', 'category_id', 'country']);
     }
 
     public function test_store_rejects_invalid_target_type(): void

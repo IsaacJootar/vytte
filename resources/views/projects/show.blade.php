@@ -14,7 +14,7 @@
                 $target   = $project->targets->first();
                 $typeName = $target?->targetType?->target_type_name;
                 $catName  = $target?->category?->category_name;
-                $location = collect([$target?->state, $target?->lga])->filter()->implode(' · ');
+                $location = collect([$target?->country, $target?->region, $target?->sub_region])->filter()->implode(' · ');
             @endphp
             @if ($typeName)
                 <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide mb-1">{{ $typeName }}</p>

@@ -128,31 +128,58 @@
                         <x-input-error :messages="$errors->get('target_name')" class="mt-1" />
                     </div>
 
-                    {{-- State + LGA --}}
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <x-input-label for="state" value="State (optional)" />
-                            <x-text-input
-                                id="state"
-                                name="state"
-                                type="text"
-                                class="mt-1 block w-full"
-                                :value="old('state')"
-                                placeholder="e.g. Lagos"
-                            />
-                            <x-input-error :messages="$errors->get('state')" class="mt-1" />
-                        </div>
-                        <div>
-                            <x-input-label for="lga" value="LGA (optional)" />
-                            <x-text-input
-                                id="lga"
-                                name="lga"
-                                type="text"
-                                class="mt-1 block w-full"
-                                :value="old('lga')"
-                                placeholder="e.g. Ikeja"
-                            />
-                            <x-input-error :messages="$errors->get('lga')" class="mt-1" />
+                    {{-- Location section --}}
+                    <div class="pt-1">
+                        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Where is this assessment being carried out?</h3>
+                        <div class="flex flex-col gap-4">
+                            {{-- Country --}}
+                            <div>
+                                <x-input-label for="country" value="Country" />
+                                <select
+                                    id="country"
+                                    name="country"
+                                    class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
+                                    required
+                                >
+                                    <option value="" disabled {{ old('country') ? '' : 'selected' }}>Select country…</option>
+                                    @foreach ($countries as $group => $groupCountries)
+                                        <optgroup label="{{ $group }}">
+                                            @foreach ($groupCountries as $country)
+                                                <option value="{{ $country }}" {{ old('country') === $country ? 'selected' : '' }}>{{ $country }}</option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('country')" class="mt-1" />
+                            </div>
+
+                            {{-- Region + Sub-region --}}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <x-input-label for="region" value="Region (optional)" />
+                                    <x-text-input
+                                        id="region"
+                                        name="region"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                        :value="old('region')"
+                                        placeholder="State / Province / County"
+                                    />
+                                    <x-input-error :messages="$errors->get('region')" class="mt-1" />
+                                </div>
+                                <div>
+                                    <x-input-label for="sub_region" value="Sub-region (optional)" />
+                                    <x-text-input
+                                        id="sub_region"
+                                        name="sub_region"
+                                        type="text"
+                                        class="mt-1 block w-full"
+                                        :value="old('sub_region')"
+                                        placeholder="LGA / District / Municipality"
+                                    />
+                                    <x-input-error :messages="$errors->get('sub_region')" class="mt-1" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

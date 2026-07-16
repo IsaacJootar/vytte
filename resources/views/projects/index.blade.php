@@ -72,7 +72,7 @@
                     $target   = $project->targets->first();
                     $typeName = $target?->targetType?->target_type_name;
                     $catName  = $target?->category?->category_name;
-                    $location = collect([$target?->state, $target?->lga])->filter()->implode(' · ');
+                    $location = collect([$target?->country, $target?->region, $target?->sub_region])->filter()->implode(' · ');
                     $typeIcon = match ($target?->target_type_code) {
                         'HEALTH_FACILITY' => 'building-office-2',
                         'SCHOOL'          => 'academic-cap',
