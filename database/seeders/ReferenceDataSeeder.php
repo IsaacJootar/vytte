@@ -160,6 +160,10 @@ class ReferenceDataSeeder extends Seeder
             ['target_type_code' => 'SCHOOL', 'module_code' => 'MHM', 'module_name' => 'Menstrual Health Management', 'primary_respondent' => 'School Health Focal Teacher · Female Staff Member', 'estimated_duration_minutes' => 15, 'data_collection_methods' => 'Interview'],
             ['target_type_code' => 'COMMUNITY', 'module_code' => 'HIVAW', 'module_name' => 'HIV Awareness & Service Uptake', 'primary_respondent' => 'Community Member', 'estimated_duration_minutes' => 12, 'data_collection_methods' => 'Interview'],
         ]);
+
+        DB::table('assessment_modules')
+            ->where('module_code', 'HIVAW')
+            ->update(['requires_consent' => true]);
     }
 
     private function seedRespondentRoles(): void

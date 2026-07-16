@@ -228,6 +228,8 @@ class AssessmentTest extends TestCase
         $component = Livewire::actingAs($user)
             ->test(AssessmentRunner::class, ['assessment' => $assessment]);
 
+        $component->call('giveConsent');
+
         $firstQuestion = $component->get('questionData')[0];
         $firstOptionId = $firstQuestion['options'][0]['option_id'];
 
@@ -250,6 +252,8 @@ class AssessmentTest extends TestCase
 
         $component = Livewire::actingAs($user)
             ->test(AssessmentRunner::class, ['assessment' => $assessment]);
+
+        $component->call('giveConsent');
 
         $firstQuestion = $component->get('questionData')[0];
         $optionA = $firstQuestion['options'][0]['option_id'];

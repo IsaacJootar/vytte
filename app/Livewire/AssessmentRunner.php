@@ -3,14 +3,18 @@
 namespace App\Livewire;
 
 use App\Models\Assessment;
+use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
 use App\Models\Question;
+use App\Models\RespondentConsent;
 use App\Models\Response;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class AssessmentRunner extends Component
 {
+    public const CONSENT_TEXT = 'This assessment asks questions about health and community topics. Taking part is voluntary. Your answers will be kept anonymous and will not be linked to your name or identity. The information is collected only to improve health services in this area. You can stop at any time, or skip any question you do not wish to answer, without any consequence.';
+
     public Assessment $assessment;
 
     public int $currentIndex = 0;
@@ -23,12 +27,19 @@ class AssessmentRunner extends Component
 
     public bool $isComplete = false;
 
+    public bool $needsConsent = false;
+
+    public bool $consentGiven = false;
+
+    public ?int $consentModuleId = null;
+
     public function mount(Assessment $assessment): void
     {
         $this->assessment = $assessment;
         $this->isComplete = $assessment->status === 'COMPLETE';
         $this->loadQuestions();
         $this->loadExistingResponses();
+        $this->checkConsentRequired();
     }
 
     private function loadQuestions(): void
@@ -73,9 +84,49 @@ class AssessmentRunner extends Component
         }
     }
 
+    private function checkConsentRequired(): void
+    {
+        $scope = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
+            ->where('in_scope', true)
+            ->first();
+
+        if (! $scope) {
+            return;
+        }
+
+        $module = AssessmentModule::find($scope->module_id);
+        $this->needsConsent = $module?->requires_consent ?? false;
+        $this->consentModuleId = $scope->module_id;
+
+        if ($this->needsConsent) {
+            $this->consentGiven = RespondentConsent::where('assessment_id', $this->assessment->assessment_id)->exists();
+        }
+    }
+
+    public function giveConsent(): void
+    {
+        if (! $this->needsConsent || $this->consentGiven || $this->isComplete) {
+            return;
+        }
+
+        RespondentConsent::create([
+            'assessment_id' => $this->assessment->assessment_id,
+            'module_id' => $this->consentModuleId,
+            'consent_text' => self::CONSENT_TEXT,
+            'consented_by' => auth()->user()->user_id,
+            'consented_at' => now(),
+        ]);
+
+        $this->consentGiven = true;
+    }
+
     public function selectOption(string $questionId, int $optionId): void
     {
         if ($this->isComplete) {
+            return;
+        }
+
+        if ($this->needsConsent && ! $this->consentGiven) {
             return;
         }
 

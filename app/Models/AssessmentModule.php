@@ -20,10 +20,12 @@ class AssessmentModule extends Model
         'estimated_duration_minutes',
         'data_collection_methods',
         'is_active',
+        'requires_consent',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'requires_consent' => 'boolean',
     ];
 
     public function targetType(): BelongsTo
