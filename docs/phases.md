@@ -296,6 +296,30 @@
 
 ---
 
+## Module 20 — Public Respondent Runner ✅
+
+**Commit:** TBD
+
+- `assessment_respondent_tokens` table — `char(32)` PK token, FK to assessments, optional `expires_at`
+- `AssessmentRespondentToken` model — no auto-increment, string PK, belongs to Assessment
+- Migration: `respondent_consents.consented_by` made nullable; `respondent_session_id VARCHAR(36)` added — enables anonymous consent tracking
+- Migration: dropped FK constraint from `responses.respondent_id` — allows session-UUID respondent IDs (not linked to `respondents` table)
+- `RespondentLinkController::store()` — authenticated; verifies workspace ownership; creates token; flashes URL back to project page
+- Route: `POST assessments/{assessment}/respondent-link` (auth) + `GET /respond/{token}` (public)
+- `resources/views/respondent/run.blade.php` — minimal public layout (no sidebar, just Vytte header + Livewire)
+- `PublicRespondentRunner` Livewire component — full state machine: invalid token → closed → submitted → language selection → consent → questions
+  - Token validated on mount; session-namespaced respondent UUID generated and persisted
+  - Language selection: shows only locales with ≥1 real translation for the module (auto-detects from `question_translations`)
+  - Defaults to English only if no translations exist (language screen skipped entirely)
+  - Consent: creates `respondent_consents` record with `consented_by = null` and `respondent_session_id`
+  - Responses saved with `respondent_id = {session UUID}` (separate from authenticated-runner `respondent_id = null` responses)
+  - Submit: marks session key; shows thank-you screen
+- `projects/show.blade.php` — "Share link" button on IN_PROGRESS assessments; respondent link shown in copy-to-clipboard banner after generation
+- `AssessmentRunner` fixes: `checkConsentRequired()` now scoped to `consented_by = auth()->id()`; `selectOption()` re-verifies consent from DB on every write (not cached `$consentGiven`)
+- 13 new tests in `PublicRespondentRunnerTest` — 290 total passing
+
+---
+
 ## Build sequence summary
 
 ```
@@ -318,6 +342,7 @@
 17 Progress Tracking ✅  (54ba7fa)
 18 UI Localization    ✅  (4b7417f)
 19 Q. Translation     ✅  (8ec1a35)
+20 Public Respondent  ✅  (TBD)
 ```
 
-**All 19 modules complete — 276 tests passing.**
+**All 20 modules complete — 290 tests passing.**

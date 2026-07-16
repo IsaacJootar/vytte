@@ -17,6 +17,7 @@ class RespondentConsent extends Model
     protected $fillable = [
         'assessment_id',
         'module_id',
+        'respondent_session_id',
         'consent_text',
         'consented_by',
         'consented_at',

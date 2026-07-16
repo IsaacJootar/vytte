@@ -120,7 +120,9 @@ class AssessmentRunner extends Component
         $this->consentModuleId = $scope->module_id;
 
         if ($this->needsConsent) {
-            $this->consentGiven = RespondentConsent::where('assessment_id', $this->assessment->assessment_id)->exists();
+            $this->consentGiven = RespondentConsent::where('assessment_id', $this->assessment->assessment_id)
+                ->where('consented_by', auth()->id())
+                ->exists();
         }
     }
 
@@ -147,8 +149,13 @@ class AssessmentRunner extends Component
             return;
         }
 
-        if ($this->needsConsent && ! $this->consentGiven) {
-            return;
+        if ($this->needsConsent) {
+            $hasConsent = RespondentConsent::where('assessment_id', $this->assessment->assessment_id)
+                ->where('consented_by', auth()->id())
+                ->exists();
+            if (! $hasConsent) {
+                return;
+            }
         }
 
         Response::updateOrCreate(

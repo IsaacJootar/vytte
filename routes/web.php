@@ -9,18 +9,19 @@ use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
-use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ModuleLibraryController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectProgressController;
+use App\Http\Controllers\RespondentLinkController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserPreferenceController;
 use App\Http\Controllers\WorkspaceSettingsController;
@@ -49,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
     Route::get('assessments/{assessment}/export/pdf', [ExportController::class, 'assessmentPdf'])->name('assessments.export.pdf');
     Route::post('assessments/{assessment}/share', [ExportController::class, 'createShareLink'])->name('assessments.share');
+    Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');
     Route::get('projects/{project}/export/csv', [ExportController::class, 'projectCsv'])->name('projects.export.csv');
 
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
@@ -117,5 +119,10 @@ Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name(
 Route::get('/reports/{assessment}', [ExportController::class, 'sharedReport'])
     ->middleware('signed')
     ->name('reports.shared');
+
+// Public respondent runner (token-based, no auth required)
+Route::get('/respond/{token}', function (string $token) {
+    return view('respondent.run', compact('token'));
+})->name('respondent.show');
 
 require __DIR__.'/auth.php';

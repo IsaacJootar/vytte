@@ -44,6 +44,22 @@
         </div>
     @endif
 
+    @if (session('respondent_link'))
+        <div x-data="{ copied: false }" class="mb-5 px-4 py-4 bg-vytte-50 dark:bg-vytte-900/20 border border-vytte-200 dark:border-vytte-800 rounded-xl">
+            <p class="text-xs font-bold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide mb-2">Respondent link created</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Share this link with respondents. They can open it on any device, no login required.</p>
+            <div class="flex items-center gap-2">
+                <code class="flex-1 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-300 truncate">{{ session('respondent_link') }}</code>
+                <button
+                    x-on:click="navigator.clipboard.writeText('{{ session('respondent_link') }}').then(() => { copied = true; setTimeout(() => copied = false, 2000) })"
+                    class="flex-shrink-0 px-3 py-2 text-xs font-semibold text-vytte-700 dark:text-vytte-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                    <span x-show="!copied">Copy</span>
+                    <span x-show="copied" x-cloak>Copied!</span>
+                </button>
+            </div>
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         {{-- Target info card --}}
@@ -183,6 +199,13 @@
                                         View →
                                     </a>
                                 @else
+                                    <form method="POST" action="{{ route('assessments.respondent-link', $assessment) }}">
+                                        @csrf
+                                        <button type="submit"
+                                                class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+                                            Share link
+                                        </button>
+                                    </form>
                                     <a href="{{ route('assessments.run', $assessment) }}"
                                        class="text-sm font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
                                         Continue →
