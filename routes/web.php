@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\GeographicUsageController as AdminGeographicUsageController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\ModuleDomainController as AdminModuleDomainController;
 use App\Http\Controllers\Admin\ModuleImportController;
@@ -81,6 +82,8 @@ Route::middleware('auth')->group(function () {
 // Platform admin routes
 Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('geographic-usage', [AdminGeographicUsageController::class, 'index'])->name('geographic-usage.index');
 
     Route::get('workspaces', [AdminWorkspaceController::class, 'index'])->name('workspaces.index');
     Route::get('workspaces/{workspace}', [AdminWorkspaceController::class, 'show'])->name('workspaces.show');
