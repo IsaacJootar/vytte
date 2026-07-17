@@ -102,6 +102,8 @@ A partial unique index now enforces one staff response per assessment/question o
 
 `public_response_sessions` owns anonymous participation state and is linked to responses and consents by foreign keys. Submitted sessions retain immutable response snapshots and hashes. `respondent_score_results` retains each independently calculated immutable score; `assessment_aggregation_results` retains the final method, threshold, eligible/excluded counts and reasons, exact trace references, calculation hashes, finalizer, and timestamp.
 
+`targets.category_id` is nullable legacy metadata. New project creation uses the setting type and setting name only. Existing category rows remain readable but are not a required global taxonomy or a user-facing creation step.
+
 ### Mutable shared content
 
 Published template versions store their exact content payload. New assessments own immutable content/scoring snapshots, and newly completed assessments own immutable final-report snapshots. Legacy non-template assessments retain a live-content compatibility path and must not be silently rewritten.

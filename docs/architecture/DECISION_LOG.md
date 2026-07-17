@@ -202,6 +202,14 @@ Accepted items below record Isaac's explicit direction; all others remain implem
 - **Boundary:** Arithmetic mean is the only initial method. Weighted mean, median, stratification, consensus, role weighting, and indicator-specific aggregation are postponed. No separate community/respondent report or aggregation subsystem may be introduced.
 - **Operational blocker:** PostgreSQL migration and concurrency parity remain pending because the local Docker/PostgreSQL service is unavailable.
 
+### DEC-021-023: Setting type is sufficient during project creation
+
+- **Status:** Approved by Isaac and implemented, 17 July 2026
+- **Decision:** Project creation asks for a globally understandable setting type and the setting's name. It does not require a region-specific category such as primary or secondary school.
+- **School behavior:** Selecting `School` immediately asks for `School name`; education-level terminology is not inferred or required.
+- **Compatibility:** Existing target-category values remain readable legacy metadata, while `targets.category_id` is optional and new project creation leaves it null.
+- **Boundary:** A future subtype may be introduced only when a specific assessment template genuinely requires it, using plain context-appropriate language and progressive disclosure rather than a mandatory global category field.
+
 ## Approval record
 
 Isaac granted approval on 17 July 2026 to apply every recommendation and correct all recorded gaps. Implementation remains incremental: complete, test, commit, and push each bounded module separately.

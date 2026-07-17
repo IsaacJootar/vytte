@@ -16,7 +16,9 @@
     <aside class="hidden lg:flex lg:flex-col fixed top-0 left-0 bottom-0 w-52 bg-navy z-20">
 
         {{-- Logo --}}
-        <div class="flex items-center gap-2.5 px-3.5 py-[18px] border-b border-white/[0.08]">
+        <a href="{{ route('dashboard') }}"
+           class="flex items-center gap-2.5 px-3.5 py-[18px] border-b border-white/[0.08] hover:bg-white/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-vytte-500"
+           aria-label="Go to dashboard">
             <div class="w-8 h-8 rounded-lg bg-vytte-700 flex items-center justify-center flex-shrink-0">
                 <x-vytte-mark class="w-4 h-4" />
             </div>
@@ -26,7 +28,7 @@
                     {{ auth()->user()->activeWorkspace?->name ?? 'Workspace' }}
                 </div>
             </div>
-        </div>
+        </a>
 
         {{-- Navigation --}}
         <nav class="flex-1 px-2 py-2 flex flex-col gap-px overflow-y-auto">
@@ -99,6 +101,12 @@
                 icon="credit-card"
                 :active="request()->routeIs('billing.*')"
             >Plans &amp; Billing</x-sidebar-nav-item>
+
+            @php $sidebarPlan = auth()->user()->activeWorkspace?->plan ?? 'FREE'; @endphp
+            <div class="mx-1 mt-3 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2">
+                <p class="text-[9px] font-semibold uppercase tracking-wider text-white/35">Current plan</p>
+                <p class="mt-0.5 text-[11px] font-bold text-white/75">{{ ucfirst(strtolower($sidebarPlan)) }}</p>
+            </div>
         </nav>
 
         {{-- User footer --}}

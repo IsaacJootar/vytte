@@ -13,7 +13,6 @@
             @php
                 $target   = $project->targets->first();
                 $typeName = $target?->targetType?->target_type_name;
-                $catName  = $target?->category?->category_name;
                 $location = collect([$target?->country, $target?->region, $target?->sub_region])->filter()->implode(' · ');
             @endphp
             @if ($typeName)
@@ -75,12 +74,6 @@
                         <span class="text-slate-400 dark:text-slate-500 text-xs">Type</span>
                         <p class="font-medium text-slate-700 dark:text-slate-200">{{ $typeName ?? '—' }}</p>
                     </div>
-                    @if ($catName)
-                        <div>
-                            <span class="text-slate-400 dark:text-slate-500 text-xs">Category</span>
-                            <p class="font-medium text-slate-700 dark:text-slate-200">{{ $catName }}</p>
-                        </div>
-                    @endif
                     @if ($location)
                         <div>
                             <span class="text-slate-400 dark:text-slate-500 text-xs">Location</span>

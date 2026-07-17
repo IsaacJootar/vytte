@@ -10,13 +10,12 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Project::with(['targets.targetType', 'targets.category'])->latest();
+        $query = Project::with(['targets.targetType'])->latest();
 
         if ($request->filled('search')) {
             $query->whereRaw('LOWER(name) LIKE LOWER(?)', ['%'.$request->search.'%']);
@@ -29,18 +28,16 @@ class ProjectController extends Controller
 
     public function create(): View
     {
-        $targetTypes = TargetType::with('categories')->get();
-
-        $categoriesByType = $targetTypes->mapWithKeys(fn ($type) => [
-            $type->target_type_code => $type->categories->map(fn ($cat) => [
-                'category_id' => $cat->category_id,
-                'category_name' => $cat->category_name,
-            ])->values(),
-        ]);
+        $targetTypes = TargetType::query()
+            ->leftJoin('target_type_setting_map as setting_map', 'setting_map.target_type_code', '=', 'target_types.target_type_code')
+            ->leftJoin('setting_types', 'setting_types.setting_type_code', '=', 'setting_map.setting_type_code')
+            ->orderBy('setting_types.display_order')
+            ->select('target_types.*')
+            ->get();
 
         $countries = $this->countries();
 
-        return view('projects.create', compact('targetTypes', 'categoriesByType', 'countries'));
+        return view('projects.create', compact('targetTypes', 'countries'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -57,12 +54,6 @@ class ProjectController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'target_name' => ['required', 'string', 'max:255'],
             'target_type_code' => ['required', 'string', 'exists:target_types,target_type_code'],
-            'category_id' => [
-                'required',
-                'integer',
-                Rule::exists('target_categories', 'category_id')
-                    ->where(fn ($query) => $query->where('target_type_code', $request->input('target_type_code'))),
-            ],
             'custom_setting_label' => ['nullable', 'required_if:target_type_code,CUSTOM', 'string', 'max:120'],
             'uses_departments' => ['nullable', 'boolean'],
             'country' => ['required', 'string', 'max:100'],
@@ -80,7 +71,7 @@ class ProjectController extends Controller
             $target = Target::create([
                 'target_type_code' => $validated['target_type_code'],
                 'name' => $validated['target_name'],
-                'category_id' => $validated['category_id'],
+                'category_id' => null,
                 'custom_setting_label' => $validated['custom_setting_label'] ?? null,
                 'uses_departments' => $validated['target_type_code'] === 'CUSTOM'
                     ? (bool) ($validated['uses_departments'] ?? false)
@@ -107,7 +98,6 @@ class ProjectController extends Controller
         $this->authorize('view', $project);
         $project->load([
             'targets.targetType',
-            'targets.category',
             'owner',
             'assessments.moduleScope.module',
             'assessments.score',

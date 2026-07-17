@@ -1,5 +1,26 @@
 # Architecture Remediation Progress
 
+## Module 20 — Universal setting creation
+
+**Status:** Complete locally
+
+**Resolved:**
+
+- The sidebar logo now returns to Dashboard.
+- The current Free, Pro, or Agency plan is displayed beneath the final sidebar link instead of in the logo area.
+- Project creation uses one globally understandable setting type followed by the setting name.
+- School creation asks only for `School name`; primary/secondary classifications and the global Category field are removed from creation and project displays.
+- `targets.category_id` is optional for new records while existing category data remains readable for compatibility.
+- Setting types retain their governed product order.
+
+**Verification:**
+
+- Project, billing, taxonomy, template, and assessment focused suite: 66 tests, 180 assertions, all passed.
+- Full regression suite: 376 tests, 925 assertions, all passed.
+- Local SQLite migration applied without changing existing category values.
+- Clean migration rollback/reapply cycle and complete seed: passed.
+- Production Vite frontend build: passed.
+
 ## Module 19 — UI review and local migration recovery
 
 **Status:** Complete locally

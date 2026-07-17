@@ -101,7 +101,8 @@ class BillingTest extends TestCase
         $this->actingAs($user)
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSeeInOrder(['Settings', 'Plans &amp; Billing'], false);
+            ->assertSeeInOrder(['Settings', 'Plans &amp; Billing', 'Current plan'], false)
+            ->assertSee('aria-label="Go to dashboard"', false);
     }
 
     public function test_billing_page_shows_current_plan(): void

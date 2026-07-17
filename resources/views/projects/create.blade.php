@@ -12,18 +12,13 @@
             Projects
         </a>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">New Project</h1>
-        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Name the project and add the facility, school, or community being assessed.</p>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Name the project and the setting being assessed.</p>
     </div>
 
     <form method="POST" action="{{ route('projects.store') }}"
           x-data="{
               targetType: '{{ old('target_type_code', '') }}',
-              categories: {{ json_encode(old('target_type_code') ? ($categoriesByType[old('target_type_code')] ?? []) : []) }},
-              allCategories: {{ $categoriesByType->toJson() }},
-              loading: false,
-              onTypeChange() {
-                  this.categories = this.allCategories[this.targetType] ?? [];
-              }
+              loading: false
           }">
         @csrf
 
@@ -68,7 +63,7 @@
             {{-- ===== SECTION 2 — Target details ===== --}}
             <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
                 <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">What are you assessing?</h2>
-                <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">The specific facility, school, or community this project is diagnosing.</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Choose the kind of setting, then enter its name.</p>
 
                 <div class="flex flex-col gap-4">
                     {{-- Target type --}}
@@ -79,7 +74,6 @@
                             name="target_type_code"
                             class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
                             x-model="targetType"
-                            x-on:change="onTypeChange()"
                             required
                         >
                             <option value="" disabled>Select type…</option>
@@ -91,27 +85,6 @@
                             @endforeach
                         </select>
                         <x-input-error :messages="$errors->get('target_type_code')" class="mt-1" />
-                    </div>
-
-                    {{-- Category — filtered by type --}}
-                    <div x-show="targetType !== ''" x-transition.opacity.duration.150ms>
-                        <x-input-label for="category_id" value="Category" />
-                        <select
-                            id="category_id"
-                            name="category_id"
-                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
-                            required
-                        >
-                            <option value="" disabled selected>Select category…</option>
-                            <template x-for="cat in categories" :key="cat.category_id">
-                                <option
-                                    :value="cat.category_id"
-                                    :selected="cat.category_id == {{ old('category_id', 'null') }}"
-                                    x-text="cat.category_name"
-                                ></option>
-                            </template>
-                        </select>
-                        <x-input-error :messages="$errors->get('category_id')" class="mt-1" />
                     </div>
 
                     <div x-show="targetType === 'CUSTOM'" x-cloak>
@@ -135,17 +108,20 @@
 
                     {{-- Target name --}}
                     <div>
-                        <x-input-label for="target_name" value="Name" />
+                        <label for="target_name" class="block text-sm font-medium text-slate-700 dark:text-slate-300"
+                               x-text="targetType === 'SCHOOL' ? 'School name' : (targetType === 'HEALTH_FACILITY' ? 'Health facility name' : 'Setting name')">
+                            Setting name
+                        </label>
                         <x-text-input
                             id="target_name"
                             name="target_name"
                             type="text"
                             class="mt-1 block w-full"
                             :value="old('target_name')"
-                            placeholder="e.g. Ikeja Primary Health Centre"
+                            x-bind:placeholder="targetType === 'SCHOOL' ? 'e.g. Sunrise Academy' : (targetType === 'HEALTH_FACILITY' ? 'e.g. Ikeja Health Centre' : 'Enter the official name')"
                             required
                         />
-                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">The official name of this specific facility, school, or community.</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Use the official or commonly recognized name.</p>
                         <x-input-error :messages="$errors->get('target_name')" class="mt-1" />
                     </div>
 

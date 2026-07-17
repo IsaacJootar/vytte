@@ -71,7 +71,6 @@
                 @php
                     $target   = $project->targets->first();
                     $typeName = $target?->targetType?->target_type_name;
-                    $catName  = $target?->category?->category_name;
                     $location = collect([$target?->country, $target?->region, $target?->sub_region])->filter()->implode(' · ');
                     $typeIcon = match ($target?->target_type_code) {
                         'HEALTH_FACILITY' => 'building-office-2',
@@ -113,11 +112,8 @@
                         @endif
                         <h2 class="text-sm font-bold text-slate-900 dark:text-white leading-snug">{{ $project->name }}</h2>
 
-                        {{-- Category + location --}}
+                        {{-- Location --}}
                         <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-400 dark:text-slate-500">
-                            @if ($catName)
-                                <span>{{ $catName }}</span>
-                            @endif
                             @if ($location)
                                 <span class="flex items-center gap-0.5">
                                     <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
