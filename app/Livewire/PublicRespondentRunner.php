@@ -13,16 +13,20 @@ use App\Models\RespondentConsent;
 use App\Models\Response;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class PublicRespondentRunner extends Component
 {
     public const CONSENT_TEXT = 'This assessment asks questions about health and community topics. Taking part is voluntary. Your answers will be kept anonymous and will not be linked to your name or identity. The information is collected only to improve health services in this area. You can stop at any time, or skip any question you do not wish to answer, without any consequence.';
 
+    #[Locked]
     public string $token = '';
 
+    #[Locked]
     public string $assessmentId = '';
 
+    #[Locked]
     public int $moduleId = 0;
 
     public bool $tokenValid = true;
@@ -31,6 +35,7 @@ class PublicRespondentRunner extends Component
 
     public bool $isSubmitted = false;
 
+    #[Locked]
     public string $respondentId = '';
 
     public array $availableLocales = [];
@@ -122,6 +127,10 @@ class PublicRespondentRunner extends Component
 
     public function selectLocale(string $locale): void
     {
+        if (! $this->hasValidPublicContext()) {
+            return;
+        }
+
         $allowed = array_column($this->availableLocales, 'code');
 
         if (! in_array($locale, $allowed, true)) {
@@ -139,6 +148,10 @@ class PublicRespondentRunner extends Component
 
     public function giveConsent(): void
     {
+        if (! $this->hasValidPublicContext()) {
+            return;
+        }
+
         if (! $this->needsConsent || $this->consentGiven || $this->moduleId === 0) {
             return;
         }
@@ -159,7 +172,21 @@ class PublicRespondentRunner extends Component
 
     public function selectOption(string $questionId, int $optionId): void
     {
+        if (! $this->hasValidPublicContext()) {
+            return;
+        }
+
         if ($this->isSubmitted || $this->assessmentClosed) {
+            return;
+        }
+
+        $validSelection = Question::where('question_id', $questionId)
+            ->where('module_id', $this->moduleId)
+            ->where('is_active', true)
+            ->whereHas('options', fn ($query) => $query->where('option_id', $optionId))
+            ->exists();
+
+        if (! $validSelection) {
             return;
         }
 
@@ -195,6 +222,10 @@ class PublicRespondentRunner extends Component
 
     public function goToQuestion(int $index): void
     {
+        if (! $this->hasValidPublicContext()) {
+            return;
+        }
+
         $this->currentIndex = max(0, min($index, count($this->questionData) - 1));
     }
 
@@ -219,6 +250,10 @@ class PublicRespondentRunner extends Component
 
     public function submit(): void
     {
+        if (! $this->hasValidPublicContext()) {
+            return;
+        }
+
         if ($this->isSubmitted || $this->assessmentClosed || ! $this->canSubmit()) {
             return;
         }
@@ -306,6 +341,25 @@ class PublicRespondentRunner extends Component
         }
 
         return $locales;
+    }
+
+    private function hasValidPublicContext(): bool
+    {
+        if ($this->token === '' || $this->assessmentId === '' || $this->respondentId === '') {
+            return false;
+        }
+
+        $tokenRecord = AssessmentRespondentToken::where('token', $this->token)
+            ->where('assessment_id', $this->assessmentId)
+            ->first();
+
+        if (! $tokenRecord || ($tokenRecord->expires_at && $tokenRecord->expires_at->isPast())) {
+            return false;
+        }
+
+        $assessment = Assessment::find($this->assessmentId);
+
+        return $assessment !== null && $assessment->status !== 'COMPLETE';
     }
 
     public function render(): View

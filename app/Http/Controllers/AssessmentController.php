@@ -36,11 +36,24 @@ class AssessmentController extends Controller
     {
         $target = $project->targets->first();
 
-        $modules = $target
-            ? AssessmentModule::where('target_type_code', $target->target_type_code)->get()
+        $defaultModuleIds = $target
+            ? DB::table('target_category_default_modules')
+                ->where('category_id', $target->category_id)
+                ->pluck('module_id')
+                ->toArray()
+            : [];
+
+        $allModules = $target
+            ? AssessmentModule::where('target_type_code', $target->target_type_code)
+                ->where('is_active', true)
+                ->orderBy('module_code')
+                ->get()
             : collect();
 
-        return view('assessments.create', compact('project', 'modules'));
+        $defaultModules = $allModules->whereIn('module_id', $defaultModuleIds)->values();
+        $extraModules = $allModules->whereNotIn('module_id', $defaultModuleIds)->values();
+
+        return view('assessments.create', compact('project', 'defaultModules', 'extraModules', 'defaultModuleIds'));
     }
 
     public function store(Request $request, Project $project): RedirectResponse
@@ -52,44 +65,98 @@ class AssessmentController extends Controller
                 ->with('limit_error', 'You have reached the assessment limit for this project on your current plan. Upgrade to run more assessments.');
         }
 
-        $validated = $request->validate([
-            'module_id' => ['required', 'integer', 'exists:assessment_modules,module_id'],
-        ]);
-
         $target = $project->targets->first();
 
         if (! $target) {
             return back()->with('error', 'This project has no target. Please add a target first.');
         }
 
-        $module = AssessmentModule::find($validated['module_id']);
-        if ($module && str_starts_with((string) $module->module_code, 'HIVAW')) {
-            if (! PlanService::workspaceCanAccess($workspace, 'patient_community_voice_module')) {
-                return back()->with('error', 'The Patient & Community Voice module is not available on your current plan. Upgrade to run community voice assessments.');
+        $request->validate([
+            'modules' => ['required', 'array', 'min:1'],
+            'modules.*' => ['integer', 'exists:assessment_modules,module_id'],
+            'exclusion_reasons' => ['nullable', 'array'],
+            'exclusion_reasons.*' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $selectedIds = collect($request->input('modules', []))->map(fn ($id) => (int) $id);
+        $exclusionReasons = $request->input('exclusion_reasons', []);
+
+        $allowedModuleIds = AssessmentModule::where('target_type_code', $target->target_type_code)
+            ->where('is_active', true)
+            ->whereIn('module_id', $selectedIds->all())
+            ->pluck('module_id')
+            ->map(fn ($id) => (int) $id);
+
+        if ($allowedModuleIds->count() !== $selectedIds->unique()->count()) {
+            return back()
+                ->withErrors(['modules' => 'One or more selected assessment areas are not available for this setting.'])
+                ->withInput();
+        }
+
+        // Community module gate
+        $hasHivaw = AssessmentModule::whereIn('module_id', $selectedIds->toArray())
+            ->where('module_code', 'LIKE', 'HIVAW%')
+            ->exists();
+        if ($hasHivaw && ! PlanService::workspaceCanAccess($workspace, 'patient_community_voice_module')) {
+            return back()->with('error', 'The Patient & Community Voice module is not available on your current plan. Upgrade to run community voice assessments.');
+        }
+
+        $defaultModuleIds = DB::table('target_category_default_modules')
+            ->where('category_id', $target->category_id)
+            ->pluck('module_id')
+            ->map(fn ($id) => (int) $id);
+
+        // Deselected defaults must have an exclusion reason
+        $deselectedIds = $defaultModuleIds->diff($selectedIds);
+        foreach ($deselectedIds as $moduleId) {
+            if (empty(trim($exclusionReasons[$moduleId] ?? ''))) {
+                return back()
+                    ->withErrors(['exclusion_reasons' => 'Please explain why each excluded module is not being assessed.'])
+                    ->withInput();
             }
         }
 
+        // scope_type: FULL_TARGET only when selected set exactly matches category defaults
+        $selectedSorted = $selectedIds->sort()->values()->toArray();
+        $defaultSorted = $defaultModuleIds->sort()->values()->toArray();
+        $scopeType = ($selectedSorted === $defaultSorted) ? 'FULL_TARGET' : 'MODULE_PICKER';
+
         $tier = AssessmentTier::where('tier_code', 'TIER_1')->first();
 
-        $assessment = DB::transaction(function () use ($validated, $project, $target, $tier) {
+        $assessment = DB::transaction(function () use ($project, $target, $tier, $scopeType, $selectedIds, $deselectedIds, $defaultModuleIds, $exclusionReasons) {
             $assessment = Assessment::create([
                 'target_id' => $target->target_id,
                 'project_id' => $project->project_id,
                 'assessment_tier_id' => $tier->assessment_tier_id,
-                'scope_type' => 'FULL_TARGET',
+                'scope_type' => $scopeType,
                 'status' => 'IN_PROGRESS',
                 'publish_status' => 'DRAFT',
                 'assessor_name' => auth()->user()->name,
                 'started_at' => now(),
             ]);
 
-            AssessmentModuleScope::create([
-                'assessment_id' => $assessment->assessment_id,
-                'module_id' => $validated['module_id'],
-                'in_scope' => true,
-                'is_category_default' => true,
-                'status' => 'PENDING',
-            ]);
+            // In-scope modules (selected)
+            foreach ($selectedIds as $moduleId) {
+                AssessmentModuleScope::create([
+                    'assessment_id' => $assessment->assessment_id,
+                    'module_id' => $moduleId,
+                    'in_scope' => true,
+                    'is_category_default' => $defaultModuleIds->contains($moduleId),
+                    'status' => 'PENDING',
+                ]);
+            }
+
+            // Out-of-scope defaults (deselected with reason)
+            foreach ($deselectedIds as $moduleId) {
+                AssessmentModuleScope::create([
+                    'assessment_id' => $assessment->assessment_id,
+                    'module_id' => $moduleId,
+                    'in_scope' => false,
+                    'is_category_default' => true,
+                    'exclusion_reason' => trim($exclusionReasons[$moduleId]),
+                    'status' => 'EXCLUDED',
+                ]);
+            }
 
             return $assessment;
         });
@@ -121,6 +188,7 @@ class AssessmentController extends Controller
         ]);
 
         AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
+            ->where('in_scope', true)
             ->update(['status' => 'COMPLETED', 'completed_at' => now()]);
 
         app(ScoringService::class)->calculate($assessment);
@@ -153,8 +221,17 @@ class AssessmentController extends Controller
             'score.maturityLevel',
         ]);
 
-        $scope = $assessment->moduleScope->first();
-        $module = $scope?->module;
+        $inScopeScopes = $assessment->moduleScope->where('in_scope', true);
+        $inScopeCount = $inScopeScopes->count();
+        $firstModule = $inScopeScopes->first()?->module;
+
+        $assessmentTitle = $inScopeCount === 1
+            ? ($firstModule?->module_name ?? 'Assessment')
+            : match ($assessment->scope_type) {
+                'FULL_TARGET' => 'Full Assessment',
+                'MODULE_PICKER' => 'Custom Scope',
+                default => 'Assessment',
+            };
 
         $subIndexScores = DB::table('sub_index_scores as sis')
             ->join('sub_indices as si', 'si.sub_index_id', '=', 'sis.sub_index_id')
@@ -173,17 +250,15 @@ class AssessmentController extends Controller
             ->orderBy('d.domain_code')
             ->get();
 
-        $history = collect();
-        if ($module) {
-            $history = Assessment::where('project_id', $assessment->project_id)
-                ->where('status', 'COMPLETE')
-                ->whereHas('moduleScope', fn ($q) => $q->where('module_id', $module->module_id))
-                ->with('score.maturityLevel')
-                ->orderBy('completed_at')
-                ->get();
-        }
+        // History: same scope_type on same project
+        $history = Assessment::where('project_id', $assessment->project_id)
+            ->where('status', 'COMPLETE')
+            ->where('scope_type', $assessment->scope_type)
+            ->with('score.maturityLevel')
+            ->orderBy('completed_at')
+            ->get();
 
-        return view('assessments.results', compact('assessment', 'subIndexScores', 'domainScores', 'history'));
+        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history'));
     }
 
     private function authorizeWorkspace(Assessment $assessment): void

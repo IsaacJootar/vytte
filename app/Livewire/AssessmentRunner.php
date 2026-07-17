@@ -12,12 +12,14 @@ use App\Models\RespondentConsent;
 use App\Models\Response;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\App;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class AssessmentRunner extends Component
 {
     public const CONSENT_TEXT = 'This assessment asks questions about health and community topics. Taking part is voluntary. Your answers will be kept anonymous and will not be linked to your name or identity. The information is collected only to improve health services in this area. You can stop at any time, or skip any question you do not wish to answer, without any consequence.';
 
+    #[Locked]
     public Assessment $assessment;
 
     public int $currentIndex = 0;
@@ -36,9 +38,12 @@ class AssessmentRunner extends Component
 
     public ?int $consentModuleId = null;
 
+    public int $moduleCount = 1;
+
     public function mount(Assessment $assessment): void
     {
         $this->assessment = $assessment;
+        $this->authorizeAssessmentAccess();
         $this->isComplete = $assessment->status === 'COMPLETE';
         $this->loadQuestions();
         $this->loadExistingResponses();
@@ -47,19 +52,41 @@ class AssessmentRunner extends Component
 
     private function loadQuestions(): void
     {
-        $scope = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
+        $scopeRows = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
             ->where('in_scope', true)
-            ->first();
+            ->orderBy('module_id')
+            ->get();
 
-        if (! $scope) {
+        if ($scopeRows->isEmpty()) {
             return;
         }
 
+        $moduleIds = $scopeRows->pluck('module_id')->toArray();
+        $this->moduleCount = count($moduleIds);
+
+        // Load module codes for section headers
+        $moduleCodes = AssessmentModule::whereIn('module_id', $moduleIds)
+            ->pluck('module_code', 'module_id');
+
         $questions = Question::with(['options', 'moduleDomain'])
-            ->where('module_id', $scope->module_id)
+            ->whereIn('module_id', $moduleIds)
             ->where('is_active', true)
-            ->orderBy('display_order')
-            ->get();
+            ->get()
+            ->sort(function (Question $a, Question $b) use ($moduleIds) {
+                $aPos = array_search($a->module_id, $moduleIds);
+                $bPos = array_search($b->module_id, $moduleIds);
+                if ($aPos !== $bPos) {
+                    return $aPos - $bPos;
+                }
+                $aDomain = $a->moduleDomain?->domain_number ?? 0;
+                $bDomain = $b->moduleDomain?->domain_number ?? 0;
+                if ($aDomain !== $bDomain) {
+                    return $aDomain - $bDomain;
+                }
+
+                return $a->display_order - $b->display_order;
+            })
+            ->values();
 
         $locale = App::getLocale();
 
@@ -84,6 +111,8 @@ class AssessmentRunner extends Component
             'question_code' => $q->question_code,
             'question_text' => $questionTranslations->get($q->question_id, $q->question_text),
             'is_scored' => $q->is_scored,
+            'module_id' => $q->module_id,
+            'module_code' => $moduleCodes[$q->module_id] ?? '',
             'domain_label' => $q->moduleDomain?->domain_label ?? '',
             'domain_number' => $q->moduleDomain?->domain_number ?? 0,
             'options' => $q->options->map(fn ($o) => [
@@ -107,17 +136,20 @@ class AssessmentRunner extends Component
 
     private function checkConsentRequired(): void
     {
-        $scope = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
+        $scopeModuleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
             ->where('in_scope', true)
-            ->first();
+            ->pluck('module_id');
 
-        if (! $scope) {
+        if ($scopeModuleIds->isEmpty()) {
             return;
         }
 
-        $module = AssessmentModule::find($scope->module_id);
-        $this->needsConsent = $module?->requires_consent ?? false;
-        $this->consentModuleId = $scope->module_id;
+        $consentModule = AssessmentModule::whereIn('module_id', $scopeModuleIds)
+            ->where('requires_consent', true)
+            ->first();
+
+        $this->needsConsent = $consentModule !== null;
+        $this->consentModuleId = $consentModule?->module_id;
 
         if ($this->needsConsent) {
             $this->consentGiven = RespondentConsent::where('assessment_id', $this->assessment->assessment_id)
@@ -128,6 +160,8 @@ class AssessmentRunner extends Component
 
     public function giveConsent(): void
     {
+        $this->authorizeAssessmentAccess();
+
         if (! $this->needsConsent || $this->consentGiven || $this->isComplete) {
             return;
         }
@@ -145,7 +179,23 @@ class AssessmentRunner extends Component
 
     public function selectOption(string $questionId, int $optionId): void
     {
+        $this->authorizeAssessmentAccess();
+
         if ($this->isComplete) {
+            return;
+        }
+
+        $moduleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
+            ->where('in_scope', true)
+            ->pluck('module_id');
+
+        $validSelection = Question::where('question_id', $questionId)
+            ->whereIn('module_id', $moduleIds)
+            ->where('is_active', true)
+            ->whereHas('options', fn ($query) => $query->where('option_id', $optionId))
+            ->exists();
+
+        if (! $validSelection) {
             return;
         }
 
@@ -181,6 +231,7 @@ class AssessmentRunner extends Component
 
     public function goToQuestion(int $index): void
     {
+        $this->authorizeAssessmentAccess();
         $this->currentIndex = max(0, min($index, count($this->questionData) - 1));
     }
 
@@ -206,5 +257,18 @@ class AssessmentRunner extends Component
     public function render(): View
     {
         return view('livewire.assessment-runner');
+    }
+
+    private function authorizeAssessmentAccess(): void
+    {
+        abort_unless(auth()->check() && app()->bound('current.workspace'), 403);
+
+        $workspaceId = app('current.workspace')->workspace_id;
+        $projectBelongsToWorkspace = $this->assessment->project()
+            ->withoutGlobalScopes()
+            ->where('workspace_id', $workspaceId)
+            ->exists();
+
+        abort_unless($projectBelongsToWorkspace, 404);
     }
 }

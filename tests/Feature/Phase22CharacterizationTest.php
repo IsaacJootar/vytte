@@ -21,6 +21,7 @@ use App\Models\WorkspaceMember;
 use App\Services\ScoringService;
 use Database\Seeders\HivawQuestionsSeeder;
 use Database\Seeders\ReferenceDataSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -98,7 +99,7 @@ class Phase22CharacterizationTest extends TestCase
         return $assessment;
     }
 
-    public function test_current_livewire_mount_does_not_enforce_workspace_boundary(): void
+    public function test_livewire_mount_enforces_workspace_boundary(): void
     {
         [$owner, $workspaceA] = $this->createWorkspaceContext();
         $assessment = $this->createAssessment($workspaceA, $owner);
@@ -107,10 +108,10 @@ class Phase22CharacterizationTest extends TestCase
 
         Livewire::actingAs($otherUser)
             ->test(AssessmentRunner::class, ['assessment' => $assessment])
-            ->assertCount('questionData', 9);
+            ->assertNotFound();
     }
 
-    public function test_current_runner_accepts_option_that_belongs_to_another_question(): void
+    public function test_runner_rejects_option_that_belongs_to_another_question(): void
     {
         [$user, $workspace] = $this->createWorkspaceContext();
         $assessment = $this->createAssessment($workspace, $user);
@@ -125,33 +126,37 @@ class Phase22CharacterizationTest extends TestCase
         $component->call('giveConsent');
         $component->call('selectOption', $questions[0]->question_id, $questions[1]->options->first()->option_id);
 
-        $this->assertDatabaseHas('responses', [
+        $this->assertDatabaseMissing('responses', [
             'assessment_id' => $assessment->assessment_id,
             'question_id' => $questions[0]->question_id,
             'value_option_id' => $questions[1]->options->first()->option_id,
         ]);
     }
 
-    public function test_current_sqlite_schema_allows_duplicate_staff_response_keys(): void
+    public function test_schema_rejects_duplicate_staff_response_keys(): void
     {
         [$user, $workspace] = $this->createWorkspaceContext();
         $assessment = $this->createAssessment($workspace, $user);
         $question = Question::with('options')->orderBy('display_order')->first();
 
-        foreach ($question->options->take(2) as $option) {
-            Response::create([
-                'assessment_id' => $assessment->assessment_id,
-                'question_id' => $question->question_id,
-                'respondent_id' => null,
-                'value_option_id' => $option->option_id,
-                'answered_at' => now(),
-            ]);
-        }
+        $options = $question->options->take(2)->values();
+        Response::create([
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question->question_id,
+            'respondent_id' => null,
+            'value_option_id' => $options[0]->option_id,
+            'answered_at' => now(),
+        ]);
 
-        $this->assertSame(2, Response::where('assessment_id', $assessment->assessment_id)
-            ->where('question_id', $question->question_id)
-            ->whereNull('respondent_id')
-            ->count());
+        $this->expectException(QueryException::class);
+
+        Response::create([
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question->question_id,
+            'respondent_id' => null,
+            'value_option_id' => $options[1]->option_id,
+            'answered_at' => now(),
+        ]);
     }
 
     public function test_current_public_runner_loads_only_first_in_scope_module(): void

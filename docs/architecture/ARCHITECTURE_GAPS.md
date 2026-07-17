@@ -97,3 +97,9 @@ These items require characterization and separate approvals. Template work must 
 - AG-17 is decided directionally: preserve multi-module work only as the comprehensive-path prototype.
 - AG-21 through AG-25 are now directly evidenced by characterization tests. They remain unresolved product/security behaviors and must not be mistaken for desired contracts.
 - AG-41 remains code-evidenced: Paystack is exempted from CSRF and Flutterwave is not. No payment behavior was changed in Phase 22.
+
+## Remediation status
+
+- **Resolved in Module 1:** AG-18, AG-22, AG-23.
+- **Additionally hardened in Module 1:** public Livewire identifiers and mutations now revalidate their token/assessment context; authenticated and public responses validate the question/option relationship.
+- Implementation evidence and test counts are maintained in `IMPLEMENTATION_PROGRESS.md`.

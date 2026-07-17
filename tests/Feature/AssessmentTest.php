@@ -144,7 +144,7 @@ class AssessmentTest extends TestCase
 
         $response = $this->actingAs($user)
             ->post(route('assessments.store', $project), [
-                'module_id' => $module->module_id,
+                'modules' => [$module->module_id],
             ]);
 
         $assessment = Assessment::first();
@@ -153,7 +153,9 @@ class AssessmentTest extends TestCase
         $this->assertEquals($project->project_id, $assessment->project_id);
         $this->assertEquals($target->target_id, $assessment->target_id);
 
-        $scope = AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)->first();
+        $scope = AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
+            ->where('in_scope', true)
+            ->first();
         $this->assertNotNull($scope);
         $this->assertEquals($module->module_id, $scope->module_id);
         $this->assertTrue($scope->in_scope);
@@ -168,7 +170,22 @@ class AssessmentTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('assessments.store', $project), [])
-            ->assertSessionHasErrors(['module_id']);
+            ->assertSessionHasErrors(['modules']);
+    }
+
+    public function test_assessment_store_rejects_module_for_another_target_type(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project] = $this->createProjectWithTarget($workspace, $user);
+        $otherTargetModule = AssessmentModule::where('target_type_code', 'HEALTH_FACILITY')->firstOrFail();
+
+        $this->actingAs($user)
+            ->post(route('assessments.store', $project), [
+                'modules' => [$otherTargetModule->module_id],
+            ])
+            ->assertSessionHasErrors(['modules']);
+
+        $this->assertDatabaseCount('assessments', 0);
     }
 
     // ---- Runner page ----
