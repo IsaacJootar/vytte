@@ -188,23 +188,36 @@ class AssessmentController extends Controller
             ->where('in_scope', true)
             ->pluck('module_id');
 
-        $requiredQuestionIds = Question::whereIn('module_id', $moduleIds)
+        $requiredQuestions = Question::whereIn('module_id', $moduleIds)
             ->where('is_active', true)
             ->where('is_scored', true)
-            ->whereHas('options')
-            ->pluck('question_id');
+            ->with(['options', 'questionType'])
+            ->get();
 
-        $answeredQuestionIds = Response::where('assessment_id', $assessment->assessment_id)
+        $responses = Response::where('assessment_id', $assessment->assessment_id)
             ->whereNull('respondent_id')
-            ->whereIn('question_id', $requiredQuestionIds)
-            ->whereNotNull('value_option_id')
-            ->whereHas('selectedOption', function ($query) {
-                $query->whereColumn('question_options.question_id', 'responses.question_id');
-            })
-            ->distinct()
-            ->pluck('question_id');
+            ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
+            ->with('selectedOption')
+            ->get()
+            ->keyBy('question_id');
 
-        if ($requiredQuestionIds->diff($answeredQuestionIds)->isNotEmpty()) {
+        $hasMissingResponse = $requiredQuestions->contains(function (Question $question) use ($responses) {
+            $response = $responses->get($question->question_id);
+
+            if (! $response) {
+                return true;
+            }
+
+            if ($question->options->isNotEmpty()) {
+                return ! $response->selectedOption
+                    || $response->selectedOption->question_id !== $question->question_id;
+            }
+
+            return $question->questionType?->type_code !== 'OPEN_ENDED'
+                || blank($response->value_text);
+        });
+
+        if ($hasMissingResponse) {
             return redirect()->route('assessments.run', $assessment)
                 ->with('error', 'Please answer every required scored question before submitting.');
         }

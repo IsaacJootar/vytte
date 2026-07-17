@@ -76,13 +76,25 @@
             </div>
         </div>
 
-        @php $q = $questionData[$currentIndex]; @endphp
-
-        {{-- Domain header (show when on first question of a domain) --}}
         @php
-            $prevDomain = $currentIndex > 0 ? $questionData[$currentIndex - 1]['domain_number'] : null;
-            $showDomainHeader = $currentIndex === 0 || $q['domain_number'] !== $prevDomain;
+            $q            = $questionData[$currentIndex];
+            $prevModuleId = $currentIndex > 0 ? ($questionData[$currentIndex - 1]['module_id'] ?? null) : null;
+            $showModuleHeader = $moduleCount > 1 && ($currentIndex === 0 || $q['module_id'] !== $prevModuleId);
+            $prevDomain   = ($showModuleHeader || $currentIndex === 0) ? null : ($questionData[$currentIndex - 1]['domain_number'] ?? null);
+            $showDomainHeader = $prevDomain === null || $q['domain_number'] !== $prevDomain;
         @endphp
+
+        {{-- Module header (shown when assessment spans multiple modules) --}}
+        @if ($showModuleHeader && $q['module_code'])
+            <div class="mb-3 mt-1 flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wide">
+                    {{ $q['module_code'] }}
+                </span>
+                <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+            </div>
+        @endif
+
+        {{-- Domain header --}}
         @if ($showDomainHeader && $q['domain_label'])
             <div class="mb-3 flex items-center gap-2">
                 <span class="w-5 h-5 rounded-full bg-vytte-100 dark:bg-vytte-900/30 text-vytte-700 dark:text-vytte-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
@@ -104,7 +116,15 @@
             @endif
 
             {{-- Answer options --}}
-            @if (! empty($q['options']))
+            @if (($q['response_type'] ?? null) === 'OPEN_ENDED' && empty($q['options']))
+                <textarea
+                    rows="5"
+                    maxlength="5000"
+                    @if ($isComplete) disabled @endif
+                    wire:change="saveText('{{ $q['question_id'] }}', $event.target.value)"
+                    class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 focus:border-vytte-500 focus:ring-vytte-500"
+                    placeholder="Type your answer here...">{{ $savedTextResponses[$q['question_id']] ?? '' }}</textarea>
+            @elseif (! empty($q['options']))
                 <div class="space-y-2">
                     @foreach ($q['options'] as $option)
                         @php $isSelected = ($savedResponses[$q['question_id']] ?? null) === $option['option_id']; @endphp
@@ -196,7 +216,7 @@
                         class="w-7 h-7 rounded-lg text-[11px] font-bold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-vytte-400
                             {{ $idx === $currentIndex
                                 ? 'bg-vytte-700 text-white'
-                                : (isset($savedResponses[$item['question_id']])
+                                : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null)
                                     ? 'bg-vytte-100 dark:bg-vytte-900/30 text-vytte-700 dark:text-vytte-400'
                                     : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600') }}">
                         {{ $idx + 1 }}

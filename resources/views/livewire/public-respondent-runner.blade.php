@@ -129,7 +129,14 @@
         <div class="bg-white rounded-2xl border border-slate-200 p-5 mb-4">
             <p class="text-base font-semibold text-slate-900 leading-snug mb-5">{{ $q['question_text'] }}</p>
 
-            @if (! empty($q['options']))
+            @if (($q['response_type'] ?? null) === 'OPEN_ENDED' && empty($q['options']))
+                <textarea
+                    rows="5"
+                    maxlength="5000"
+                    wire:change="saveText('{{ $q['question_id'] }}', $event.target.value)"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-vytte-500 focus:ring-vytte-500"
+                    placeholder="Type your answer here...">{{ $savedTextResponses[$q['question_id']] ?? '' }}</textarea>
+            @elseif (! empty($q['options']))
                 <div class="space-y-2">
                     @foreach ($q['options'] as $option)
                         @php $isSelected = ($savedResponses[$q['question_id']] ?? null) === $option['option_id']; @endphp
@@ -213,7 +220,7 @@
                         class="w-7 h-7 rounded-lg text-[11px] font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-400
                             {{ $idx === $currentIndex
                                 ? 'bg-vytte-700 text-white'
-                                : (isset($savedResponses[$item['question_id']])
+                                : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null)
                                     ? 'bg-vytte-100 text-vytte-700'
                                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200') }}">
                         {{ $idx + 1 }}

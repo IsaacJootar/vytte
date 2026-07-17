@@ -46,6 +46,11 @@ class Question extends Model
         return $this->belongsTo(AssessmentModule::class, 'module_id', 'module_id');
     }
 
+    public function questionType(): BelongsTo
+    {
+        return $this->belongsTo(QuestionType::class, 'type_id', 'type_id');
+    }
+
     public function moduleDomain(): BelongsTo
     {
         return $this->belongsTo(ModuleDomain::class, 'module_domain_id', 'module_domain_id');

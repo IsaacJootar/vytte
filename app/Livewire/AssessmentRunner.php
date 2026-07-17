@@ -28,6 +28,8 @@ class AssessmentRunner extends Component
 
     public array $savedResponses = [];
 
+    public array $savedTextResponses = [];
+
     public string $lastSavedAt = '';
 
     public bool $isComplete = false;
@@ -68,7 +70,7 @@ class AssessmentRunner extends Component
         $moduleCodes = AssessmentModule::whereIn('module_id', $moduleIds)
             ->pluck('module_code', 'module_id');
 
-        $questions = Question::with(['options', 'moduleDomain'])
+        $questions = Question::with(['options', 'moduleDomain', 'questionType'])
             ->whereIn('module_id', $moduleIds)
             ->where('is_active', true)
             ->get()
@@ -111,6 +113,7 @@ class AssessmentRunner extends Component
             'question_code' => $q->question_code,
             'question_text' => $questionTranslations->get($q->question_id, $q->question_text),
             'is_scored' => $q->is_scored,
+            'response_type' => $q->questionType?->type_code,
             'module_id' => $q->module_id,
             'module_code' => $moduleCodes[$q->module_id] ?? '',
             'domain_label' => $q->moduleDomain?->domain_label ?? '',
@@ -126,11 +129,13 @@ class AssessmentRunner extends Component
     {
         $responses = Response::where('assessment_id', $this->assessment->assessment_id)
             ->whereNull('respondent_id')
-            ->whereNotNull('value_option_id')
             ->get();
 
         foreach ($responses as $response) {
             $this->savedResponses[$response->question_id] = $response->value_option_id;
+            if ($response->value_text !== null) {
+                $this->savedTextResponses[$response->question_id] = $response->value_text;
+            }
         }
     }
 
@@ -235,10 +240,53 @@ class AssessmentRunner extends Component
         $this->currentIndex = max(0, min($index, count($this->questionData) - 1));
     }
 
+    public function saveText(string $questionId, string $value): void
+    {
+        $this->authorizeAssessmentAccess();
+
+        if ($this->isComplete) {
+            return;
+        }
+
+        $moduleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
+            ->where('in_scope', true)
+            ->pluck('module_id');
+        $validQuestion = Question::where('question_id', $questionId)
+            ->whereIn('module_id', $moduleIds)
+            ->where('is_active', true)
+            ->whereHas('questionType', fn ($query) => $query->where('type_code', 'OPEN_ENDED'))
+            ->exists();
+
+        if (! $validQuestion) {
+            return;
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            Response::where('assessment_id', $this->assessment->assessment_id)
+                ->where('question_id', $questionId)
+                ->whereNull('respondent_id')
+                ->delete();
+            unset($this->savedTextResponses[$questionId]);
+
+            return;
+        }
+
+        $value = mb_substr($value, 0, 5000);
+        Response::updateOrCreate(
+            ['assessment_id' => $this->assessment->assessment_id, 'question_id' => $questionId, 'respondent_id' => null],
+            ['value_text' => $value, 'value_option_id' => null, 'answered_at' => now()]
+        );
+        $this->savedTextResponses[$questionId] = $value;
+        $this->lastSavedAt = now()->format('g:i A');
+    }
+
     public function canSubmit(): bool
     {
         foreach ($this->questionData as $q) {
-            if ($q['is_scored'] && ! isset($this->savedResponses[$q['question_id']])) {
+            $answered = isset($this->savedResponses[$q['question_id']])
+                || filled($this->savedTextResponses[$q['question_id']] ?? null);
+            if ($q['is_scored'] && ! $answered) {
                 return false;
             }
         }
@@ -251,6 +299,7 @@ class AssessmentRunner extends Component
         return count(array_filter(
             $this->questionData,
             fn ($q) => isset($this->savedResponses[$q['question_id']])
+                || filled($this->savedTextResponses[$q['question_id']] ?? null)
         ));
     }
 

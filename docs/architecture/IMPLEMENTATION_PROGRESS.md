@@ -27,6 +27,28 @@ Isaac approved correction of all Phase 21/22 gaps on 17 July 2026. Work proceeds
 - Local SQLite migration: passed.
 - PostgreSQL parity: pending restoration of Docker/PostgreSQL.
 
+## Module 5 — Immutable template publishing and open-text responses
+
+**Status:** Complete
+
+**Resolved:**
+
+- Published templates now have immutable version records and versioned module composition.
+- Focused templates require exactly one health domain and one direct assessment scope; grouped modules are rejected.
+- Comprehensive templates require an explicit setting context.
+- Publishing requires source authority and license metadata.
+- Publishing creates a SHA-256 content hash from exact module, question, response-type, option, ordering, and scoring content.
+- AG-21: the initial runnable response contract is enforced at publish time. Scalar options, Likert choices, and true open-ended text are supported; unsupported types cannot publish.
+- Authenticated and public runners now autosave genuine open-ended text responses, while legacy option-based `OPEN_ENDED` content remains compatible.
+- Server-side completion recognizes both valid option responses and required open-text responses.
+
+**Verification:**
+
+- Focused template/runner suite: 36 tests, 80 assertions, all passed.
+- Full suite: 336 tests, 789 assertions, all passed in 73.818 seconds.
+- Local SQLite migration: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 4 — Health taxonomy and setting contexts
 
 **Status:** Complete

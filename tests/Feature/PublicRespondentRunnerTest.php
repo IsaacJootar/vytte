@@ -276,6 +276,28 @@ class PublicRespondentRunnerTest extends TestCase
         ]);
     }
 
+    public function test_open_ended_response_is_saved_for_public_respondent(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createHivawAssessment($workspace, $user);
+        $token = $this->createToken($assessment);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $component->call('giveConsent');
+        $openQuestion = collect($component->get('questionData'))
+            ->first(fn ($question) => $question['response_type'] === 'OPEN_ENDED' && $question['options'] === []);
+
+        $this->assertNotNull($openQuestion);
+        $component->call('saveText', $openQuestion['question_id'], 'Clinic hours are difficult.');
+
+        $this->assertDatabaseHas('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $openQuestion['question_id'],
+            'respondent_id' => $component->get('respondentId'),
+            'value_text' => 'Clinic hours are difficult.',
+        ]);
+    }
+
     // ---- Submit ----
 
     public function test_submit_marks_component_as_submitted(): void

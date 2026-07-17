@@ -297,6 +297,30 @@ class AssessmentTest extends TestCase
         ]);
     }
 
+    public function test_livewire_open_ended_response_is_saved_as_text(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+
+        $component = Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+
+        $openQuestion = collect($component->get('questionData'))
+            ->first(fn ($question) => $question['response_type'] === 'OPEN_ENDED' && $question['options'] === []);
+
+        $this->assertNotNull($openQuestion);
+        $component->call('saveText', $openQuestion['question_id'], 'Transport cost is the main barrier.');
+
+        $this->assertDatabaseHas('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $openQuestion['question_id'],
+            'value_text' => 'Transport cost is the main barrier.',
+        ]);
+    }
+
     public function test_livewire_cannot_submit_with_unanswered_scored_questions(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();

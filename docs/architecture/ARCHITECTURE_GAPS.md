@@ -105,5 +105,7 @@ These items require characterization and separate approvals. Template work must 
 - **Resolved in Module 3:** AG-28.
 - **Resolved in Module 4:** AG-13.
 - **Foundation completed in Module 4:** AG-45 now has explicit health-domain classification and setting mappings; template-level enforcement follows in the template module.
+- **Resolved in Module 5:** AG-21 for the approved initial response contract. Unsupported declared types remain unavailable and cannot enter published templates.
+- **Foundation completed in Module 5:** AG-16, AG-17, AG-38, and AG-43 now have immutable template/version and provenance seams; assessment snapshots and curator interfaces follow in later modules.
 - **Additionally hardened in Module 1:** public Livewire identifiers and mutations now revalidate their token/assessment context; authenticated and public responses validate the question/option relationship.
 - Implementation evidence and test counts are maintained in `IMPLEMENTATION_PROGRESS.md`.
