@@ -11,6 +11,10 @@ class WorkspaceScope implements Scope
     public function apply(Builder $builder, Model $model): void
     {
         if (! app()->bound('current.workspace')) {
+            if (auth()->check() && ! auth()->user()->isPlatformAdmin()) {
+                $builder->whereRaw('1 = 0');
+            }
+
             return;
         }
 

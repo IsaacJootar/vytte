@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use Database\Seeders\ReferenceDataSeeder;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -215,6 +216,28 @@ class ProjectTest extends TestCase
             ->assertOk()
             ->assertSee('My Project')
             ->assertSee('Lagos PHC');
+    }
+
+    public function test_database_enforces_one_setting_per_project(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $this->seedReferenceData();
+        $project = Project::create(['name' => 'One Setting', 'owner_user_id' => $user->user_id]);
+        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
+
+        foreach (['First', 'Second'] as $name) {
+            $target = Target::create([
+                'target_type_code' => 'COMMUNITY',
+                'name' => $name,
+                'category_id' => $categoryId,
+                'owner_workspace_id' => $workspace->workspace_id,
+            ]);
+
+            if ($name === 'Second') {
+                $this->expectException(QueryException::class);
+            }
+            $project->targets()->attach($target->target_id, ['added_at' => now()]);
+        }
     }
 
     // ---- Edit / Update ----

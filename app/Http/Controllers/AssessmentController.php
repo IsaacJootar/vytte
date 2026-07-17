@@ -39,6 +39,7 @@ class AssessmentController extends Controller
 
     public function create(Project $project): View
     {
+        $this->authorize('view', $project);
         $target = $project->targets->first();
         $settingTypeCode = $target
             ? DB::table('target_type_setting_map')->where('target_type_code', $target->target_type_code)->value('setting_type_code')
@@ -67,6 +68,7 @@ class AssessmentController extends Controller
 
     public function store(Request $request, Project $project, AssessmentCreationService $creator): RedirectResponse
     {
+        $this->authorize('update', $project);
         $workspace = app('current.workspace');
 
         if (PlanService::hasReachedAssessmentLimit($workspace, $project)) {
@@ -253,11 +255,6 @@ class AssessmentController extends Controller
 
     private function authorizeWorkspace(Assessment $assessment): void
     {
-        $workspace = app('current.workspace');
-        $project = Project::withoutGlobalScopes()->find($assessment->project_id);
-
-        if ($project && $project->workspace_id !== $workspace->workspace_id) {
-            abort(404);
-        }
+        $this->authorize('view', $assessment);
     }
 }

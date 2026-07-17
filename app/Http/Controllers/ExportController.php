@@ -36,11 +36,8 @@ class ExportController extends Controller
 
     public function projectCsv(Project $project): StreamedResponse
     {
+        $this->authorize('view', $project);
         $workspace = app('current.workspace');
-
-        if ($project->workspace_id !== $workspace->workspace_id) {
-            abort(404);
-        }
 
         if (! PlanService::workspaceCanAccess($workspace, 'csv_export')) {
             abort(403, 'CSV export is not available on your current plan. Upgrade to export project data.');
@@ -183,15 +180,6 @@ class ExportController extends Controller
 
     private function authorizeAssessmentAccess(Assessment $assessment): void
     {
-        if (! app()->bound('current.workspace')) {
-            abort(403);
-        }
-
-        $workspace = app('current.workspace');
-        $project = Project::withoutGlobalScopes()->find($assessment->project_id);
-
-        if (! $project || $project->workspace_id !== $workspace->workspace_id) {
-            abort(404);
-        }
+        $this->authorize('view', $assessment);
     }
 }

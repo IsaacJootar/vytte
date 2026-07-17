@@ -241,6 +241,19 @@ class AssessmentTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_forged_active_workspace_without_membership_fails_closed(): void
+    {
+        [$owner, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $owner);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+        $outsider = User::factory()->create(['active_workspace_id' => $workspace->workspace_id]);
+
+        $this->actingAs($outsider)
+            ->get(route('assessments.run', $assessment))
+            ->assertNotFound();
+    }
+
     // ---- Livewire runner ----
 
     public function test_livewire_runner_loads_questions(): void

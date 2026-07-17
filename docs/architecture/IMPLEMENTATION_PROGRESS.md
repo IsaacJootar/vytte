@@ -1,5 +1,25 @@
 # Architecture Remediation Progress
 
+## Module 12 — Fail-closed tenancy and one-setting projects
+
+**Status:** Complete
+
+**Resolved:**
+
+- Workspace resolution now requires an actual membership; a forged/stale `active_workspace_id` cannot establish tenant authority.
+- Workspace-scoped model queries fail closed for authenticated non-platform users when no valid workspace is resolved.
+- Project and Assessment policies centralize membership/workspace checks and return not-found semantics across tenant boundaries.
+- Project, assessment creation/runtime/results, export, respondent-link, and progress actions use policy authorization in addition to scoped route binding.
+- The retained `project_targets` junction now has a unique project constraint, enforcing exactly one setting per project without renaming or deleting the compatibility table.
+- Migration refuses to guess when historical projects have multiple targets; such conflicts must be resolved explicitly before applying the constraint.
+
+**Verification:**
+
+- Focused assessment/project/export/progress/team/isolation suites: passed.
+- Clean temporary SQLite install, complete migrations, and full database seed: passed.
+- Full regression suite: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 11 — Content and sharing governance
 
 **Status:** Complete

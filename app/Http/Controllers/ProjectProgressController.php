@@ -14,6 +14,7 @@ class ProjectProgressController extends Controller
 {
     public function index(Project $project): View|RedirectResponse
     {
+        $this->authorize('view', $project);
         $workspace = app('current.workspace');
         if (! PlanService::workspaceCanAccess($workspace, 'progress_maturity_tracking')) {
             return redirect()->route('projects.show', $project)
@@ -49,6 +50,7 @@ class ProjectProgressController extends Controller
 
     public function compare(Project $project, Request $request): View|RedirectResponse
     {
+        $this->authorize('view', $project);
         $workspace = app('current.workspace');
         if (! PlanService::workspaceCanAccess($workspace, 'progress_maturity_tracking')) {
             return redirect()->route('projects.show', $project)

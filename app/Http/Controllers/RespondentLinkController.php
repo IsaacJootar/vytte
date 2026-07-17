@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Assessment;
 use App\Models\AssessmentRespondentToken;
-use App\Models\Project;
 use App\Services\AuditService;
 use App\Services\PlanService;
 use Illuminate\Http\RedirectResponse;
@@ -59,11 +58,6 @@ class RespondentLinkController extends Controller
 
     private function authorizeWorkspaceAssessment(Assessment $assessment): void
     {
-        $workspace = app('current.workspace');
-        $project = Project::withoutGlobalScopes()->find($assessment->project_id);
-
-        if (! $project || $project->workspace_id !== $workspace->workspace_id) {
-            abort(404);
-        }
+        $this->authorize('view', $assessment);
     }
 }

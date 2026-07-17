@@ -36,7 +36,7 @@ This is not a production-data audit. Local row counts are included only to show 
 
 - Workspace to project: `projects.workspace_id`.
 - Workspace to target: `targets.owner_workspace_id`.
-- Project to target: many-to-many `project_targets`; current UI assumes the first target is primary.
+- Project to target: the retained `project_targets` junction is constrained to one target per project for the approved v1 workflow.
 - Assessment to project and target: direct foreign keys, with no `workspace_id` on the assessment.
 - Assessment to module: composite-key `assessment_module_scope`.
 - Module to questionnaire section: `module_domains`.
@@ -55,7 +55,7 @@ This is not a production-data audit. Local row counts are included only to show 
 | DM-03 | `workspaces.owner_id` | No owner column; ownership is a membership role | Medium | Preserve membership-based ownership and document it; any owner column would duplicate authority. |
 | DM-04 | `workspace_members.id`, timestamps | Composite `(workspace_id,user_id)` primary key plus `joined_at` | Medium | Preserve composite key; review Eloquent write semantics in Phase 22. |
 | DM-05 | `assessment_module_definitions` catalogue and tenant `assessment_modules` join | Catalogue is `assessment_modules`; join is `assessment_module_scope` | Critical | Treat existing names as compatibility contracts. New template relations must reference the actual catalogue table. |
-| DM-06 | One project has one target through a project FK | Many-to-many `project_targets`; no target FK on projects | High | Preserve table; enforce or explicitly govern one-primary-target behavior without a destructive rewrite. |
+| DM-06 | One project has one target through a project FK | Equivalent invariant implemented through the retained junction plus a unique `project_id` index | Resolved | Keep the junction for compatibility; postpone multi-target behavior. |
 | DM-07 | Target has `workspace_id` and `project_id` | Target has `owner_workspace_id`; project link is a junction | High | Use adapters/documentation; do not rename or add redundant ownership fields without approval. |
 | DM-08 | Assessment has `workspace_id`, `tier_id`, name, description, created-by | Assessment has project/target, `assessment_tier_id`, scope and publication fields; no workspace/name/description/creator | High | Derive tenancy through project for now; template work must not assume documented columns exist. |
 | DM-09 | Statuses `DRAFT`, `IN_PROGRESS`, `COMPLETED`, `ARCHIVED` | Runtime uses `IN_PROGRESS` and `COMPLETE`; publication uses `DRAFT`/`PUBLISHED` | High | Define canonical state machine before template snapshots or migrations. |

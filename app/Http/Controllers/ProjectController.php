@@ -104,6 +104,7 @@ class ProjectController extends Controller
 
     public function show(Project $project): View
     {
+        $this->authorize('view', $project);
         $project->load([
             'targets.targetType',
             'targets.category',
@@ -117,11 +118,14 @@ class ProjectController extends Controller
 
     public function edit(Project $project): View
     {
+        $this->authorize('update', $project);
+
         return view('projects.edit', compact('project'));
     }
 
     public function update(Request $request, Project $project): RedirectResponse
     {
+        $this->authorize('update', $project);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -136,6 +140,7 @@ class ProjectController extends Controller
 
     public function archive(Project $project): RedirectResponse
     {
+        $this->authorize('update', $project);
         $project->update([
             'status' => $project->isArchived() ? 'ACTIVE' : 'ARCHIVED',
         ]);
