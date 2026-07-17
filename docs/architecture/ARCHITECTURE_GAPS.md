@@ -102,5 +102,6 @@ These items require characterization and separate approvals. Template work must 
 
 - **Resolved in Module 1:** AG-18, AG-22, AG-23.
 - **Resolved in Module 2:** AG-20, AG-41.
+- **Resolved in Module 3:** AG-28.
 - **Additionally hardened in Module 1:** public Livewire identifiers and mutations now revalidate their token/assessment context; authenticated and public responses validate the question/option relationship.
 - Implementation evidence and test counts are maintained in `IMPLEMENTATION_PROGRESS.md`.

@@ -43,3 +43,24 @@ Isaac approved correction of all Phase 21/22 gaps on 17 July 2026. Work proceeds
 - Focused completion/scoring/billing suite: 43 tests, 117 assertions, all passed.
 - Notification regression suite: 13 tests, 25 assertions, all passed after replacing legacy unanswered fixtures with valid completed responses.
 - Full suite: 323 tests, 757 assertions, all passed in 62.140 seconds.
+
+## Module 3 — Versioned canonical scoring
+
+**Status:** Complete
+
+**Resolved:**
+
+- AG-28: scoring output is canonical 0–100. Questions whose complete option scale is 0–1 are normalized during calculation without rewriting source content.
+- Every sub-index, domain, and assessment score now records `scoring_version`.
+- Existing score rows receive `legacy-v1`; newly calculated rows use `vytte-2.0-normalized`.
+- Multi-module calculation includes sub-indices from every in-scope module and records active/expected module counts.
+- Completed assessments are not recalculated automatically, preserving historical results.
+
+**Verification:**
+
+- Exact 0–1 normalization fixture: passed with canonical score 100.
+- Two-module aggregation fixture: passed with independently expected score and partial-calibration state.
+- Focused scoring suite: 14 tests, 52 assertions, all passed.
+- Full suite: 325 tests, 765 assertions, all passed in 67.210 seconds.
+- Local SQLite migration: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.

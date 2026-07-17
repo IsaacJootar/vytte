@@ -8,7 +8,10 @@ use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentScore;
 use App\Models\AssessmentTier;
 use App\Models\Project;
+use App\Models\Question;
+use App\Models\QuestionOption;
 use App\Models\Response;
+use App\Models\SubIndex;
 use App\Models\Target;
 use App\Models\TargetCategory;
 use App\Models\User;
@@ -186,6 +189,94 @@ class ScoringTest extends TestCase
         $this->assertEquals(100.0, (float) $score->overall_score);
         $this->assertSame('CALIBRATED', $score->calibration_status);
         $this->assertSame('strong', app(ScoringService::class)->bandFor((float) $score->overall_score));
+        $this->assertSame(ScoringService::ALGORITHM_VERSION, $score->scoring_version);
+    }
+
+    public function test_zero_to_one_question_scales_are_normalized_to_zero_to_one_hundred(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $this->seed(HivawQuestionsSeeder::class);
+
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupAssessment($workspace, $user);
+
+        DB::table('question_options')->update([
+            'score_weight' => DB::raw('score_weight / 100.0'),
+        ]);
+
+        $this->answerAllScoredQuestionsWithBestOption($assessment);
+        app(ScoringService::class)->calculate($assessment);
+
+        $score = AssessmentScore::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $this->assertEquals(100.0, (float) $score->overall_score);
+        $this->assertSame('CALIBRATED', $score->calibration_status);
+        $this->assertSame(ScoringService::ALGORITHM_VERSION, $score->scoring_version);
+    }
+
+    public function test_scoring_includes_every_in_scope_module(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $this->seed(HivawQuestionsSeeder::class);
+
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupAssessment($workspace, $user);
+
+        $secondModule = AssessmentModule::create([
+            'target_type_code' => 'COMMUNITY',
+            'module_code' => 'MULTI2',
+            'module_name' => 'Second Scored Module',
+            'is_active' => true,
+        ]);
+        AssessmentModuleScope::create([
+            'assessment_id' => $assessment->assessment_id,
+            'module_id' => $secondModule->module_id,
+            'in_scope' => true,
+            'is_category_default' => false,
+            'status' => 'PENDING',
+        ]);
+
+        $subIndex = SubIndex::create([
+            'module_id' => $secondModule->module_id,
+            'domain_id' => DB::table('domains')->value('domain_id'),
+            'acronym' => 'MULTI2',
+            'full_name' => 'Second Module Index',
+        ]);
+        $question = Question::create([
+            'module_id' => $secondModule->module_id,
+            'question_code' => 'MULTI2.Q1',
+            'question_text' => 'Second module scored question',
+            'type_id' => DB::table('question_types')->where('type_code', 'SINGLE_SELECT')->value('type_id'),
+            'display_order' => 1,
+            'is_active' => true,
+            'is_scored' => true,
+        ]);
+        $option = QuestionOption::create([
+            'question_id' => $question->question_id,
+            'option_label' => 'Half ready',
+            'option_order' => 1,
+            'score_weight' => 50,
+        ]);
+        $subIndex->questions()->attach($question->question_id, ['weight' => 1]);
+        Response::create([
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question->question_id,
+            'value_option_id' => $option->option_id,
+            'answered_at' => now(),
+        ]);
+
+        app(ScoringService::class)->calculate($assessment);
+
+        $this->assertDatabaseHas('sub_index_scores', [
+            'assessment_id' => $assessment->assessment_id,
+            'sub_index_id' => $subIndex->sub_index_id,
+            'score' => 50,
+            'scoring_version' => ScoringService::ALGORITHM_VERSION,
+        ]);
+
+        $score = AssessmentScore::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $this->assertEquals(50.0, (float) $score->overall_score);
+        $this->assertSame('PARTIAL', $score->calibration_status);
+        $this->assertSame(2, $score->active_module_count);
     }
 
     // ---- PARTIAL when only some questions answered ----

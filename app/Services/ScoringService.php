@@ -9,14 +9,17 @@ use Illuminate\Support\Facades\DB;
 
 class ScoringService
 {
+    public const ALGORITHM_VERSION = 'vytte-2.0-normalized';
+
     public function calculate(Assessment $assessment): void
     {
-        $scope = DB::table('assessment_module_scope')
+        $moduleIds = DB::table('assessment_module_scope')
             ->where('assessment_id', $assessment->assessment_id)
             ->where('in_scope', true)
-            ->first();
+            ->pluck('module_id')
+            ->toArray();
 
-        if (! $scope) {
+        if (empty($moduleIds)) {
             return;
         }
 
@@ -28,11 +31,12 @@ class ScoringService
             ->get()
             ->keyBy('question_id');
 
-        // Sub-indices for the module, with their linked scored questions
-        $subIndices = SubIndex::where('module_id', $scope->module_id)
+        // Sub-indices for all in-scope modules, with their linked scored questions
+        $subIndices = SubIndex::whereIn('module_id', $moduleIds)
             ->with(['questions' => function ($q) {
                 $q->select('questions.question_id', 'questions.is_scored')
-                    ->withPivot('weight');
+                    ->withPivot('weight')
+                    ->with('options:option_id,question_id,score_weight');
             }])
             ->get();
 
@@ -54,7 +58,16 @@ class ScoringService
                 $response = $responses->get($question->question_id);
 
                 if ($response && $response->selectedOption && $response->selectedOption->score_weight !== null) {
-                    $weightedSum += (float) $response->selectedOption->score_weight * $weight;
+                    $optionScore = (float) $response->selectedOption->score_weight;
+                    $questionScaleMaximum = $question->options
+                        ->whereNotNull('score_weight')
+                        ->max(fn ($option) => (float) $option->score_weight);
+
+                    if ($questionScaleMaximum !== null && $questionScaleMaximum <= 1.0) {
+                        $optionScore *= 100;
+                    }
+
+                    $weightedSum += $optionScore * $weight;
                     $totalWeight += $weight;
                     $answeredCount++;
                 }
@@ -81,10 +94,11 @@ class ScoringService
                     'respondent_type' => 'STAFF',
                     'score' => $score,
                     'calibration_status' => $status,
+                    'scoring_version' => self::ALGORITHM_VERSION,
                     'calculated_at' => now(),
                 ],
                 ['assessment_id', 'sub_index_id', 'respondent_type'],
-                ['score', 'calibration_status', 'calculated_at']
+                ['score', 'calibration_status', 'scoring_version', 'calculated_at']
             );
         }
 
@@ -114,10 +128,11 @@ class ScoringService
                     'domain_id' => $domainId,
                     'score' => $domainScore,
                     'calibration_status' => $domainStatus,
+                    'scoring_version' => self::ALGORITHM_VERSION,
                     'calculated_at' => now(),
                 ],
                 ['assessment_id', 'domain_id'],
-                ['score', 'calibration_status', 'calculated_at']
+                ['score', 'calibration_status', 'scoring_version', 'calculated_at']
             );
         }
 
@@ -156,11 +171,14 @@ class ScoringService
                 'assessment_id' => $assessment->assessment_id,
                 'overall_score' => $overallScore,
                 'calibration_status' => $overallStatus,
+                'scoring_version' => self::ALGORITHM_VERSION,
+                'expected_module_count' => count($moduleIds),
+                'active_module_count' => count($moduleIds),
                 'maturity_level_id' => $maturityLevelId,
                 'calculated_at' => now(),
             ],
             ['assessment_id'],
-            ['overall_score', 'calibration_status', 'maturity_level_id', 'calculated_at']
+            ['overall_score', 'calibration_status', 'scoring_version', 'expected_module_count', 'active_module_count', 'maturity_level_id', 'calculated_at']
         );
     }
 
