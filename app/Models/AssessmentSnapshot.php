@@ -17,11 +17,12 @@ class AssessmentSnapshot extends Model
     protected $fillable = [
         'assessment_id', 'template_version_id', 'creation_path',
         'setting_type_code', 'health_domain_id', 'content_hash',
-        'is_customized', 'payload', 'created_by', 'created_at',
+        'is_customized', 'payload', 'collection_config', 'created_by', 'created_at',
     ];
 
     protected $casts = [
         'payload' => 'array',
+        'collection_config' => 'array',
         'is_customized' => 'boolean',
         'created_at' => 'datetime',
     ];

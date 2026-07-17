@@ -191,6 +191,17 @@ Accepted items below record Isaac's explicit direction; all others remain implem
 - **Implementation consequence:** Application constants and model guards reject unknown assessment/template states, assessment reopening, and published-template mutation. Human-readable UI labels may say “Completed” without changing the database value.
 - **Postponed:** Assessment reopening, correction versions, cancellation, template retirement, and archival require explicit rules for immutable snapshots and audit history.
 
+### DEC-021-022: Unified multi-respondent scoring and finalization
+
+- **Status:** Approved by Isaac and implemented, 17 July 2026
+- **Decision:** Multi-respondent collection is an explicit immutable template-version capability. The version freezes the minimum eligible completed threshold, initial `ARITHMETIC_MEAN` method, eligibility rules, and scoring-profile version.
+- **Scoring unit:** Every durable submitted session has its own immutable response snapshot and independently calculated score. Missing answers are never silently zero.
+- **Eligibility:** Incomplete, abandoned/unsubmitted, test, expired, revoked, ineligible, unreviewed where review is required, missing-score, and integrity-failing sessions do not contribute.
+- **Lifecycle:** Threshold attainment is informational only. OWNER or ADMIN authority is required to manually finalize. Finalization freezes exact included/excluded inputs and reproducibility hashes, completes the ordinary assessment, and creates the ordinary immutable report. Late submissions cannot change it.
+- **Privacy:** Shared reports expose aggregate results, count, and method, not respondent identities, session identifiers, or individual answers. Authorized audit data retains traceable session references.
+- **Boundary:** Arithmetic mean is the only initial method. Weighted mean, median, stratification, consensus, role weighting, and indicator-specific aggregation are postponed. No separate community/respondent report or aggregation subsystem may be introduced.
+- **Operational blocker:** PostgreSQL migration and concurrency parity remain pending because the local Docker/PostgreSQL service is unavailable.
+
 ## Approval record
 
 Isaac granted approval on 17 July 2026 to apply every recommendation and correct all recorded gaps. Implementation remains incremental: complete, test, commit, and push each bounded module separately.

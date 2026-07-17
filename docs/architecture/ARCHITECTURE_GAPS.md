@@ -35,7 +35,7 @@
 | AG-22 | Response uniqueness is enforced | Resolved for assessor rows with a partial unique index; public rows retain per-session uniqueness | Response migrations/model | Resolved locally | Verify PostgreSQL concurrency/parity before release | Approved and implemented |
 | AG-23 | Livewire IDs are locked and authorization is defense-in-depth | Resolved: assessment/token identifiers are locked and mutations re-check workspace, token, question, option, consent, and completion authority | Livewire runners/tests | Resolved | Preserve attack regression tests | Approved and implemented |
 | AG-24 | Public respondent runner supports the assessment scope | Resolved: it loads every in-scope module and uses immutable snapshot content when present | Public runner, snapshot, and scope table | Resolved | Preserve full-composition regression coverage | Approved and implemented |
-| AG-25 | External respondent answers use the normal assessment results architecture | Collection is durable, but the current scoring path still reads assessor-authored responses only | Public runner, ScoringService, reports | High | Extend the existing respondent-aware scoring/reporting engine; do not create a separate report or subsystem | Approved direction; implementation pending |
+| AG-25 | External respondent answers use the normal assessment results architecture | Resolved: durable sessions are independently scored, eligible completed scores use the frozen arithmetic-mean contract, and manual finalization creates the ordinary immutable report | Public runner, shared ScoringService, aggregation contract, reports | Resolved locally | Verify PostgreSQL concurrency/parity before release; add future methods only as governed versions | Approved and implemented |
 | AG-26 | Public submission is durable and auditable | Resolved: durable response sessions, submitted timestamps, response/consent FKs, and token creator/revocation/usage audit fields are implemented | Public runner/token/session tables | Resolved | Define retention policy before production collection | Approved and implemented |
 | AG-27 | Evidence is optional support attached to questions | Resolved for the authenticated runner: an optional note is stored on the exact response and revealed progressively | Runner, responses | Resolved core | Add governed file attachments only if a demonstrated need and retention policy justify them | Approved and implemented |
 | AG-28 | Scoring uses a consistent scale | Resolved: option scales normalize to canonical 0–100, outputs store an algorithm version, and published scoring profiles are frozen | Scoring service/snapshots/tests | Resolved | New formulas require new versions and fixtures | Approved and implemented |
@@ -60,7 +60,7 @@
 ## Outstanding operating evidence
 
 - PostgreSQL migration, full-suite, partial-index, upsert, and response-concurrency parity after the local PostgreSQL environment is restored.
-- Template-level respondent scoring-unit and aggregation semantics before external multi-respondent results can enter the standard final report.
+- PostgreSQL parity for respondent-session partial unique indexes, locking, immutable artifacts, and the finalization transaction after the local PostgreSQL environment is restored.
 
 ## Bounded technical debt
 

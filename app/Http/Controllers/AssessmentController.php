@@ -30,7 +30,7 @@ class AssessmentController extends Controller
         $workspaceProjectIds = Project::select('project_id');
 
         $assessments = Assessment::whereIn('project_id', $workspaceProjectIds)
-            ->with(['project', 'target', 'score', 'moduleScope.module'])
+            ->with(['project', 'target', 'score', 'moduleScope.module', 'snapshot'])
             ->latest('updated_at')
             ->paginate(20);
 
@@ -98,12 +98,21 @@ class AssessmentController extends Controller
             auth()->id(),
         );
 
+        if ($assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false) {
+            return redirect()->route('assessments.respondent-collection', $assessment);
+        }
+
         return redirect()->route('assessments.run', $assessment);
     }
 
     public function run(Assessment $assessment): View
     {
         $this->authorizeWorkspace($assessment);
+
+        if ($assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false) {
+            return redirect()->route('assessments.respondent-collection', $assessment)
+                ->with('error', 'Multi-respondent assessments must be finalized from the respondent collection review.');
+        }
 
         $assessment->load(['project', 'target', 'moduleScope.module']);
 
@@ -120,6 +129,11 @@ class AssessmentController extends Controller
         }
 
         $snapshot = $assessment->snapshot()->first();
+        if ($snapshot?->collection_config['allows_multi_respondent'] ?? false) {
+            return redirect()->route('assessments.respondent-collection', $assessment)
+                ->with('error', 'Multi-respondent collections require authorized manual finalization.');
+        }
+
         if ($snapshot) {
             $requiredQuestions = collect($snapshot->payload)
                 ->flatMap(fn ($module) => $module['questions'] ?? [])
@@ -127,6 +141,7 @@ class AssessmentController extends Controller
                 ->values();
             $responses = Response::where('assessment_id', $assessment->assessment_id)
                 ->whereNull('respondent_id')
+                ->whereNull('public_response_session_id')
                 ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
                 ->get()->keyBy('question_id');
             $hasMissingResponse = $requiredQuestions->contains(function ($question) use ($responses) {
@@ -153,6 +168,7 @@ class AssessmentController extends Controller
                 ->get();
             $responses = Response::where('assessment_id', $assessment->assessment_id)
                 ->whereNull('respondent_id')
+                ->whereNull('public_response_session_id')
                 ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
                 ->with('selectedOption')
                 ->get()->keyBy('question_id');

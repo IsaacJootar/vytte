@@ -24,12 +24,16 @@ class AssessmentTemplateVersion extends Model
     protected $fillable = [
         'template_id', 'version_number', 'status', 'scoring_version',
         'content_hash', 'published_payload', 'parent_version_id', 'is_customized',
-        'published_at', 'published_by',
+        'published_at', 'published_by', 'allows_multi_respondent',
+        'minimum_completed_respondents', 'aggregation_method',
+        'respondent_eligibility_rules',
     ];
 
     protected $casts = [
         'is_customized' => 'boolean',
         'published_payload' => 'array',
+        'allows_multi_respondent' => 'boolean',
+        'respondent_eligibility_rules' => 'array',
         'published_at' => 'datetime',
     ];
 

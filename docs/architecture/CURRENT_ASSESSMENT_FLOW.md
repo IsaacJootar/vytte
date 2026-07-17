@@ -84,15 +84,19 @@ Remaining authenticated-runner work is limited to future response types and more
 3. Token usage count and last-use time are updated when a new respondent session begins.
 4. All in-scope modules are loaded. Template-created assessments use the same immutable content snapshot as the authenticated runner.
 5. Language selection is stored on the durable session. Consent is stored for every in-scope module that requires it.
-6. Responses reference the durable session through a foreign key while retaining the legacy respondent UUID value for compatibility.
+6. Responses reference the durable session through a foreign key. Staff rows are explicitly distinguished by a null public-session foreign key.
 7. Question, option, and text mutations are revalidated against authoritative in-scope content.
-8. Submit rechecks all required responses from stored data and persists `submitted_at`; remounting the link resumes the submitted state.
+8. Submit rechecks all required stored responses, freezes an immutable response snapshot, independently scores it with the assessment's frozen profile, and persists the submitted state and immutable respondent score.
+9. If the template defines eligibility rules, the session remains excluded as `PENDING` until an OWNER or ADMIN reviews it. A template with no eligibility rules may classify a valid submitted session as eligible automatically.
+10. The collection review shows eligible count, minimum threshold, provisional arithmetic mean, scoring/template versions, and exclusion reasons.
+11. Reaching the threshold never auto-finalizes. An OWNER or ADMIN manually finalizes the exact session set.
+12. Finalization persists reproducibility hashes and trace references, completes the ordinary assessment lifecycle, and creates the ordinary immutable report. The public runner rejects late submissions after completion.
 
-External respondents are a respondent role within the same assessment architecture. Community surveys, patient-experience surveys, citizen feedback, caregiver feedback, and similar uses must be created as normal assessment templates and use the standard lifecycle, scoring, reporting, permissions, exports, dashboards, and analytics. The current scoring implementation still reads assessor-authored responses only; that is an extension gap in the shared engine, not justification for a separate report.
+External respondents are a respondent role within the same assessment architecture. Community surveys, patient-experience surveys, citizen feedback, caregiver feedback, and similar uses are normal assessment templates using the standard lifecycle, scoring, reporting, permissions, exports, dashboards, and analytics. Arithmetic mean is the only initial multi-respondent method, not a permanent universal formula.
 
 ## 5. Submission and lifecycle
 
-1. Authenticated submission verifies workspace ownership and required-response completeness.
+1. Authenticated submission verifies workspace ownership and required-response completeness. It cannot complete a multi-respondent assessment.
 2. The assessment becomes `COMPLETE`, receives `completed_at`, and all in-scope module rows become `COMPLETED`.
 3. Scoring runs synchronously and stores the scoring algorithm/version used.
 4. The same transaction persists an immutable structured report snapshot with schema version and SHA-256 content hash.
@@ -102,7 +106,7 @@ The assessment content and composition are immutable through snapshots. `IN_PROG
 
 ## 6. Scoring flow
 
-1. Read all in-scope module IDs and authenticated responses.
+1. Read all in-scope module IDs and the authoritative response set for one scoring unit. Staff and public-session rows are explicitly separated.
 2. For template-created assessments, read sub-index membership, question weights, option weights, and domain identity from the assessment snapshot. Legacy assessments use the live profile compatibility path.
 3. Normalize option score scales to a canonical 0–100 range.
 4. Calculate weighted sub-index results with explicit calibration states.
@@ -112,7 +116,7 @@ The assessment content and composition are immutable through snapshots. `IN_PROG
 ### Remaining scoring risks
 
 - Domain weights and cross-module aggregation policy require an explicit governed formula.
-- Respondent roles require explicit scoring semantics inside the existing versioned scoring profile; no respondent role may create a parallel reporting architecture.
+- Future aggregation methods require explicit versioned methodology and must continue to use the shared scoring/reporting architecture.
 - Numeric, multi-select, ranking, observation, and corroboration models are postponed until their product need and scoring semantics are approved.
 
 ## 7. Results and reports

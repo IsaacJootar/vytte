@@ -1,5 +1,29 @@
 # Architecture Remediation Progress
 
+## Module 18 — Unified multi-respondent scoring
+
+**Status:** Complete locally
+
+**Resolved:**
+
+- Published template versions explicitly enable multi-respondent collection and freeze the minimum eligible completed threshold, arithmetic-mean method, eligibility rules, and scoring-profile version.
+- Every durable submitted session is independently scored by the shared snapshot-based scoring service and retains immutable response and score snapshots with integrity hashes.
+- Staff answers and public-session answers have separate database uniqueness boundaries.
+- Incomplete, test, revoked, expired, ineligible, unreviewed, missing-score, and integrity-failing sessions are excluded from the provisional aggregate.
+- OWNER or ADMIN authority is required for manual finalization; reaching the threshold never auto-completes an assessment.
+- Finalization freezes exact inputs, exclusions, trace references, calculation hashes, finalizer, and timestamp, then creates the ordinary immutable Vytte report.
+- Late sessions cannot alter a finalized report. Shared reports expose aggregate results and respondent count, not session IDs or individual answers.
+- Arithmetic mean is the only initial method. No separate community/respondent scoring or reporting subsystem was introduced.
+
+**Verification:**
+
+- Multi-respondent contract suite: 10 tests, 46 assertions, all passed.
+- Focused scoring/snapshot/public-runner regression suite: 50 tests, 149 assertions, all passed.
+- Full regression suite: 375 tests, 916 assertions, all passed.
+- Clean temporary SQLite install, all 42 migrations, and complete seed: passed.
+- Production Vite frontend build: passed.
+- PostgreSQL migration and concurrency parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 17 — Operating baseline and documentation authority
 
 **Status:** Complete

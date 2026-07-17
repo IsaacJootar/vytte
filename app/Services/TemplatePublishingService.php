@@ -29,6 +29,20 @@ class TemplatePublishingService
             $errors['provenance'][] = 'Source authority and license metadata are required before publishing.';
         }
 
+        if ($version->allows_multi_respondent) {
+            if (($version->minimum_completed_respondents ?? 0) < 1) {
+                $errors['minimum_completed_respondents'][] = 'Multi-respondent templates require a minimum completed respondent threshold.';
+            }
+            if ($version->aggregation_method !== 'ARITHMETIC_MEAN') {
+                $errors['aggregation_method'][] = 'Arithmetic mean is the only currently supported multi-respondent aggregation method.';
+            }
+            if ($version->respondent_eligibility_rules !== null && ! is_array($version->respondent_eligibility_rules)) {
+                $errors['respondent_eligibility_rules'][] = 'Respondent eligibility rules must be a structured list.';
+            }
+        } elseif ($version->minimum_completed_respondents !== null || $version->aggregation_method !== null) {
+            $errors['collection'][] = 'Respondent thresholds and aggregation methods require multi-respondent collection to be enabled.';
+        }
+
         if ($template->creation_path === 'COMPREHENSIVE' && ! $template->setting_type_code) {
             $errors['setting_type_code'][] = 'A comprehensive template must declare its setting.';
         }
@@ -121,6 +135,7 @@ class TemplatePublishingService
 
         $version->update([
             'status' => AssessmentTemplateVersion::STATUS_PUBLISHED,
+            'scoring_version' => ScoringService::ALGORITHM_VERSION,
             'content_hash' => $this->content->hash($payload),
             'published_payload' => $payload,
             'published_at' => now(),

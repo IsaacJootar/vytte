@@ -127,6 +127,17 @@ class AssessmentCreationService
                 'content_hash' => $hash,
                 'is_customized' => $excludedIds->isNotEmpty(),
                 'payload' => $payload,
+                'collection_config' => [
+                    'allows_multi_respondent' => (bool) $version->allows_multi_respondent,
+                    'scoring_profile_version' => $version->scoring_version,
+                    'minimum_completed_respondents' => $version->allows_multi_respondent
+                        ? (int) $version->minimum_completed_respondents
+                        : null,
+                    'aggregation_method' => $version->allows_multi_respondent
+                        ? $version->aggregation_method
+                        : null,
+                    'respondent_eligibility_rules' => $version->respondent_eligibility_rules ?? [],
+                ],
                 'created_by' => $creatorId,
                 'created_at' => now(),
             ]);

@@ -47,7 +47,15 @@ class ReportSnapshotService
 
     public function buildPayload(Assessment $assessment): array
     {
-        $assessment->load(['project', 'target.targetType', 'score.maturityLevel', 'snapshot', 'templateVersion.template', 'moduleScope.module']);
+        $assessment->load([
+            'project',
+            'target.targetType',
+            'score.maturityLevel',
+            'snapshot',
+            'templateVersion.template',
+            'moduleScope.module',
+            'aggregationResult.finalizer',
+        ]);
         $contentModules = $assessment->snapshot?->payload;
         $modules = $contentModules
             ? collect($contentModules)->map(fn ($module) => [
@@ -69,6 +77,8 @@ class ReportSnapshotService
         [$subIndices, $domains] = $contentModules
             ? $this->snapshotScoreBreakdown($assessment, $contentModules)
             : $this->legacyScoreBreakdown($assessment);
+
+        $aggregation = $assessment->aggregationResult;
 
         return [
             'schema_version' => self::SCHEMA_VERSION,
@@ -96,14 +106,38 @@ class ReportSnapshotService
             ],
             'domain_scores' => $domains,
             'sub_index_scores' => $subIndices,
+            'respondent_collection' => $aggregation ? [
+                'is_multi_respondent' => true,
+                'status' => 'FINAL',
+                'eligible_completed_respondents' => $aggregation->eligible_respondent_count,
+                'minimum_completed_respondents' => $aggregation->minimum_completed_respondents,
+                'excluded_session_count' => $aggregation->excluded_session_count,
+                'aggregation_method' => $aggregation->aggregation_method,
+                'assessment_template_version_id' => $assessment->template_version_id,
+                'scoring_profile_version' => $aggregation->scoring_version,
+                'finalized_at' => $aggregation->finalized_at?->toIso8601String(),
+                'finalized_by' => [
+                    'user_id' => $aggregation->finalized_by,
+                    'name' => $aggregation->finalizer?->name,
+                ],
+                'contributing_session_references' => $aggregation->payload['eligible_session_references'] ?? [],
+                'excluded_sessions' => $aggregation->payload['excluded_sessions'] ?? [],
+                'calculation_input_hash' => $aggregation->input_hash,
+                'calculation_result_hash' => $aggregation->result_hash,
+            ] : [
+                'is_multi_respondent' => false,
+            ],
         ];
     }
 
     private function snapshotScoreBreakdown(Assessment $assessment, array $contentModules): array
     {
+        $respondentType = ($assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false)
+            ? 'AGGREGATE'
+            : 'STAFF';
         $subScores = DB::table('sub_index_scores')
             ->where('assessment_id', $assessment->assessment_id)
-            ->where('respondent_type', 'STAFF')
+            ->where('respondent_type', $respondentType)
             ->get()->keyBy('sub_index_id');
         $domainScores = DB::table('domain_scores')
             ->where('assessment_id', $assessment->assessment_id)
@@ -144,11 +178,14 @@ class ReportSnapshotService
 
     private function legacyScoreBreakdown(Assessment $assessment): array
     {
+        $respondentType = ($assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false)
+            ? 'AGGREGATE'
+            : 'STAFF';
         $subIndices = DB::table('sub_index_scores as sis')
             ->join('sub_indices as si', 'si.sub_index_id', '=', 'sis.sub_index_id')
             ->join('domains as d', 'd.domain_id', '=', 'si.domain_id')
             ->where('sis.assessment_id', $assessment->assessment_id)
-            ->where('sis.respondent_type', 'STAFF')
+            ->where('sis.respondent_type', $respondentType)
             ->select('sis.sub_index_id', 'sis.score', 'sis.calibration_status', 'sis.scoring_version', 'si.acronym', 'si.full_name', 'd.domain_id', 'd.domain_name', 'd.domain_code')
             ->get()->map(fn ($row) => (array) $row)->all();
         $domains = DB::table('domain_scores as ds')

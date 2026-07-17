@@ -33,7 +33,20 @@ Missing or uncalibrated data is `null`, never zero.
 
 ## Respondent roles
 
-Respondent role must be part of the template/scoring profile and must reuse this engine. Before multi-respondent aggregation is enabled, a template must define its scoring unit, minimum completed respondents, aggregation method, missing-response behavior, and completion/finalization rule. Vytte must not infer those methodological choices or create a separate report.
+Respondent role is part of the template/scoring profile and reuses this engine. Multi-respondent collection is disabled unless an immutable published template version explicitly enables it and defines:
+
+- a minimum eligible completed respondent threshold;
+- the approved aggregation method;
+- structured eligibility rules, when applicable;
+- the frozen scoring-profile version.
+
+Each submitted durable session is independently scored against the assessment snapshot and retains an immutable response snapshot, response hash, score payload, and score hash. Incomplete, test, revoked, expired, ineligible, unreviewed, missing-score, or integrity-failing sessions are excluded.
+
+`ARITHMETIC_MEAN` is the only initially supported aggregation method. It is the arithmetic mean of non-null results from eligible completed sessions at sub-index, domain, and overall levels. Missing data remains `null`; it is never silently converted to zero. Weighted mean, median, stratification, consensus, role weighting, and indicator-specific methods are future governed versions, not part of the current contract.
+
+Reaching the threshold does not complete the assessment. An OWNER or ADMIN reviews the provisional calculation and manually finalizes it. Finalization freezes the exact contributing and excluded session reference sets, input/result hashes, finalizer, timestamp, template version, and scoring version into the ordinary immutable Vytte report. Late sessions cannot alter the completed report.
+
+Shared reports disclose aggregate results, eligible count, and method only. Session references remain in the immutable audit payload for authorized traceability and are not rendered to report recipients. Vytte does not create a separate respondent or community reporting subsystem.
 
 ## Change policy
 
@@ -44,4 +57,3 @@ Any formula, scale, weight interpretation, aggregation, maturity range, or respo
 - comparison/recalculation policy;
 - snapshot and report compatibility review;
 - PostgreSQL and SQLite verification.
-

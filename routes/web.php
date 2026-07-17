@@ -19,6 +19,7 @@ use App\Http\Controllers\FlutterwaveWebhookController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ModuleLibraryController;
+use App\Http\Controllers\MultiRespondentAssessmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
@@ -55,6 +56,9 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/run', [AssessmentController::class, 'run'])->name('assessments.run');
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
+    Route::get('assessments/{assessment}/respondent-collection', [MultiRespondentAssessmentController::class, 'show'])->name('assessments.respondent-collection');
+    Route::patch('assessments/{assessment}/respondent-sessions/{responseSession}', [MultiRespondentAssessmentController::class, 'classify'])->name('assessments.respondent-sessions.classify');
+    Route::post('assessments/{assessment}/respondent-collection/finalize', [MultiRespondentAssessmentController::class, 'finalize'])->name('assessments.respondent-collection.finalize');
     Route::get('assessments/{assessment}/export/pdf', [ExportController::class, 'assessmentPdf'])->name('assessments.export.pdf');
     Route::post('assessments/{assessment}/share', [ExportController::class, 'createShareLink'])->name('assessments.share');
     Route::delete('assessments/{assessment}/share-links/{shareLink}', [ExportController::class, 'revokeShareLink'])->name('assessments.share.revoke');

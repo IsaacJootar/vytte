@@ -12,6 +12,7 @@ use App\Models\QuestionOptionTranslation;
 use App\Models\QuestionTranslation;
 use App\Models\RespondentConsent;
 use App\Models\Response;
+use App\Services\RespondentSubmissionService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -293,19 +294,21 @@ class PublicRespondentRunner extends Component
         ));
     }
 
-    public function submit(): void
+    public function submit(RespondentSubmissionService $submission): void
     {
         if (! $this->hasValidPublicContext() || ! $this->hasCompleteRequiredResponses()) {
             return;
         }
 
-        $updated = PublicResponseSession::where('session_id', $this->respondentId)
+        $session = PublicResponseSession::where('session_id', $this->respondentId)
             ->whereNull('submitted_at')
-            ->update(['submitted_at' => now(), 'last_activity_at' => now()]);
-
-        if ($updated === 1) {
-            $this->isSubmitted = true;
+            ->first();
+        if (! $session) {
+            return;
         }
+
+        $submission->submit($session);
+        $this->isSubmitted = true;
     }
 
     private function loadQuestions(): void

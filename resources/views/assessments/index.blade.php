@@ -31,6 +31,7 @@
                         $score = $assessment->score;
                         $module = $assessment->moduleScope->first()?->module;
                         $isComplete = $assessment->status === 'COMPLETE';
+                        $isMultiRespondent = $assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false;
 
                         if ($score && $score->overall_score !== null) {
                             $s = (float) $score->overall_score;
@@ -99,9 +100,9 @@
                                     View results
                                 </a>
                             @else
-                                <a href="{{ route('assessments.run', $assessment) }}"
+                                <a href="{{ $isMultiRespondent ? route('assessments.respondent-collection', $assessment) : route('assessments.run', $assessment) }}"
                                    class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:underline whitespace-nowrap">
-                                    Continue
+                                    {{ $isMultiRespondent ? 'Review collection' : 'Continue' }}
                                 </a>
                             @endif
                         </div>

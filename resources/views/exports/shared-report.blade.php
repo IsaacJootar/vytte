@@ -87,6 +87,16 @@
             </div>
         </div>
 
+        @if (($report['respondent_collection']['is_multi_respondent'] ?? false) === true)
+            <div class="bg-white rounded-2xl border border-slate-200 px-5 py-4 mb-5">
+                <p class="text-xs font-semibold text-vytte-700 uppercase tracking-wider">Respondent aggregate</p>
+                <p class="mt-1 text-sm text-slate-600">
+                    Based on {{ $report['respondent_collection']['eligible_completed_respondents'] }} eligible completed respondents
+                    using the arithmetic mean. Individual identities and responses are not included in this shared report.
+                </p>
+            </div>
+        @endif
+
         {{-- Domain scores --}}
         @if ($domainScores->isNotEmpty())
             <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">

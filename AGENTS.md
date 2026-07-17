@@ -73,6 +73,10 @@ Read, in order, for architecture or assessment work:
 - Uncalibrated results remain `null` with `NOT_CALIBRATED`; never turn missing calibration into zero.
 - Every algorithm change requires a new scoring version.
 - Completed assessments are never silently recalculated.
+- Multi-respondent collection must be explicitly enabled by an immutable template version with a minimum threshold, eligibility rules, and approved aggregation method.
+- Score each durable submitted session independently. Only eligible completed sessions contribute.
+- Arithmetic mean is the only initial aggregation method. Reaching the threshold never auto-finalizes; OWNER or ADMIN must manually finalize.
+- Finalized aggregates use the ordinary immutable report and governed sharing path. Shared reports never expose session identifiers or individual answers.
 
 ## Git identity
 

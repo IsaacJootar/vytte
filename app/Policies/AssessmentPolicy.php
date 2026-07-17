@@ -34,4 +34,20 @@ class AssessmentPolicy
     {
         return $this->view($user, $assessment);
     }
+
+    public function finalizeMultiRespondent(User $user, Assessment $assessment): Response
+    {
+        $view = $this->view($user, $assessment);
+        if (! $view->allowed()) {
+            return $view;
+        }
+
+        $role = WorkspaceMember::where('workspace_id', app('current.workspace')->workspace_id)
+            ->where('user_id', $user->user_id)
+            ->value('role');
+
+        return in_array($role, ['OWNER', 'ADMIN'], true)
+            ? Response::allow()
+            : Response::deny('Only workspace owners and administrators can finalize respondent collections.');
+    }
 }

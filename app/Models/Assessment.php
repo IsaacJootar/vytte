@@ -123,6 +123,16 @@ class Assessment extends Model
         return $this->hasMany(AssessmentShareLink::class, 'assessment_id', 'assessment_id');
     }
 
+    public function publicResponseSessions(): HasMany
+    {
+        return $this->hasMany(PublicResponseSession::class, 'assessment_id', 'assessment_id');
+    }
+
+    public function aggregationResult(): HasOne
+    {
+        return $this->hasOne(AssessmentAggregationResult::class, 'assessment_id', 'assessment_id');
+    }
+
     public function templateVersion(): BelongsTo
     {
         return $this->belongsTo(AssessmentTemplateVersion::class, 'template_version_id', 'template_version_id');

@@ -371,5 +371,7 @@ The Phase 21 audit and Phase 22 baseline were followed by bounded corrective mod
 | Optional inline evidence | `bea3021` | Response-bound supporting notes with progressive disclosure |
 | Lifecycle states | `140855c` | Canonical guarded execution/publication states |
 | Reports index | `e46eb2b` | Working workspace report navigation and share-link management |
+| Operating baseline | `1f3e559` | Repository authority, setup, schema cleanup, and architecture contracts |
+| Unified multi-respondent scoring | this module | Independent session scores, eligibility exclusions, manual arithmetic-mean finalization, immutable ordinary reports |
 
-Current verified boundary: **365 tests, 870 assertions passing** on SQLite. PostgreSQL parity remains a release requirement while local Docker is unavailable.
+Current verified boundary: **375 tests, 916 assertions passing** on SQLite. A clean 42-migration seed and production frontend build also pass. PostgreSQL parity remains a release requirement while local Docker is unavailable.

@@ -24,6 +24,11 @@ class RespondentLinkController extends Controller
             return back()->with('error', 'Respondent links can only be created for in-progress assessments.');
         }
 
+        $snapshot = $assessment->snapshot()->first();
+        if ($snapshot && ! ($snapshot->collection_config['allows_multi_respondent'] ?? false)) {
+            return back()->with('error', 'This template does not allow multi-respondent collection.');
+        }
+
         $token = Str::random(32);
 
         $respondentToken = AssessmentRespondentToken::create([

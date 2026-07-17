@@ -93,9 +93,9 @@ flowchart TD
 - The runner supports scalar option inputs and unscored open text under the publishable contract.
 - Required scored answers are validated on the server before completion.
 - Optional evidence is progressively disclosed and stored as `responses.evidence_note` on the exact response. It does not count as an answer or create a repository workflow.
-- External respondent links create durable, resumable sessions with locale, consent, activity, and submission timestamps. Tokens record creator, use, expiry, and revocation.
+- External respondent links create durable, resumable sessions with locale, consent, activity, and submission timestamps. Submitted sessions freeze response and independent score snapshots with integrity hashes. Tokens record creator, use, expiry, and revocation.
 - External and authenticated runners load all in-scope modules and revalidate question/option authority on every write.
-- Respondent-aware scoring semantics must extend the shared versioned scoring/report contract. A separate community or respondent report is prohibited.
+- Multi-respondent templates explicitly freeze their threshold, eligibility rules, arithmetic-mean method, and scoring-profile version. Provisional aggregates require OWNER/ADMIN manual finalization into the ordinary immutable report. A separate community or respondent report is prohibited.
 
 ## Lifecycle
 
@@ -117,7 +117,7 @@ See `LIFECYCLE_STATE_MACHINE.md`.
 - Calibration is `NOT_CALIBRATED`, `PARTIAL`, or `CALIBRATED`.
 - Display bands are Weak below 45, Moderate from 45 to below 70, and Strong at 70 or above.
 - Every stored score records an algorithm version. Completed assessments are not silently recalculated.
-- The current compatibility scorer calculates assessor-authored response rows. Explicit multi-respondent aggregation remains a template/scoring-profile extension gap, not a reason for a parallel engine.
+- The shared scorer calculates either the isolated staff response set or one durable public-session response set. Eligible completed respondent scores use the frozen arithmetic-mean contract; future methods require new governed versions.
 
 ## Reporting
 

@@ -48,6 +48,10 @@ class AssessmentRunner extends Component
     {
         $this->assessment = $assessment;
         $this->authorizeAssessmentAccess();
+        abort_if(
+            $assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false,
+            404,
+        );
         $this->isComplete = $assessment->status === Assessment::STATUS_COMPLETE;
         $this->loadQuestions();
         $this->loadExistingResponses();
@@ -160,6 +164,7 @@ class AssessmentRunner extends Component
     {
         $responses = Response::where('assessment_id', $this->assessment->assessment_id)
             ->whereNull('respondent_id')
+            ->whereNull('public_response_session_id')
             ->get();
 
         foreach ($responses as $response) {
@@ -265,6 +270,7 @@ class AssessmentRunner extends Component
                 'assessment_id' => $this->assessment->assessment_id,
                 'question_id' => $questionId,
                 'respondent_id' => null,
+                'public_response_session_id' => null,
             ],
             [
                 'value_option_id' => $optionId,
@@ -316,6 +322,7 @@ class AssessmentRunner extends Component
             $response = Response::where('assessment_id', $this->assessment->assessment_id)
                 ->where('question_id', $questionId)
                 ->whereNull('respondent_id')
+                ->whereNull('public_response_session_id')
                 ->first();
             if ($response) {
                 if (blank($response->evidence_note)) {
@@ -331,7 +338,12 @@ class AssessmentRunner extends Component
 
         $value = mb_substr($value, 0, 5000);
         Response::updateOrCreate(
-            ['assessment_id' => $this->assessment->assessment_id, 'question_id' => $questionId, 'respondent_id' => null],
+            [
+                'assessment_id' => $this->assessment->assessment_id,
+                'question_id' => $questionId,
+                'respondent_id' => null,
+                'public_response_session_id' => null,
+            ],
             ['value_text' => $value, 'value_option_id' => null, 'answered_at' => now()]
         );
         $this->savedTextResponses[$questionId] = $value;
@@ -361,6 +373,7 @@ class AssessmentRunner extends Component
         $response = Response::where('assessment_id', $this->assessment->assessment_id)
             ->where('question_id', $questionId)
             ->whereNull('respondent_id')
+            ->whereNull('public_response_session_id')
             ->first();
 
         if ($value === '') {
@@ -378,7 +391,12 @@ class AssessmentRunner extends Component
 
         $value = mb_substr($value, 0, 5000);
         Response::updateOrCreate(
-            ['assessment_id' => $this->assessment->assessment_id, 'question_id' => $questionId, 'respondent_id' => null],
+            [
+                'assessment_id' => $this->assessment->assessment_id,
+                'question_id' => $questionId,
+                'respondent_id' => null,
+                'public_response_session_id' => null,
+            ],
             ['evidence_note' => $value]
         );
         $this->savedEvidenceNotes[$questionId] = $value;

@@ -69,7 +69,7 @@ This is not a production-data audit. Local row counts are included only to show 
 | DM-12 | Question directly belongs to one sub-index and carries `score_weight` | Question belongs to module/section; sub-index is many-to-many; option carries score | Critical | Preserve flexible pivot. Define scoring-version semantics before reuse/versioning. |
 | DM-13 | Options use `option_text`, `option_value`, and correctness | Options use `option_label`, `score_weight`, order, and pain flag | High | Treat current option rows and values as scoring contracts. |
 | DM-14 | Response stores selected UUID arrays, generic value, notes, flags, workspace | Response stores scalar option/text/numeric values plus an optional inline `evidence_note`; multi-select storage remains inactive | Partially resolved | Keep evidence response-bound; add response types only with explicit renderer/storage contracts. |
-| DM-15 | Unique response per assessment/question | Resolved for staff responses by a partial unique index; public responses retain respondent-specific uniqueness | Resolved | Preserve PostgreSQL parity tests for the partial index. |
+| DM-15 | Unique response per assessment/question | Resolved: staff rows are unique per assessment/question only when both respondent references are null; public rows are unique per durable session/question | Resolved locally | Preserve PostgreSQL parity and concurrency tests for both partial indexes. |
 | DM-16 | Respondent is an assessment respondent record | New public responses reference durable `public_response_sessions`; legacy rows may contain an unenforced session UUID in `respondent_id` | Legacy-only | Preserve old values; all new public writes must populate the session FK. |
 | DM-17 | `response_flags` table | No response-flags table; flag columns are also absent | Medium | Postpone response review/flagging until explicitly designed. |
 | DM-18 | Rich normalized `sub_index_scores` with workspace and counts | 0-100 `score`, respondent type, calibration status; no workspace/counts | High | Preserve score rows; version new algorithms rather than overwriting historical values. |
@@ -92,7 +92,7 @@ Projects and targets carry direct workspace ownership. Workspace resolution veri
 
 ### Response uniqueness
 
-A partial unique index now enforces one staff response per assessment/question when `respondent_id IS NULL`. Respondent-specific responses retain the original composite uniqueness rule. PostgreSQL parity remains an operational verification item while local Docker is unavailable.
+A partial unique index now enforces one staff response per assessment/question only when both `respondent_id` and `public_response_session_id` are null. A second partial index enforces one public response per durable session/question. This prevents public sessions from colliding with staff answers or one another. PostgreSQL parity remains an operational verification item while local Docker is unavailable.
 
 ### Composite-key Eloquent models
 
@@ -100,7 +100,7 @@ A partial unique index now enforces one staff response per assessment/question w
 
 ### Public response identity
 
-`public_response_sessions` now owns anonymous participation state and is linked to new responses and consents by foreign keys. The older `respondent_id` column remains mixed-purpose for backward compatibility, but the public runner no longer relies on it as its only identity relationship.
+`public_response_sessions` owns anonymous participation state and is linked to responses and consents by foreign keys. Submitted sessions retain immutable response snapshots and hashes. `respondent_score_results` retains each independently calculated immutable score; `assessment_aggregation_results` retains the final method, threshold, eligible/excluded counts and reasons, exact trace references, calculation hashes, finalizer, and timestamp.
 
 ### Mutable shared content
 
