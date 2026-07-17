@@ -71,7 +71,6 @@ class ProjectController extends Controller
             $target = Target::create([
                 'target_type_code' => $validated['target_type_code'],
                 'name' => $validated['target_name'],
-                'category_id' => null,
                 'custom_setting_label' => $validated['custom_setting_label'] ?? null,
                 'uses_departments' => $validated['target_type_code'] === 'CUSTOM'
                     ? (bool) ($validated['uses_departments'] ?? false)

@@ -14,7 +14,6 @@ use App\Models\Project;
 use App\Models\Question;
 use App\Models\Response;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -66,7 +65,6 @@ class Phase22CharacterizationTest extends TestCase
 
     private function createAssessment(Workspace $workspace, User $user): Assessment
     {
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
         $project = Project::create([
             'name' => 'Phase 22 Characterization',
             'owner_user_id' => $user->user_id,
@@ -74,7 +72,6 @@ class Phase22CharacterizationTest extends TestCase
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'Characterization Community',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);

@@ -207,7 +207,7 @@ Accepted items below record Isaac's explicit direction; all others remain implem
 - **Status:** Approved by Isaac and implemented, 17 July 2026
 - **Decision:** Project creation asks for a globally understandable setting type and the setting's name. It does not require a region-specific category such as primary or secondary school.
 - **School behavior:** Selecting `School` immediately asks for `School name`; education-level terminology is not inferred or required.
-- **Compatibility:** Existing target-category values remain readable legacy metadata, while `targets.category_id` is optional and new project creation leaves it null.
+- **Compatibility:** Approved sample category data was discarded. Migration `2026_07_17_000015` removes `target_categories`, `target_category_default_modules`, and `targets.category_id`; templates, rather than target categories, govern assessment content.
 - **Boundary:** A future subtype may be introduced only when a specific assessment template genuinely requires it, using plain context-appropriate language and progressive disclosure rather than a mandatory global category field.
 
 ## Approval record

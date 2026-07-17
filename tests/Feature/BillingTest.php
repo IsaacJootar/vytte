@@ -6,7 +6,6 @@ use App\Models\Assessment;
 use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -52,11 +51,9 @@ class BillingTest extends TestCase
 
     private function createAssessment(Project $project, Workspace $workspace): Assessment
     {
-        $categoryId = TargetCategory::value('category_id');
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'Test Community',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
 
@@ -127,7 +124,6 @@ class BillingTest extends TestCase
                 'name' => 'Second Project',
                 'target_name' => 'Test Target',
                 'target_type_code' => 'COMMUNITY',
-                'category_id' => TargetCategory::value('category_id'),
             ])
             ->assertRedirect(route('billing.index'));
     }
@@ -145,7 +141,6 @@ class BillingTest extends TestCase
                 'name' => 'Tenth Project',
                 'target_name' => 'Test Target',
                 'target_type_code' => 'COMMUNITY',
-                'category_id' => TargetCategory::value('category_id'),
                 'country' => 'Nigeria',
             ]);
 
@@ -167,7 +162,6 @@ class BillingTest extends TestCase
                 'name' => 'Eleventh Project',
                 'target_name' => 'Test Target',
                 'target_type_code' => 'COMMUNITY',
-                'category_id' => TargetCategory::value('category_id'),
             ])
             ->assertRedirect(route('billing.index'));
     }
@@ -185,7 +179,6 @@ class BillingTest extends TestCase
                 'name' => 'Many Projects',
                 'target_name' => 'Test Target',
                 'target_type_code' => 'COMMUNITY',
-                'category_id' => TargetCategory::value('category_id'),
                 'country' => 'Nigeria',
             ])
             ->assertRedirect();

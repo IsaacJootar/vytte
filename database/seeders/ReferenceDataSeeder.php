@@ -10,7 +10,6 @@ class ReferenceDataSeeder extends Seeder
     public function run(): void
     {
         $this->seedTargetTypes();
-        $this->seedTargetCategories();
         $this->seedDomains();
         $this->seedDomainWeights();
         $this->seedMaturityLevels();
@@ -20,7 +19,6 @@ class ReferenceDataSeeder extends Seeder
         $this->seedTopics();
         $this->seedAssessmentModules();
         $this->seedRespondentRoles();
-        $this->seedTargetCategoryDefaultModules();
         $this->seedHealthTaxonomy();
     }
 
@@ -37,24 +35,6 @@ class ReferenceDataSeeder extends Seeder
             ['target_type_code' => 'NGO_PROGRAMME', 'target_type_name' => 'NGO or Programme', 'description' => 'A non-governmental organization or health programme.'],
             ['target_type_code' => 'GOVERNMENT_ORG', 'target_type_name' => 'Government Organization', 'description' => 'A ministry, department, agency, or government office.'],
             ['target_type_code' => 'CUSTOM', 'target_type_name' => 'Custom Setting', 'description' => 'A user-defined setting not covered by the standard list.'],
-        ]);
-    }
-
-    private function seedTargetCategories(): void
-    {
-        DB::table('target_categories')->insertOrIgnore([
-            ['target_type_code' => 'HEALTH_FACILITY', 'category_code' => 'PHC', 'category_name' => 'Primary Health Centre', 'description' => 'Smallest facility category; typically OPD, ANC, immunization, pharmacy, records.'],
-            ['target_type_code' => 'HEALTH_FACILITY', 'category_code' => 'GENERAL_HOSPITAL', 'category_name' => 'General Hospital', 'description' => 'Mid-tier facility; full departmental spread including in-patient and laboratory.'],
-            ['target_type_code' => 'HEALTH_FACILITY', 'category_code' => 'REFERRAL_HOSPITAL', 'category_name' => 'Referral / Tertiary Hospital', 'description' => 'Highest tier; full departmental spread plus specialist and referral-receiving capacity.'],
-            ['target_type_code' => 'SCHOOL', 'category_code' => 'PRIMARY_SCHOOL', 'category_name' => 'Primary School', 'description' => 'Nursery/primary-level school.'],
-            ['target_type_code' => 'SCHOOL', 'category_code' => 'SECONDARY_SCHOOL', 'category_name' => 'Secondary School', 'description' => 'Junior/senior secondary-level school.'],
-            ['target_type_code' => 'COMMUNITY', 'category_code' => 'GENERAL_COMMUNITY', 'category_name' => 'General Community', 'description' => 'A community or catchment area assessed as its own entity, not tiered by size or type.'],
-            ['target_type_code' => 'CORRECTIONAL', 'category_code' => 'GENERAL_CORRECTIONAL', 'category_name' => 'Correctional Facility', 'description' => 'A prison, detention centre, or correctional setting.'],
-            ['target_type_code' => 'WORKPLACE', 'category_code' => 'GENERAL_WORKPLACE', 'category_name' => 'Workplace or Business', 'description' => 'A workplace, business, factory, or company.'],
-            ['target_type_code' => 'PLACE_OF_WORSHIP', 'category_code' => 'GENERAL_WORSHIP', 'category_name' => 'Place of Worship', 'description' => 'A church, mosque, temple, or faith community.'],
-            ['target_type_code' => 'NGO_PROGRAMME', 'category_code' => 'GENERAL_NGO', 'category_name' => 'NGO or Programme', 'description' => 'An NGO, initiative, or health programme.'],
-            ['target_type_code' => 'GOVERNMENT_ORG', 'category_code' => 'GENERAL_GOVERNMENT', 'category_name' => 'Government Organization', 'description' => 'A ministry, department, agency, or government office.'],
-            ['target_type_code' => 'CUSTOM', 'category_code' => 'GENERAL_CUSTOM', 'category_name' => 'Custom Setting', 'description' => 'A user-defined assessment setting.'],
         ]);
     }
 
@@ -191,58 +171,6 @@ class ReferenceDataSeeder extends Seeder
             ['target_type_code' => 'COMMUNITY', 'role_code' => 'COMMUNITY_LEADER', 'role_name' => 'Community Leader', 'is_internal' => true],
             ['target_type_code' => 'COMMUNITY', 'role_code' => 'COMMUNITY_MEMBER', 'role_name' => 'Community Member', 'is_internal' => false],
         ]);
-    }
-
-    private function seedTargetCategoryDefaultModules(): void
-    {
-        $phcId = DB::table('target_categories')->where('category_code', 'PHC')->value('category_id');
-        $generalId = DB::table('target_categories')->where('category_code', 'GENERAL_HOSPITAL')->value('category_id');
-        $referralId = DB::table('target_categories')->where('category_code', 'REFERRAL_HOSPITAL')->value('category_id');
-        $primarySchoolId = DB::table('target_categories')->where('category_code', 'PRIMARY_SCHOOL')->value('category_id');
-        $secondarySchoolId = DB::table('target_categories')->where('category_code', 'SECONDARY_SCHOOL')->value('category_id');
-        $generalCommunityId = DB::table('target_categories')->where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
-
-        $phcModules = DB::table('assessment_modules')
-            ->where('target_type_code', 'HEALTH_FACILITY')
-            ->whereIn('module_code', ['OPD', 'ANC', 'LBD', 'PNC', 'IMM', 'FP', 'LAB', 'PHM', 'IPD', 'REF', 'REC', 'HTB', 'COM', 'NUT'])
-            ->pluck('module_id');
-
-        $generalModules = DB::table('assessment_modules')
-            ->where('target_type_code', 'HEALTH_FACILITY')
-            ->whereIn('module_code', ['OPD', 'ANC', 'LBD', 'PNC', 'IMM', 'FP', 'LAB', 'PHM', 'IPD', 'REF', 'REC', 'HTB', 'COM', 'NUT', 'THR', 'RAD', 'BLB', 'EMR', 'FIN', 'HRM', 'INF'])
-            ->pluck('module_id');
-
-        $referralModules = DB::table('assessment_modules')
-            ->where('target_type_code', 'HEALTH_FACILITY')
-            ->whereIn('module_code', ['OPD', 'ANC', 'LBD', 'PNC', 'IMM', 'FP', 'LAB', 'PHM', 'IPD', 'REF', 'REC', 'HTB', 'COM', 'NUT', 'THR', 'RAD', 'BLB', 'EMR', 'ICU', 'FIN', 'HRM', 'INF', 'MNH'])
-            ->pluck('module_id');
-
-        $schoolModules = DB::table('assessment_modules')
-            ->where('target_type_code', 'SCHOOL')
-            ->whereIn('module_code', ['WASH', 'HYGED', 'MHM'])
-            ->pluck('module_id');
-
-        $hivawModuleId = DB::table('assessment_modules')
-            ->where('target_type_code', 'COMMUNITY')
-            ->where('module_code', 'HIVAW')
-            ->value('module_id');
-
-        foreach ($phcModules as $moduleId) {
-            DB::table('target_category_default_modules')->insertOrIgnore(['category_id' => $phcId, 'module_id' => $moduleId, 'is_default' => true]);
-        }
-        foreach ($generalModules as $moduleId) {
-            DB::table('target_category_default_modules')->insertOrIgnore(['category_id' => $generalId, 'module_id' => $moduleId, 'is_default' => true]);
-        }
-        foreach ($referralModules as $moduleId) {
-            DB::table('target_category_default_modules')->insertOrIgnore(['category_id' => $referralId, 'module_id' => $moduleId, 'is_default' => true]);
-        }
-        foreach ($schoolModules as $moduleId) {
-            DB::table('target_category_default_modules')->insertOrIgnore(['category_id' => $primarySchoolId, 'module_id' => $moduleId, 'is_default' => true]);
-            DB::table('target_category_default_modules')->insertOrIgnore(['category_id' => $secondarySchoolId, 'module_id' => $moduleId, 'is_default' => true]);
-        }
-        if ($hivawModuleId) {
-            DB::table('target_category_default_modules')->insertOrIgnore(['category_id' => $generalCommunityId, 'module_id' => $hivawModuleId, 'is_default' => true]);
-        }
     }
 
     private function seedHealthTaxonomy(): void

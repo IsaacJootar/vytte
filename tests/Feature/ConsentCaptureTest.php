@@ -10,7 +10,6 @@ use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\RespondentConsent;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -43,13 +42,10 @@ class ConsentCaptureTest extends TestCase
     {
         $this->seed(ReferenceDataSeeder::class);
         $this->seed(HivawQuestionsSeeder::class);
-
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
         $project = Project::create(['name' => 'Consent Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'Test Community',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
@@ -80,13 +76,10 @@ class ConsentCaptureTest extends TestCase
     private function createInternalModuleAssessment(Workspace $workspace, User $user): Assessment
     {
         $this->seed(ReferenceDataSeeder::class);
-
-        $categoryId = TargetCategory::where('category_code', 'PHC')->value('category_id');
         $project = Project::create(['name' => 'Internal Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'HEALTH_FACILITY',
             'name' => 'Test PHC',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);

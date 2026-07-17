@@ -9,7 +9,6 @@ use App\Models\AssessmentShareLink;
 use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -47,11 +46,9 @@ class ExportTest extends TestCase
 
     private function createCompleteAssessment(Workspace $workspace, ?User $owner = null): Assessment
     {
-        $categoryId = TargetCategory::value('category_id');
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'Test Community',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
 
@@ -323,11 +320,9 @@ class ExportTest extends TestCase
     public function test_shared_report_404_for_incomplete_assessment(): void
     {
         [$user, $workspace] = $this->createWorkspaceWithOwner();
-        $categoryId = TargetCategory::value('category_id');
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'Test Target',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project = Project::factory()->create([

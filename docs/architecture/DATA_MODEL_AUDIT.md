@@ -18,11 +18,11 @@ This is not a production-data audit. Local row counts are included only to show 
 
 ### Taxonomy and reference data
 
-`target_types`, `target_categories`, `setting_types`, `target_type_setting_map`, `health_domains`, `assessment_module_health_domain`, `domains`, `domain_weights`, `maturity_levels`, `assessment_tiers`, `question_types`, `standards_registry`, `topics`, `respondent_roles`
+`target_types`, `setting_types`, `target_type_setting_map`, `health_domains`, `assessment_module_health_domain`, `domains`, `domain_weights`, `maturity_levels`, `assessment_tiers`, `question_types`, `standards_registry`, `topics`, `respondent_roles`
 
 ### Module and question library
 
-`assessment_modules`, `target_category_default_modules`, `module_domains`, `sub_indices`, `questions`, `question_options`, `question_numeric_bands`, `sub_index_questions`, `question_topics`, `question_drafts`, `question_translations`, `question_option_translations`
+`assessment_modules`, `module_domains`, `sub_indices`, `questions`, `question_options`, `question_numeric_bands`, `sub_index_questions`, `question_topics`, `question_drafts`, `question_translations`, `question_option_translations`
 
 ### Template and immutable content
 
@@ -102,7 +102,7 @@ A partial unique index now enforces one staff response per assessment/question o
 
 `public_response_sessions` owns anonymous participation state and is linked to responses and consents by foreign keys. Submitted sessions retain immutable response snapshots and hashes. `respondent_score_results` retains each independently calculated immutable score; `assessment_aggregation_results` retains the final method, threshold, eligible/excluded counts and reasons, exact trace references, calculation hashes, finalizer, and timestamp.
 
-`targets.category_id` is nullable legacy metadata. New project creation uses the setting type and setting name only. Existing category rows remain readable but are not a required global taxonomy or a user-facing creation step.
+The legacy `target_categories`, `target_category_default_modules`, and `targets.category_id` structures have been removed. A target is identified by its setting type, user-provided name, and optional custom-setting label; published template versions define assessment content.
 
 ### Mutable shared content
 

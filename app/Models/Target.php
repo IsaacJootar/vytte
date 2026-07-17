@@ -20,7 +20,6 @@ class Target extends Model
         'owner_workspace_id',
         'target_type_code',
         'name',
-        'category_id',
         'country',
         'region',
         'sub_region',
@@ -48,11 +47,6 @@ class Target extends Model
     public function targetType(): BelongsTo
     {
         return $this->belongsTo(TargetType::class, 'target_type_code', 'target_type_code');
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(TargetCategory::class, 'category_id', 'category_id');
     }
 
     public function projects(): BelongsToMany

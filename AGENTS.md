@@ -24,6 +24,8 @@ There are exactly two creation paths:
 
 Settings may include health facilities, schools, communities, correctional facilities, workplaces, places of worship, NGOs/programmes, government organizations, or custom contexts. A setting is not a health domain.
 
+Target categories are not part of the architecture. Do not add a global category or subtype layer: setting type and setting name identify the target, while published template versions determine assessment content. Add context-specific classification only after explicit product approval and only where a template genuinely requires it.
+
 ## Current architecture authority
 
 Read, in order, for architecture or assessment work:

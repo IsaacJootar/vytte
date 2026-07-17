@@ -6,7 +6,6 @@ use App\Models\Assessment;
 use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -64,12 +63,10 @@ class GeographicUsageTest extends TestCase
 
     private function createTarget(Workspace $workspace, string $country, ?string $region = null): Target
     {
-        $categoryId = TargetCategory::value('category_id');
 
         return Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => "Target in {$country}",
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
             'country' => $country,
             'region' => $region,
@@ -210,12 +207,9 @@ class GeographicUsageTest extends TestCase
         $workspace = Workspace::factory()->create();
         $user = User::factory()->create();
         WorkspaceMember::create(['workspace_id' => $workspace->workspace_id, 'user_id' => $user->user_id, 'role' => 'OWNER']);
-
-        $categoryId = TargetCategory::value('category_id');
         $noCountryTarget = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'No Country Target',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
             'country' => null,
         ]);

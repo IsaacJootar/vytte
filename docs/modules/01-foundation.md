@@ -24,7 +24,7 @@ Everything needed to have a running, deployable, testable skeleton:
 ### Database
 - [x] All 42 tables migrated in correct FK order
 - [x] Reference data seeded (domains, maturity_levels, assessment_tiers, target_types,
-      target_categories, question_types, respondent_roles, assessment_module_definitions)
+      question_types, respondent_roles, assessment_module_definitions)
 - [x] sub_indices seeded (120 rows, v1.1 column names)
 - [x] questions seeded (528 rows, score_weight = null except HIVAW 9 questions)
 - [x] question_options seeded

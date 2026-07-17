@@ -9,7 +9,6 @@ use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\Response;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -41,7 +40,6 @@ class ResultsTest extends TestCase
 
     private function setupCompleteAssessment(Workspace $workspace, User $user, bool $withAnswers = true): Assessment
     {
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
 
         $project = Project::create([
             'name' => 'Results Test Project',
@@ -51,7 +49,6 @@ class ResultsTest extends TestCase
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'Test Community',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
 
@@ -130,13 +127,10 @@ class ResultsTest extends TestCase
         $this->seed(HivawQuestionsSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
-
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
         $project = Project::create(['name' => 'Test', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'T',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
@@ -256,12 +250,10 @@ class ResultsTest extends TestCase
         [$user, $workspace] = $this->userWithWorkspace();
 
         // Set up assessment with worst answers so scores will be Weak
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
         $project = Project::create(['name' => 'Findings Test', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'TC',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);

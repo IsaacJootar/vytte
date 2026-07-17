@@ -12,7 +12,6 @@ use App\Models\Project;
 use App\Models\Question;
 use App\Models\Response;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -52,7 +51,6 @@ class AssessmentTest extends TestCase
     private function createProjectWithTarget(Workspace $workspace, User $user): array
     {
         $this->seed(ReferenceDataSeeder::class);
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
 
         $project = Project::create([
             'name' => 'Test Project',
@@ -62,7 +60,6 @@ class AssessmentTest extends TestCase
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'Test Community',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
 

@@ -1,5 +1,24 @@
 # Architecture Remediation Progress
 
+## Module 21 — Legacy category architecture removal
+
+**Status:** Complete
+
+**Resolved:**
+
+- Removed the target-category model, relationships, controller writes, seeded categories, and category-to-module defaults.
+- Added a forward migration that removes `target_categories`, `target_category_default_modules`, and `targets.category_id`, including their legacy sample data.
+- Made setting type, setting name, and published template versions the only authorities for setting identity and assessment content.
+- Removed category dependencies from the complete test fixture layer and added a schema-level regression test proving the legacy structures stay absent.
+
+**Verification:**
+
+- Focused taxonomy and project suite: 22 tests, 73 assertions, all passed.
+- Full regression suite: 377 tests, 926 assertions, all passed.
+- Existing SQLite migration rollback/reapply: passed.
+- Clean SQLite migration and complete seed: passed.
+- Production Vite frontend build: passed.
+
 ## Module 20 — Universal setting creation
 
 **Status:** Complete locally
@@ -10,14 +29,14 @@
 - The current Free, Pro, or Agency plan is displayed beneath the final sidebar link instead of in the logo area.
 - Project creation uses one globally understandable setting type followed by the setting name.
 - School creation asks only for `School name`; primary/secondary classifications and the global Category field are removed from creation and project displays.
-- `targets.category_id` is optional for new records while existing category data remains readable for compatibility.
+- The legacy category field was removed from the user flow before its schema retirement in Module 21.
 - Setting types retain their governed product order.
 
 **Verification:**
 
 - Project, billing, taxonomy, template, and assessment focused suite: 66 tests, 180 assertions, all passed.
 - Full regression suite: 376 tests, 925 assertions, all passed.
-- Local SQLite migration applied without changing existing category values.
+- Local SQLite migration made the category field optional as a safe transition before its approved removal in Module 21.
 - Clean migration rollback/reapply cycle and complete seed: passed.
 - Production Vite frontend build: passed.
 

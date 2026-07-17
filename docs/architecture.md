@@ -71,7 +71,7 @@ Models that use BelongsToWorkspace:
 
 Platform-level models (not tenant-scoped):
 - User, Workspace, Domain (the 7 PHSAI domains), AssessmentTier,
-  TargetType, TargetCategory, Topic, QuestionType, StandardsRegistry,
+  TargetType, Topic, QuestionType, StandardsRegistry,
   AssessmentModuleDefinition, SubIndex, Question, QuestionOption,
   MaturityLevel, RespondentRole
 

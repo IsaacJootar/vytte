@@ -6,10 +6,10 @@ use App\Models\AssessmentModule;
 use App\Models\HealthDomain;
 use App\Models\SettingType;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\Workspace;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class HealthTaxonomyTest extends TestCase
@@ -39,6 +39,13 @@ class HealthTaxonomyTest extends TestCase
         $this->assertSame(10, SettingType::count());
     }
 
+    public function test_legacy_target_category_architecture_is_absent(): void
+    {
+        $this->assertFalse(Schema::hasTable('target_categories'));
+        $this->assertFalse(Schema::hasTable('target_category_default_modules'));
+        $this->assertFalse(Schema::hasColumn('targets', 'category_id'));
+    }
+
     public function test_health_domains_are_distinct_from_operational_scoring_domains(): void
     {
         $this->assertDatabaseHas('health_domains', ['domain_code' => 'MENTAL_HEALTH']);
@@ -64,7 +71,6 @@ class HealthTaxonomyTest extends TestCase
         $target = Target::create([
             'owner_workspace_id' => $workspace->workspace_id,
             'target_type_code' => 'CUSTOM',
-            'category_id' => TargetCategory::where('category_code', 'GENERAL_CUSTOM')->value('category_id'),
             'name' => 'Local Cooperative',
             'custom_setting_label' => 'Agricultural Cooperative',
             'uses_departments' => false,

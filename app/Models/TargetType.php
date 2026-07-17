@@ -15,11 +15,6 @@ class TargetType extends Model
 
     public $timestamps = false;
 
-    public function categories(): HasMany
-    {
-        return $this->hasMany(TargetCategory::class, 'target_type_code', 'target_type_code');
-    }
-
     public function targets(): HasMany
     {
         return $this->hasMany(Target::class, 'target_type_code', 'target_type_code');

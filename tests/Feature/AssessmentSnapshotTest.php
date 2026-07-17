@@ -11,7 +11,6 @@ use App\Models\Project;
 use App\Models\Question;
 use App\Models\Response;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -54,7 +53,6 @@ class AssessmentSnapshotTest extends TestCase
         $target = Target::create([
             'owner_workspace_id' => $workspace->workspace_id,
             'target_type_code' => 'COMMUNITY',
-            'category_id' => TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id'),
             'name' => 'Snapshot Community',
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);

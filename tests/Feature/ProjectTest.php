@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Project;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -106,7 +105,6 @@ class ProjectTest extends TestCase
         $this->assertNotNull($target);
         $this->assertEquals('Ikeja PHC', $target->name);
         $this->assertEquals('HEALTH_FACILITY', $target->target_type_code);
-        $this->assertNull($target->category_id);
         $this->assertEquals('Nigeria', $target->country);
         $this->assertEquals('Lagos', $target->region);
         $this->assertEquals('Ikeja', $target->sub_region);
@@ -167,7 +165,6 @@ class ProjectTest extends TestCase
         $target = Project::firstOrFail()->targets->firstOrFail();
         $this->assertSame('SCHOOL', $target->target_type_code);
         $this->assertSame('Sunrise Academy', $target->name);
-        $this->assertNull($target->category_id);
     }
 
     public function test_store_validates_required_fields(): void
@@ -189,7 +186,6 @@ class ProjectTest extends TestCase
             'name' => 'Test',
             'target_name' => 'Test Facility',
             'target_type_code' => 'INVALID_TYPE',
-            'category_id' => 1,
         ])->assertSessionHasErrors(['target_type_code']);
     }
 
@@ -199,8 +195,6 @@ class ProjectTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         $this->seedReferenceData();
-
-        $categoryId = TargetCategory::where('category_code', 'PHC')->value('category_id');
         $project = Project::create([
             'name' => 'My Project',
             'owner_user_id' => $user->user_id,
@@ -208,7 +202,6 @@ class ProjectTest extends TestCase
         $target = Target::create([
             'target_type_code' => 'HEALTH_FACILITY',
             'name' => 'Lagos PHC',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
@@ -225,13 +218,11 @@ class ProjectTest extends TestCase
         [$user, $workspace] = $this->userWithWorkspace();
         $this->seedReferenceData();
         $project = Project::create(['name' => 'One Setting', 'owner_user_id' => $user->user_id]);
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
 
         foreach (['First', 'Second'] as $name) {
             $target = Target::create([
                 'target_type_code' => 'COMMUNITY',
                 'name' => $name,
-                'category_id' => $categoryId,
                 'owner_workspace_id' => $workspace->workspace_id,
             ]);
 

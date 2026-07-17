@@ -12,7 +12,6 @@ use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\QuestionTranslation;
 use App\Models\Target;
-use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -210,13 +209,10 @@ class QuestionTranslationTest extends TestCase
         [$user, $workspace] = $this->userWithWorkspace();
         $user->update(['locale' => 'fr']);
         App::setLocale('fr');
-
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
         $project = Project::create(['name' => 'T', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'T',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
@@ -267,13 +263,10 @@ class QuestionTranslationTest extends TestCase
         [$user, $workspace] = $this->userWithWorkspace();
         $user->update(['locale' => 'fr']);
         App::setLocale('fr');
-
-        $categoryId = TargetCategory::where('category_code', 'GENERAL_COMMUNITY')->value('category_id');
         $project = Project::create(['name' => 'T', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'T',
-            'category_id' => $categoryId,
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);

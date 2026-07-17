@@ -21,7 +21,6 @@ Non-standard PK names must be declared: `protected $primaryKey = 'workspace_id';
 | `domains` | 7 PHSAI domains — pre-seeded, never per-tenant |
 | `assessment_tiers` | BASIC / ENHANCED / COMPREHENSIVE |
 | `target_types` | HOSPITAL, CLINIC, PHARMACY, etc. |
-| `target_categories` | DISTRICT, REGIONAL, NATIONAL, etc. |
 | `topics` | Cross-cutting topics (pre-seeded) |
 | `question_types` | SINGLE_CHOICE, MULTIPLE_CHOICE, BOOLEAN, TEXT, NUMERIC, RATING |
 | `maturity_levels` | 5 levels: CRITICAL → EXEMPLARY |
@@ -115,7 +114,6 @@ workspace_id uuid FK workspaces CASCADE NOT NULL
 project_id uuid FK projects CASCADE NOT NULL
 name varchar(255) NOT NULL
 type_id uuid FK target_types NOT NULL
-category_id uuid FK target_categories nullable
 location_state varchar(100) nullable
 location_lga varchar(100) nullable
 location_address text nullable
@@ -267,14 +265,13 @@ On `php artisan db:seed`, must populate:
 2. `maturity_levels` — 5 levels
 3. `assessment_tiers` — 3 tiers
 4. `target_types` — facility types
-5. `target_categories` — facility categories
-6. `question_types` — 6 types
-7. `respondent_roles` — named roles
-8. `assessment_module_definitions` — 23 modules
-9. `sub_indices` — 120 sub-indices (from phsai_seed_sub_indices.sql, corrected to v1.1 names)
-10. `questions` — 528 questions with NULL score_weight (except HIVAW: 9 questions with real weights)
-11. `question_options` — all options for all structured questions
-12. `platform_settings` — `email.notifications_enabled` = false
+5. `question_types` — 6 types
+6. `respondent_roles` — named roles
+7. `assessment_module_definitions` — 23 modules
+8. `sub_indices` — 120 sub-indices (from phsai_seed_sub_indices.sql, corrected to v1.1 names)
+9. `questions` — 528 questions with NULL score_weight (except HIVAW: 9 questions with real weights)
+10. `question_options` — all options for all structured questions
+11. `platform_settings` — `email.notifications_enabled` = false
 
 ## Migration order (respects FK dependencies)
 
@@ -287,20 +284,19 @@ On `php artisan db:seed`, must populate:
 7. maturity_levels
 8. assessment_tiers
 9. target_types
-10. target_categories
-11. topics
-12. question_types
-13. respondent_roles
-14. standards_registry
-15. assessment_module_definitions
-16. sub_indices
-17. questions
-18. question_options
-19. question_standards
-20. question_respondent_roles
-21. projects
-22. targets (add project_id FK to projects after targets table)
-23. assessments
+10. topics
+11. question_types
+12. respondent_roles
+13. standards_registry
+14. assessment_module_definitions
+15. sub_indices
+16. questions
+17. question_options
+18. question_standards
+19. question_respondent_roles
+20. projects
+21. targets (add project_id FK to projects after targets table)
+22. assessments
 24. assessment_modules
 25. assessment_respondents
 26. responses
