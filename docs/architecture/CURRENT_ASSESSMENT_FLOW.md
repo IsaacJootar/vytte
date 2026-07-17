@@ -76,21 +76,16 @@ Remaining authenticated-runner work is limited to future response types and more
 
 ## 4. Public respondent runner
 
-The public token route remains the principal unresolved lifecycle path:
+1. A workspace user creates a token for an in-progress assessment; the token records its creator and supports expiry and revocation.
+2. `/respond/{token}` validates the token and assessment state, then creates or resumes a durable `public_response_sessions` row.
+3. Token usage count and last-use time are updated when a new respondent session begins.
+4. All in-scope modules are loaded. Template-created assessments use the same immutable content snapshot as the authenticated runner.
+5. Language selection is stored on the durable session. Consent is stored for every in-scope module that requires it.
+6. Responses reference the durable session through a foreign key while retaining the legacy respondent UUID value for cohort separation and compatibility.
+7. Question, option, and text mutations are revalidated against authoritative in-scope content.
+8. Submit rechecks all required responses from stored data and persists `submitted_at`; remounting the link resumes the submitted state.
 
-1. A workspace user creates a time-limited token for an in-progress assessment.
-2. `/respond/{token}` validates token existence, expiry, and assessment state.
-3. The current component still selects only the first in-scope module.
-4. It creates a browser-session UUID, stores public responses with that UUID, and records consent where required.
-5. Submit still records completion only in the browser session.
-
-### Remaining public-runner risks
-
-- Comprehensive assessments are reduced to the first module.
-- Respondent completion is not durable or referentially constrained.
-- Token creator, revocation, usage, and last-used audit data are absent.
-- Public responses intentionally remain a separate cohort and are not blended into staff assessment scores, but no first-class public/cohort report presents them yet.
-- Localization is not yet unified with the authenticated snapshot runner.
+Public responses intentionally remain a separate voice cohort and are not blended into staff assessment scores. The remaining gap is a first-class cohort report and an approved retention/privacy policy, not response integrity or assessment coverage.
 
 ## 5. Submission and lifecycle
 

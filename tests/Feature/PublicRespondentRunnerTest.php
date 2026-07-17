@@ -9,8 +9,11 @@ use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentRespondentToken;
 use App\Models\AssessmentTier;
 use App\Models\Project;
+use App\Models\PublicResponseSession;
 use App\Models\Question;
+use App\Models\QuestionOption;
 use App\Models\QuestionTranslation;
+use App\Models\QuestionType;
 use App\Models\RespondentConsent;
 use App\Models\Target;
 use App\Models\TargetCategory;
@@ -115,6 +118,35 @@ class PublicRespondentRunnerTest extends TestCase
 
         Livewire::test(PublicRespondentRunner::class, ['token' => $token])
             ->assertSet('tokenValid', true);
+    }
+
+    public function test_revoked_token_is_rejected(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createHivawAssessment($workspace, $user);
+        $token = $this->createToken($assessment);
+        AssessmentRespondentToken::where('token', $token)->update(['revoked_at' => now()]);
+
+        Livewire::test(PublicRespondentRunner::class, ['token' => $token])
+            ->assertSet('tokenValid', false);
+    }
+
+    public function test_opening_link_creates_durable_audited_response_session(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createHivawAssessment($workspace, $user);
+        $token = $this->createToken($assessment);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+
+        $this->assertDatabaseHas('public_response_sessions', [
+            'session_id' => $component->get('respondentId'),
+            'token' => $token,
+            'assessment_id' => $assessment->assessment_id,
+        ]);
+        $tokenRecord = AssessmentRespondentToken::find($token);
+        $this->assertSame(1, $tokenRecord->use_count);
+        $this->assertNotNull($tokenRecord->last_used_at);
     }
 
     // ---- Language selection ----
@@ -251,6 +283,57 @@ class PublicRespondentRunnerTest extends TestCase
             'question_id' => $firstQuestion['question_id'],
             'value_option_id' => $firstOptionId,
             'respondent_id' => $respondentId,
+            'public_response_session_id' => $respondentId,
+        ]);
+    }
+
+    public function test_public_runner_loads_questions_from_every_in_scope_module(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createHivawAssessment($workspace, $user);
+        $typeId = QuestionType::where('type_code', 'SINGLE_SELECT')->value('type_id');
+        $secondModule = AssessmentModule::create([
+            'target_type_code' => 'COMMUNITY',
+            'module_code' => 'SECOND',
+            'module_name' => 'Second Area',
+            'is_active' => true,
+            'requires_consent' => false,
+        ]);
+        $secondQuestion = Question::create([
+            'module_id' => $secondModule->module_id,
+            'question_number' => 1,
+            'question_code' => 'SECOND-Q1',
+            'question_text' => 'Second area question?',
+            'type_id' => $typeId,
+            'display_order' => 1,
+            'is_active' => true,
+            'is_scored' => true,
+        ]);
+        $secondOption = QuestionOption::create([
+            'question_id' => $secondQuestion->question_id,
+            'option_label' => 'Yes',
+            'option_order' => 1,
+            'score_weight' => 100,
+        ]);
+        AssessmentModuleScope::create([
+            'assessment_id' => $assessment->assessment_id,
+            'module_id' => $secondModule->module_id,
+            'in_scope' => true,
+            'is_category_default' => false,
+            'status' => 'PENDING',
+        ]);
+        $token = $this->createToken($assessment);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token])
+            ->call('giveConsent')
+            ->assertSet('moduleCount', 2);
+
+        $this->assertContains($secondQuestion->question_id, collect($component->get('questionData'))->pluck('question_id'));
+        $component->call('selectOption', $secondQuestion->question_id, $secondOption->option_id);
+        $this->assertDatabaseHas('responses', [
+            'public_response_session_id' => $component->get('respondentId'),
+            'question_id' => $secondQuestion->question_id,
+            'value_option_id' => $secondOption->option_id,
         ]);
     }
 
@@ -318,6 +401,25 @@ class PublicRespondentRunnerTest extends TestCase
 
         $component->call('submit');
         $component->assertSet('isSubmitted', true);
+        $this->assertNotNull(PublicResponseSession::find($component->get('respondentId'))->submitted_at);
+
+        Livewire::test(PublicRespondentRunner::class, ['token' => $token])
+            ->assertSet('isSubmitted', true);
+    }
+
+    public function test_submit_rechecks_completeness_from_stored_responses(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createHivawAssessment($workspace, $user);
+        $token = $this->createToken($assessment);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token])
+            ->call('giveConsent')
+            ->set('savedResponses', ['forged' => 1])
+            ->call('submit')
+            ->assertSet('isSubmitted', false);
+
+        $this->assertNull(PublicResponseSession::find($component->get('respondentId'))->submitted_at);
     }
 
     // ---- Closed assessment ----
@@ -357,5 +459,25 @@ class PublicRespondentRunnerTest extends TestCase
         $this->assertDatabaseCount('assessment_respondent_tokens', 1);
         $token = AssessmentRespondentToken::first();
         $this->assertEquals($assessment->assessment_id, $token->assessment_id);
+        $this->assertEquals($user->user_id, $token->created_by);
+    }
+
+    public function test_workspace_member_can_revoke_link_without_deleting_responses(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createHivawAssessment($workspace, $user);
+        $token = $this->createToken($assessment);
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $sessionId = $component->get('respondentId');
+
+        $this->actingAs($user)
+            ->delete(route('assessments.respondent-link.destroy', [$assessment, $token]))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertNotNull(AssessmentRespondentToken::find($token)->revoked_at);
+        $this->assertDatabaseHas('public_response_sessions', ['session_id' => $sessionId]);
+        Livewire::test(PublicRespondentRunner::class, ['token' => $token])
+            ->assertSet('tokenValid', false);
     }
 }

@@ -34,9 +34,9 @@
 | AG-21 | All documented question types are runnable | Runners save only scalar option choices; numeric/text/ranking/multi-select controls are absent | Livewire runners, responses, response_options | Critical | Postpone template breadth; support only proven response types until a storage/validation design is approved | Required |
 | AG-22 | Response uniqueness is enforced | Unique key includes nullable respondent ID, which permits duplicate authenticated rows under SQL NULL semantics | responses migration/model | Critical | Verify PostgreSQL behavior and concurrency in Phase 22; propose additive unique strategy | Required |
 | AG-23 | Livewire IDs are locked and authorization is defense-in-depth | Assessment property is not locked; Livewire writes do not re-authorize or validate question/option scope | `AssessmentRunner`, UI rules | Critical | Add security regression tests before any fix | Required to change behavior |
-| AG-24 | Public respondent runner supports the assessment scope | It uses only the first in-scope module | Public runner and scope table | Critical | Bind tokens to an explicit module/snapshot or support full composition after product decision | Required |
-| AG-25 | Public responses participate in assessment results | Scoring explicitly reads only `respondent_id IS NULL` | Public runner, ScoringService, responses | Critical | Decide whether public responses are separate voice cohorts, merged inputs, or non-scoring evidence | Required |
-| AG-26 | Public submission is durable and auditable | Submit state is only in browser session | Public runner/token tables | High | Approve durable respondent-session model before expansion | Required |
+| AG-24 | Public respondent runner supports the assessment scope | Resolved: it loads every in-scope module and uses immutable snapshot content when present | Public runner, snapshot, and scope table | Resolved | Preserve full-composition regression coverage | Approved and implemented |
+| AG-25 | Public responses participate in assessment results | Partially resolved by product boundary: public responses remain a separate voice cohort and are never silently blended into staff scores; cohort reporting remains absent | Public runner, ScoringService, reports | High | Add an explicitly labelled public/cohort report without changing assessor scores | Approved boundary; report pending |
+| AG-26 | Public submission is durable and auditable | Resolved: durable response sessions, submitted timestamps, response/consent FKs, and token creator/revocation/usage audit fields are implemented | Public runner/token/session tables | Resolved | Define retention policy before production collection | Approved and implemented |
 | AG-27 | Evidence is optional support attached to questions | No evidence or notes UI/storage path exists in active response model | Runners, responses | Medium | Postpone until after templates/snapshots; implement inline only, not a repository workflow | Required later |
 | AG-28 | Scoring uses a consistent scale | PHSAI/school yes-no weights are 0/1; HIVAW and result thresholds are 0-100 | Seeders, ScoringService, score tables | Critical | Freeze score changes, build fixed-fixture reproducibility tests, then choose canonical scale/versioning | Required |
 | AG-29 | Most framework content can be scored once calibrated | Only four current sub-indices are seeded; health-facility/school questions generally lack sub-index mapping | Seeders, sub-index tables, scoring | Critical | Label unsupported compositions unscored; do not publish score-ready templates without validation | Required |
@@ -62,7 +62,7 @@
 - Current schema dictionary for the 60 migrated tables.
 - Supported question-type matrix and response-storage rules.
 - Assessment and publication state machine.
-- Public respondent identity, submission, and scoring semantics.
+- Public-response retention and the presentation semantics for the separate voice cohort.
 - Scoring scale, algorithm version, aggregation rules, and recalculation policy.
 - Content governance, curator permissions, and approval workflow.
 - Report reproducibility and signed-link lifecycle.

@@ -32,7 +32,7 @@
                 </svg>
             </div>
             <h2 class="text-lg font-bold text-slate-800 mb-2">Thank you!</h2>
-            <p class="text-sm text-slate-500 max-w-xs mx-auto">Your responses have been submitted. Your answers are anonymous and will be used to improve services in this community.</p>
+            <p class="text-sm text-slate-500 max-w-xs mx-auto">Your responses have been submitted. Your answers are anonymous and will be used only for this assessment.</p>
         </div>
 
     @elseif (count($availableLocales) > 1 && ! $languageChosen)
@@ -116,7 +116,14 @@
 
         @php $q = $questionData[$currentIndex]; @endphp
 
-        {{-- Domain header --}}
+        {{-- Module and domain headers --}}
+        @php $prevModule = $currentIndex > 0 ? $questionData[$currentIndex - 1]['module_id'] : null; @endphp
+        @if ($moduleCount > 1 && ($currentIndex === 0 || $q['module_id'] !== $prevModule))
+            <div class="mb-3 rounded-xl border border-vytte-100 bg-vytte-50 px-4 py-3">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-vytte-600">Assessment area</p>
+                <p class="mt-0.5 text-sm font-semibold text-vytte-900">{{ $q['module_name'] ?: $q['module_code'] }}</p>
+            </div>
+        @endif
         @php $prevDomain = $currentIndex > 0 ? $questionData[$currentIndex - 1]['domain_number'] : null; @endphp
         @if (($currentIndex === 0 || $q['domain_number'] !== $prevDomain) && $q['domain_label'])
             <div class="mb-3 flex items-center gap-2">

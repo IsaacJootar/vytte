@@ -1,5 +1,28 @@
 # Architecture Remediation Progress
 
+## Module 8 — Durable full-scope public responses
+
+**Status:** Complete
+
+**Resolved:**
+
+- AG-24: public respondents now receive every in-scope assessment module rather than only the first.
+- Template-created public assessments read immutable snapshot questions, translations, response types, and options.
+- AG-26: public participation has a durable response-session row with start, activity, locale, and submission timestamps.
+- Public responses and consent records reference that session through database foreign keys; legacy respondent UUID values remain only as a compatibility/cohort marker.
+- Token records now capture creator, revocation, usage count, and last-used time.
+- Authorized workspace members can revoke a link without deleting its submitted responses.
+- Consent is recorded for every included module that requires it.
+- Submission rechecks required stored responses on the server and survives browser/component remounts.
+- Public answers remain a deliberately separate voice cohort and are not silently blended into staff/assessor scores.
+
+**Verification:**
+
+- Focused public-runner suite: 20 tests, 44 assertions, all passed.
+- Clean temporary SQLite install, complete migrations, and full database seed: passed.
+- Full regression suite: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Approved scope
 
 Isaac approved correction of all Phase 21/22 gaps on 17 July 2026. Work proceeds in bounded modules, each tested, committed, and pushed separately.

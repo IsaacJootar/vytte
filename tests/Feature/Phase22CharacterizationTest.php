@@ -159,7 +159,7 @@ class Phase22CharacterizationTest extends TestCase
         ]);
     }
 
-    public function test_current_public_runner_loads_only_first_in_scope_module(): void
+    public function test_public_runner_loads_every_in_scope_module(): void
     {
         [$user, $workspace] = $this->createWorkspaceContext();
         $assessment = $this->createAssessment($workspace, $user);
@@ -200,8 +200,8 @@ class Phase22CharacterizationTest extends TestCase
         $component->call('giveConsent');
 
         $loadedQuestionIds = collect($component->get('questionData'))->pluck('question_id');
-        $this->assertCount(9, $loadedQuestionIds);
-        $this->assertFalse($loadedQuestionIds->contains($secondQuestion->question_id));
+        $this->assertCount(10, $loadedQuestionIds);
+        $this->assertTrue($loadedQuestionIds->contains($secondQuestion->question_id));
     }
 
     public function test_current_scoring_excludes_public_responses(): void

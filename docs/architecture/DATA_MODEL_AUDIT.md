@@ -26,7 +26,7 @@ This is not a production-data audit. Local row counts are included only to show 
 
 ### Projects, targets, and assessments
 
-`targets`, `respondents`, `projects`, `project_targets`, `assessments`, `assessment_share_links`, `assessment_module_scope`, `assessment_topic_scope`, `assessment_respondent_tokens`, `respondent_consents`
+`targets`, `respondents`, `projects`, `project_targets`, `assessments`, `assessment_share_links`, `assessment_module_scope`, `assessment_topic_scope`, `assessment_respondent_tokens`, `public_response_sessions`, `respondent_consents`
 
 ### Responses, scoring, and outputs
 
@@ -43,7 +43,7 @@ This is not a production-data audit. Local row counts are included only to show 
 - Module/question: direct `questions.module_id` and optional `module_domain_id`.
 - Question/sub-index: many-to-many `sub_index_questions`.
 - Sub-index/global scoring domain: `sub_indices.domain_id`.
-- Response to assessment/question/option: direct foreign keys; respondent link is no longer enforced.
+- Response to assessment/question/option: direct foreign keys. New public responses also have an enforced `public_response_session_id`; the legacy mixed-purpose `respondent_id` remains for compatibility and cohort separation.
 - Scores to assessment: composite assessment/sub-index/respondent-type, assessment/domain, and one assessment-score row.
 
 ## Documentation-to-schema discrepancy register
@@ -64,8 +64,8 @@ This is not a production-data audit. Local row counts are included only to show 
 | DM-12 | Question directly belongs to one sub-index and carries `score_weight` | Question belongs to module/section; sub-index is many-to-many; option carries score | Critical | Preserve flexible pivot. Define scoring-version semantics before reuse/versioning. |
 | DM-13 | Options use `option_text`, `option_value`, and correctness | Options use `option_label`, `score_weight`, order, and pain flag | High | Treat current option rows and values as scoring contracts. |
 | DM-14 | Response stores selected UUID arrays, generic value, notes, flags, workspace | Response stores scalar option/text/numeric values; multi-select uses a separate unused table; no notes/flags/workspace | Critical | Design response-type support and evidence/notes additively; do not reinterpret stored columns. |
-| DM-15 | Unique response per assessment/question | Unique `(assessment_id,question_id,respondent_id)` | Critical | Phase 22 must test PostgreSQL NULL semantics and concurrency; authenticated NULL respondent rows are not database-unique. |
-| DM-16 | Respondent is an assessment respondent record | `respondents` belongs to targets; public runner writes a session UUID into a de-FK'd response column | Critical | Preserve legacy values; approve a durable respondent/session identity model before expansion. |
+| DM-15 | Unique response per assessment/question | Resolved for staff responses by a partial unique index; public responses retain respondent-specific uniqueness | Resolved | Preserve PostgreSQL parity tests for the partial index. |
+| DM-16 | Respondent is an assessment respondent record | New public responses reference durable `public_response_sessions`; legacy rows may contain an unenforced session UUID in `respondent_id` | Legacy-only | Preserve old values; all new public writes must populate the session FK. |
 | DM-17 | `response_flags` table | No response-flags table; flag columns are also absent | Medium | Postpone response review/flagging until explicitly designed. |
 | DM-18 | Rich normalized `sub_index_scores` with workspace and counts | 0-100 `score`, respondent type, calibration status; no workspace/counts | High | Preserve score rows; version new algorithms rather than overwriting historical values. |
 | DM-19 | Domain score includes maturity and workspace | Maturity exists only on `assessment_scores`; domain rows have score/status | Medium | Document actual behavior; do not duplicate maturity until a reporting requirement exists. |
@@ -87,15 +87,15 @@ Only projects and targets carry the global workspace trait. Downstream tables re
 
 ### Response uniqueness
 
-The unique key includes nullable `respondent_id`. PostgreSQL and SQLite normally treat NULL values as distinct in ordinary unique constraints, so the database can accept multiple authenticated response rows for the same assessment/question. `updateOrCreate()` reduces the risk in the current single-process path but is not a concurrency guarantee.
+A partial unique index now enforces one staff response per assessment/question when `respondent_id IS NULL`. Respondent-specific responses retain the original composite uniqueness rule. PostgreSQL parity remains an operational verification item while local Docker is unavailable.
 
 ### Composite-key Eloquent models
 
 `AssessmentModuleScope`, `DomainScore`, and `SubIndexScore` declare only one component as the Eloquent primary key. Reads work for current query patterns, but instance updates/deletes can target more rows than intended. Prefer explicit composite predicates until tested.
 
-### Referential integrity trade-off
+### Public response identity
 
-The public runner required dropping the response-to-respondent foreign key so a session UUID could be stored. The column now mixes target respondent identifiers, public session identifiers, and NULL authenticated responses.
+`public_response_sessions` now owns anonymous participation state and is linked to new responses and consents by foreign keys. The older `respondent_id` column remains mixed-purpose for backward compatibility, but the public runner no longer relies on it as its only identity relationship.
 
 ### Mutable shared content
 

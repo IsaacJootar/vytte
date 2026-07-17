@@ -18,6 +18,7 @@ class RespondentConsent extends Model
         'assessment_id',
         'module_id',
         'respondent_session_id',
+        'public_response_session_id',
         'consent_text',
         'consented_by',
         'consented_at',
@@ -41,5 +42,10 @@ class RespondentConsent extends Model
     public function consentedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'consented_by', 'user_id');
+    }
+
+    public function publicResponseSession(): BelongsTo
+    {
+        return $this->belongsTo(PublicResponseSession::class, 'public_response_session_id', 'session_id');
     }
 }

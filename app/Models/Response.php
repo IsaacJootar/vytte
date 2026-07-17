@@ -18,6 +18,7 @@ class Response extends Model
         'assessment_id',
         'question_id',
         'respondent_id',
+        'public_response_session_id',
         'value_text',
         'value_numeric',
         'value_option_id',
@@ -42,5 +43,10 @@ class Response extends Model
     public function selectedOption(): BelongsTo
     {
         return $this->belongsTo(QuestionOption::class, 'value_option_id', 'option_id');
+    }
+
+    public function publicResponseSession(): BelongsTo
+    {
+        return $this->belongsTo(PublicResponseSession::class, 'public_response_session_id', 'session_id');
     }
 }

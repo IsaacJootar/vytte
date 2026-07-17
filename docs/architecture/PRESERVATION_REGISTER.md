@@ -27,7 +27,7 @@ This register identifies current assets that future phases must preserve, the co
 | Assessment rows | Existing project/target/tier/status/scope references | Untouched | Add nullable template-version/snapshot references only after approval. |
 | Assessment-module scope | Existing selected/excluded module records and exclusion reasons | Extend through seam | Natural adapter output for template resolution; preserve existing rows. |
 | Authenticated runner UX | One-question flow, autosave, progress, consent, localization | Refactor behind contract | Add response-type renderers and snapshot input behind the current route/component contract. |
-| Public respondent links | Existing token URLs and anonymous response rows | Refactor behind contract | Preserve existing tokens; introduce durable sessions or module binding additively. |
+| Public respondent links | Existing token URLs and anonymous response rows | Extended behind contract | Existing URLs remain valid; new sessions add durable identity, full-scope loading, and token auditing without rewriting historical rows. |
 | Respondent consent records | Verbatim text, actor/session, timestamps | Untouched | Version consent text or module applicability without rewriting prior consent. |
 | Responses | Existing assessment/question/option/text/numeric values | Untouched | Add notes/evidence and uniqueness fixes without rewriting historical rows. |
 | Scoring output tables | Existing sub-index/domain/assessment score rows | Untouched | New algorithms require an approved versioning/recalculation policy. |
@@ -80,7 +80,7 @@ After Phase 22 and explicit approval, the lowest-impact extension points are:
 1. Direct Livewire mounting does not enforce the workspace boundary.
 2. The authenticated runner accepts an option belonging to a different question.
 3. SQLite permits duplicate staff response keys when `respondent_id` is `NULL`.
-4. The public runner loads only one in-scope module.
+4. The public runner loads every in-scope module (the former first-module defect is now a regression test).
 5. Public responses are excluded from staff scoring.
 6. Numeric questions have no authenticated runner input/storage path.
 

@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/export/pdf', [ExportController::class, 'assessmentPdf'])->name('assessments.export.pdf');
     Route::post('assessments/{assessment}/share', [ExportController::class, 'createShareLink'])->name('assessments.share');
     Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');
+    Route::delete('assessments/{assessment}/respondent-links/{respondentToken}', [RespondentLinkController::class, 'destroy'])->name('assessments.respondent-link.destroy');
     Route::get('projects/{project}/export/csv', [ExportController::class, 'projectCsv'])->name('projects.export.csv');
 
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
