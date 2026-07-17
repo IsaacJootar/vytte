@@ -25,6 +25,7 @@ class BillingTest extends TestCase
         $this->seed(ReferenceDataSeeder::class);
         Config::set('services.paystack.secret_key', 'test_secret');
         Config::set('services.paystack.public_key', 'pk_test_placeholder');
+        Config::set('services.flutterwave.secret_hash', 'test_flutterwave_hash');
     }
 
     private function createWorkspaceWithOwner(string $plan = 'FREE'): array
@@ -310,6 +311,36 @@ class BillingTest extends TestCase
         $this->assertDatabaseHas('workspaces', [
             'workspace_id' => $workspace->workspace_id,
             'plan' => 'FREE',
+        ]);
+    }
+
+    public function test_flutterwave_webhook_rejects_invalid_signature(): void
+    {
+        $this->postJson(route('billing.webhook.flutterwave'), ['event' => 'charge.completed'], [
+            'verif-hash' => 'invalid',
+        ])->assertUnauthorized();
+    }
+
+    public function test_flutterwave_webhook_accepts_signature_and_upgrades_workspace(): void
+    {
+        [, $workspace] = $this->createWorkspaceWithOwner('FREE');
+
+        $this->postJson(route('billing.webhook.flutterwave'), [
+            'event' => 'charge.completed',
+            'data' => [
+                'status' => 'successful',
+                'meta' => [
+                    'workspace_id' => $workspace->workspace_id,
+                    'plan' => 'PRO',
+                ],
+            ],
+        ], [
+            'verif-hash' => 'test_flutterwave_hash',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('workspaces', [
+            'workspace_id' => $workspace->workspace_id,
+            'plan' => 'PRO',
         ]);
     }
 }

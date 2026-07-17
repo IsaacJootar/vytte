@@ -8,6 +8,7 @@ use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentTier;
 use App\Models\Project;
+use App\Models\Question;
 use App\Models\Response;
 use App\Models\Target;
 use App\Models\TargetCategory;
@@ -311,12 +312,40 @@ class AssessmentTest extends TestCase
 
     // ---- Submit ----
 
-    public function test_submit_marks_assessment_complete(): void
+    public function test_submit_rejects_unanswered_scored_questions(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
         $this->seed(HivawQuestionsSeeder::class);
         $assessment = $this->createAssessment($project, $target);
+
+        $this->actingAs($user)
+            ->post(route('assessments.submit', $assessment))
+            ->assertRedirect(route('assessments.run', $assessment));
+
+        $this->assertEquals('IN_PROGRESS', $assessment->fresh()->status);
+        $this->assertNull($assessment->fresh()->completed_at);
+    }
+
+    public function test_submit_marks_fully_answered_assessment_complete(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+
+        Question::where('is_active', true)
+            ->where('is_scored', true)
+            ->with('options')
+            ->get()
+            ->each(function (Question $question) use ($assessment) {
+                Response::create([
+                    'assessment_id' => $assessment->assessment_id,
+                    'question_id' => $question->question_id,
+                    'value_option_id' => $question->options->firstOrFail()->option_id,
+                    'answered_at' => now(),
+                ]);
+            });
 
         $this->actingAs($user)
             ->post(route('assessments.submit', $assessment))

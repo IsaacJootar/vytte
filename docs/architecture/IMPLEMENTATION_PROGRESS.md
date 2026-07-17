@@ -26,3 +26,20 @@ Isaac approved correction of all Phase 21/22 gaps on 17 July 2026. Work proceeds
 - Full suite: 320 tests, 750 assertions, all passed in 54.161 seconds.
 - Local SQLite migration: passed.
 - PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
+## Module 2 — Completion and payment-webhook safeguards
+
+**Status:** Complete
+
+**Resolved:**
+
+- AG-20: server submission now requires every active, scored, option-based question in the assessment scope to have a valid staff response.
+- AG-41: Flutterwave is explicitly exempted from CSRF, matching Paystack, while controller-level secret-hash verification remains mandatory.
+- Unanswered submission retains `IN_PROGRESS` and returns the assessor to the runner with a plain-language message.
+- Flutterwave has regression coverage for invalid signatures and successful plan upgrades.
+
+**Verification:**
+
+- Focused completion/scoring/billing suite: 43 tests, 117 assertions, all passed.
+- Notification regression suite: 13 tests, 25 assertions, all passed after replacing legacy unanswered fixtures with valid completed responses.
+- Full suite: 323 tests, 757 assertions, all passed in 62.140 seconds.

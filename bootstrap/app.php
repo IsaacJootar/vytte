@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             '/billing/webhook/paystack',
+            '/billing/webhook/flutterwave',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

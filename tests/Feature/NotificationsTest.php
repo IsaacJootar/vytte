@@ -8,6 +8,8 @@ use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentTier;
 use App\Models\PlatformSetting;
 use App\Models\Project;
+use App\Models\Question;
+use App\Models\Response;
 use App\Models\Target;
 use App\Models\TargetCategory;
 use App\Models\User;
@@ -75,6 +77,20 @@ class NotificationsTest extends TestCase
             'is_category_default' => true,
             'status' => 'PENDING',
         ]);
+
+        Question::where('module_id', $module->module_id)
+            ->where('is_active', true)
+            ->where('is_scored', true)
+            ->with('options')
+            ->get()
+            ->each(function (Question $question) use ($assessment) {
+                Response::create([
+                    'assessment_id' => $assessment->assessment_id,
+                    'question_id' => $question->question_id,
+                    'value_option_id' => $question->options->firstOrFail()->option_id,
+                    'answered_at' => now(),
+                ]);
+            });
 
         return $assessment;
     }

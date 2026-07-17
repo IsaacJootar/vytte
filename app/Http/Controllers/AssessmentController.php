@@ -7,6 +7,8 @@ use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentTier;
 use App\Models\Project;
+use App\Models\Question;
+use App\Models\Response;
 use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
 use App\Services\PlanService;
@@ -180,6 +182,31 @@ class AssessmentController extends Controller
         if ($assessment->status === 'COMPLETE') {
             return redirect()->route('projects.show', $assessment->project_id)
                 ->with('success', 'Assessment already submitted.');
+        }
+
+        $moduleIds = AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
+            ->where('in_scope', true)
+            ->pluck('module_id');
+
+        $requiredQuestionIds = Question::whereIn('module_id', $moduleIds)
+            ->where('is_active', true)
+            ->where('is_scored', true)
+            ->whereHas('options')
+            ->pluck('question_id');
+
+        $answeredQuestionIds = Response::where('assessment_id', $assessment->assessment_id)
+            ->whereNull('respondent_id')
+            ->whereIn('question_id', $requiredQuestionIds)
+            ->whereNotNull('value_option_id')
+            ->whereHas('selectedOption', function ($query) {
+                $query->whereColumn('question_options.question_id', 'responses.question_id');
+            })
+            ->distinct()
+            ->pluck('question_id');
+
+        if ($requiredQuestionIds->diff($answeredQuestionIds)->isNotEmpty()) {
+            return redirect()->route('assessments.run', $assessment)
+                ->with('error', 'Please answer every required scored question before submitting.');
         }
 
         $assessment->update([
