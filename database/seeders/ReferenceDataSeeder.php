@@ -21,6 +21,7 @@ class ReferenceDataSeeder extends Seeder
         $this->seedAssessmentModules();
         $this->seedRespondentRoles();
         $this->seedTargetCategoryDefaultModules();
+        $this->seedHealthTaxonomy();
     }
 
     private function seedTargetTypes(): void
@@ -30,6 +31,12 @@ class ReferenceDataSeeder extends Seeder
             ['target_type_code' => 'SCHOOL', 'target_type_name' => 'School', 'description' => 'Primary and secondary schools — e.g. a WASH/hygiene assessment across a set of schools.'],
             ['target_type_code' => 'COMMUNITY', 'target_type_name' => 'Community', 'description' => 'A community or catchment area assessed as its own entity, not tied to one facility.'],
             ['target_type_code' => 'WATER_POINT', 'target_type_name' => 'Water Point', 'description' => 'A borehole, well, or piped water source — roadmap target type, not yet built out.'],
+            ['target_type_code' => 'CORRECTIONAL', 'target_type_name' => 'Correctional Facility', 'description' => 'A prison, detention centre, or other correctional setting.'],
+            ['target_type_code' => 'WORKPLACE', 'target_type_name' => 'Workplace or Business', 'description' => 'A business, company, factory, or other workplace.'],
+            ['target_type_code' => 'PLACE_OF_WORSHIP', 'target_type_name' => 'Place of Worship', 'description' => 'A church, mosque, temple, or other faith community setting.'],
+            ['target_type_code' => 'NGO_PROGRAMME', 'target_type_name' => 'NGO or Programme', 'description' => 'A non-governmental organization or health programme.'],
+            ['target_type_code' => 'GOVERNMENT_ORG', 'target_type_name' => 'Government Organization', 'description' => 'A ministry, department, agency, or government office.'],
+            ['target_type_code' => 'CUSTOM', 'target_type_name' => 'Custom Setting', 'description' => 'A user-defined setting not covered by the standard list.'],
         ]);
     }
 
@@ -42,6 +49,12 @@ class ReferenceDataSeeder extends Seeder
             ['target_type_code' => 'SCHOOL', 'category_code' => 'PRIMARY_SCHOOL', 'category_name' => 'Primary School', 'description' => 'Nursery/primary-level school.'],
             ['target_type_code' => 'SCHOOL', 'category_code' => 'SECONDARY_SCHOOL', 'category_name' => 'Secondary School', 'description' => 'Junior/senior secondary-level school.'],
             ['target_type_code' => 'COMMUNITY', 'category_code' => 'GENERAL_COMMUNITY', 'category_name' => 'General Community', 'description' => 'A community or catchment area assessed as its own entity, not tiered by size or type.'],
+            ['target_type_code' => 'CORRECTIONAL', 'category_code' => 'GENERAL_CORRECTIONAL', 'category_name' => 'Correctional Facility', 'description' => 'A prison, detention centre, or correctional setting.'],
+            ['target_type_code' => 'WORKPLACE', 'category_code' => 'GENERAL_WORKPLACE', 'category_name' => 'Workplace or Business', 'description' => 'A workplace, business, factory, or company.'],
+            ['target_type_code' => 'PLACE_OF_WORSHIP', 'category_code' => 'GENERAL_WORSHIP', 'category_name' => 'Place of Worship', 'description' => 'A church, mosque, temple, or faith community.'],
+            ['target_type_code' => 'NGO_PROGRAMME', 'category_code' => 'GENERAL_NGO', 'category_name' => 'NGO or Programme', 'description' => 'An NGO, initiative, or health programme.'],
+            ['target_type_code' => 'GOVERNMENT_ORG', 'category_code' => 'GENERAL_GOVERNMENT', 'category_name' => 'Government Organization', 'description' => 'A ministry, department, agency, or government office.'],
+            ['target_type_code' => 'CUSTOM', 'category_code' => 'GENERAL_CUSTOM', 'category_name' => 'Custom Setting', 'description' => 'A user-defined assessment setting.'],
         ]);
     }
 
@@ -229,6 +242,81 @@ class ReferenceDataSeeder extends Seeder
         }
         if ($hivawModuleId) {
             DB::table('target_category_default_modules')->insertOrIgnore(['category_id' => $generalCommunityId, 'module_id' => $hivawModuleId, 'is_default' => true]);
+        }
+    }
+
+    private function seedHealthTaxonomy(): void
+    {
+        DB::table('setting_types')->insertOrIgnore([
+            ['setting_type_code' => 'HEALTH_FACILITY', 'setting_type_name' => 'Health Facility', 'uses_departments' => true, 'display_order' => 1],
+            ['setting_type_code' => 'SCHOOL', 'setting_type_name' => 'School', 'uses_departments' => false, 'display_order' => 2],
+            ['setting_type_code' => 'COMMUNITY', 'setting_type_name' => 'Community', 'uses_departments' => false, 'display_order' => 3],
+            ['setting_type_code' => 'CORRECTIONAL', 'setting_type_name' => 'Correctional Facility', 'uses_departments' => false, 'display_order' => 4],
+            ['setting_type_code' => 'WORKPLACE', 'setting_type_name' => 'Workplace or Business', 'uses_departments' => false, 'display_order' => 5],
+            ['setting_type_code' => 'PLACE_OF_WORSHIP', 'setting_type_name' => 'Place of Worship', 'uses_departments' => false, 'display_order' => 6],
+            ['setting_type_code' => 'NGO_PROGRAMME', 'setting_type_name' => 'NGO or Programme', 'uses_departments' => false, 'display_order' => 7],
+            ['setting_type_code' => 'GOVERNMENT_ORG', 'setting_type_name' => 'Government Organization', 'uses_departments' => false, 'display_order' => 8],
+            ['setting_type_code' => 'WATER_POINT', 'setting_type_name' => 'Water Point', 'uses_departments' => false, 'display_order' => 9],
+            ['setting_type_code' => 'CUSTOM', 'setting_type_name' => 'Custom Setting', 'uses_departments' => false, 'display_order' => 10],
+        ]);
+
+        foreach (DB::table('target_types')->pluck('target_type_code') as $targetTypeCode) {
+            DB::table('target_type_setting_map')->insertOrIgnore([
+                'target_type_code' => $targetTypeCode,
+                'setting_type_code' => $targetTypeCode,
+            ]);
+        }
+
+        $domains = [
+            ['GENERAL_HEALTH_SYSTEMS', 'General Health Systems'],
+            ['MENTAL_HEALTH', 'Mental Health'],
+            ['HIV', 'HIV'],
+            ['TUBERCULOSIS', 'Tuberculosis'],
+            ['WASH', 'Water, Sanitation and Hygiene'],
+            ['NUTRITION', 'Nutrition'],
+            ['FAMILY_PLANNING', 'Family Planning'],
+            ['IMMUNIZATION', 'Immunization'],
+            ['PATIENT_EXPERIENCE', 'Patient Experience'],
+            ['INFECTION_PREVENTION', 'Infection Prevention and Control'],
+            ['MATERNAL_HEALTH', 'Maternal Health'],
+            ['CHILD_HEALTH', 'Child Health'],
+        ];
+
+        foreach ($domains as $order => [$code, $name]) {
+            DB::table('health_domains')->insertOrIgnore([
+                'domain_code' => $code,
+                'domain_name' => $name,
+                'display_order' => $order + 1,
+            ]);
+        }
+
+        $moduleMappings = [
+            'MNH' => ['MENTAL_HEALTH'],
+            'HIVAW' => ['HIV'],
+            'HTB' => ['HIV', 'TUBERCULOSIS'],
+            'WASH' => ['WASH'],
+            'HYGED' => ['WASH', 'INFECTION_PREVENTION'],
+            'NUT' => ['NUTRITION'],
+            'FP' => ['FAMILY_PLANNING'],
+            'IMM' => ['IMMUNIZATION', 'CHILD_HEALTH'],
+            'INF' => ['INFECTION_PREVENTION', 'WASH'],
+            'ANC' => ['MATERNAL_HEALTH'],
+            'LBD' => ['MATERNAL_HEALTH'],
+            'PNC' => ['MATERNAL_HEALTH'],
+        ];
+
+        foreach ($moduleMappings as $moduleCode => $domainCodes) {
+            $moduleIds = DB::table('assessment_modules')->where('module_code', $moduleCode)->pluck('module_id');
+            foreach ($moduleIds as $moduleId) {
+                foreach ($domainCodes as $index => $domainCode) {
+                    $domainId = DB::table('health_domains')->where('domain_code', $domainCode)->value('health_domain_id');
+                    DB::table('assessment_module_health_domain')->insertOrIgnore([
+                        'module_id' => $moduleId,
+                        'health_domain_id' => $domainId,
+                        'is_primary' => $index === 0,
+                    ]);
+                }
+            }
         }
     }
 }

@@ -25,8 +25,14 @@ class Target extends Model
         'region',
         'sub_region',
         'ownership',
+        'custom_setting_label',
+        'uses_departments',
         'latitude',
         'longitude',
+    ];
+
+    protected $casts = [
+        'uses_departments' => 'boolean',
     ];
 
     public function getWorkspaceForeignKey(): string

@@ -27,6 +27,26 @@ Isaac approved correction of all Phase 21/22 gaps on 17 July 2026. Work proceeds
 - Local SQLite migration: passed.
 - PostgreSQL parity: pending restoration of Docker/PostgreSQL.
 
+## Module 4 — Health taxonomy and setting contexts
+
+**Status:** Complete
+
+**Resolved:**
+
+- AG-13: health domains are now explicit and separate from global operational scoring domains and module-local questionnaire sections.
+- Settings are controlled contexts: health facility, school, community, correctional facility, workplace/business, place of worship, NGO/programme, government organization, water point, and custom.
+- Department terminology is data-driven. Only health facilities default to `uses_departments = true`; targets can explicitly override it.
+- Custom settings preserve the user's label without creating ad hoc tables or schema.
+- Existing target types and assessment modules are preserved through mapping tables.
+- Modules can map to multiple health domains, such as the existing combined HIV/TB module.
+
+**Verification:**
+
+- Focused taxonomy/project suite: 18 tests, 59 assertions, all passed.
+- Full suite: 329 tests, 776 assertions, all passed in 51.545 seconds.
+- Local SQLite migration and idempotent reference seeding: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 2 — Completion and payment-webhook safeguards
 
 **Status:** Complete
