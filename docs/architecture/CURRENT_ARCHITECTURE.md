@@ -103,6 +103,7 @@ The effective hierarchy is therefore not the documented one-target foreign key m
 ### Results and reporting
 
 - Results are assembled on demand from assessment, score, domain-score, and sub-index-score records.
+- The Reports navigation opens a workspace-scoped index of completed assessments and reuses the standard final result, PDF, and governed share-link routes.
 - Findings are generated as presentation text from low or null sub-index scores; they are not persisted first-class findings.
 - Reports are Blade views, browser print output, DomPDF downloads, project CSV streams, and temporary signed public URLs.
 - There is no `reports` or `report_sections` table/model in the implementation.

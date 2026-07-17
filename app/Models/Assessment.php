@@ -118,6 +118,11 @@ class Assessment extends Model
         return $this->hasOne(AssessmentReportSnapshot::class, 'assessment_id', 'assessment_id');
     }
 
+    public function shareLinks(): HasMany
+    {
+        return $this->hasMany(AssessmentShareLink::class, 'assessment_id', 'assessment_id');
+    }
+
     public function templateVersion(): BelongsTo
     {
         return $this->belongsTo(AssessmentTemplateVersion::class, 'template_version_id', 'template_version_id');

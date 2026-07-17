@@ -54,7 +54,7 @@
             >Assessments</x-sidebar-nav-item>
 
             <x-sidebar-nav-item
-                href="#"
+                href="{{ route('reports.index') }}"
                 icon="chart-bar"
                 :active="request()->routeIs('reports.*')"
             >Reports</x-sidebar-nav-item>

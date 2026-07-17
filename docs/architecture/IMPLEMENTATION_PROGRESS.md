@@ -1,5 +1,24 @@
 # Architecture Remediation Progress
 
+## Module 16 — Reports index and governed link management
+
+**Status:** Complete
+
+**Resolved:**
+
+- The dead Reports sidebar link now opens a real workspace-scoped reports index.
+- The index lists only completed assessments and reads their standard immutable final report snapshot.
+- Users can open the standard result, download its PDF, and create governed share links.
+- Active share links show expiry and can be revoked from the same index.
+- Cross-workspace reports remain excluded by the existing project/workspace authority boundary.
+- No alternate report renderer, score store, or reporting subsystem was added.
+
+**Verification:**
+
+- Focused export and workspace-isolation suites: 24 tests, 59 assertions, all passed.
+- Full regression suite: 365 tests, 870 assertions, all passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 15 — Canonical lifecycle states
 
 **Status:** Complete

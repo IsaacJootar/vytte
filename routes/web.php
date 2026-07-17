@@ -24,6 +24,7 @@ use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectProgressController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RespondentLinkController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserPreferenceController;
@@ -48,6 +49,7 @@ Route::middleware('auth')->group(function () {
     Route::get('modules/{module}', [ModuleLibraryController::class, 'show'])->name('modules.show');
 
     Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
+    Route::get('reports', [ReportsController::class, 'index'])->name('reports.index');
     Route::get('projects/{project}/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('projects/{project}/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
     Route::get('assessments/{assessment}/run', [AssessmentController::class, 'run'])->name('assessments.run');

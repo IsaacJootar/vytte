@@ -86,6 +86,47 @@ class ExportTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
+    public function test_reports_index_requires_auth(): void
+    {
+        $this->get(route('reports.index'))
+            ->assertRedirect(route('login'));
+    }
+
+    public function test_reports_index_lists_only_completed_assessments_in_active_workspace(): void
+    {
+        [$userA, $workspaceA] = $this->createWorkspaceWithOwner();
+        [$userB, $workspaceB] = $this->createWorkspaceWithOwner();
+        $assessmentA = $this->createCompleteAssessment($workspaceA, $userA);
+        $assessmentB = $this->createCompleteAssessment($workspaceB, $userB);
+        $assessmentA->target->update(['name' => 'Visible Facility']);
+        $assessmentB->target->update(['name' => 'Other Workspace Facility']);
+
+        $this->actingAs($userA)
+            ->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('Reports')
+            ->assertSee('Visible Facility')
+            ->assertDontSee('Other Workspace Facility');
+    }
+
+    public function test_reports_index_manages_existing_governed_share_links(): void
+    {
+        [$user, $workspace] = $this->createWorkspaceWithOwner();
+        $assessment = $this->createCompleteAssessment($workspace, $user);
+
+        $this->actingAs($user)
+            ->post(route('assessments.share', $assessment))
+            ->assertRedirect();
+
+        $shareLink = AssessmentShareLink::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+
+        $this->actingAs($user)
+            ->get(route('reports.index'))
+            ->assertOk()
+            ->assertSee('Manage active share links (1)')
+            ->assertSee(route('reports.shared.token', $shareLink->token));
+    }
+
     public function test_pdf_download_returns_pdf_content_type(): void
     {
         [$user, $workspace] = $this->createWorkspaceWithOwner();

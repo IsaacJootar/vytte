@@ -122,6 +122,7 @@ The assessment content and composition are immutable through snapshots. `IN_PROG
 - Historical comparisons require matching composition hashes. Legacy assessments without hashes fall back to exact sorted module-ID fingerprints.
 - CSV lists every included module rather than only the first.
 - New shared-report links are persistent records with creator, expiry, revocation, use count, and last-used time. Legacy temporary signed URLs remain readable for backward compatibility.
+- The Reports index lists completed assessments in the active workspace and provides the existing view, PDF, create-link, and revoke-link actions.
 - Template publication, assessment creation/completion, report finalization, and public/report link lifecycle events write immutable audit records.
 
 ## Current implementation boundary
