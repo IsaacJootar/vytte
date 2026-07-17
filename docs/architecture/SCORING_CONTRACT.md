@@ -3,7 +3,7 @@
 ## Authority
 
 - Canonical output scale: 0–100.
-- Current frozen-profile algorithm: `vytte-3.0-snapshot-profile`.
+- Current frozen-profile algorithm: `vytte-4.0-numeric-bands`; `vytte-3.0-snapshot-profile` remains supported for immutable existing assessments.
 - Completed score rows and final report snapshots are historical records and are never silently recalculated.
 
 ## Calculation

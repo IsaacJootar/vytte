@@ -136,7 +136,27 @@
         <div class="bg-white rounded-2xl border border-slate-200 p-5 mb-4">
             <p class="text-base font-semibold text-slate-900 leading-snug mb-5">{{ $q['question_text'] }}</p>
 
-            @if (($q['response_type'] ?? null) === 'OPEN_ENDED' && empty($q['options']))
+            @if (($q['response_type'] ?? null) === 'NUMERIC')
+                @php $numeric = $q['numeric_config'] ?? []; @endphp
+                <label class="block text-xs font-semibold text-slate-600 mb-2" for="numeric-{{ $q['question_id'] }}">
+                    Enter a number{{ ! empty($numeric['unit']) ? ' ('.$numeric['unit'].')' : '' }}
+                </label>
+                <input
+                    id="numeric-{{ $q['question_id'] }}"
+                    type="number"
+                    inputmode="decimal"
+                    @if (($numeric['min'] ?? null) !== null) min="{{ $numeric['min'] }}" @endif
+                    @if (($numeric['max'] ?? null) !== null) max="{{ $numeric['max'] }}" @endif
+                    step="{{ $numeric['step'] ?? 'any' }}"
+                    value="{{ $savedNumericResponses[$q['question_id']] ?? '' }}"
+                    wire:change="saveNumeric('{{ $q['question_id'] }}', $event.target.value)"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-vytte-500 focus:ring-vytte-500"
+                    placeholder="Enter value">
+                @php $numericError = $errors->first('numeric.'.$q['question_id']); @endphp
+                @if ($numericError)
+                    <p class="mt-2 text-xs font-medium text-red-600">{{ $numericError }}</p>
+                @endif
+            @elseif (($q['response_type'] ?? null) === 'OPEN_ENDED' && empty($q['options']))
                 <textarea
                     rows="5"
                     maxlength="5000"
@@ -227,7 +247,7 @@
                         class="w-7 h-7 rounded-lg text-[11px] font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-400
                             {{ $idx === $currentIndex
                                 ? 'bg-vytte-700 text-white'
-                                : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null)
+                                : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null) || array_key_exists($item['question_id'], $savedNumericResponses)
                                     ? 'bg-vytte-100 text-vytte-700'
                                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200') }}">
                         {{ $idx + 1 }}

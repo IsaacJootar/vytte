@@ -1,5 +1,26 @@
 # Architecture Remediation Progress
 
+## Module 22 — Numeric inputs and response-type integrity
+
+**Status:** Complete
+
+**Resolved:**
+
+- Added bounded decimal inputs for authenticated and public runners, including frozen unit, minimum, maximum, and step metadata.
+- Added numeric response persistence, completion checks, immutable respondent snapshots, and numeric-band scoring.
+- Publishing now accepts numeric questions only under the implemented input contract and rejects scored numeric questions without frozen bands.
+- Module import rejects unsupported or malformed response definitions and accepts numeric input metadata and scoring bands.
+- Removed 126 malformed `PHSAI_V1` sample questions from the local dataset; retained 133 useful numeric measures as explicitly unscored until an approved scoring methodology is curated.
+- Corrected inpatient bed occupancy to a 0–100 percentage input and length of stay to a non-negative decimal-day input.
+
+**Verification:**
+
+- Focused administration, publishing, authenticated runner, public runner, scoring, and multi-respondent suite: 108 tests, 295 assertions, all passed.
+- Full regression suite: 386 tests, 947 assertions, all passed.
+- Existing SQLite migration rollback/reapply: passed.
+- Clean SQLite migration and complete seed: passed.
+- Production Vite frontend build: passed.
+
 ## Module 21 — Legacy category architecture removal
 
 **Status:** Complete
@@ -255,7 +276,7 @@
 - Assessment creation reads that stored payload; later catalogue edits or template-pivot edits cannot change a published version.
 - Snapshot payloads include consent applicability and the full scoring profile: sub-index identity, domain identity, question membership/weights, and option weights.
 - Authenticated and public runners validate template responses and consent against the frozen snapshot contract.
-- Template assessment scoring reads frozen option weights and sub-index links and records algorithm `vytte-3.0-snapshot-profile`.
+- Template assessment scoring reads frozen option or numeric-band weights and sub-index links; new publications record `vytte-4.0-numeric-bands`, while immutable v3 assessments remain reproducible.
 - Legacy assessments retain a clearly separated live-profile compatibility path and are not silently recalculated.
 - Publishing rejects empty areas, unsupported response types, scored open text, missing option weights, and scored questions without sub-index mappings.
 - Incomplete school/facility sample content cannot weaken these rules; it must be curated and reseeded as a valid new template.

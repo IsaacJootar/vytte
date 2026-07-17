@@ -4,18 +4,17 @@ namespace App\Services;
 
 use App\Models\AssessmentTemplate;
 use App\Models\AssessmentTemplateVersion;
+use App\Support\ResponseInputContract;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class TemplatePublishingService
 {
-    private const SUPPORTED_RESPONSE_TYPES = ['SINGLE_SELECT', 'LIKERT', 'OPEN_ENDED'];
-
     public function __construct(private readonly TemplateContentService $content) {}
 
     public function publish(AssessmentTemplateVersion $version, ?string $publisherId = null): AssessmentTemplateVersion
     {
-        $version->load(['template', 'modules.questions.options', 'modules.questions.questionType']);
+        $version->load(['template', 'modules.questions.options', 'modules.questions.numericBands', 'modules.questions.questionType']);
         $template = $version->template;
         $modules = $version->modules;
 
@@ -70,7 +69,7 @@ class TemplatePublishingService
             ->join('question_types as qt', 'qt.type_id', '=', 'q.type_id')
             ->whereIn('q.module_id', $moduleIds)
             ->where('q.is_active', true)
-            ->whereNotIn('qt.type_code', self::SUPPORTED_RESPONSE_TYPES)
+            ->whereNotIn('qt.type_code', ResponseInputContract::SUPPORTED_TYPES)
             ->distinct()
             ->pluck('qt.type_code');
 
@@ -83,13 +82,13 @@ class TemplatePublishingService
             ->leftJoin('question_options as qo', 'qo.question_id', '=', 'q.question_id')
             ->whereIn('q.module_id', $moduleIds)
             ->where('q.is_active', true)
-            ->where('qt.type_code', '!=', 'OPEN_ENDED')
+            ->whereIn('qt.type_code', ResponseInputContract::OPTION_TYPES)
             ->groupBy('q.question_id', 'qt.type_code')
             ->havingRaw('COUNT(qo.option_id) = 0')
             ->exists();
 
         if ($questionsWithoutOptions) {
-            $errors['scoring'][] = 'Every active question must have a currently supported response input.';
+            $errors['response_inputs'][] = 'Every option-based question must contain at least one selectable answer.';
         }
 
         $unscorableOpenText = DB::table('questions as q')
@@ -101,6 +100,32 @@ class TemplatePublishingService
             ->exists();
         if ($unscorableOpenText) {
             $errors['scoring'][] = 'Open-text questions must be unscored supporting context.';
+        }
+
+        $invalidNumericConfiguration = $modules
+            ->flatMap->questions
+            ->where('is_active', true)
+            ->filter(fn ($question) => $question->questionType?->type_code === 'NUMERIC')
+            ->contains(function ($question): bool {
+                $min = $question->numeric_min;
+                $max = $question->numeric_max;
+                $step = $question->numeric_step;
+
+                return ($min !== null && $max !== null && (float) $min > (float) $max)
+                    || ($step !== null && (float) $step <= 0);
+            });
+        if ($invalidNumericConfiguration) {
+            $errors['response_inputs'][] = 'Numeric questions must use a positive step and a minimum no greater than the maximum.';
+        }
+
+        $invalidNumericBands = $modules
+            ->flatMap->questions
+            ->where('is_active', true)
+            ->where('is_scored', true)
+            ->contains(fn ($question) => $question->questionType?->type_code === 'NUMERIC'
+                && ! $this->numericBandsAreComplete($question));
+        if ($invalidNumericBands) {
+            $errors['scoring'][] = 'Every scored numeric question must define complete, ordered, non-overlapping frozen scoring bands.';
         }
 
         $scoredQuestionsWithoutProfile = DB::table('questions as q')
@@ -120,7 +145,7 @@ class TemplatePublishingService
             ->whereIn('q.module_id', $moduleIds)
             ->where('q.is_active', true)
             ->where('q.is_scored', true)
-            ->where('qt.type_code', '!=', 'OPEN_ENDED')
+            ->whereIn('qt.type_code', ResponseInputContract::OPTION_TYPES)
             ->whereNull('qo.score_weight')
             ->exists();
         if ($scoredOptionsWithoutWeight) {
@@ -153,5 +178,42 @@ class TemplatePublishingService
         );
 
         return $published;
+    }
+
+    private function numericBandsAreComplete($question): bool
+    {
+        $bands = $question->numericBands->values();
+        if ($bands->isEmpty()) {
+            return false;
+        }
+
+        $inputMin = $question->numeric_min !== null ? (float) $question->numeric_min : null;
+        $inputMax = $question->numeric_max !== null ? (float) $question->numeric_max : null;
+        $firstMin = $bands->first()->min_value !== null ? (float) $bands->first()->min_value : null;
+        $lastMax = $bands->last()->max_value !== null ? (float) $bands->last()->max_value : null;
+        if (($inputMin === null && $firstMin !== null) || ($inputMin !== null && $firstMin !== null && $firstMin > $inputMin)) {
+            return false;
+        }
+        if (($inputMax === null && $lastMax !== null) || ($inputMax !== null && $lastMax !== null && $lastMax < $inputMax)) {
+            return false;
+        }
+
+        $previousMax = null;
+        foreach ($bands as $index => $band) {
+            if ((int) $band->band_order !== $index + 1) {
+                return false;
+            }
+            $min = $band->min_value !== null ? (float) $band->min_value : null;
+            $max = $band->max_value !== null ? (float) $band->max_value : null;
+            if ($min !== null && $max !== null && $min >= $max) {
+                return false;
+            }
+            if ($index > 0 && ($previousMax === null || $min === null || abs($min - $previousMax) > 0.00001)) {
+                return false;
+            }
+            $previousMax = $max;
+        }
+
+        return true;
     }
 }

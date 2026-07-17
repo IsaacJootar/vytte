@@ -28,7 +28,7 @@ Publication records publisher, time, and an audit event. A published version can
 
 ## Prohibited publication
 
-A version cannot publish when it has missing provenance/licence metadata, no active questions, unsupported response types, scored open text, missing option weights, or scored questions absent from the scoring profile.
+A version cannot publish when it has missing provenance/licence metadata, no active questions, unsupported response types, option questions without choices, invalid numeric bounds, scored numeric questions without frozen bands, scored open text, missing option weights, or scored questions absent from the scoring profile.
 
 Sample seed content does not bypass these rules. Invalid samples should be removed or curated rather than weakening publication validation.
 

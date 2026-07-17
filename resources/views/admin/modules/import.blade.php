@@ -49,6 +49,7 @@
         {
           "question_code": "Q001",
           "question_text": "Question text here?",
+          "response_type": "SINGLE_SELECT",
           "options": [
             {
               "option_label": "Yes",
@@ -67,6 +68,7 @@
             <div class="mt-3 space-y-1">
                 <p class="text-xs text-slate-500 dark:text-slate-400"><strong>target_type_code</strong> must match an existing type: HEALTH_FACILITY, SCHOOL, COMMUNITY, WATER_POINT</p>
                 <p class="text-xs text-slate-500 dark:text-slate-400"><strong>question_code</strong> must be globally unique.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400"><strong>response_type</strong> may be SINGLE_SELECT, LIKERT, OPEN_ENDED, or NUMERIC. Scored numeric questions require numeric_bands.</p>
                 <p class="text-xs text-slate-500 dark:text-slate-400"><strong>score_weight</strong> is 0–100. Leave blank for unscored options.</p>
             </div>
         </div>

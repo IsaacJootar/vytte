@@ -149,7 +149,7 @@ See `LIFECYCLE_STATE_MACHINE.md`.
 
 - PostgreSQL parity and concurrency checks remain a release gate.
 - Respondent-aware aggregation needs an explicit template-level scoring unit and completion rule inside the shared engine.
-- Numeric, true multi-select, ranking, observation, and other declared response types remain unavailable for publication.
+- True multi-select, ranking, observation, time-estimate, and other undeveloped response types remain unavailable for publication; numeric input is supported end to end.
 - Dataset counts require governed version metadata; sample content is not production clinical authority.
 - Dormant recommendation, root-cause, topic-score, project-score, observation, and multi-select structures remain reserved.
 - No assessment reopen/correction/archive workflow exists.

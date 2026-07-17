@@ -210,6 +210,14 @@ Accepted items below record Isaac's explicit direction; all others remain implem
 - **Compatibility:** Approved sample category data was discarded. Migration `2026_07_17_000015` removes `target_categories`, `target_category_default_modules`, and `targets.category_id`; templates, rather than target categories, govern assessment content.
 - **Boundary:** A future subtype may be introduced only when a specific assessment template genuinely requires it, using plain context-appropriate language and progressive disclosure rather than a mandatory global category field.
 
+### DEC-021-024: Numeric response input and malformed sample retirement
+
+- **Status:** Approved by Isaac and implemented, 17 July 2026
+- **Decision:** `NUMERIC` is a first-class response type in authenticated and public assessment runners. Its unit, bounds, step, and optional scoring bands are frozen with the template and assessment snapshot.
+- **Scoring rule:** A scored numeric question cannot publish without explicit numeric bands. An unscored numeric measure is allowed and remains contextual evidence; missing numeric values are never converted to zero.
+- **Content cleanup:** The imported `PHSAI_V1` sample questions using unsupported response types, scored open text, or option inputs without options are removed. Legacy numeric questions without approved bands remain available only as unscored measures until curated.
+- **Publication boundary:** Only response types with a working renderer, storage rule, validation, completeness behavior, snapshot contract, and scoring or explicit unscored rule may publish.
+
 ## Approval record
 
 Isaac granted approval on 17 July 2026 to apply every recommendation and correct all recorded gaps. Implementation remains incremental: complete, test, commit, and push each bounded module separately.

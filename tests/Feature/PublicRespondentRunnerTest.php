@@ -116,6 +116,33 @@ class PublicRespondentRunnerTest extends TestCase
             ->assertSet('tokenValid', true);
     }
 
+    public function test_public_runner_saves_numeric_measurement(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createHivawAssessment($workspace, $user);
+        $question = Question::where('question_code', 'HIVAW.D3.Q3')->firstOrFail();
+        $question->update([
+            'type_id' => QuestionType::where('type_code', 'NUMERIC')->value('type_id'),
+            'numeric_unit' => '%',
+            'numeric_min' => 0,
+            'numeric_max' => 100,
+            'numeric_step' => 0.1,
+        ]);
+        $token = $this->createToken($assessment);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $component->call('giveConsent')
+            ->call('saveNumeric', $question->question_id, '72.5')
+            ->assertSet("savedNumericResponses.{$question->question_id}", 72.5);
+
+        $this->assertDatabaseHas('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question->question_id,
+            'value_numeric' => 72.5,
+            'value_option_id' => null,
+        ]);
+    }
+
     public function test_revoked_token_is_rejected(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();

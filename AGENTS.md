@@ -67,6 +67,7 @@ Read, in order, for architecture or assessment work:
 12. Commit and push each completed module separately.
 13. Preserve unrelated worktree changes and never stage them accidentally.
 14. PostgreSQL parity is a release gate even when SQLite is used locally.
+15. A response type may be published only when authenticated and public renderers, authoritative validation, storage, completeness, snapshot, and scoring or explicit unscored behavior are all implemented. Current types are `SINGLE_SELECT`, `LIKERT`, unscored `OPEN_ENDED`, and `NUMERIC`; scored numeric questions require frozen bands.
 
 ## Scoring
 

@@ -28,6 +28,9 @@ class MultiRespondentAggregationService
 
         foreach ($assessment->publicResponseSessions as $session) {
             $reason = $this->exclusionReason($session);
+            if ($reason === null && $session->scoreResult?->scoring_version !== $config['scoring_profile_version']) {
+                $reason = 'SCORING_PROFILE_VERSION_MISMATCH';
+            }
             if ($reason !== null) {
                 $excluded->push([
                     'session_id' => $session->session_id,
@@ -38,7 +41,7 @@ class MultiRespondentAggregationService
             }
         }
 
-        $aggregate = $this->arithmeticMean($eligible);
+        $aggregate = $this->arithmeticMean($eligible, $config['scoring_profile_version']);
         $references = $eligible->map(fn (PublicResponseSession $session) => [
             'session_id' => $session->session_id,
             'response_snapshot_hash' => $session->response_snapshot_hash,
@@ -153,7 +156,7 @@ class MultiRespondentAggregationService
         if (($config['minimum_completed_respondents'] ?? 0) < 1) {
             throw ValidationException::withMessages(['assessment' => 'This assessment has no valid respondent threshold.']);
         }
-        if (($config['scoring_profile_version'] ?? null) !== ScoringService::ALGORITHM_VERSION) {
+        if (! in_array($config['scoring_profile_version'] ?? null, ScoringService::SUPPORTED_ALGORITHM_VERSIONS, true)) {
             throw ValidationException::withMessages(['assessment' => 'This assessment uses an unsupported frozen scoring profile version.']);
         }
 
@@ -205,7 +208,7 @@ class MultiRespondentAggregationService
         return null;
     }
 
-    private function arithmeticMean(Collection $sessions): array
+    private function arithmeticMean(Collection $sessions, string $scoringVersion): array
     {
         $scorePayloads = $sessions->pluck('scoreResult.payload');
         $subIndexIds = $scorePayloads->flatMap(fn ($payload) => collect($payload['sub_indices'] ?? [])->pluck('sub_index_id'))->unique();
@@ -243,7 +246,7 @@ class MultiRespondentAggregationService
             'calibration_status' => $overallValues->count() === $sessions->count()
                 ? 'CALIBRATED'
                 : ($overallValues->isEmpty() ? 'NOT_CALIBRATED' : 'PARTIAL'),
-            'scoring_version' => ScoringService::ALGORITHM_VERSION,
+            'scoring_version' => $scoringVersion,
         ];
     }
 }

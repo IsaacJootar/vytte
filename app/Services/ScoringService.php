@@ -10,14 +10,18 @@ use Illuminate\Support\Facades\DB;
 
 class ScoringService
 {
-    public const ALGORITHM_VERSION = 'vytte-3.0-snapshot-profile';
+    public const ALGORITHM_VERSION = 'vytte-4.0-numeric-bands';
+
+    public const SUPPORTED_ALGORITHM_VERSIONS = [
+        'vytte-3.0-snapshot-profile',
+        self::ALGORITHM_VERSION,
+    ];
 
     public function calculate(Assessment $assessment): void
     {
         $responses = Response::where('assessment_id', $assessment->assessment_id)
             ->whereNull('respondent_id')
             ->whereNull('public_response_session_id')
-            ->whereNotNull('value_option_id')
             ->get()
             ->keyBy('question_id');
 
@@ -39,7 +43,7 @@ class ScoringService
                 'domains' => [],
                 'overall_score' => null,
                 'calibration_status' => 'NOT_CALIBRATED',
-                'scoring_version' => self::ALGORITHM_VERSION,
+                'scoring_version' => $this->scoringVersion($assessment),
             ];
         }
 
@@ -66,22 +70,42 @@ class ScoringService
                 $response = $responses->get($question['question_id']);
 
                 if ($response) {
-                    $selectedOption = collect($question['options'])
-                        ->firstWhere('option_id', (int) $response->value_option_id);
-                    if ($selectedOption === null || $selectedOption['score_weight'] === null) {
-                        continue;
-                    }
+                    if (($question['response_type'] ?? null) === 'NUMERIC') {
+                        if ($response->value_numeric === null) {
+                            continue;
+                        }
+                        $bands = collect($question['numeric_bands'] ?? [])->values();
+                        $numericValue = (float) $response->value_numeric;
+                        $selectedBand = $bands->first(function ($band, $index) use ($bands, $numericValue): bool {
+                            $aboveMinimum = $band['min_value'] === null || $numericValue >= (float) $band['min_value'];
+                            $belowMaximum = $band['max_value'] === null
+                                || $numericValue < (float) $band['max_value']
+                                || ($index === $bands->count() - 1 && $numericValue <= (float) $band['max_value']);
 
-                    $optionScore = (float) $selectedOption['score_weight'];
-                    $questionScaleMaximum = collect($question['options'])
-                        ->whereNotNull('score_weight')
-                        ->max(fn ($option) => (float) $option['score_weight']);
+                            return $aboveMinimum && $belowMaximum;
+                        });
+                        if ($selectedBand === null) {
+                            continue;
+                        }
+                        $questionScore = (float) $selectedBand['score_weight'];
+                        $questionScaleMaximum = $bands->max(fn ($band) => (float) $band['score_weight']);
+                    } else {
+                        $selectedOption = collect($question['options'])
+                            ->firstWhere('option_id', (int) $response->value_option_id);
+                        if ($selectedOption === null || $selectedOption['score_weight'] === null) {
+                            continue;
+                        }
+                        $questionScore = (float) $selectedOption['score_weight'];
+                        $questionScaleMaximum = collect($question['options'])
+                            ->whereNotNull('score_weight')
+                            ->max(fn ($option) => (float) $option['score_weight']);
+                    }
 
                     if ($questionScaleMaximum !== null && $questionScaleMaximum <= 1.0) {
-                        $optionScore *= 100;
+                        $questionScore *= 100;
                     }
 
-                    $weightedSum += $optionScore * $weight;
+                    $weightedSum += $questionScore * $weight;
                     $totalWeight += $weight;
                     $answeredCount++;
                 }
@@ -148,7 +172,7 @@ class ScoringService
             'domains' => array_values($domainResults),
             'overall_score' => $overallScore,
             'calibration_status' => $overallStatus,
-            'scoring_version' => self::ALGORITHM_VERSION,
+            'scoring_version' => $this->scoringVersion($assessment),
         ];
     }
 
@@ -233,7 +257,9 @@ class ScoringService
                             'question_id' => $link['question_id'],
                             'is_scored' => (bool) ($question['is_scored'] ?? false),
                             'weight' => (float) ($link['weight'] ?? 1.0),
+                            'response_type' => $question['response_type'] ?? null,
                             'options' => $question['options'] ?? [],
+                            'numeric_bands' => $question['numeric_bands'] ?? [],
                         ];
                     })->all();
 
@@ -248,9 +274,13 @@ class ScoringService
 
         return SubIndex::whereIn('module_id', $moduleIds)
             ->with(['questions' => function ($query) {
-                $query->select('questions.question_id', 'questions.is_scored')
+                $query->select('questions.question_id', 'questions.is_scored', 'questions.type_id')
                     ->withPivot('weight')
-                    ->with('options:option_id,question_id,score_weight');
+                    ->with([
+                        'options:option_id,question_id,score_weight',
+                        'numericBands:band_id,question_id,min_value,max_value,score_weight,band_order',
+                        'questionType:type_id,type_code',
+                    ]);
             }])
             ->get()
             ->map(fn ($subIndex) => [
@@ -260,12 +290,27 @@ class ScoringService
                     'question_id' => $question->question_id,
                     'is_scored' => (bool) $question->is_scored,
                     'weight' => (float) ($question->pivot->weight ?? 1.0),
+                    'response_type' => $question->questionType?->type_code,
                     'options' => $question->options->map(fn ($option) => [
                         'option_id' => $option->option_id,
                         'score_weight' => $option->score_weight,
                     ])->all(),
+                    'numeric_bands' => $question->numericBands->map(fn ($band) => [
+                        'min_value' => $band->min_value !== null ? (float) $band->min_value : null,
+                        'max_value' => $band->max_value !== null ? (float) $band->max_value : null,
+                        'score_weight' => (float) $band->score_weight,
+                    ])->all(),
                 ])->all(),
             ])->all();
+    }
+
+    private function scoringVersion(Assessment $assessment): string
+    {
+        $frozen = $assessment->snapshot?->collection_config['scoring_profile_version'] ?? null;
+
+        return in_array($frozen, self::SUPPORTED_ALGORITHM_VERSIONS, true)
+            ? $frozen
+            : self::ALGORITHM_VERSION;
     }
 
     /**

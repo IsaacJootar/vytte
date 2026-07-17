@@ -30,12 +30,12 @@ The current reference/content baseline is:
 | Question types declared | 10 |
 | Assessment modules | 27 |
 | Sub-indices with curated mappings | 4 |
-| Questions | 601 |
+| Governed questions in a clean seed | 9 |
 | Topics | 7 |
 | Respondent roles | 8 |
 | Published standard templates | 1 after the complete seed |
 
-Only `SINGLE_SELECT`, `LIKERT`, and unscored `OPEN_ENDED` are currently publishable response types. A declared type is not automatically supported.
+`SINGLE_SELECT`, `LIKERT`, unscored `OPEN_ENDED`, and `NUMERIC` are currently publishable. Scored numeric questions require frozen scoring bands; a declared database type is not automatically supported.
 
 ## Governed content rule
 

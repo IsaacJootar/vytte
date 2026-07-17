@@ -91,23 +91,23 @@ class TemplatePublishingTest extends TestCase
     {
         $module = AssessmentModule::create([
             'target_type_code' => 'COMMUNITY',
-            'module_code' => 'NUMERIC',
-            'module_name' => 'Numeric Draft',
+            'module_code' => 'TIME',
+            'module_name' => 'Time Estimate Draft',
             'is_active' => true,
         ]);
         Question::create([
             'module_id' => $module->module_id,
-            'question_code' => 'NUMERIC.Q1',
-            'question_text' => 'How many?',
-            'type_id' => DB::table('question_types')->where('type_code', 'NUMERIC')->value('type_id'),
+            'question_code' => 'TIME.Q1',
+            'question_text' => 'How long?',
+            'type_id' => DB::table('question_types')->where('type_code', 'TIME_ESTIMATE')->value('type_id'),
             'display_order' => 1,
             'is_active' => true,
             'is_scored' => true,
         ]);
 
         $template = AssessmentTemplate::create([
-            'template_code' => 'NUMERIC_DRAFT',
-            'template_name' => 'Numeric Draft',
+            'template_code' => 'TIME_DRAFT',
+            'template_name' => 'Time Estimate Draft',
             'creation_path' => 'FOCUSED',
             'health_domain_id' => HealthDomain::where('domain_code', 'GENERAL_HEALTH_SYSTEMS')->value('health_domain_id'),
             'source_authority' => 'Internal',
@@ -124,8 +124,147 @@ class TemplatePublishingTest extends TestCase
             $this->fail('Publishing should reject unsupported response types.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('response_types', $exception->errors());
+        }
+    }
+
+    public function test_scored_numeric_question_without_bands_cannot_publish(): void
+    {
+        $module = AssessmentModule::create([
+            'target_type_code' => 'COMMUNITY',
+            'module_code' => 'NUM',
+            'module_name' => 'Numeric Draft',
+            'is_active' => true,
+        ]);
+        Question::create([
+            'module_id' => $module->module_id,
+            'question_code' => 'NUM.Q1',
+            'question_text' => 'What is the occupancy rate?',
+            'type_id' => DB::table('question_types')->where('type_code', 'NUMERIC')->value('type_id'),
+            'display_order' => 1,
+            'is_active' => true,
+            'is_scored' => true,
+            'numeric_unit' => '%',
+            'numeric_min' => 0,
+            'numeric_max' => 100,
+            'numeric_step' => 0.1,
+        ]);
+        $template = AssessmentTemplate::create([
+            'template_code' => 'NUMERIC_DRAFT',
+            'template_name' => 'Numeric Draft',
+            'creation_path' => 'FOCUSED',
+            'health_domain_id' => HealthDomain::where('domain_code', 'GENERAL_HEALTH_SYSTEMS')->value('health_domain_id'),
+            'source_authority' => 'Internal',
+            'license_code' => 'INTERNAL',
+        ]);
+        $version = AssessmentTemplateVersion::create(['template_id' => $template->template_id, 'version_number' => 1]);
+        $version->modules()->attach($module->module_id);
+
+        try {
+            app(TemplatePublishingService::class)->publish($version);
+            $this->fail('Publishing should require numeric scoring bands.');
+        } catch (ValidationException $exception) {
             $this->assertArrayHasKey('scoring', $exception->errors());
         }
+    }
+
+    public function test_unscored_numeric_question_publishes_frozen_input_configuration(): void
+    {
+        $module = AssessmentModule::create([
+            'target_type_code' => 'COMMUNITY',
+            'module_code' => 'MEASURE',
+            'module_name' => 'Facility Measures',
+            'is_active' => true,
+        ]);
+        Question::create([
+            'module_id' => $module->module_id,
+            'question_code' => 'MEASURE.Q1',
+            'question_text' => 'Average length of stay',
+            'type_id' => DB::table('question_types')->where('type_code', 'NUMERIC')->value('type_id'),
+            'display_order' => 1,
+            'is_active' => true,
+            'is_scored' => false,
+            'numeric_unit' => 'days',
+            'numeric_min' => 0,
+            'numeric_step' => 0.1,
+        ]);
+        $template = AssessmentTemplate::create([
+            'template_code' => 'MEASURE_TEMPLATE',
+            'template_name' => 'Facility Measures',
+            'creation_path' => 'FOCUSED',
+            'health_domain_id' => HealthDomain::where('domain_code', 'GENERAL_HEALTH_SYSTEMS')->value('health_domain_id'),
+            'source_authority' => 'Internal',
+            'license_code' => 'INTERNAL',
+        ]);
+        $version = AssessmentTemplateVersion::create(['template_id' => $template->template_id, 'version_number' => 1]);
+        $version->modules()->attach($module->module_id);
+
+        $published = app(TemplatePublishingService::class)->publish($version);
+        $question = $published->published_payload[0]['questions'][0];
+
+        $this->assertSame('NUMERIC', $question['response_type']);
+        $this->assertSame('days', $question['numeric_config']['unit']);
+        $this->assertSame(0.1, $question['numeric_config']['step']);
+    }
+
+    public function test_scored_numeric_question_with_complete_bands_can_publish(): void
+    {
+        $module = AssessmentModule::create([
+            'target_type_code' => 'COMMUNITY',
+            'module_code' => 'OCCUPANCY',
+            'module_name' => 'Occupancy',
+            'is_active' => true,
+        ]);
+        $moduleDomainId = DB::table('module_domains')->insertGetId([
+            'module_id' => $module->module_id,
+            'domain_number' => 1,
+            'domain_label' => 'Capacity',
+        ]);
+        $question = Question::create([
+            'module_id' => $module->module_id,
+            'module_domain_id' => $moduleDomainId,
+            'question_number' => 1,
+            'question_code' => 'OCCUPANCY.Q1',
+            'question_text' => 'Average bed occupancy rate',
+            'type_id' => DB::table('question_types')->where('type_code', 'NUMERIC')->value('type_id'),
+            'display_order' => 1,
+            'is_active' => true,
+            'is_scored' => true,
+            'numeric_unit' => '%',
+            'numeric_min' => 0,
+            'numeric_max' => 100,
+            'numeric_step' => 0.1,
+        ]);
+        DB::table('question_numeric_bands')->insert([
+            ['question_id' => $question->question_id, 'min_value' => 0, 'max_value' => 50, 'score_weight' => 0, 'band_order' => 1],
+            ['question_id' => $question->question_id, 'min_value' => 50, 'max_value' => 80, 'score_weight' => 100, 'band_order' => 2],
+            ['question_id' => $question->question_id, 'min_value' => 80, 'max_value' => 100, 'score_weight' => 50, 'band_order' => 3],
+        ]);
+        $subIndexId = DB::table('sub_indices')->insertGetId([
+            'module_id' => $module->module_id,
+            'domain_id' => DB::table('domains')->where('domain_code', 'CQ')->value('domain_id'),
+            'acronym' => 'OCC',
+            'full_name' => 'Occupancy Index',
+        ]);
+        DB::table('sub_index_questions')->insert([
+            'sub_index_id' => $subIndexId,
+            'question_id' => $question->question_id,
+            'weight' => 1,
+        ]);
+        $template = AssessmentTemplate::create([
+            'template_code' => 'OCCUPANCY_TEMPLATE',
+            'template_name' => 'Occupancy',
+            'creation_path' => 'FOCUSED',
+            'health_domain_id' => HealthDomain::where('domain_code', 'GENERAL_HEALTH_SYSTEMS')->value('health_domain_id'),
+            'source_authority' => 'Internal',
+            'license_code' => 'INTERNAL',
+        ]);
+        $version = AssessmentTemplateVersion::create(['template_id' => $template->template_id, 'version_number' => 1]);
+        $version->modules()->attach($module->module_id);
+
+        $published = app(TemplatePublishingService::class)->publish($version);
+
+        $this->assertSame('vytte-4.0-numeric-bands', $published->scoring_version);
+        $this->assertCount(3, $published->published_payload[0]['questions'][0]['numeric_bands']);
     }
 
     public function test_template_without_source_and_license_cannot_publish(): void

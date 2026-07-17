@@ -65,6 +65,8 @@ class PublicRespondentRunner extends Component
 
     public array $savedTextResponses = [];
 
+    public array $savedNumericResponses = [];
+
     public string $lastSavedAt = '';
 
     public int $currentIndex = 0;
@@ -197,8 +199,11 @@ class PublicRespondentRunner extends Component
         }
 
         $question = $this->authoritativeQuestion($questionId);
+        if (! $question) {
+            return;
+        }
         $validOptionIds = collect($question['options'] ?? [])->pluck('option_id')->map(fn ($id) => (int) $id);
-        if (! $question || ! $validOptionIds->contains($optionId)) {
+        if (! $validOptionIds->contains($optionId)) {
             return;
         }
 
@@ -212,12 +217,13 @@ class PublicRespondentRunner extends Component
                 'public_response_session_id' => $this->respondentId,
                 'value_option_id' => $optionId,
                 'value_text' => null,
+                'value_numeric' => null,
                 'answered_at' => now(),
             ]
         );
 
         $this->savedResponses[$questionId] = $optionId;
-        unset($this->savedTextResponses[$questionId]);
+        unset($this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId]);
         $this->markSaved();
         if ($this->currentIndex < count($this->questionData) - 1) {
             $this->currentIndex++;
@@ -263,12 +269,83 @@ class PublicRespondentRunner extends Component
             [
                 'public_response_session_id' => $this->respondentId,
                 'value_text' => $value,
+                'value_numeric' => null,
                 'value_option_id' => null,
                 'answered_at' => now(),
             ]
         );
         $this->savedTextResponses[$questionId] = $value;
-        unset($this->savedResponses[$questionId]);
+        unset($this->savedResponses[$questionId], $this->savedNumericResponses[$questionId]);
+        $this->markSaved();
+    }
+
+    public function saveNumeric(string $questionId, mixed $value): void
+    {
+        if (! $this->hasValidPublicContext() || ! $this->consentGiven) {
+            return;
+        }
+
+        $question = $this->authoritativeQuestion($questionId);
+        if (! $question || $question['response_type'] !== 'NUMERIC') {
+            return;
+        }
+
+        if ($value === '' || $value === null) {
+            Response::where('assessment_id', $this->assessmentId)
+                ->where('question_id', $questionId)
+                ->where('public_response_session_id', $this->respondentId)
+                ->delete();
+            unset($this->savedNumericResponses[$questionId]);
+
+            return;
+        }
+
+        if (! is_numeric($value) || ! is_finite((float) $value) || abs((float) $value) > 99999999999.9999) {
+            $this->addError("numeric.{$questionId}", 'Enter a valid number.');
+
+            return;
+        }
+
+        $number = (float) $value;
+        $config = $question['numeric_config'] ?? [];
+        if (($config['min'] ?? null) !== null && $number < (float) $config['min']) {
+            $this->addError("numeric.{$questionId}", 'The value is below the allowed minimum.');
+
+            return;
+        }
+        if (($config['max'] ?? null) !== null && $number > (float) $config['max']) {
+            $this->addError("numeric.{$questionId}", 'The value is above the allowed maximum.');
+
+            return;
+        }
+        $step = $config['step'] ?? null;
+        $base = ($config['min'] ?? null) !== null ? (float) $config['min'] : 0.0;
+        if ($step !== null && (float) $step > 0) {
+            $steps = ($number - $base) / (float) $step;
+            if (abs($steps - round($steps)) > 0.000001) {
+                $this->addError("numeric.{$questionId}", 'Enter a value using the allowed increment.');
+
+                return;
+            }
+        }
+
+        $this->resetErrorBag("numeric.{$questionId}");
+        Response::updateOrCreate(
+            [
+                'assessment_id' => $this->assessmentId,
+                'question_id' => $questionId,
+                'respondent_id' => $this->respondentId,
+            ],
+            [
+                'public_response_session_id' => $this->respondentId,
+                'value_numeric' => $number,
+                'value_text' => null,
+                'value_option_id' => null,
+                'answered_at' => now(),
+            ]
+        );
+        $this->savedNumericResponses[$questionId] = $number;
+        unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId]);
         $this->markSaved();
     }
 
@@ -276,7 +353,8 @@ class PublicRespondentRunner extends Component
     {
         foreach ($this->questionData as $question) {
             $answered = isset($this->savedResponses[$question['question_id']])
-                || filled($this->savedTextResponses[$question['question_id']] ?? null);
+                || filled($this->savedTextResponses[$question['question_id']] ?? null)
+                || array_key_exists($question['question_id'], $this->savedNumericResponses);
             if ($question['is_scored'] && ! $answered) {
                 return false;
             }
@@ -291,6 +369,7 @@ class PublicRespondentRunner extends Component
             $this->questionData,
             fn ($question) => isset($this->savedResponses[$question['question_id']])
                 || filled($this->savedTextResponses[$question['question_id']] ?? null)
+                || array_key_exists($question['question_id'], $this->savedNumericResponses)
         ));
     }
 
@@ -336,6 +415,7 @@ class PublicRespondentRunner extends Component
                         'module_name' => $module['module_name'] ?? $module['module_code'],
                         'domain_label' => $question['domain_label'] ?? '',
                         'domain_number' => $question['domain_number'] ?? 0,
+                        'numeric_config' => $question['numeric_config'] ?? null,
                         'options' => collect($question['options'] ?? [])->map(fn ($option) => [
                             'option_id' => (int) $option['option_id'],
                             'option_label' => Arr::get($option, "translations.{$locale}", $option['option_label']),
@@ -381,6 +461,12 @@ class PublicRespondentRunner extends Component
             'module_name' => $moduleNames[$question->module_id]?->module_name ?? '',
             'domain_label' => $question->moduleDomain?->domain_label ?? '',
             'domain_number' => $question->moduleDomain?->domain_number ?? 0,
+            'numeric_config' => $question->questionType?->type_code === 'NUMERIC' ? [
+                'unit' => $question->numeric_unit,
+                'min' => $question->numeric_min !== null ? (float) $question->numeric_min : null,
+                'max' => $question->numeric_max !== null ? (float) $question->numeric_max : null,
+                'step' => $question->numeric_step !== null ? (float) $question->numeric_step : null,
+            ] : null,
             'options' => $question->options->map(fn ($option) => [
                 'option_id' => (int) $option->option_id,
                 'option_label' => $optionTranslations->get($option->option_id, $option->option_label),
@@ -397,6 +483,7 @@ class PublicRespondentRunner extends Component
     {
         $this->savedResponses = [];
         $this->savedTextResponses = [];
+        $this->savedNumericResponses = [];
         $responses = Response::where('public_response_session_id', $this->respondentId)->get();
         foreach ($responses as $response) {
             if ($response->value_option_id !== null) {
@@ -404,6 +491,9 @@ class PublicRespondentRunner extends Component
             }
             if ($response->value_text !== null) {
                 $this->savedTextResponses[$response->question_id] = $response->value_text;
+            }
+            if ($response->value_numeric !== null) {
+                $this->savedNumericResponses[$response->question_id] = (float) $response->value_numeric;
             }
         }
     }
@@ -498,9 +588,11 @@ class PublicRespondentRunner extends Component
                 return false;
             }
 
-            return $question['response_type'] === 'OPEN_ENDED'
-                ? filled($response->value_text)
-                : $response->value_option_id !== null;
+            return match ($question['response_type']) {
+                'OPEN_ENDED' => filled($response->value_text),
+                'NUMERIC' => $response->value_numeric !== null,
+                default => $response->value_option_id !== null,
+            };
         });
     }
 

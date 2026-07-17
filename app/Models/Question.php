@@ -33,12 +33,19 @@ class Question extends Model
         'standard_reference_id',
         'standard_alignment_status',
         'corroborates_sub_index_id',
+        'numeric_unit',
+        'numeric_min',
+        'numeric_max',
+        'numeric_step',
     ];
 
     protected $casts = [
         'requires_observation' => 'boolean',
         'is_active' => 'boolean',
         'is_scored' => 'boolean',
+        'numeric_min' => 'decimal:4',
+        'numeric_max' => 'decimal:4',
+        'numeric_step' => 'decimal:4',
     ];
 
     public function module(): BelongsTo
@@ -60,6 +67,12 @@ class Question extends Model
     {
         return $this->hasMany(QuestionOption::class, 'question_id', 'question_id')
             ->orderBy('option_order');
+    }
+
+    public function numericBands(): HasMany
+    {
+        return $this->hasMany(QuestionNumericBand::class, 'question_id', 'question_id')
+            ->orderBy('band_order');
     }
 
     public function translations(): HasMany

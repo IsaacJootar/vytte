@@ -87,12 +87,12 @@ class RespondentSubmissionService
                     return false;
                 }
 
-                if (($question['response_type'] ?? null) === 'OPEN_ENDED') {
-                    return filled($response->value_text);
-                }
-
-                return collect($question['options'] ?? [])
-                    ->contains('option_id', (int) $response->value_option_id);
+                return match ($question['response_type'] ?? null) {
+                    'OPEN_ENDED' => filled($response->value_text),
+                    'NUMERIC' => $response->value_numeric !== null,
+                    default => collect($question['options'] ?? [])
+                        ->contains('option_id', (int) $response->value_option_id),
+                };
             });
 
             if (! $complete) {
@@ -108,13 +108,21 @@ class RespondentSubmissionService
         $required = Question::whereIn('module_id', $moduleIds)
             ->where('is_active', true)
             ->where('is_scored', true)
-            ->with('options')
+            ->with(['options', 'questionType'])
             ->get();
         $byQuestion = $responses->keyBy('question_id');
         $complete = $required->isNotEmpty() && $required->every(function (Question $question) use ($byQuestion): bool {
             $response = $byQuestion->get($question->question_id);
 
-            return $response && $question->options->contains('option_id', (int) $response->value_option_id);
+            if (! $response) {
+                return false;
+            }
+
+            return match ($question->questionType?->type_code) {
+                'OPEN_ENDED' => filled($response->value_text),
+                'NUMERIC' => $response->value_numeric !== null,
+                default => $question->options->contains('option_id', (int) $response->value_option_id),
+            };
         });
         if (! $complete) {
             throw ValidationException::withMessages(['responses' => 'Every required scored question must be answered before submission.']);

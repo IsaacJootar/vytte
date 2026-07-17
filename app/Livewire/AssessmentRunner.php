@@ -30,6 +30,8 @@ class AssessmentRunner extends Component
 
     public array $savedTextResponses = [];
 
+    public array $savedNumericResponses = [];
+
     public array $savedEvidenceNotes = [];
 
     public string $lastSavedAt = '';
@@ -78,6 +80,7 @@ class AssessmentRunner extends Component
                         'module_code' => $module['module_code'],
                         'domain_label' => $question['domain_label'] ?? '',
                         'domain_number' => $question['domain_number'] ?? 0,
+                        'numeric_config' => $question['numeric_config'] ?? null,
                         'options' => collect($question['options'])->map(fn ($option) => [
                             'option_id' => $option['option_id'],
                             'option_label' => $option['translations'][$locale] ?? $option['option_label'],
@@ -153,6 +156,12 @@ class AssessmentRunner extends Component
             'module_code' => $moduleCodes[$q->module_id] ?? '',
             'domain_label' => $q->moduleDomain?->domain_label ?? '',
             'domain_number' => $q->moduleDomain?->domain_number ?? 0,
+            'numeric_config' => $q->questionType?->type_code === 'NUMERIC' ? [
+                'unit' => $q->numeric_unit,
+                'min' => $q->numeric_min !== null ? (float) $q->numeric_min : null,
+                'max' => $q->numeric_max !== null ? (float) $q->numeric_max : null,
+                'step' => $q->numeric_step !== null ? (float) $q->numeric_step : null,
+            ] : null,
             'options' => $q->options->map(fn ($o) => [
                 'option_id' => $o->option_id,
                 'option_label' => $optionTranslations->get($o->option_id, $o->option_label),
@@ -171,6 +180,9 @@ class AssessmentRunner extends Component
             $this->savedResponses[$response->question_id] = $response->value_option_id;
             if ($response->value_text !== null) {
                 $this->savedTextResponses[$response->question_id] = $response->value_text;
+            }
+            if ($response->value_numeric !== null) {
+                $this->savedNumericResponses[$response->question_id] = (float) $response->value_numeric;
             }
             if ($response->evidence_note !== null) {
                 $this->savedEvidenceNotes[$response->question_id] = $response->evidence_note;
@@ -274,11 +286,14 @@ class AssessmentRunner extends Component
             ],
             [
                 'value_option_id' => $optionId,
+                'value_text' => null,
+                'value_numeric' => null,
                 'answered_at' => now(),
             ]
         );
 
         $this->savedResponses[$questionId] = $optionId;
+        unset($this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
 
         // Auto-advance to next question
@@ -344,9 +359,96 @@ class AssessmentRunner extends Component
                 'respondent_id' => null,
                 'public_response_session_id' => null,
             ],
-            ['value_text' => $value, 'value_option_id' => null, 'answered_at' => now()]
+            ['value_text' => $value, 'value_numeric' => null, 'value_option_id' => null, 'answered_at' => now()]
         );
         $this->savedTextResponses[$questionId] = $value;
+        unset($this->savedResponses[$questionId], $this->savedNumericResponses[$questionId]);
+        $this->lastSavedAt = now()->format('g:i A');
+    }
+
+    public function saveNumeric(string $questionId, mixed $value): void
+    {
+        $this->authorizeAssessmentAccess();
+
+        if ($this->isComplete || ! $this->hasRequiredConsent()) {
+            return;
+        }
+
+        $snapshotQuestion = $this->snapshotQuestion($questionId);
+        $liveQuestion = $snapshotQuestion ? null : Question::with('questionType')
+            ->where('question_id', $questionId)
+            ->where('is_active', true)
+            ->first();
+        $isNumeric = $snapshotQuestion
+            ? ($snapshotQuestion['response_type'] ?? null) === 'NUMERIC'
+            : $liveQuestion?->questionType?->type_code === 'NUMERIC'
+                && $this->liveQuestionInScope($questionId, fn ($query) => $query);
+        if (! $isNumeric) {
+            return;
+        }
+
+        if ($value === '' || $value === null) {
+            $response = Response::where('assessment_id', $this->assessment->assessment_id)
+                ->where('question_id', $questionId)
+                ->whereNull('respondent_id')
+                ->whereNull('public_response_session_id')
+                ->first();
+            if ($response) {
+                if (blank($response->evidence_note)) {
+                    $response->delete();
+                } else {
+                    $response->update(['value_numeric' => null]);
+                }
+            }
+            unset($this->savedNumericResponses[$questionId]);
+
+            return;
+        }
+
+        if (! is_numeric($value) || ! is_finite((float) $value) || abs((float) $value) > 99999999999.9999) {
+            $this->addError("numeric.{$questionId}", 'Enter a valid number.');
+
+            return;
+        }
+
+        $number = (float) $value;
+        $config = $snapshotQuestion['numeric_config'] ?? ($liveQuestion ? [
+            'min' => $liveQuestion->numeric_min,
+            'max' => $liveQuestion->numeric_max,
+        ] : []);
+        if (($config['min'] ?? null) !== null && $number < (float) $config['min']) {
+            $this->addError("numeric.{$questionId}", 'The value is below the allowed minimum.');
+
+            return;
+        }
+        if (($config['max'] ?? null) !== null && $number > (float) $config['max']) {
+            $this->addError("numeric.{$questionId}", 'The value is above the allowed maximum.');
+
+            return;
+        }
+        $step = ($snapshotQuestion['numeric_config']['step'] ?? null) ?? $liveQuestion?->numeric_step;
+        $base = ($config['min'] ?? null) !== null ? (float) $config['min'] : 0.0;
+        if ($step !== null && (float) $step > 0) {
+            $steps = ($number - $base) / (float) $step;
+            if (abs($steps - round($steps)) > 0.000001) {
+                $this->addError("numeric.{$questionId}", 'Enter a value using the allowed increment.');
+
+                return;
+            }
+        }
+
+        $this->resetErrorBag("numeric.{$questionId}");
+        Response::updateOrCreate(
+            [
+                'assessment_id' => $this->assessment->assessment_id,
+                'question_id' => $questionId,
+                'respondent_id' => null,
+                'public_response_session_id' => null,
+            ],
+            ['value_numeric' => $number, 'value_text' => null, 'value_option_id' => null, 'answered_at' => now()]
+        );
+        $this->savedNumericResponses[$questionId] = $number;
+        unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
     }
 
@@ -407,7 +509,8 @@ class AssessmentRunner extends Component
     {
         foreach ($this->questionData as $q) {
             $answered = isset($this->savedResponses[$q['question_id']])
-                || filled($this->savedTextResponses[$q['question_id']] ?? null);
+                || filled($this->savedTextResponses[$q['question_id']] ?? null)
+                || array_key_exists($q['question_id'], $this->savedNumericResponses);
             if ($q['is_scored'] && ! $answered) {
                 return false;
             }
@@ -422,6 +525,7 @@ class AssessmentRunner extends Component
             $this->questionData,
             fn ($q) => isset($this->savedResponses[$q['question_id']])
                 || filled($this->savedTextResponses[$q['question_id']] ?? null)
+                || array_key_exists($q['question_id'], $this->savedNumericResponses)
         ));
     }
 

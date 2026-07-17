@@ -356,6 +356,69 @@ class AdminTest extends TestCase
             ->assertSessionHasErrors('json_file');
     }
 
+    public function test_admin_can_import_numeric_question_contract(): void
+    {
+        $json = json_encode([
+            'module_code' => 'METRICS',
+            'module_name' => 'Facility Metrics',
+            'target_type_code' => 'HEALTH_FACILITY',
+            'domains' => [[
+                'domain_number' => 1,
+                'domain_label' => 'Utilization',
+                'questions' => [[
+                    'question_code' => 'METRICS.Q1',
+                    'question_text' => 'Average bed occupancy rate',
+                    'response_type' => 'NUMERIC',
+                    'is_scored' => true,
+                    'numeric_unit' => '%',
+                    'numeric_min' => 0,
+                    'numeric_max' => 100,
+                    'numeric_step' => 0.1,
+                    'numeric_bands' => [
+                        ['min_value' => 0, 'max_value' => 50, 'score_weight' => 0],
+                        ['min_value' => 50, 'max_value' => 80, 'score_weight' => 100],
+                        ['min_value' => 80, 'max_value' => 100, 'score_weight' => 50],
+                    ],
+                ]],
+            ]],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('numeric-module.json', $json);
+        $this->actingAs($this->makeAdmin())
+            ->post(route('admin.modules.import.store'), ['json_file' => $file])
+            ->assertRedirect();
+
+        $question = Question::where('question_code', 'METRICS.Q1')->firstOrFail();
+        $this->assertSame('NUMERIC', $question->questionType->type_code);
+        $this->assertSame('%', $question->numeric_unit);
+        $this->assertCount(3, $question->numericBands);
+    }
+
+    public function test_import_rejects_response_type_without_working_input(): void
+    {
+        $json = json_encode([
+            'module_code' => 'BROKEN',
+            'module_name' => 'Broken Input',
+            'target_type_code' => 'COMMUNITY',
+            'domains' => [[
+                'domain_number' => 1,
+                'domain_label' => 'Broken',
+                'questions' => [[
+                    'question_code' => 'BROKEN.Q1',
+                    'question_text' => 'Rank these choices',
+                    'response_type' => 'RANKING',
+                ]],
+            ]],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('broken-module.json', $json);
+        $this->actingAs($this->makeAdmin())
+            ->post(route('admin.modules.import.store'), ['json_file' => $file])
+            ->assertSessionHasErrors('json_file');
+
+        $this->assertDatabaseMissing('assessment_modules', ['module_code' => 'BROKEN']);
+    }
+
     public function test_import_rejects_invalid_json(): void
     {
         $file = UploadedFile::fake()->createWithContent('module.json', 'not json at all');

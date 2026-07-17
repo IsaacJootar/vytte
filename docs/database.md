@@ -22,7 +22,7 @@ Non-standard PK names must be declared: `protected $primaryKey = 'workspace_id';
 | `assessment_tiers` | BASIC / ENHANCED / COMPREHENSIVE |
 | `target_types` | HOSPITAL, CLINIC, PHARMACY, etc. |
 | `topics` | Cross-cutting topics (pre-seeded) |
-| `question_types` | SINGLE_CHOICE, MULTIPLE_CHOICE, BOOLEAN, TEXT, NUMERIC, RATING |
+| `question_types` | Declared response vocabulary; only types in `RESPONSE_TYPE_CONTRACT.md` may publish |
 | `maturity_levels` | 5 levels: CRITICAL → EXEMPLARY |
 | `respondent_roles` | The roles that answer questions (pre-seeded) |
 | `standards_registry` | External standards referenced by questions (pre-seeded) |

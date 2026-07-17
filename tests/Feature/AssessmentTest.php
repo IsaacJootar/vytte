@@ -10,6 +10,7 @@ use App\Models\AssessmentTemplateVersion;
 use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\Question;
+use App\Models\QuestionType;
 use App\Models\Response;
 use App\Models\Target;
 use App\Models\User;
@@ -212,6 +213,60 @@ class AssessmentTest extends TestCase
             ->get(route('assessments.run', $assessment))
             ->assertOk()
             ->assertSeeLivewire(AssessmentRunner::class);
+    }
+
+    public function test_numeric_question_renders_and_saves_a_valid_measurement(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+        $question = Question::where('question_code', 'HIVAW.D3.Q3')->firstOrFail();
+        $question->update([
+            'type_id' => QuestionType::where('type_code', 'NUMERIC')->value('type_id'),
+            'numeric_unit' => 'days',
+            'numeric_min' => 0,
+            'numeric_max' => 365,
+            'numeric_step' => 0.1,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment])
+            ->call('giveConsent')
+            ->call('saveNumeric', $question->question_id, '4.5')
+            ->assertSet("savedNumericResponses.{$question->question_id}", 4.5);
+
+        $this->assertDatabaseHas('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question->question_id,
+            'value_numeric' => 4.5,
+            'value_option_id' => null,
+        ]);
+    }
+
+    public function test_numeric_question_rejects_values_outside_its_frozen_range(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+        $question = Question::where('question_code', 'HIVAW.D3.Q3')->firstOrFail();
+        $question->update([
+            'type_id' => QuestionType::where('type_code', 'NUMERIC')->value('type_id'),
+            'numeric_min' => 0,
+            'numeric_max' => 100,
+        ]);
+
+        Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment])
+            ->call('giveConsent')
+            ->call('saveNumeric', $question->question_id, '101')
+            ->assertHasErrors("numeric.{$question->question_id}");
+
+        $this->assertDatabaseMissing('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question->question_id,
+        ]);
     }
 
     // ---- Workspace isolation ----

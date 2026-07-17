@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\AssessmentModule;
 use App\Models\ModuleDomain;
 use App\Models\Question;
+use App\Models\QuestionNumericBand;
 use App\Models\QuestionOption;
+use App\Support\ResponseInputContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,6 +65,31 @@ class ModuleImportController extends Controller
             ->exists()) {
             throw ValidationException::withMessages(['json_file' => "A module with code \"{$data['module_code']}\" already exists for this target type."]);
         }
+
+        foreach ($data['domains'] as $domainIndex => $domain) {
+            foreach ($domain['questions'] ?? [] as $questionIndex => $question) {
+                $path = 'domains.'.($domainIndex + 1).'.questions.'.($questionIndex + 1);
+                $type = strtoupper($question['response_type'] ?? 'SINGLE_SELECT');
+                $isScored = (bool) ($question['is_scored'] ?? true);
+                if (! ResponseInputContract::supports($type)) {
+                    throw ValidationException::withMessages(['json_file' => "{$path} uses unsupported response type {$type}."]);
+                }
+                if (in_array($type, ResponseInputContract::OPTION_TYPES, true) && empty($question['options'])) {
+                    throw ValidationException::withMessages(['json_file' => "{$path} requires at least one answer option."]);
+                }
+                if ($type === 'OPEN_ENDED' && $isScored) {
+                    throw ValidationException::withMessages(['json_file' => "{$path} must be unscored because open text has no scoring contract."]);
+                }
+                if ($type === 'NUMERIC' && $isScored && empty($question['numeric_bands'])) {
+                    throw ValidationException::withMessages(['json_file' => "{$path} requires numeric scoring bands."]);
+                }
+                if ($type === 'NUMERIC'
+                    && isset($question['numeric_min'], $question['numeric_max'])
+                    && (float) $question['numeric_min'] > (float) $question['numeric_max']) {
+                    throw ValidationException::withMessages(['json_file' => "{$path} has a minimum greater than its maximum."]);
+                }
+            }
+        }
     }
 
     private function importModule(array $data): AssessmentModule
@@ -77,8 +104,6 @@ class ModuleImportController extends Controller
             'is_active' => true,
         ]);
 
-        $typeId = DB::table('question_types')->where('type_code', 'SINGLE_SELECT')->value('type_id');
-
         foreach ($data['domains'] as $domainData) {
             $domain = ModuleDomain::create([
                 'module_id' => $module->module_id,
@@ -87,6 +112,8 @@ class ModuleImportController extends Controller
             ]);
 
             foreach ($domainData['questions'] ?? [] as $qIdx => $qData) {
+                $responseType = strtoupper($qData['response_type'] ?? 'SINGLE_SELECT');
+                $typeId = DB::table('question_types')->where('type_code', $responseType)->value('type_id');
                 $question = Question::create([
                     'module_id' => $module->module_id,
                     'module_domain_id' => $domain->module_domain_id,
@@ -99,6 +126,10 @@ class ModuleImportController extends Controller
                     'is_scored' => $qData['is_scored'] ?? true,
                     'source' => 'IMPORT',
                     'question_status' => 'APPROVED',
+                    'numeric_unit' => $qData['numeric_unit'] ?? null,
+                    'numeric_min' => $qData['numeric_min'] ?? null,
+                    'numeric_max' => $qData['numeric_max'] ?? null,
+                    'numeric_step' => $qData['numeric_step'] ?? null,
                 ]);
 
                 foreach ($qData['options'] ?? [] as $oIdx => $oData) {
@@ -107,6 +138,16 @@ class ModuleImportController extends Controller
                         'option_label' => trim($oData['option_label']),
                         'option_order' => $oIdx + 1,
                         'score_weight' => isset($oData['score_weight']) ? (float) $oData['score_weight'] : null,
+                    ]);
+                }
+
+                foreach ($qData['numeric_bands'] ?? [] as $bandIndex => $bandData) {
+                    QuestionNumericBand::create([
+                        'question_id' => $question->question_id,
+                        'min_value' => $bandData['min_value'] ?? null,
+                        'max_value' => $bandData['max_value'] ?? null,
+                        'score_weight' => (float) $bandData['score_weight'],
+                        'band_order' => $bandIndex + 1,
                     ]);
                 }
             }

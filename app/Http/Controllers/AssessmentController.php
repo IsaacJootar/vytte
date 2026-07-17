@@ -150,12 +150,12 @@ class AssessmentController extends Controller
                     return true;
                 }
 
-                if ($question['response_type'] === 'OPEN_ENDED') {
-                    return blank($response->value_text);
-                }
-
-                return ! collect($question['options'] ?? [])
-                    ->contains('option_id', (int) $response->value_option_id);
+                return match ($question['response_type']) {
+                    'OPEN_ENDED' => blank($response->value_text),
+                    'NUMERIC' => $response->value_numeric === null,
+                    default => ! collect($question['options'] ?? [])
+                        ->contains('option_id', (int) $response->value_option_id),
+                };
             });
         } else {
             $moduleIds = AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
@@ -178,9 +178,11 @@ class AssessmentController extends Controller
                     return true;
                 }
 
-                return $question->options->isNotEmpty()
-                    ? (! $response->selectedOption || $response->selectedOption->question_id !== $question->question_id)
-                    : ($question->questionType?->type_code !== 'OPEN_ENDED' || blank($response->value_text));
+                return match ($question->questionType?->type_code) {
+                    'OPEN_ENDED' => blank($response->value_text),
+                    'NUMERIC' => $response->value_numeric === null,
+                    default => ! $response->selectedOption || $response->selectedOption->question_id !== $question->question_id,
+                };
             });
         }
 

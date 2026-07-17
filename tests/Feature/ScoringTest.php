@@ -117,6 +117,37 @@ class ScoringTest extends TestCase
         $this->assertSame('strong', $service->bandFor(85.5));
     }
 
+    public function test_numeric_response_uses_frozen_numeric_scoring_band(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $this->seed(HivawQuestionsSeeder::class);
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupAssessment($workspace, $user);
+        $question = Question::where('question_code', 'HIVAW.D1.Q1')->firstOrFail();
+        $question->options()->delete();
+        $question->update([
+            'type_id' => DB::table('question_types')->where('type_code', 'NUMERIC')->value('type_id'),
+            'numeric_min' => 0,
+            'numeric_max' => 100,
+            'numeric_step' => 0.1,
+        ]);
+        DB::table('question_numeric_bands')->insert([
+            ['question_id' => $question->question_id, 'min_value' => 0, 'max_value' => 50, 'score_weight' => 0, 'band_order' => 1],
+            ['question_id' => $question->question_id, 'min_value' => 50, 'max_value' => 80, 'score_weight' => 50, 'band_order' => 2],
+            ['question_id' => $question->question_id, 'min_value' => 80, 'max_value' => 100, 'score_weight' => 100, 'band_order' => 3],
+        ]);
+        $response = Response::create([
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question->question_id,
+            'value_numeric' => 75,
+            'answered_at' => now(),
+        ]);
+
+        $result = app(ScoringService::class)->scoreResponseSet($assessment, collect([$response])->keyBy('question_id'));
+
+        $this->assertSame(50.0, $result['overall_score']);
+    }
+
     public function test_band_for_moderate_score(): void
     {
         $service = app(ScoringService::class);
