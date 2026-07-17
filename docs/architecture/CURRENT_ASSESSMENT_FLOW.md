@@ -83,11 +83,11 @@ Remaining authenticated-runner work is limited to future response types and more
 3. Token usage count and last-use time are updated when a new respondent session begins.
 4. All in-scope modules are loaded. Template-created assessments use the same immutable content snapshot as the authenticated runner.
 5. Language selection is stored on the durable session. Consent is stored for every in-scope module that requires it.
-6. Responses reference the durable session through a foreign key while retaining the legacy respondent UUID value for cohort separation and compatibility.
+6. Responses reference the durable session through a foreign key while retaining the legacy respondent UUID value for compatibility.
 7. Question, option, and text mutations are revalidated against authoritative in-scope content.
 8. Submit rechecks all required responses from stored data and persists `submitted_at`; remounting the link resumes the submitted state.
 
-Public responses intentionally remain a separate voice cohort and are not blended into staff assessment scores. The remaining gap is a first-class cohort report and an approved retention/privacy policy, not response integrity or assessment coverage.
+External respondents are a respondent role within the same assessment architecture. Community surveys, patient-experience surveys, citizen feedback, caregiver feedback, and similar uses must be created as normal assessment templates and use the standard lifecycle, scoring, reporting, permissions, exports, dashboards, and analytics. The current scoring implementation still reads assessor-authored responses only; that is an extension gap in the shared engine, not justification for a separate report.
 
 ## 5. Submission and lifecycle
 
@@ -111,7 +111,7 @@ The assessment content and composition are immutable through snapshots. Remainin
 ### Remaining scoring risks
 
 - Domain weights and cross-module aggregation policy require an explicit governed formula.
-- Public/respondent cohort scoring must remain separate from staff/assessor scoring unless a future approved evidence model says otherwise.
+- Respondent roles require explicit scoring semantics inside the existing versioned scoring profile; no respondent role may create a parallel reporting architecture.
 - Numeric, multi-select, ranking, observation, and corroboration models are postponed until their product need and scoring semantics are approved.
 
 ## 7. Results and reports

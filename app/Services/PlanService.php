@@ -18,7 +18,6 @@ class PlanService
         'shareable_report_links' => 'Shareable Report Links',
         'progress_maturity_tracking' => 'Progress & Maturity Tracking',
         'localization' => 'Localization (Multi-language)',
-        'patient_community_voice_module' => 'Patient & Community Voice Module',
         'pdf_export_no_watermark' => 'PDF Export (No Watermark)',
         'csv_export' => 'CSV Export',
     ];

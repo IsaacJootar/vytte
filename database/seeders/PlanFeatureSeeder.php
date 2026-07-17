@@ -16,7 +16,6 @@ class PlanFeatureSeeder extends Seeder
             'shareable_report_links',
             'progress_maturity_tracking',
             'localization',
-            'patient_community_voice_module',
             'pdf_export_no_watermark',
             'csv_export',
         ];

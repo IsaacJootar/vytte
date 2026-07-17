@@ -18,21 +18,11 @@
                     <span class="text-[11px] text-slate-400 dark:text-slate-500">{{ $targetType->modules->count() }} {{ Str::plural('module', $targetType->modules->count()) }}</span>
                 </div>
 
-                @if ($targetType->target_type_code === 'COMMUNITY')
-                    <x-plan-gate feature="patient_community_voice_module">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            @foreach ($targetType->modules as $module)
-                                @include('modules._module_card')
-                            @endforeach
-                        </div>
-                    </x-plan-gate>
-                @else
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        @foreach ($targetType->modules as $module)
-                            @include('modules._module_card')
-                        @endforeach
-                    </div>
-                @endif
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    @foreach ($targetType->modules as $module)
+                        @include('modules._module_card')
+                    @endforeach
+                </div>
             </div>
         @endif
     @empty

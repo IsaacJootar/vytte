@@ -81,7 +81,7 @@ After Phase 22 and explicit approval, the lowest-impact extension points are:
 2. The authenticated runner accepts an option belonging to a different question.
 3. SQLite permits duplicate staff response keys when `respondent_id` is `NULL`.
 4. The public runner loads every in-scope module (the former first-module defect is now a regression test).
-5. Public responses are excluded from staff scoring.
+5. The current scorer excludes external-respondent rows. This is an observed compatibility behavior, not the desired architecture; future support must extend the shared versioned scorer and report.
 6. Numeric questions have no authenticated runner input/storage path.
 
 These are preservation observations, not desired contracts. Each unsafe/incomplete behavior remains gated by its corresponding decision in `DECISION_LOG.md`.

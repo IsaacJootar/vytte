@@ -47,7 +47,7 @@ Compatibility conditions:
    - every currently declared response type;
    - server-side completion rules;
    - exact scoring fixtures, 0/1 versus 0-100 behavior, null calibration, and multi-module aggregation;
-   - public-response scoring exclusion;
+   - respondent-role scoring behavior within the shared scoring engine;
    - completed results/PDF/CSV/signed-link reproducibility;
    - mutable question/option effects on completed output;
    - Flutterwave webhook CSRF/signature path.
@@ -114,7 +114,7 @@ Refactoring should occur only behind tests and separate approvals:
 - Assessment creation controller: move orchestration into a transactional application service that both legacy and template adapters can call.
 - Runner question loading: isolate a content-source contract (legacy live content versus snapshot).
 - Response handling: validate question/option scope and support explicit renderer/storage strategies.
-- Public respondent lifecycle: durable sessions, scope binding, submission audit, and cohort semantics.
+- Public respondent lifecycle: durable sessions, scope binding, submission audit, and respondent-role semantics within the standard assessment lifecycle.
 - Scoring service: separate algorithm profile, normalization, aggregation, and persistence; version outputs.
 - Comparison/history: compare composition fingerprints rather than `scope_type` alone.
 - Reporting: build from a frozen assessment/report snapshot rather than mutable catalogue text.
@@ -143,7 +143,7 @@ This is not authorization to perform these refactors now.
 | Mutable shared content | Completed results change over time | Immutable version plus assessment snapshot |
 | Inconsistent score scales | Invalid maturity/results | Fixed fixtures, canonical output scale, algorithm versions |
 | Unsupported response types | Assessments cannot be completed | Publish compatibility validation and staged renderer support |
-| Public runner/scoring mismatch | Responses collected but ignored/misinterpreted | Approve respondent-cohort semantics |
+| Public runner/scoring mismatch | Responses collected but ignored/misinterpreted | Extend the shared scoring profile with explicit respondent-role semantics |
 | Nullable uniqueness | Duplicate authenticated responses | PostgreSQL concurrency tests and additive constraint strategy |
 | Ambiguous project-target relation | Wrong target/scope | Approve one-primary-target semantics |
 | Multi-module aggregation | Misleading blended score | Per-template scoring profile and composition fingerprint |
@@ -163,7 +163,7 @@ All pending decisions in `DECISION_LOG.md`, especially:
 4. Acceptance or quarantine of the current multi-module implementation.
 5. Assessment and publication state machines.
 6. Server-side completion rules.
-7. Public respondent cohort/scoring behavior.
+7. Public respondent-role scoring behavior inside the standard scoring and reporting engines.
 8. Canonical score scale and scoring versioning.
 9. Hybrid snapshot strategy.
 10. Reusable content/version semantics.

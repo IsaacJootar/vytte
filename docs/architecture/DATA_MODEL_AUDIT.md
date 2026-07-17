@@ -43,7 +43,7 @@ This is not a production-data audit. Local row counts are included only to show 
 - Module/question: direct `questions.module_id` and optional `module_domain_id`.
 - Question/sub-index: many-to-many `sub_index_questions`.
 - Sub-index/global scoring domain: `sub_indices.domain_id`.
-- Response to assessment/question/option: direct foreign keys. New public responses also have an enforced `public_response_session_id`; the legacy mixed-purpose `respondent_id` remains for compatibility and cohort separation.
+- Response to assessment/question/option: direct foreign keys. New public responses also have an enforced `public_response_session_id`; the legacy mixed-purpose `respondent_id` remains for compatibility.
 - Scores to assessment: composite assessment/sub-index/respondent-type, assessment/domain, and one assessment-score row.
 
 ## Documentation-to-schema discrepancy register

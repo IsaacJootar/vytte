@@ -23,7 +23,7 @@ class ScoringService
             return;
         }
 
-        // Staff/assessor responses remain separate from public voice cohorts.
+        // The current compatibility profile calculates the assessor-authored response set.
         $responses = Response::where('assessment_id', $assessment->assessment_id)
             ->whereNull('respondent_id')
             ->whereNotNull('value_option_id')

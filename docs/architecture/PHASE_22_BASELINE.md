@@ -49,7 +49,7 @@ The final combined run confirms that the Phase 22 documentation and characteriza
 | Response scope | Authenticated runner accepts an option ID belonging to a different question | Invalid response integrity and scoring | AG-23 |
 | Staff response uniqueness | SQLite allows two response rows for the same assessment/question when `respondent_id` is `NULL` | Duplicate/conflicting staff answers; PostgreSQL has the same NULL uniqueness concern | DEC-021-002 / AG-22 |
 | Public multi-module run | Public runner selects one in-scope module and ignores the rest | Incomplete comprehensive public assessment | DEC-021-007 / AG-24 |
-| Public scoring | Responses with a public respondent UUID do not affect staff scores | Collected data may appear unused unless cohorts are explained | DEC-021-007 / AG-25 |
+| Public scoring | Responses with a public respondent UUID do not affect the current assessor score | Collected data remains absent from standard results until respondent-role semantics extend the shared engine | DEC-021-020 / AG-25 |
 | Numeric response | Numeric question loads without options or type metadata and has no runner storage action | Assessment cannot be completed | DEC-021-015 / AG-21 |
 | Direct completion | Existing suite proves an unanswered assessment can be completed through the submit route | Data quality and misleading reports | DEC-021-006 / AG-20 |
 | Flutterwave webhook | Route is under web middleware but absent from the CSRF exemption list | Legitimate production webhook requests may be rejected | DEC-021-018 / AG-41 |
@@ -80,7 +80,7 @@ The final combined run confirms that the Phase 22 documentation and characteriza
 
 1. Correct the Livewire authorization and question/option scope vulnerabilities behind desired-state regression tests.
 2. Make response identity explicit so one staff response per assessment/question is enforceable on PostgreSQL and SQLite without rewriting history.
-3. Decide public respondent cohort/scoring semantics before expanding public comprehensive assessments.
+3. Add explicit respondent-role scoring semantics to the shared scoring and reporting engines before expanding external-respondent assessments.
 4. Restrict publishable templates to runner-supported response types until renderer/storage strategies exist.
 5. Add the smallest Flutterwave CSRF exemption consistent with the already-tested signature validation.
 6. Restore Docker/PostgreSQL parity before any template migration is accepted.

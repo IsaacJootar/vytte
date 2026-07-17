@@ -35,7 +35,7 @@
 | AG-22 | Response uniqueness is enforced | Unique key includes nullable respondent ID, which permits duplicate authenticated rows under SQL NULL semantics | responses migration/model | Critical | Verify PostgreSQL behavior and concurrency in Phase 22; propose additive unique strategy | Required |
 | AG-23 | Livewire IDs are locked and authorization is defense-in-depth | Assessment property is not locked; Livewire writes do not re-authorize or validate question/option scope | `AssessmentRunner`, UI rules | Critical | Add security regression tests before any fix | Required to change behavior |
 | AG-24 | Public respondent runner supports the assessment scope | Resolved: it loads every in-scope module and uses immutable snapshot content when present | Public runner, snapshot, and scope table | Resolved | Preserve full-composition regression coverage | Approved and implemented |
-| AG-25 | Public responses participate in assessment results | Partially resolved by product boundary: public responses remain a separate voice cohort and are never silently blended into staff scores; cohort reporting remains absent | Public runner, ScoringService, reports | High | Add an explicitly labelled public/cohort report without changing assessor scores | Approved boundary; report pending |
+| AG-25 | External respondent answers use the normal assessment results architecture | Collection is durable, but the current scoring path still reads assessor-authored responses only | Public runner, ScoringService, reports | High | Extend the existing respondent-aware scoring/reporting engine; do not create a separate report or subsystem | Approved direction; implementation pending |
 | AG-26 | Public submission is durable and auditable | Resolved: durable response sessions, submitted timestamps, response/consent FKs, and token creator/revocation/usage audit fields are implemented | Public runner/token/session tables | Resolved | Define retention policy before production collection | Approved and implemented |
 | AG-27 | Evidence is optional support attached to questions | No evidence or notes UI/storage path exists in active response model | Runners, responses | Medium | Postpone until after templates/snapshots; implement inline only, not a repository workflow | Required later |
 | AG-28 | Scoring uses a consistent scale | PHSAI/school yes-no weights are 0/1; HIVAW and result thresholds are 0-100 | Seeders, ScoringService, score tables | Critical | Freeze score changes, build fixed-fixture reproducibility tests, then choose canonical scale/versioning | Required |
@@ -62,7 +62,7 @@
 - Current schema dictionary for the 60 migrated tables.
 - Supported question-type matrix and response-storage rules.
 - Assessment and publication state machine.
-- Public-response retention and the presentation semantics for the separate voice cohort.
+- Public-response retention/privacy policy and respondent-role presentation within the standard assessment report.
 - Scoring scale, algorithm version, aggregation rules, and recalculation policy.
 - Content governance, curator permissions, and approval workflow.
 - Report reproducibility and signed-link lifecycle.
@@ -111,6 +111,7 @@ These items require characterization and separate approvals. Template work must 
 - **Resolved in Module 9:** published versions now retain their exact hashed payload; assessment creation, runner validation, consent applicability, and scoring consume frozen content/scoring fields. AG-29 is enforced at publication.
 - **Resolved in Module 11:** AG-36, AG-37, and the server-authority portion of AG-38. Persistent report links are revocable/audited, core sensitive events are logged, and curator publishing has an explicit protected route.
 - **Resolved in Module 12:** AG-07, AG-08, and AG-09. Workspace resolution requires membership, workspace-scoped queries fail closed, Project/Assessment policies centralize route authorization, and the database enforces one setting per project.
+- **Direction corrected in Module 13:** community, patient, citizen, and caregiver feedback are ordinary assessment templates. Their respondent roles must extend the existing scoring and reporting engine rather than create a parallel report.
 - **Resolved in Module 7:** AG-15, AG-17, and the template-level enforcement portion of AG-45.
 - **Superseded in Module 7:** the legacy "standard battery" creation language and UI. Only the two approved creation paths remain.
 - **Additionally hardened in Module 1:** public Livewire identifiers and mutations now revalidate their token/assessment context; authenticated and public responses validate the question/option relationship.

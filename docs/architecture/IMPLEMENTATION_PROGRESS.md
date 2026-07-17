@@ -1,5 +1,24 @@
 # Architecture Remediation Progress
 
+## Module 13 — Unified community assessment architecture
+
+**Status:** Complete
+
+**Resolved:**
+
+- The proposed separate respondent report was removed before release.
+- Community surveys, patient-experience surveys, citizen feedback, caregiver feedback, and similar uses are first-class assessment templates.
+- Community content is no longer hidden behind a dedicated plan feature.
+- These templates reuse the normal lifecycle, scoring engine, reporting engine, permissions, exports, dashboards, and analytics.
+- Respondent role and template composition are the only permitted distinctions; there is no independent reporting subsystem.
+- Existing external-response collection remains reusable infrastructure. Respondent-aware scoring and presentation must be added by extending the shared engines.
+
+**Verification:**
+
+- Focused plan-feature, module-library, and public-runner suites: 46 tests, 122 assertions, all passed.
+- Full regression suite: 357 tests, 854 assertions, all passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 12 — Fail-closed tenancy and one-setting projects
 
 **Status:** Complete
@@ -93,12 +112,12 @@
 - AG-24: public respondents now receive every in-scope assessment module rather than only the first.
 - Template-created public assessments read immutable snapshot questions, translations, response types, and options.
 - AG-26: public participation has a durable response-session row with start, activity, locale, and submission timestamps.
-- Public responses and consent records reference that session through database foreign keys; legacy respondent UUID values remain only as a compatibility/cohort marker.
+- Public responses and consent records reference that session through database foreign keys; legacy respondent UUID values remain only as a compatibility marker.
 - Token records now capture creator, revocation, usage count, and last-used time.
 - Authorized workspace members can revoke a link without deleting its submitted responses.
 - Consent is recorded for every included module that requires it.
 - Submission rechecks required stored responses on the server and survives browser/component remounts.
-- Public answers remain a deliberately separate voice cohort and are not silently blended into staff/assessor scores.
+- External-response collection remains part of the assessment engine. The later unified scoring/reporting extension must use explicit respondent-role semantics without creating a parallel subsystem.
 
 **Verification:**
 

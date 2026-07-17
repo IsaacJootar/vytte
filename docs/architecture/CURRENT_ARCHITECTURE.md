@@ -91,7 +91,7 @@ The effective hierarchy is therefore not the documented one-target foreign key m
 ### Scoring
 
 - Submission invokes `ScoringService` synchronously.
-- Only authenticated responses (`respondent_id IS NULL`) are scored; public respondent responses are excluded.
+- The current scorer reads only assessor-authored responses (`respondent_id IS NULL`). The approved direction is to extend this same versioned scorer with explicit respondent-role semantics; a separate reporting engine is prohibited.
 - Sub-index score = weighted mean of answered option values for linked scored questions.
 - Domain score = unweighted mean of non-null sub-index scores.
 - Overall score = unweighted mean of all non-null sub-index scores.

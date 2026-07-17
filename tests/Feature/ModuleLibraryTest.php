@@ -72,6 +72,18 @@ class ModuleLibraryTest extends TestCase
             ->assertSee('Outpatient Department');
     }
 
+    public function test_community_assessment_templates_are_not_a_separate_plan_feature(): void
+    {
+        [$user] = $this->userWithWorkspace();
+        $this->seed(ReferenceDataSeeder::class);
+
+        $this->actingAs($user)
+            ->get(route('modules.index'))
+            ->assertOk()
+            ->assertSee('Community')
+            ->assertSee('HIV Awareness & Service Uptake');
+    }
+
     public function test_module_library_index_shows_empty_state_when_no_modules(): void
     {
         [$user] = $this->userWithWorkspace();

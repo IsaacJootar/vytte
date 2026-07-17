@@ -62,11 +62,9 @@ Accepted items below record Isaac's explicit direction; all others remain implem
 
 ### DEC-021-007: Public respondent semantics
 
-- **Status:** Accepted as recommended, 17 July 2026
-- **Context:** Public runner uses one module, persists a session UUID in responses, stores submission only in session, and public responses are excluded from scoring.
-- **Options:** treat public responses as separate non-scoring voice data; merge into staff scoring; define respondent cohorts with independent scores.
-- **Recommendation:** Treat public responses as a governed respondent cohort with durable sessions and separate scoring/aggregation rules. Do not merge silently into staff scores.
-- **Trade-off:** Cohorts are more complex but preserve methodological meaning and auditability.
+- **Status:** Superseded by DEC-021-020, 17 July 2026
+- **Context:** The earlier design treated external respondent results as a product concern outside the normal assessment report.
+- **Reason superseded:** Any dedicated aggregation or reporting path adds unnecessary product and maintenance complexity. Respondent role must be expressed inside the existing assessment template, scoring profile, and report.
 
 ### DEC-021-008: Canonical score scale and algorithm versioning
 
@@ -176,6 +174,14 @@ Accepted items below record Isaac's explicit direction; all others remain implem
 - **Setting rule:** A target may be a health facility, school, community, correctional facility, workplace, place of worship, NGO/programme, government organization, or custom setting. Settings are not health domains.
 - **Template rule:** Published standard templates remain immutable. Customization produces an assessment snapshot or labeled derivative and must revalidate scoring/comparability.
 - **Implementation consequence:** Existing multi-module work applies only to the comprehensive path. Focused creation resolves one selected health scope directly.
+
+### DEC-021-020: Community-based assessments use the unified assessment architecture
+
+- **Status:** Accepted, 17 July 2026
+- **Decision:** Community surveys, patient-experience surveys, citizen feedback, caregiver feedback, and similar use cases are first-class assessment templates. They use the same assessment lifecycle, versioned scoring engine, reporting engine, permissions, exports, dashboards, and analytics as every other assessment.
+- **Boundary:** Respondent role and template content may differ. They must not create a separate report, aggregation workflow, product module, or independent subsystem.
+- **Implementation consequence:** Remove the dedicated plan feature and any proposed separate reporting routes, services, views, and terminology. Preserve the durable external-response collection infrastructure, then extend the shared scoring and reporting contracts with explicit respondent-role semantics.
+- **Trade-off:** The shared scoring profile must become respondent-aware, but Vytte retains one coherent assessment and reporting model with lower maintenance cost and more consistent behavior.
 
 ## Approval record
 
