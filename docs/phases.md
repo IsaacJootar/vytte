@@ -298,7 +298,7 @@
 
 ## Module 20 — Public Respondent Runner ✅
 
-**Commit:** TBD
+**Commit:** `416c3ee`
 
 - `assessment_respondent_tokens` table — `char(32)` PK token, FK to assessments, optional `expires_at`
 - `AssessmentRespondentToken` model — no auto-increment, string PK, belongs to Assessment
@@ -342,7 +342,34 @@
 17 Progress Tracking ✅  (54ba7fa)
 18 UI Localization    ✅  (4b7417f)
 19 Q. Translation     ✅  (8ec1a35)
-20 Public Respondent  ✅  (TBD)
+20 Public Respondent  ✅  (416c3ee)
 ```
 
-**All 20 modules complete — 290 tests passing.**
+**Original 20-module product baseline complete — 290 tests passed at that boundary.**
+
+---
+
+## Approved architecture remediation — 17 July 2026
+
+The Phase 21 audit and Phase 22 baseline were followed by bounded corrective modules:
+
+| Module | Commit | Outcome |
+|---|---|---|
+| Security and response integrity | `75d207e` | Scope validation, response uniqueness, locked Livewire authority |
+| Completion safeguards | `906bd42` | Server-side completeness and Flutterwave CSRF correction |
+| Versioned scoring | `8390713` | Canonical 0–100 normalization and algorithm identity |
+| Health/setting taxonomy | `b395501` | Governed health-domain and setting separation |
+| Immutable templates | `22d2392` | Template/version publication boundary |
+| Assessment snapshots | `6d4fdde` | Assessment-owned immutable content |
+| Two creation paths | `47c3895` | Comprehensive and focused flows replace standard-battery creation |
+| Durable external responses | `9ebb7cd` | Full-scope sessions, consent, auditing, and revocation |
+| Frozen scoring profiles | `3971c48` | Published payload is the scoring/content authority |
+| Immutable final reports | `417d8bc` | Structured report snapshots and safe comparison fingerprints |
+| Governance and sharing | `dbc7e72` | Curator authority, audit events, governed report links |
+| Tenant boundaries | `a72a7b5`, `dc51578` | Membership authority, policies, fail-closed scope ordering |
+| Unified community templates | `f7f5807` | Removed separate community reporting/product gate |
+| Optional inline evidence | `bea3021` | Response-bound supporting notes with progressive disclosure |
+| Lifecycle states | `140855c` | Canonical guarded execution/publication states |
+| Reports index | `e46eb2b` | Working workspace report navigation and share-link management |
+
+Current verified boundary: **365 tests, 870 assertions passing** on SQLite. PostgreSQL parity remains a release requirement while local Docker is unavailable.

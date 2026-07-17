@@ -1,58 +1,80 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Vytte
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Vytte is a health-assessment platform for comprehensive setting assessments and focused health-domain assessments. It uses reusable, governed templates; immutable assessment and report snapshots; versioned scoring; workspace isolation; and one reporting architecture.
 
-## About Laravel
+## Product model
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Vytte has exactly two creation paths:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1. **Comprehensive Health Assessment** loads a setting-appropriate framework. Users remove assessment areas that do not apply. “Department” is used only where the setting genuinely has departments.
+2. **Focused Health Assessment** opens one health domain, programme, topic, or intervention from one published template. It does not load unrelated modules or a standard battery.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Community surveys, patient-experience surveys, caregiver feedback, and similar use cases are normal assessment templates. Respondent role may differ; the lifecycle and reporting architecture do not.
 
-## Learning Laravel
+## Stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- PHP 8.3+ and Laravel 13
+- Blade, Livewire 4, Alpine.js, Tailwind CSS 4, and Vite
+- PostgreSQL as the production authority
+- SQLite for temporary local desktop development and the fast automated test suite
+- PHPUnit 12
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Local setup
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Requirements: PHP 8.3+, Composer, Node.js/npm, and the PHP extensions required by Laravel.
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+copy .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+npm install
+npm run build
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+For active frontend development, run `npm run dev` in a second terminal.
 
-## Contributing
+The default example configuration uses `database/database.sqlite`. Create the file if it does not exist:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
+```
 
-## Code of Conduct
+## PostgreSQL configuration
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Production and release-candidate verification must use PostgreSQL:
 
-## Security Vulnerabilities
+```dotenv
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=vytte
+DB_USERNAME=vytte
+DB_PASSWORD=change-me
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+SQLite passing is not a substitute for PostgreSQL parity on migrations, partial indexes, foreign keys, upserts, and concurrency-sensitive response writes.
 
-## License
+## Verification
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+composer test
+npm run build
+```
+
+Before release, also run the full test suite against PostgreSQL.
+
+## Architecture references
+
+- `AGENTS.md` — active engineering rules
+- `docs/architecture/CURRENT_ARCHITECTURE.md` — implemented platform
+- `docs/architecture/CURRENT_ASSESSMENT_FLOW.md` — assessment lifecycle
+- `docs/architecture/DATA_MODEL_AUDIT.md` — schema authority and risks
+- `docs/architecture/LIFECYCLE_STATE_MACHINE.md` — canonical states
+- `docs/architecture/DECISION_LOG.md` — approved product and architecture decisions
+- `docs/architecture/IMPLEMENTATION_PROGRESS.md` — remediation commits and verification
+
+## Data and content
+
+Published template versions and completed report snapshots are immutable. New or corrected content must be published as a new governed version. Seed content is development/reference content and must not be treated as production clinical authority without source, licence, and review metadata.

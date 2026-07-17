@@ -2,7 +2,7 @@
 
 ## Audit basis
 
-The migration set is the schema source of truth for this audit. Twenty-nine migration files create 60 application and framework tables. The local SQLite database contains those 60 tables plus Laravel's `migrations` table, and all 29 repository migrations report as run.
+The migration set is the schema source of truth. Forty-one migration files produce 67 application/framework tables after the obsolete `corroboration_gaps` subsystem is retired. A migrated SQLite database contains those tables plus Laravel's `migrations` table.
 
 This is not a production-data audit. Local row counts are included only to show that repository documentation and the current seeded development state differ.
 
@@ -18,11 +18,15 @@ This is not a production-data audit. Local row counts are included only to show 
 
 ### Taxonomy and reference data
 
-`target_types`, `target_categories`, `domains`, `domain_weights`, `maturity_levels`, `assessment_tiers`, `question_types`, `standards_registry`, `topics`, `respondent_roles`
+`target_types`, `target_categories`, `setting_types`, `target_type_setting_map`, `health_domains`, `assessment_module_health_domain`, `domains`, `domain_weights`, `maturity_levels`, `assessment_tiers`, `question_types`, `standards_registry`, `topics`, `respondent_roles`
 
 ### Module and question library
 
 `assessment_modules`, `target_category_default_modules`, `module_domains`, `sub_indices`, `questions`, `question_options`, `question_numeric_bands`, `sub_index_questions`, `question_topics`, `question_drafts`, `question_translations`, `question_option_translations`
+
+### Template and immutable content
+
+`assessment_templates`, `assessment_template_versions`, `assessment_template_version_modules`, `assessment_snapshots`
 
 ### Projects, targets, and assessments
 
@@ -30,7 +34,7 @@ This is not a production-data audit. Local row counts are included only to show 
 
 ### Responses, scoring, and outputs
 
-`responses`, `response_options`, `observation_records`, `sub_index_scores`, `corroboration_gaps`, `domain_scores`, `topic_scores`, `assessment_scores`, `project_domain_scores`, `project_scores`, `assessment_report_snapshots`, `root_causes`, `recommendation_rules`, `recommendations`
+`responses`, `response_options`, `observation_records`, `sub_index_scores`, `domain_scores`, `topic_scores`, `assessment_scores`, `project_domain_scores`, `project_scores`, `assessment_report_snapshots`, `root_causes`, `recommendation_rules`, `recommendations`
 
 ## Key implemented relationships
 
@@ -51,7 +55,7 @@ This is not a production-data audit. Local row counts are included only to show 
 
 | ID | Documented model | Actual model | Risk | Safest disposition |
 |---|---|---|---|---|
-| DM-01 | 42 tables | 60 migrated tables | High | Replace the inventory only after Isaac approves documentation normalization; do not delete undocumented tables. |
+| DM-01 | 42 tables | 67 application/framework tables after current migrations | Resolved documentation | This inventory and migrations are authoritative; do not use historical fixed counts as an architecture contract. |
 | DM-02 | UUID primary keys on all tables | Mixed UUID, integer, string, and composite keys | High | Preserve current keys; future template tables may use UUIDs without normalizing legacy keys. |
 | DM-03 | `workspaces.owner_id` | No owner column; ownership is a membership role | Medium | Preserve membership-based ownership and document it; any owner column would duplicate authority. |
 | DM-04 | `workspace_members.id`, timestamps | Composite `(workspace_id,user_id)` primary key plus `joined_at` | Medium | Preserve composite key; review Eloquent write semantics in Phase 22. |
@@ -59,12 +63,12 @@ This is not a production-data audit. Local row counts are included only to show 
 | DM-06 | One project has one target through a project FK | Equivalent invariant implemented through the retained junction plus a unique `project_id` index | Resolved | Keep the junction for compatibility; postpone multi-target behavior. |
 | DM-07 | Target has `workspace_id` and `project_id` | Target has `owner_workspace_id`; project link is a junction | High | Use adapters/documentation; do not rename or add redundant ownership fields without approval. |
 | DM-08 | Assessment has `workspace_id`, `tier_id`, name, description, created-by | Assessment has project/target, `assessment_tier_id`, scope and publication fields; no workspace/name/description/creator | High | Derive tenancy through project for now; template work must not assume documented columns exist. |
-| DM-09 | Statuses `DRAFT`, `IN_PROGRESS`, `COMPLETED`, `ARCHIVED` | Runtime uses `IN_PROGRESS` and `COMPLETE`; publication uses `DRAFT`/`PUBLISHED` | High | Define canonical state machine before template snapshots or migrations. |
+| DM-09 | Statuses `DRAFT`, `IN_PROGRESS`, `COMPLETED`, `ARCHIVED` | Assessment execution is `IN_PROGRESS -> COMPLETE`; area and template states are separate | Resolved | Follow `LIFECYCLE_STATE_MACHINE.md`; preserve the table-specific persisted values. |
 | DM-10 | Module belongs to a global domain | Catalogue module does not; module has local `module_domains`, while sub-indices map to global `domains` | High | Preserve the distinction and rename only in documentation/UI language until a governed taxonomy decision. |
 | DM-11 | Sub-index has code/name/display order and UUID key | Integer key with acronym/full name, module and global-domain links | Medium | Build future template mapping against actual identifiers; avoid normalization migration. |
 | DM-12 | Question directly belongs to one sub-index and carries `score_weight` | Question belongs to module/section; sub-index is many-to-many; option carries score | Critical | Preserve flexible pivot. Define scoring-version semantics before reuse/versioning. |
 | DM-13 | Options use `option_text`, `option_value`, and correctness | Options use `option_label`, `score_weight`, order, and pain flag | High | Treat current option rows and values as scoring contracts. |
-| DM-14 | Response stores selected UUID arrays, generic value, notes, flags, workspace | Response stores scalar option/text/numeric values; multi-select uses a separate unused table; no notes/flags/workspace | Critical | Design response-type support and evidence/notes additively; do not reinterpret stored columns. |
+| DM-14 | Response stores selected UUID arrays, generic value, notes, flags, workspace | Response stores scalar option/text/numeric values plus an optional inline `evidence_note`; multi-select storage remains inactive | Partially resolved | Keep evidence response-bound; add response types only with explicit renderer/storage contracts. |
 | DM-15 | Unique response per assessment/question | Resolved for staff responses by a partial unique index; public responses retain respondent-specific uniqueness | Resolved | Preserve PostgreSQL parity tests for the partial index. |
 | DM-16 | Respondent is an assessment respondent record | New public responses reference durable `public_response_sessions`; legacy rows may contain an unenforced session UUID in `respondent_id` | Legacy-only | Preserve old values; all new public writes must populate the session FK. |
 | DM-17 | `response_flags` table | No response-flags table; flag columns are also absent | Medium | Postpone response review/flagging until explicitly designed. |
@@ -84,7 +88,7 @@ All discrepancy dispositions above require no Phase 21 implementation. The appro
 
 ### Workspace isolation
 
-Only projects and targets carry the global workspace trait. Downstream tables rely on traversal through a project and controller checks. This is weaker than the documented defense-in-depth model and makes raw model binding or direct queries easy to misuse.
+Projects and targets carry direct workspace ownership. Workspace resolution verifies membership before route binding; Project and Assessment policies protect active routes; downstream authority is derived through the project/assessment relationship. New tenant-owned routes must follow the same scoped-query plus policy pattern.
 
 ### Response uniqueness
 
@@ -100,19 +104,19 @@ A partial unique index now enforces one staff response per assessment/question w
 
 ### Mutable shared content
 
-Assessments reference live module/question/option records. Admin edits immediately affect active and completed assessment rendering. Stored responses reference option IDs, but the displayed question/option wording and some semantics can change.
+Published template versions store their exact content payload. New assessments own immutable content/scoring snapshots, and newly completed assessments own immutable final-report snapshots. Legacy non-template assessments retain a live-content compatibility path and must not be silently rewritten.
 
 ### Seed reproducibility
 
-`PHSAIQuestionsSeeder` reads a hard-coded DOCX from one user's Downloads directory and silently returns when it is unavailable. Database seeding is therefore not self-contained. The seeder also skips any module that already has questions, which makes partial recovery/version updates non-deterministic.
+The default seed path is repository-contained. The former external PHSAI document dependency and incomplete school sample seeder were removed. Seed counts remain dataset metadata rather than architecture promises; governed content still requires source, licence, and review metadata.
 
 ### Score-scale inconsistency
 
-PHSAI and school yes/no options use `1.0/0.0`; HIVAW uses a 0-100 scale; result bands and maturity levels expect 0-100. No normalization metadata or algorithm version is stored.
+The scorer normalizes 0–1 option scales to canonical 0–100 output and stores an algorithm version. Published template assessments read frozen option weights and mappings. PostgreSQL parity and independently curated scoring fixtures remain required release checks.
 
 ## Migrated but inactive structures
 
-No active application references were found for `audit_logs`, `assessment_share_links`, `assessment_topic_scope`, `response_options`, `observation_records`, `corroboration_gaps`, `topic_scores`, `project_domain_scores`, `project_scores`, `root_causes`, `recommendation_rules`, or `recommendations`. They must remain untouched until their ownership, intended lifecycle, and production use are verified.
+`assessment_topic_scope`, `response_options`, `observation_records`, `topic_scores`, `project_domain_scores`, `project_scores`, `root_causes`, `recommendation_rules`, and `recommendations` remain inactive/reserved. `audit_logs` and `assessment_share_links` are active governed infrastructure. The unused special-aggregation `corroboration_gaps` table is retired by migration.
 
 ## Local development snapshot
 

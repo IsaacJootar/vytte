@@ -1,98 +1,98 @@
-# Vytte — UI Rules
+# Vytte UI Rules
 
 ## Design system
 
-- Tailwind CSS v4 — CSS-first configuration via `@theme {}` in `resources/css/app.css`
-- NO `tailwind.config.js`, NO DaisyUI
-- Alpine.js bundled by Livewire 4 — NEVER import it separately in app.js
-- Icons: blade-ui-kit/blade-heroicons (`<x-heroicon-o-*>`)
+- Tailwind CSS 4 with CSS-first configuration in `resources/css/app.css`
+- No `tailwind.config.js` and no DaisyUI
+- Alpine.js is bundled by Livewire 4; do not import it separately
+- Icons use `blade-ui-kit/blade-heroicons`
+- Mobile-first at a 375px minimum viewport
 
-## Tailwind v4 configuration location
+## Brand tokens
 
-All design tokens live in `resources/css/app.css` under `@theme {}`.
-Do not put configuration anywhere else.
-
-## Color tokens (defined in app.css @theme)
+`resources/css/app.css` is authoritative.
 
 ```css
 @theme {
-  --color-vytte-50:  #f0fdf4;
-  --color-vytte-100: #dcfce7;
-  --color-vytte-200: #bbf7d0;
-  --color-vytte-300: #86efac;
-  --color-vytte-400: #4ade80;
-  --color-vytte-500: #22c55e;
-  --color-vytte-600: #16a34a;
-  --color-vytte-700: #15803d;
-  --color-vytte-800: #166534;
-  --color-vytte-900: #14532d;
+  --color-vytte-50:  #F0F9FF;
+  --color-vytte-100: #E0F2FE;
+  --color-vytte-200: #BAE6FD;
+  --color-vytte-300: #7DD3FC;
+  --color-vytte-400: #38BDF8;
+  --color-vytte-500: #0EA5E9;
+  --color-vytte-600: #0284C7;
+  --color-vytte-700: #0369A1;
+  --color-vytte-800: #075985;
+  --color-vytte-900: #0C4A6E;
+  --color-vytte-950: #082F49;
 
-  --color-slate-50:  #f8fafc;
-  /* ... standard slate palette ... */
-
-  --color-danger-500: #ef4444;
-  --color-warning-500: #f59e0b;
-  --color-info-500: #3b82f6;
+  --color-navy:      #0C1929;
+  --color-navy-deep: #060F1C;
 }
 ```
 
-## Typography
+Ocean Blue is the Vytte brand family. Navy is reserved for the app shell/sidebar. Green, amber, and red communicate result state or alerts; they are not brand-primary colors.
 
-- Font: Inter (loaded via Vite/CSS, not Google Fonts CDN — CSP blocks external fonts)
-- Headings: font-semibold or font-bold
-- Body: font-normal, text-slate-700 (light) / text-slate-200 (dark)
+## Typography and layout
 
-## Layout rules
+- Font: Inter with system sans-serif fallback; do not depend on an external font CDN
+- Headings: `font-semibold` or `font-bold`
+- Body: slate text with a dark-mode counterpart
+- Main content: responsive horizontal padding and a bounded readable width
+- Cards: white/slate surface, subtle slate border, rounded corners
+- Use responsive stacking before horizontal scrolling
+- Every interactive control needs a visible focus state and meaningful text
 
-- Mobile-first: 375px minimum. Test at 375px before marking UI complete.
-- All layouts use `sm:` `md:` `lg:` Tailwind prefixes on every layout element.
-- Main content area: `max-w-7xl mx-auto px-4 sm:px-6 lg:px-8`
-- Cards: `bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700`
+## Components
 
-## Component naming
+- Layouts: `resources/views/layouts/`
+- Blade components: kebab-case files in `resources/views/components/`
+- Livewire classes: PascalCase under `app/Livewire/`
+- Livewire views: kebab-case under `resources/views/livewire/`
+- Reuse existing buttons, score displays, navigation items, and form components before adding variants
 
-- Blade layouts: `resources/views/layouts/app.blade.php`, `layouts/guest.blade.php`
-- Blade components: `resources/views/components/` — kebab-case filenames
-- Livewire components: `app/Livewire/` — PascalCase classes, kebab-case view filenames
-- Livewire views: `resources/views/livewire/` — mirror the class namespace in kebab-case
+## Livewire security
 
-## Livewire component rules
+- Client-visible tenant, project, assessment, token, and respondent identifiers must be locked
+- Route binding is not sufficient authorization; mutations re-check workspace and resource authority
+- Question and option IDs are revalidated against the immutable assessment snapshot or active in-scope content
+- Completed assessments are read-only
 
-- Every Livewire component that holds a workspace or project ID must declare it `#[Locked]`
-- Use `mount(Model $model)` for DI — let route model binding do the work
-- Tenant identifiers must be `#[Locked]` to prevent client-side tampering
+## Product language
 
-## Navigation labels (shown to user)
+- Use plain language understood without PHSAI training
+- User-facing product name is Vytte
+- Use **Comprehensive Health Assessment** and **Focused Health Assessment**
+- Use “department” only where the selected setting genuinely has departments
+- Do not show internal question codes to ordinary end users
+- Show “Awaiting calibration” for `NOT_CALIBRATED`
+- Evidence UI says “optional supporting evidence” and remains progressively disclosed
+- Community and patient feedback are templates, not a separate product area
 
-| Internal name | UI label |
-|---|---|
-| Dashboard | Dashboard |
-| Projects | Projects |
-| Assessments | Assessments |
-| Responses | Responses |
-| Reports | Reports |
-| Question Bank | Question Bank (curator only) |
-| Platform Settings | Platform Settings (admin only) |
+## Canonical status labels
 
-## Language rules
+| Stored value | Scope | UI label |
+|---|---|---|
+| `IN_PROGRESS` | Assessment | In progress |
+| `COMPLETE` | Assessment | Completed |
+| `PENDING` | Included assessment area | Pending |
+| `COMPLETED` | Included assessment area | Completed |
+| `EXCLUDED` | Assessment area | Excluded |
+| `DRAFT` | Template/version | Draft |
+| `PUBLISHED` | Template/version | Published |
 
-- Every label must be understood by a first-time user with no PHSAI training
-- Never show PHSAI module codes (e.g., OPD.D1.Q1) to end users
-- Show "Awaiting calibration" wherever an uncalibrated score would appear
-- Errors in plain English — never show stack traces or raw exception messages
+Do not persist assessment `COMPLETED`, `DRAFT`, or `ARCHIVED`; they are not assessment-execution states.
 
-## Status badges
+## Forms and feedback
 
-- `calibration_status = NOT_CALIBRATED` → amber badge "Awaiting calibration"
-- Assessment `status = DRAFT` → slate badge "Draft"
-- Assessment `status = IN_PROGRESS` → blue badge "In progress"
-- Assessment `status = COMPLETED` → green badge "Completed"
-- Assessment `status = ARCHIVED` → slate badge "Archived"
+- Use native `required` semantics and inline validation messages
+- Primary action: Ocean Blue background with white text
+- Destructive action: red semantic color
+- Secondary action: neutral surface and border
+- Never expose stack traces or raw provider exceptions
+- Destructive actions must state what will happen
+- Empty states should explain the next useful action
 
-## Forms
+## Navigation
 
-- Required fields: no asterisk — use `required` HTML attribute
-- Validation errors: shown inline below each field, text-danger-500 text-sm
-- Submit buttons: `bg-vytte-600 hover:bg-vytte-700 text-white`
-- Destructive buttons: `bg-danger-500 hover:bg-danger-600 text-white`
-- Secondary/cancel: `bg-white border border-slate-300 text-slate-700`
+Primary workspace navigation is Dashboard, Projects, Assessments, Reports, Modules, Team, and Notifications. Reports always opens the shared completed-assessment report index; it must not point to a placeholder.

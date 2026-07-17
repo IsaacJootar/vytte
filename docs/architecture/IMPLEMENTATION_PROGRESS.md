@@ -1,5 +1,27 @@
 # Architecture Remediation Progress
 
+## Module 17 — Operating baseline and documentation authority
+
+**Status:** Complete
+
+**Resolved:**
+
+- Laravel boilerplate README was replaced with Vytte setup, product, verification, and PostgreSQL guidance.
+- `AGENTS.md` now describes the implemented two-path product, actual tenancy boundary, lifecycle, scoring rules, and commit/test discipline.
+- `phases.md` now records the Module 20 commit and every approved remediation commit.
+- Ocean Blue UI tokens and canonical status labels are synchronized with the code.
+- Current architecture and data-model audit now reflect templates, snapshots, policies, durable external sessions, reporting, governance, evidence, and current schema counts.
+- Dataset, response-type, scoring, lifecycle, plan-feature, privacy/retention, and content-governance contracts are explicit.
+- The unused legacy special-aggregation table is retired; community-oriented work remains normal assessment-template content.
+- PostgreSQL remains the release authority while SQLite remains a temporary local/test path.
+
+**Verification:**
+
+- Clean temporary SQLite install, all 41 migrations, and complete seed: passed.
+- Production Vite frontend build: passed.
+- Full regression suite: 365 tests, 870 assertions, all passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 16 — Reports index and governed link management
 
 **Status:** Complete

@@ -1,28 +1,28 @@
 # Current Architecture
 
-## Audit status
+## Status
 
-Phase 21 read-only audit, 17 July 2026. The implementation described here is the current working tree at commit `c190e419108bb2483febcea755fe30c13b7348fe`, including pre-existing uncommitted changes. The branch is `master`, one commit ahead of `origin/master`. No application code, migration, test, configuration, or data was changed during this audit.
+This document describes the implemented Laravel monolith after the approved Phase 21/22 remediation through Module 16. Repository migrations, models, services, policies, routes, and tests are the technical source of truth.
 
-The full regression suite was not run because regression-baseline execution belongs to Phase 22. Read-only discovery found 312 declared tests and 312 entries in PHPUnit's result cache, but that cache also contains 93 defect entries and is not evidence of a green run.
+Current verified SQLite boundary: 365 tests and 870 assertions passing. PostgreSQL remains the production authority; parity verification is pending restoration of the local PostgreSQL/Docker environment.
 
 ## Runtime stack
 
-| Layer | Current implementation |
+| Layer | Implementation |
 |---|---|
-| Framework | Laravel 13.20.0 on PHP 8.3.31 |
-| Server UI | Blade components and views |
-| Stateful UI | Livewire 4.3 components |
-| Browser behavior | Alpine.js supplied by Livewire; minimal application JavaScript |
-| Styling | Tailwind CSS 4 with CSS-first tokens in `resources/css/app.css` |
-| Data access | Eloquent plus direct query-builder access |
-| Production-intent database | PostgreSQL, represented by `docker-compose.yml` |
-| Current local and test database | SQLite (`.env`, `.env.example`, and `phpunit.xml`) |
-| Auth | Laravel Breeze, email/password |
-| Email | Resend, gated by a platform setting |
+| Framework | Laravel 13 on PHP 8.3+ |
+| Server UI | Blade layouts, views, and components |
+| Stateful UI | Livewire 4 |
+| Browser behavior | Alpine.js supplied by Livewire plus minimal application JavaScript |
+| Styling/build | Tailwind CSS 4, CSS-first tokens, Vite |
+| Data access | Eloquent plus bounded query-builder operations |
+| Production database | PostgreSQL |
+| Local/test database | SQLite, including in-memory PHPUnit runs |
+| Auth | Laravel Breeze email/password |
+| Email | Resend behind platform settings |
 | PDF | DomPDF |
-| Payments | Paystack and Flutterwave webhook controllers |
-| Identifiers | Mixed: UUIDs for tenant/business records, integers for most reference records, strings for some codes/tokens |
+| Payments | Paystack and Flutterwave webhooks |
+| Identifiers | Mixed UUID, integer, string, and composite keys |
 
 ## Logical topology
 
@@ -31,117 +31,129 @@ flowchart TD
     U[User] --> WM[Workspace membership]
     WM --> W[Active workspace]
     W --> P[Project]
-    P --> PT[project_targets]
-    PT --> T[Target]
+    W --> T[Target / setting]
+    P --> PT[One project_targets row]
+    PT --> T
     P --> A[Assessment]
     T --> A
-    A --> AMS[assessment_module_scope]
-    AMS --> M[Assessment module]
-    M --> MD[Module-local domain/section]
-    MD --> Q[Question]
-    Q --> O[Question option]
-    Q --> SIQ[sub_index_questions]
-    SIQ --> SI[Sub-index]
-    SI --> D[Global scoring domain]
-    A --> R[Response]
-    R --> O
-    A --> SIS[Sub-index score]
-    A --> DS[Domain score]
-    A --> AS[Assessment score]
-    AS --> ML[Maturity level]
+
+    AT[Assessment template] --> ATV[Immutable published version]
+    ATV --> AC[Published content payload]
+    ATV --> A
+    A --> ASNP[Assessment content/scoring snapshot]
+
+    A --> AMS[Assessment module scope]
+    AMS --> M[Module catalogue]
+    M --> Q[Questions and options]
+    Q --> SI[Sub-index profile]
+    SI --> D[Scoring domain]
+
+    A --> R[Responses]
+    A --> PRS[External respondent sessions]
+    PRS --> R
+    R --> SIS[Versioned sub-index scores]
+    SIS --> DS[Domain scores]
+    DS --> OS[Assessment score]
+
+    A --> RS[Immutable final report snapshot]
+    RS --> UI[Results / Reports index / PDF / CSV]
+    RS --> SL[Governed share links]
 ```
 
-The effective hierarchy is therefore not the documented one-target foreign key model. `projects` and `targets` are related through `project_targets`, while controllers and views normally use only the first attached target. Assessments reference both a project and a target.
+## Tenancy and authorization
 
-## Application modules and responsibilities
+- Registration creates a user, workspace, OWNER membership, and active-workspace assignment transactionally.
+- `ResolveWorkspace` accepts an active workspace only when the authenticated user has membership. It runs before route binding.
+- Projects and targets carry direct workspace ownership and fail-closed global scoping.
+- Project and Assessment policies protect active project, assessment, result, export, progress, sharing, and respondent-link actions.
+- Downstream rows inherit authority through their project/assessment relationship. New tenant-owned routes must combine a workspace-scoped parent query with policy authorization.
+- Platform-admin and curator middleware are separate. Curators may publish validated template versions through the governed publication route.
 
-### Identity, workspaces, and tenancy
+## Project and setting model
 
-- Registration creates a user, workspace, OWNER membership, and active-workspace assignment in one transaction.
-- `ResolveWorkspace` loads `users.active_workspace_id` into the application container.
-- `BelongsToWorkspace` and `WorkspaceScope` are used only by `Project` and `Target`.
-- Assessments, responses, scores, consent, respondent tokens, membership, invitations, and other downstream records do not carry the documented global workspace scope. Controllers often recover isolation through a workspace-scoped project or explicit ownership check.
-- No `app/Policies` directory exists. The documented policy layer is not implemented.
-- Platform administration is protected by `EnsurePlatformAdmin` and the `PLATFORM_ADMIN` user role. A `CURATOR` helper exists on `User`, but there is no curator route group or curator middleware.
+- A project belongs to one workspace and one owner.
+- Project creation creates/attaches one target (the assessed setting) in the same transaction.
+- The compatibility `project_targets` junction remains, but a unique database constraint enforces one target per project.
+- Settings include health facilities and user-relevant contexts such as schools, communities, correctional facilities, workplaces, places of worship, NGOs/programmes, government organizations, and custom settings.
+- Setting taxonomy and health-domain taxonomy are separate. A setting does not make Vytte a non-health vertical.
 
-### Projects and targets
+## Template and content architecture
 
-- A project is workspace-scoped and owned by a user.
-- Project creation also creates a target and attaches it through `project_targets` in one transaction.
-- Schema permits many targets per project; current UX and downstream logic use `targets->first()` as the practical primary target.
-- Target types, categories, countries, regions, and sub-regions drive module availability and default module selection.
+- Vytte has exactly two creation paths: comprehensive and focused.
+- Comprehensive templates declare a setting and may include multiple assessment areas. Users may exclude non-applicable areas with a reason.
+- Focused templates declare one health domain and one direct assessment scope. They never load unrelated batteries or module checklists.
+- Template publication validates provenance, licence metadata, supported response types, active questions, option weights, and scored-question mappings.
+- A published version stores the exact payload represented by its content hash and is immutable.
+- Assessment creation copies the selected published payload into an assessment-owned immutable snapshot, including presentation, consent applicability, and scoring profile.
+- Master module/question assets remain curator-editable for future drafts; edits cannot change existing published versions or snapshot-based assessments.
 
-### Assessment framework and content
+## Assessment runtime
 
-- `assessment_modules` is the platform module catalogue, despite documentation using that name for an assessment-to-module join.
-- `module_domains` are module-local questionnaire sections. They are distinct from global `domains`, which are scoring dimensions.
-- Questions belong directly to a module and optional module-local domain.
-- Questions connect to sub-indices through `sub_index_questions`; option rows carry score values.
-- French question and option overlays are stored in translation tables.
-- Module/question administration edits shared master records in place. There is no published-content immutability or version boundary.
+- The authenticated runner reads the assessment snapshot when present and falls back to live content only for legacy assessments.
+- The runner supports scalar option inputs and unscored open text under the publishable contract.
+- Required scored answers are validated on the server before completion.
+- Optional evidence is progressively disclosed and stored as `responses.evidence_note` on the exact response. It does not count as an answer or create a repository workflow.
+- External respondent links create durable, resumable sessions with locale, consent, activity, and submission timestamps. Tokens record creator, use, expiry, and revocation.
+- External and authenticated runners load all in-scope modules and revalidate question/option authority on every write.
+- Respondent-aware scoring semantics must extend the shared versioned scoring/report contract. A separate community or respondent report is prohibited.
 
-### Assessment creation and runners
+## Lifecycle
 
-- The committed baseline created an assessment from one module.
-- The current uncommitted worktree changes this to select multiple modules, record excluded default modules with reasons, and assign `FULL_TARGET` or `MODULE_PICKER` scope.
-- The authenticated Livewire runner loads all in-scope modules.
-- The public runner resolves only the first in-scope module for an assessment token.
-- Both runners currently persist option responses only. Numeric, text, ranking, and true multi-select interaction paths are not implemented.
+- Assessment execution: `IN_PROGRESS -> COMPLETE`, terminal.
+- Included area execution: `PENDING -> COMPLETED`.
+- Excluded comprehensive areas: `EXCLUDED`.
+- Template/version publication: `DRAFT -> PUBLISHED`; published versions are immutable.
+- Reopen, correction-version, cancellation, retirement, and archive workflows are not implemented.
 
-### Scoring
+See `LIFECYCLE_STATE_MACHINE.md`.
 
-- Submission invokes `ScoringService` synchronously.
-- The current scorer reads only assessor-authored responses (`respondent_id IS NULL`). The approved direction is to extend this same versioned scorer with explicit respondent-role semantics; a separate reporting engine is prohibited.
-- Sub-index score = weighted mean of answered option values for linked scored questions.
-- Domain score = unweighted mean of non-null sub-index scores.
-- Overall score = unweighted mean of all non-null sub-index scores.
-- Score status is `NOT_CALIBRATED`, `PARTIAL`, or `CALIBRATED`.
-- Bands are Weak `<45`, Moderate `45-69.99`, Strong `>=70`.
-- Maturity is assigned from five configured ranges.
-- `domain_weights`, topic scoring, corroboration, project rollups, clinical-quality score fields, root-cause tables, and recommendation tables are not used by the active scoring path.
+## Scoring
 
-### Results and reporting
+- Completion invokes `ScoringService` synchronously inside the completion transaction.
+- Published-template assessments use the frozen scoring profile; legacy assessments use a separated compatibility profile.
+- Option scales with a maximum at or below 1 are normalized to canonical 0–100 output.
+- Sub-index results are weighted means of answered scored questions.
+- Domain and overall results aggregate non-null sub-index results.
+- Calibration is `NOT_CALIBRATED`, `PARTIAL`, or `CALIBRATED`.
+- Display bands are Weak below 45, Moderate from 45 to below 70, and Strong at 70 or above.
+- Every stored score records an algorithm version. Completed assessments are not silently recalculated.
+- The current compatibility scorer calculates assessor-authored response rows. Explicit multi-respondent aggregation remains a template/scoring-profile extension gap, not a reason for a parallel engine.
 
-- Results are assembled on demand from assessment, score, domain-score, and sub-index-score records.
-- The Reports navigation opens a workspace-scoped index of completed assessments and reuses the standard final result, PDF, and governed share-link routes.
-- Findings are generated as presentation text from low or null sub-index scores; they are not persisted first-class findings.
-- Reports are Blade views, browser print output, DomPDF downloads, project CSV streams, and temporary signed public URLs.
-- There is no `reports` or `report_sections` table/model in the implementation.
-- Progress and comparison pages compare completed assessments within a project.
-- Current uncommitted history grouping uses `scope_type`, which does not prove that two runs used the same module composition.
+## Reporting
 
-### Plans, settings, and integrations
+- Completion persists one immutable structured report snapshot with schema version and SHA-256 content hash.
+- Results, PDF, public shared reports, and progress history read the final snapshot for newly completed assessments.
+- Legacy completed assessments use a clearly separated best-effort builder and are not silently backfilled.
+- The Reports index lists completed assessments in the active workspace and reuses the standard results, PDF, share-link, and revocation actions.
+- Governed report links record creator, expiry, active/revoked state, use count, and last-used time. Legacy temporary signed routes remain readable for compatibility.
+- Progress comparisons require matching composition fingerprints; incompatible assessments are rejected.
+- Findings remain derived presentation text. Root-cause and recommendation tables are dormant and do not represent implemented product behavior.
 
-- Workspace plan limits are centralized in `PlanService` and partly configurable through `platform_settings`.
-- Feature access is stored in the `plan_features` matrix and administered by platform admins.
-- Email delivery is gated by `email.notifications_enabled`; database notifications remain active.
-- Paystack is excluded from CSRF validation and validates HMAC signatures.
-- Flutterwave validates a configured hash, but its webhook route is not in the CSRF-exception list.
+## Governance and audit
+
+- Immutable audit records cover template publication, assessment creation/completion, final-report capture, respondent-link lifecycle, and report-link lifecycle.
+- Plan limits and feature access are centralized in `PlanService` and `plan_features`.
+- Community assessment content is not a separate plan feature.
+- Email is gated by platform settings; database notifications remain available.
+- Paystack and Flutterwave webhook endpoints are CSRF-exempt and retain provider-specific signature/hash validation.
 
 ## HTTP and UI architecture
 
-- Route discovery reports 80 application routes: 66 authenticated and 14 public.
-- There is no `routes/api.php` and no versioned REST/JSON API.
-- External interfaces are HTML forms, Livewire update requests, two payment webhooks, Resend's package webhook, temporary signed reports, invitation links, and respondent-token links.
-- The authenticated shell uses a desktop sidebar and mobile bottom navigation.
-- Admin has a separate Blade layout.
-- Core reusable visual components include score arcs/pills, navigation items, plan gates, buttons, inputs, modals, skeletons, and the Vytte mark.
-- Dark mode is user-persisted. Authenticated runner UI uses translation keys; public-runner copy remains hard-coded.
-- The sidebar contains a non-functional `Reports` link (`href="#"`).
+- The product surface is server-rendered HTML, Livewire requests, payment/email webhooks, invitation links, respondent-token links, and governed report links.
+- There is no generic versioned REST/GraphQL API because no approved consumer requires one.
+- The authenticated shell provides Dashboard, Projects, Assessments, Reports, Modules, Team, and Notifications.
+- Reusable UI includes app/guest/admin layouts, navigation items, buttons and form controls, score arcs/pills, plan gates, modals, skeletons, and the Vytte mark.
+- Ocean Blue tokens in `resources/css/app.css` are authoritative. Interfaces support dark mode and responsive layouts.
 
-## Source organization
+## Known bounded gaps
 
-| Area | Current shape |
-|---|---|
-| Models | 29 Eloquent models; several migrated tables have no model |
-| Controllers | Conventional controllers plus an admin namespace |
-| Livewire | Two runner components |
-| Services | `ScoringService` and `PlanService` |
-| Migrations | 29 files creating 60 application/infrastructure tables |
-| Views | 69 Blade files |
-| Tests | 33 files, 312 declared tests |
-| Product documentation | Architecture, schema, UI rules, phases, and only one detailed module specification |
+- PostgreSQL parity and concurrency checks remain a release gate.
+- Respondent-aware aggregation needs an explicit template-level scoring unit and completion rule inside the shared engine.
+- Numeric, true multi-select, ranking, observation, and other declared response types remain unavailable for publication.
+- Dataset counts require governed version metadata; sample content is not production clinical authority.
+- Dormant recommendation, root-cause, topic-score, project-score, observation, and multi-select structures remain reserved.
+- No assessment reopen/correction/archive workflow exists.
 
 ## Architectural conclusion
 
-Vytte is a modular Laravel monolith with reusable questionnaire content and a workable assessment runtime. It already contains several seams suitable for a template layer: module catalogue, assessment-module scope, question assets, translations, and assessment-bound responses/scores. It does not yet have the immutability, version identity, snapshot, or composition-fingerprint guarantees required for safe templates. Those can be added incrementally, but only after Phase 22 establishes a trustworthy baseline and Isaac resolves the pending decisions in `DECISION_LOG.md`.
+Vytte is a modular, workspace-scoped Laravel monolith with one template, assessment, scoring, and reporting architecture. The safe extension path is additive and contract-driven: publish immutable template content, create assessment snapshots, collect validated responses, calculate versioned scores, and finalize one immutable report. New settings, respondent roles, evidence support, and future response types must reuse that path rather than create parallel products.
