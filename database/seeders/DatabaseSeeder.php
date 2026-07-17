@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
             HivawQuestionsSeeder::class,
             PlanFeatureSeeder::class,
             DemoAccountSeeder::class,
+            PHSAIQuestionsSeeder::class,
+            DemoDataSeeder::class,
         ]);
     }
 }

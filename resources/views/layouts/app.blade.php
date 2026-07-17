@@ -8,7 +8,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="bg-slate-100 dark:bg-slate-900 font-sans antialiased">
+<body class="bg-[#F8FAFC] dark:bg-slate-900 font-sans antialiased">
 
 <div class="min-h-screen lg:flex">
 
@@ -25,6 +25,11 @@
                 <div class="text-[10px] text-white/[0.35] leading-none mt-0.5 truncate">
                     {{ auth()->user()->activeWorkspace?->name ?? 'Workspace' }}
                 </div>
+                @php $sidebarPlan = auth()->user()->activeWorkspace?->plan ?? 'FREE'; @endphp
+                <span class="mt-1 inline-block text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded
+                    {{ $sidebarPlan === 'AGENCY' ? 'bg-violet-500/25 text-violet-200' : ($sidebarPlan === 'PRO' ? 'bg-vytte-500/25 text-vytte-200' : 'bg-white/10 text-white/40') }}">
+                    {{ $sidebarPlan }}
+                </span>
             </div>
         </div>
 
@@ -43,7 +48,7 @@
             >Projects</x-sidebar-nav-item>
 
             <x-sidebar-nav-item
-                href="#"
+                href="{{ route('assessments.index') }}"
                 icon="clipboard-document-list"
                 :active="request()->routeIs('assessments.*')"
             >Assessments</x-sidebar-nav-item>
@@ -195,7 +200,7 @@
                 :active="request()->routeIs('projects.*')"
             />
             <x-mobile-nav-item
-                href="#"
+                href="{{ route('assessments.index') }}"
                 icon="clipboard-document-list"
                 label="Assess"
                 :active="request()->routeIs('assessments.*')"

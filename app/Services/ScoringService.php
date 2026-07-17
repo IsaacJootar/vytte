@@ -53,7 +53,7 @@ class ScoringService
                 $weight = (float) ($question->pivot->weight ?? 1.0);
                 $response = $responses->get($question->question_id);
 
-                if ($response && $response->selectedOption) {
+                if ($response && $response->selectedOption && $response->selectedOption->score_weight !== null) {
                     $weightedSum += (float) $response->selectedOption->score_weight * $weight;
                     $totalWeight += $weight;
                     $answeredCount++;

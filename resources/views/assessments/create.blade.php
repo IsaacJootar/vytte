@@ -1,5 +1,7 @@
 <x-app-layout title="Start Assessment">
 
+    <div class="max-w-2xl mx-auto">
+
     <div class="mb-5">
         <a href="{{ route('projects.show', $project) }}" class="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
             <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -78,5 +80,7 @@
             </button>
         </form>
     @endif
+
+    </div>{{-- /max-w-2xl mx-auto --}}
 
 </x-app-layout>

@@ -1,5 +1,7 @@
 <x-app-layout :title="'Edit · ' . $project->name">
 
+    <div class="max-w-2xl mx-auto">
+
     <div class="mb-6">
         <a href="{{ route('projects.show', $project) }}"
            class="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors mb-3">
@@ -15,7 +17,7 @@
         @csrf
         @method('PATCH')
 
-        <div class="max-w-2xl">
+        <div>
             <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 flex flex-col gap-4">
 
                 <div>
@@ -47,7 +49,7 @@
                     <button
                         type="submit"
                         class="inline-flex items-center gap-2 px-5 py-2.5 bg-vytte-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-vytte-800 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-700 focus-visible:ring-offset-2"
-                        x-on:click="loading = true"
+                        x-on:click="if ($el.closest('form').checkValidity()) $nextTick(() => loading = true)"
                         :disabled="loading"
                     >
                         <svg class="w-3.5 h-3.5 btn-spinner hidden" x-show="loading" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -62,5 +64,7 @@
             </div>
         </div>
     </form>
+
+    </div>{{-- /max-w-2xl mx-auto --}}
 
 </x-app-layout>

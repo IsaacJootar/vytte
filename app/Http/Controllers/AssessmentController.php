@@ -19,6 +19,19 @@ use Illuminate\Support\Facades\Notification;
 
 class AssessmentController extends Controller
 {
+    public function index(): View
+    {
+        $workspace = app('current.workspace');
+        $workspaceProjectIds = Project::select('project_id');
+
+        $assessments = Assessment::whereIn('project_id', $workspaceProjectIds)
+            ->with(['project', 'target', 'score', 'moduleScope.module'])
+            ->latest('updated_at')
+            ->paginate(20);
+
+        return view('assessments.index', compact('assessments'));
+    }
+
     public function create(Project $project): View
     {
         $target = $project->targets->first();

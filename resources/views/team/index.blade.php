@@ -2,6 +2,7 @@
 
     @php $isOwner = $currentMember?->role === 'OWNER'; @endphp
     @php $isAdmin = in_array($currentMember?->role, ['OWNER', 'ADMIN']); @endphp
+    @php $canInvite = $isAdmin && \App\Services\PlanService::workspaceCanAccess(app('current.workspace'), 'team_members'); @endphp
 
     {{-- Header --}}
     <div class="mb-6 flex items-start justify-between gap-4">
@@ -9,7 +10,7 @@
             <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Team</h1>
             <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ $workspace->name }} · {{ $members->count() }} {{ $members->count() === 1 ? 'member' : 'members' }}</p>
         </div>
-        @if ($isAdmin)
+        @if ($canInvite)
             <button x-data @click="$dispatch('open-invite')"
                     class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-vytte-800 transition-colors duration-150">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -56,11 +57,13 @@
         </div>
     @endif
 
-    {{-- Invite form (toggled by button) --}}
+    {{-- Invite form (toggled by button) — gated to team_members feature --}}
     @if ($isAdmin)
+        <div class="mb-5">
+        <x-plan-gate feature="team_members">
         <div x-data="{ open: false }"
              x-on:open-invite.window="open = true"
-             class="mb-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+             class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
              x-show="open"
              x-transition
              style="display: none">
@@ -102,6 +105,8 @@
                     </div>
                 </div>
             </form>
+        </div>
+        </x-plan-gate>
         </div>
     @endif
 

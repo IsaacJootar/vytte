@@ -1,5 +1,7 @@
 <x-app-layout title="New Project">
 
+    <div class="max-w-2xl mx-auto">
+
     {{-- Back link + page header --}}
     <div class="mb-6">
         <a href="{{ route('projects.index') }}"
@@ -25,7 +27,7 @@
           }">
         @csrf
 
-        <div class="max-w-2xl flex flex-col gap-5">
+        <div class="flex flex-col gap-5">
 
             {{-- ===== SECTION 1 — Project details ===== --}}
             <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
@@ -190,7 +192,7 @@
                 <button
                     type="submit"
                     class="inline-flex items-center gap-2 px-5 py-2.5 bg-vytte-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-vytte-800 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-700 focus-visible:ring-offset-2"
-                    x-on:click="loading = true"
+                    x-on:click="if ($el.closest('form').checkValidity()) $nextTick(() => loading = true)"
                     :disabled="loading"
                 >
                     <svg class="w-3.5 h-3.5 btn-spinner hidden" x-show="loading" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
@@ -204,5 +206,7 @@
 
         </div>
     </form>
+
+    </div>{{-- /max-w-2xl mx-auto --}}
 
 </x-app-layout>

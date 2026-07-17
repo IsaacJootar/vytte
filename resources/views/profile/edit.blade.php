@@ -11,6 +11,8 @@
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Manage your profile and workspace.</p>
     </div>
 
+    <div class="max-w-2xl mx-auto">
+
     {{-- ===== PROFILE ===== --}}
     <div id="profile" class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-5">
         <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
@@ -305,5 +307,7 @@
 
         </div>
     </div>
+
+    </div>{{-- /max-w-2xl mx-auto --}}
 
 </x-app-layout>
