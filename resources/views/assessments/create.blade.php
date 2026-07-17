@@ -1,86 +1,118 @@
-<x-app-layout title="Start Assessment">
-
-    <div class="max-w-2xl mx-auto">
-
-    <div class="mb-5">
-        <a href="{{ route('projects.show', $project) }}" class="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd"/>
-            </svg>
-            {{ $project->name }}
+<x-app-layout title="Create Assessment">
+    <div class="max-w-3xl mx-auto" x-data="{ path: '{{ old('creation_path', '') }}' }">
+        <a href="{{ route('projects.show', $project) }}" class="text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">
+            ← {{ $project->name }}
         </a>
-    </div>
 
-    <div class="mb-6">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Start Assessment</h1>
-        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Choose a module to assess {{ $project->targets->first()?->name ?? 'this target' }}.</p>
-    </div>
-
-    @if ($modules->isEmpty())
-        <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 px-5 py-12 flex flex-col items-center text-center">
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">No modules available</p>
-            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500 max-w-xs">
-                No assessment modules have been set up for this target type yet.
+        <div class="mt-5 mb-7">
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">What are you assessing?</h1>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Choose the assessment purpose. You will only see choices relevant to that purpose.
             </p>
         </div>
-    @else
-        <form method="POST" action="{{ route('assessments.store', $project) }}" x-data="{ selected: null }">
-            @csrf
 
-            <div class="space-y-2 mb-6">
-                @foreach ($modules as $module)
-                    <label class="block cursor-pointer">
-                        <input type="radio" name="module_id" value="{{ $module->module_id }}"
-                               x-model="selected"
-                               class="sr-only" required>
-                        <div class="flex items-start gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border transition-all duration-150"
-                             :class="selected == '{{ $module->module_id }}'
-                                 ? 'border-vytte-500 ring-2 ring-vytte-200 dark:ring-vytte-800 bg-vytte-50 dark:bg-vytte-900/20'
-                                 : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'">
-                            <div class="flex-shrink-0 mt-0.5">
-                                <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
-                                     :class="selected == '{{ $module->module_id }}'
-                                         ? 'border-vytte-600'
-                                         : 'border-slate-300 dark:border-slate-600'">
-                                    <div class="w-2 h-2 rounded-full bg-vytte-600 transition-opacity"
-                                         :class="selected == '{{ $module->module_id }}' ? 'opacity-100' : 'opacity-0'"></div>
-                                </div>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 mb-0.5">
-                                    <span class="text-[10px] font-bold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">{{ $module->module_code }}</span>
-                                </div>
-                                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $module->module_name }}</p>
-                                <div class="mt-1 flex flex-wrap gap-3 text-[11px] text-slate-400 dark:text-slate-500">
-                                    @if ($module->estimated_duration_minutes)
-                                        <span>~{{ $module->estimated_duration_minutes }} min</span>
-                                    @endif
-                                    @if ($module->primary_respondent)
-                                        <span>{{ $module->primary_respondent }}</span>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </label>
-                @endforeach
+        @if ($errors->any())
+            <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+                {{ $errors->first() }}
             </div>
+        @endif
 
-            @error('module_id')
-                <p class="mb-4 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-            @enderror
-
-            <button type="submit"
-                    :disabled="!selected"
-                    x-bind:class="selected ? 'bg-vytte-700 hover:bg-vytte-800 cursor-pointer' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'"
-                    class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors duration-150">
-                Start Assessment
-                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
-                </svg>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <button type="button" @click="path = 'COMPREHENSIVE'"
+                    class="rounded-2xl border p-5 text-left transition"
+                    :class="path === 'COMPREHENSIVE' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-100 dark:bg-vytte-900/20' : 'border-slate-200 bg-white hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800'">
+                <span class="text-base font-bold text-slate-900 dark:text-white">Comprehensive Health Assessment</span>
+                <span class="mt-2 block text-sm text-slate-500 dark:text-slate-400">
+                    Assess health across the entire {{ strtolower($target?->targetType?->target_type_name ?? 'setting') }}.
+                </span>
             </button>
-        </form>
-    @endif
 
-    </div>{{-- /max-w-2xl mx-auto --}}
+            <button type="button" @click="path = 'FOCUSED'"
+                    class="rounded-2xl border p-5 text-left transition"
+                    :class="path === 'FOCUSED' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-100 dark:bg-vytte-900/20' : 'border-slate-200 bg-white hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800'">
+                <span class="text-base font-bold text-slate-900 dark:text-white">Focused Health Assessment</span>
+                <span class="mt-2 block text-sm text-slate-500 dark:text-slate-400">
+                    Assess one health domain, programme, topic, or intervention.
+                </span>
+            </button>
+        </div>
 
+        <section x-show="path === 'COMPREHENSIVE'" x-cloak class="mt-7">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white">Comprehensive frameworks</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {{ $usesDepartments ? 'Choose the departments this setting actually operates.' : 'Choose the health assessment areas that apply to this setting.' }}
+            </p>
+
+            @forelse ($comprehensiveTemplates as $template)
+                @php $version = $template->versions->first(); @endphp
+                @if ($version)
+                    <form method="POST" action="{{ route('assessments.store', $project) }}" class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                        @csrf
+                        <input type="hidden" name="creation_path" value="COMPREHENSIVE">
+                        <input type="hidden" name="template_version_id" value="{{ $version->template_version_id }}">
+
+                        <h3 class="font-bold text-slate-900 dark:text-white">{{ $template->template_name }}</h3>
+                        @if ($template->description)
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $template->description }}</p>
+                        @endif
+
+                        <div class="mt-4 space-y-2">
+                            @foreach ($version->modules as $module)
+                                <div x-data="{ included: true }" class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                                    <label class="flex items-center gap-3 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                                        <input type="checkbox" name="modules[]" value="{{ $module->module_id }}" x-model="included" checked class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500">
+                                        {{ $module->pivot->area_label ?: $module->module_name }}
+                                    </label>
+                                    <input x-show="!included" x-cloak :required="!included" type="text"
+                                           name="exclusion_reasons[{{ $module->module_id }}]"
+                                           placeholder="Why does this area not apply?"
+                                           class="mt-3 w-full rounded-lg border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-700">
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <button class="mt-5 rounded-lg bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800">
+                            Start comprehensive assessment
+                        </button>
+                    </form>
+                @endif
+            @empty
+                <div class="mt-4 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                    No approved comprehensive framework is available for this setting yet. Draft or sample content is never shown here.
+                </div>
+            @endforelse
+        </section>
+
+        <section x-show="path === 'FOCUSED'" x-cloak class="mt-7">
+            <h2 class="text-lg font-bold text-slate-900 dark:text-white">What health domain are you assessing?</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Choose one approved template. No unrelated departments or programmes will be added.</p>
+
+            <div class="mt-4 space-y-3">
+                @forelse ($focusedTemplates as $template)
+                    @php $version = $template->versions->first(); @endphp
+                    @if ($version)
+                        <form method="POST" action="{{ route('assessments.store', $project) }}" class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-800">
+                            @csrf
+                            <input type="hidden" name="creation_path" value="FOCUSED">
+                            <input type="hidden" name="template_version_id" value="{{ $version->template_version_id }}">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400">{{ $template->healthDomain?->domain_name }}</span>
+                                <h3 class="mt-1 font-bold text-slate-900 dark:text-white">{{ $template->template_name }}</h3>
+                                @if ($template->description)
+                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $template->description }}</p>
+                                @endif
+                            </div>
+                            <button class="shrink-0 rounded-lg bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800">
+                                Start assessment
+                            </button>
+                        </form>
+                    @endif
+                @empty
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
+                        No approved focused templates are available yet.
+                    </div>
+                @endforelse
+            </div>
+        </section>
+    </div>
 </x-app-layout>

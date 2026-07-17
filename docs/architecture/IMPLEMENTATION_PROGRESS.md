@@ -27,6 +27,30 @@ Isaac approved correction of all Phase 21/22 gaps on 17 July 2026. Work proceeds
 - Local SQLite migration: passed.
 - PostgreSQL parity: pending restoration of Docker/PostgreSQL.
 
+## Module 7 — Two-path creation workflow
+
+**Status:** Complete
+
+**Resolved:**
+
+- Assessment creation now presents exactly two choices: Comprehensive Health Assessment and Focused Health Assessment.
+- The legacy standard-battery/module-picker controller workflow is removed.
+- Focused creation shows one approved health-domain template and starts it directly without unrelated modules or checkboxes.
+- Comprehensive creation only shows published frameworks matching the project's setting and permits removal of non-applicable areas with reasons.
+- Department terminology appears only when the setting's taxonomy or explicit custom-setting choice says departments genuinely apply.
+- Project creation supports correctional facilities, workplaces/businesses, places of worship, NGOs/programmes, government organizations, and user-defined custom settings.
+- Category IDs are now validated against the selected setting type.
+- AG-15: the default database seed no longer depends on a personal Downloads document. The external PHSAI and sample school seeders were removed.
+- Only repository-contained content that passes template publishing validation is exposed; the initial published focused template is HIV Awareness and Service Uptake.
+
+**Verification:**
+
+- Focused creation/project/snapshot/template suite: 41 tests, 123 assertions, all passed.
+- Clean temporary SQLite install, complete migrations, and full database seed: passed.
+- Full suite: 342 tests, 811 assertions, all passed in 52.790 seconds.
+- No local working database was erased during clean-install verification.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 6 — Assessment-owned content snapshots
 
 **Status:** Complete

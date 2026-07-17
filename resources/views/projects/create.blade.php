@@ -114,6 +114,25 @@
                         <x-input-error :messages="$errors->get('category_id')" class="mt-1" />
                     </div>
 
+                    <div x-show="targetType === 'CUSTOM'" x-cloak>
+                        <x-input-label for="custom_setting_label" value="What kind of setting is this?" />
+                        <x-text-input
+                            id="custom_setting_label"
+                            name="custom_setting_label"
+                            type="text"
+                            class="mt-1 block w-full"
+                            :value="old('custom_setting_label')"
+                            placeholder="e.g. Agricultural cooperative"
+                            x-bind:required="targetType === 'CUSTOM'"
+                        />
+                        <x-input-error :messages="$errors->get('custom_setting_label')" class="mt-1" />
+
+                        <label class="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                            <input type="checkbox" name="uses_departments" value="1" class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500" {{ old('uses_departments') ? 'checked' : '' }}>
+                            This setting genuinely uses departments
+                        </label>
+                    </div>
+
                     {{-- Target name --}}
                     <div>
                         <x-input-label for="target_name" value="Name" />

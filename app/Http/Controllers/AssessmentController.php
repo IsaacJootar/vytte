@@ -3,14 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
-use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
-use App\Models\AssessmentTier;
+use App\Models\AssessmentTemplate;
+use App\Models\AssessmentTemplateVersion;
 use App\Models\Project;
 use App\Models\Question;
 use App\Models\Response;
 use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
+use App\Services\AssessmentCreationService;
 use App\Services\PlanService;
 use App\Services\ScoringService;
 use Illuminate\Contracts\View\View;
@@ -37,28 +38,30 @@ class AssessmentController extends Controller
     public function create(Project $project): View
     {
         $target = $project->targets->first();
+        $settingTypeCode = $target
+            ? DB::table('target_type_setting_map')->where('target_type_code', $target->target_type_code)->value('setting_type_code')
+            : null;
+        $usesDepartments = $target?->uses_departments ?? (bool) DB::table('setting_types')
+            ->where('setting_type_code', $settingTypeCode)
+            ->value('uses_departments');
 
-        $defaultModuleIds = $target
-            ? DB::table('target_category_default_modules')
-                ->where('category_id', $target->category_id)
-                ->pluck('module_id')
-                ->toArray()
-            : [];
+        $templateQuery = fn ($query) => $query->where('status', 'PUBLISHED')->with('modules')->orderByDesc('version_number');
+        $comprehensiveTemplates = AssessmentTemplate::where('status', 'PUBLISHED')
+            ->where('creation_path', 'COMPREHENSIVE')
+            ->where('setting_type_code', $settingTypeCode)
+            ->with(['versions' => $templateQuery])
+            ->orderBy('template_name')
+            ->get();
+        $focusedTemplates = AssessmentTemplate::where('status', 'PUBLISHED')
+            ->where('creation_path', 'FOCUSED')
+            ->with(['healthDomain', 'versions' => $templateQuery])
+            ->orderBy('template_name')
+            ->get();
 
-        $allModules = $target
-            ? AssessmentModule::where('target_type_code', $target->target_type_code)
-                ->where('is_active', true)
-                ->orderBy('module_code')
-                ->get()
-            : collect();
-
-        $defaultModules = $allModules->whereIn('module_id', $defaultModuleIds)->values();
-        $extraModules = $allModules->whereNotIn('module_id', $defaultModuleIds)->values();
-
-        return view('assessments.create', compact('project', 'defaultModules', 'extraModules', 'defaultModuleIds'));
+        return view('assessments.create', compact('project', 'target', 'usesDepartments', 'comprehensiveTemplates', 'focusedTemplates'));
     }
 
-    public function store(Request $request, Project $project): RedirectResponse
+    public function store(Request $request, Project $project, AssessmentCreationService $creator): RedirectResponse
     {
         $workspace = app('current.workspace');
 
@@ -67,101 +70,27 @@ class AssessmentController extends Controller
                 ->with('limit_error', 'You have reached the assessment limit for this project on your current plan. Upgrade to run more assessments.');
         }
 
-        $target = $project->targets->first();
-
-        if (! $target) {
-            return back()->with('error', 'This project has no target. Please add a target first.');
-        }
-
-        $request->validate([
-            'modules' => ['required', 'array', 'min:1'],
-            'modules.*' => ['integer', 'exists:assessment_modules,module_id'],
+        $validated = $request->validate([
+            'creation_path' => ['required', 'in:COMPREHENSIVE,FOCUSED'],
+            'template_version_id' => ['required', 'uuid', 'exists:assessment_template_versions,template_version_id'],
+            'modules' => ['nullable', 'array'],
+            'modules.*' => ['integer'],
             'exclusion_reasons' => ['nullable', 'array'],
             'exclusion_reasons.*' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $selectedIds = collect($request->input('modules', []))->map(fn ($id) => (int) $id);
-        $exclusionReasons = $request->input('exclusion_reasons', []);
-
-        $allowedModuleIds = AssessmentModule::where('target_type_code', $target->target_type_code)
-            ->where('is_active', true)
-            ->whereIn('module_id', $selectedIds->all())
-            ->pluck('module_id')
-            ->map(fn ($id) => (int) $id);
-
-        if ($allowedModuleIds->count() !== $selectedIds->unique()->count()) {
-            return back()
-                ->withErrors(['modules' => 'One or more selected assessment areas are not available for this setting.'])
-                ->withInput();
+        $version = AssessmentTemplateVersion::with('template')->findOrFail($validated['template_version_id']);
+        if ($version->template->creation_path !== $validated['creation_path']) {
+            return back()->withErrors(['template_version_id' => 'The selected template does not match this assessment path.'])->withInput();
         }
 
-        // Community module gate
-        $hasHivaw = AssessmentModule::whereIn('module_id', $selectedIds->toArray())
-            ->where('module_code', 'LIKE', 'HIVAW%')
-            ->exists();
-        if ($hasHivaw && ! PlanService::workspaceCanAccess($workspace, 'patient_community_voice_module')) {
-            return back()->with('error', 'The Patient & Community Voice module is not available on your current plan. Upgrade to run community voice assessments.');
-        }
-
-        $defaultModuleIds = DB::table('target_category_default_modules')
-            ->where('category_id', $target->category_id)
-            ->pluck('module_id')
-            ->map(fn ($id) => (int) $id);
-
-        // Deselected defaults must have an exclusion reason
-        $deselectedIds = $defaultModuleIds->diff($selectedIds);
-        foreach ($deselectedIds as $moduleId) {
-            if (empty(trim($exclusionReasons[$moduleId] ?? ''))) {
-                return back()
-                    ->withErrors(['exclusion_reasons' => 'Please explain why each excluded module is not being assessed.'])
-                    ->withInput();
-            }
-        }
-
-        // scope_type: FULL_TARGET only when selected set exactly matches category defaults
-        $selectedSorted = $selectedIds->sort()->values()->toArray();
-        $defaultSorted = $defaultModuleIds->sort()->values()->toArray();
-        $scopeType = ($selectedSorted === $defaultSorted) ? 'FULL_TARGET' : 'MODULE_PICKER';
-
-        $tier = AssessmentTier::where('tier_code', 'TIER_1')->first();
-
-        $assessment = DB::transaction(function () use ($project, $target, $tier, $scopeType, $selectedIds, $deselectedIds, $defaultModuleIds, $exclusionReasons) {
-            $assessment = Assessment::create([
-                'target_id' => $target->target_id,
-                'project_id' => $project->project_id,
-                'assessment_tier_id' => $tier->assessment_tier_id,
-                'scope_type' => $scopeType,
-                'status' => 'IN_PROGRESS',
-                'publish_status' => 'DRAFT',
-                'assessor_name' => auth()->user()->name,
-                'started_at' => now(),
-            ]);
-
-            // In-scope modules (selected)
-            foreach ($selectedIds as $moduleId) {
-                AssessmentModuleScope::create([
-                    'assessment_id' => $assessment->assessment_id,
-                    'module_id' => $moduleId,
-                    'in_scope' => true,
-                    'is_category_default' => $defaultModuleIds->contains($moduleId),
-                    'status' => 'PENDING',
-                ]);
-            }
-
-            // Out-of-scope defaults (deselected with reason)
-            foreach ($deselectedIds as $moduleId) {
-                AssessmentModuleScope::create([
-                    'assessment_id' => $assessment->assessment_id,
-                    'module_id' => $moduleId,
-                    'in_scope' => false,
-                    'is_category_default' => true,
-                    'exclusion_reason' => trim($exclusionReasons[$moduleId]),
-                    'status' => 'EXCLUDED',
-                ]);
-            }
-
-            return $assessment;
-        });
+        $assessment = $creator->create(
+            $project,
+            $version,
+            $validated['modules'] ?? [],
+            $validated['exclusion_reasons'] ?? [],
+            auth()->id(),
+        );
 
         return redirect()->route('assessments.run', $assessment);
     }

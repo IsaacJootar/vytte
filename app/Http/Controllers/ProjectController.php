@@ -10,6 +10,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ProjectController extends Controller
 {
@@ -56,7 +57,14 @@ class ProjectController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'target_name' => ['required', 'string', 'max:255'],
             'target_type_code' => ['required', 'string', 'exists:target_types,target_type_code'],
-            'category_id' => ['required', 'integer', 'exists:target_categories,category_id'],
+            'category_id' => [
+                'required',
+                'integer',
+                Rule::exists('target_categories', 'category_id')
+                    ->where(fn ($query) => $query->where('target_type_code', $request->input('target_type_code'))),
+            ],
+            'custom_setting_label' => ['nullable', 'required_if:target_type_code,CUSTOM', 'string', 'max:120'],
+            'uses_departments' => ['nullable', 'boolean'],
             'country' => ['required', 'string', 'max:100'],
             'region' => ['nullable', 'string', 'max:100'],
             'sub_region' => ['nullable', 'string', 'max:100'],
@@ -73,6 +81,10 @@ class ProjectController extends Controller
                 'target_type_code' => $validated['target_type_code'],
                 'name' => $validated['target_name'],
                 'category_id' => $validated['category_id'],
+                'custom_setting_label' => $validated['custom_setting_label'] ?? null,
+                'uses_departments' => $validated['target_type_code'] === 'CUSTOM'
+                    ? (bool) ($validated['uses_departments'] ?? false)
+                    : null,
                 'country' => $validated['country'],
                 'region' => $validated['region'] ?? null,
                 'sub_region' => $validated['sub_region'] ?? null,

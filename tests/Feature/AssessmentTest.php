@@ -6,6 +6,7 @@ use App\Livewire\AssessmentRunner;
 use App\Models\Assessment;
 use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
+use App\Models\AssessmentTemplateVersion;
 use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\Question;
@@ -15,6 +16,7 @@ use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use Database\Seeders\AssessmentTemplateSeeder;
 use Database\Seeders\HivawQuestionsSeeder;
 use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
@@ -120,17 +122,20 @@ class AssessmentTest extends TestCase
 
     // ---- Create ----
 
-    public function test_assessment_create_form_renders_with_modules(): void
+    public function test_assessment_create_form_renders_exactly_two_paths(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
         $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(AssessmentTemplateSeeder::class);
 
         $this->actingAs($user)
             ->get(route('assessments.create', $project))
             ->assertOk()
-            ->assertSee('Start Assessment')
-            ->assertSee('HIVAW');
+            ->assertSee('Comprehensive Health Assessment')
+            ->assertSee('Focused Health Assessment')
+            ->assertSee('HIV Awareness and Service Uptake')
+            ->assertDontSee('Standard Battery');
     }
 
     // ---- Store ----
@@ -140,12 +145,15 @@ class AssessmentTest extends TestCase
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
         $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(AssessmentTemplateSeeder::class);
 
         $module = AssessmentModule::where('module_code', 'HIVAW')->first();
+        $version = AssessmentTemplateVersion::where('status', 'PUBLISHED')->firstOrFail();
 
         $response = $this->actingAs($user)
             ->post(route('assessments.store', $project), [
-                'modules' => [$module->module_id],
+                'creation_path' => 'FOCUSED',
+                'template_version_id' => $version->template_version_id,
             ]);
 
         $assessment = Assessment::first();
@@ -153,6 +161,8 @@ class AssessmentTest extends TestCase
         $this->assertEquals('IN_PROGRESS', $assessment->status);
         $this->assertEquals($project->project_id, $assessment->project_id);
         $this->assertEquals($target->target_id, $assessment->target_id);
+        $this->assertEquals('FOCUSED', $assessment->creation_path);
+        $this->assertNotNull($assessment->snapshot);
 
         $scope = AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
             ->where('in_scope', true)
@@ -164,27 +174,30 @@ class AssessmentTest extends TestCase
         $response->assertRedirect(route('assessments.run', $assessment));
     }
 
-    public function test_assessment_store_requires_module_id(): void
+    public function test_assessment_store_requires_path_and_published_template(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project] = $this->createProjectWithTarget($workspace, $user);
 
         $this->actingAs($user)
             ->post(route('assessments.store', $project), [])
-            ->assertSessionHasErrors(['modules']);
+            ->assertSessionHasErrors(['creation_path', 'template_version_id']);
     }
 
-    public function test_assessment_store_rejects_module_for_another_target_type(): void
+    public function test_assessment_store_rejects_template_from_other_creation_path(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project] = $this->createProjectWithTarget($workspace, $user);
-        $otherTargetModule = AssessmentModule::where('target_type_code', 'HEALTH_FACILITY')->firstOrFail();
+        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(AssessmentTemplateSeeder::class);
+        $version = AssessmentTemplateVersion::where('status', 'PUBLISHED')->firstOrFail();
 
         $this->actingAs($user)
             ->post(route('assessments.store', $project), [
-                'modules' => [$otherTargetModule->module_id],
+                'creation_path' => 'COMPREHENSIVE',
+                'template_version_id' => $version->template_version_id,
             ])
-            ->assertSessionHasErrors(['modules']);
+            ->assertSessionHasErrors(['template_version_id']);
 
         $this->assertDatabaseCount('assessments', 0);
     }

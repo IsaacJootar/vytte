@@ -108,5 +108,7 @@ These items require characterization and separate approvals. Template work must 
 - **Resolved in Module 5:** AG-21 for the approved initial response contract. Unsupported declared types remain unavailable and cannot enter published templates.
 - **Foundation completed in Module 5:** AG-16, AG-17, AG-38, and AG-43 now have immutable template/version and provenance seams; assessment snapshots and curator interfaces follow in later modules.
 - **Resolved in Module 6 for new template-based assessments:** AG-16 and AG-43 presentation mutability. Report generation and scoring snapshot consumption remain separately tracked.
+- **Resolved in Module 7:** AG-15, AG-17, and the template-level enforcement portion of AG-45.
+- **Superseded in Module 7:** the legacy "standard battery" creation language and UI. Only the two approved creation paths remain.
 - **Additionally hardened in Module 1:** public Livewire identifiers and mutations now revalidate their token/assessment context; authenticated and public responses validate the question/option relationship.
 - Implementation evidence and test counts are maintained in `IMPLEMENTATION_PROGRESS.md`.

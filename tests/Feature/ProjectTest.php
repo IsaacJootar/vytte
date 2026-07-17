@@ -132,6 +132,41 @@ class ProjectTest extends TestCase
         $this->assertNull($target->sub_region);
     }
 
+    public function test_store_creates_user_defined_custom_setting(): void
+    {
+        [$user] = $this->userWithWorkspace();
+        $this->seedReferenceData();
+
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Cooperative Health Review',
+            'target_name' => 'Farmers Cooperative',
+            'target_type_code' => 'CUSTOM',
+            'category_id' => TargetCategory::where('category_code', 'GENERAL_CUSTOM')->value('category_id'),
+            'custom_setting_label' => 'Agricultural Cooperative',
+            'uses_departments' => '1',
+            'country' => 'Nigeria',
+        ])->assertRedirect();
+
+        $target = Project::firstOrFail()->targets->firstOrFail();
+        $this->assertSame('CUSTOM', $target->target_type_code);
+        $this->assertSame('Agricultural Cooperative', $target->custom_setting_label);
+        $this->assertTrue($target->uses_departments);
+    }
+
+    public function test_store_rejects_category_from_different_setting_type(): void
+    {
+        [$user] = $this->userWithWorkspace();
+        $this->seedReferenceData();
+
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Invalid Setting',
+            'target_name' => 'Invalid',
+            'target_type_code' => 'SCHOOL',
+            'category_id' => TargetCategory::where('category_code', 'PHC')->value('category_id'),
+            'country' => 'Nigeria',
+        ])->assertSessionHasErrors(['category_id']);
+    }
+
     public function test_store_validates_required_fields(): void
     {
         [$user] = $this->userWithWorkspace();

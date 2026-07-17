@@ -2,156 +2,128 @@
 
 ## Scope
 
-This document describes the current working tree, including the pre-existing uncommitted multi-module changes. It distinguishes authenticated and public response paths and records where the implementation does not satisfy the documented lifecycle.
+This document describes the implemented flow after the approved template, snapshot, scoring, and two-path creation modules. It distinguishes the current authenticated and public response paths and records the remaining gaps that are not yet resolved.
 
 ## End-to-end flow
 
 ```mermaid
 flowchart TD
-    P[Create project] --> T[Create and attach target]
-    T --> C[Open Start Assessment]
-    C --> M[Load active modules for target type]
-    M --> D[Preselect category defaults]
-    D --> S[Select modules and explain excluded defaults]
-    S --> A[Create assessment and module-scope rows]
-    A --> R{Runner}
-    R -->|Authenticated| AR[All in-scope modules]
-    R -->|Public token| PR[First in-scope module only]
-    AR --> CO[Consent if any selected module requires it]
-    PR --> L[Optional language choice]
-    L --> CO2[Consent if first module requires it]
-    CO --> RESP[Option response autosave]
-    CO2 --> PRESP[Option response autosave with session UUID]
-    RESP --> SUB[POST assessment submit]
-    PRESP --> PSUB[Set submitted flag in browser session]
-    SUB --> SCORE[Score authenticated responses]
-    SCORE --> OUT[Results, PDF, CSV, signed report, progress]
+    P[Create project and setting] --> C[Create assessment]
+    C --> K{Assessment path}
+    K -->|Comprehensive| CT[Choose a published framework for the setting]
+    CT --> D[Keep or exclude applicable areas]
+    K -->|Focused| FT[Choose one published health-domain template]
+    D --> A[Create assessment from immutable template version]
+    FT --> A
+    A --> SN[Persist composition and content snapshots]
+    SN --> R{Runner}
+    R -->|Authenticated| AR[All snapshot modules]
+    R -->|Public token| PR[Legacy first-module public flow]
+    AR --> RESP[Validated option or open-text responses]
+    RESP --> SUB[Server-validated completion]
+    SUB --> SCORE[Versioned normalized scoring]
+    SCORE --> OUT[Results, PDF, CSV, shared report, progress]
 ```
 
-## 1. Project and target creation
+## 1. Project and setting creation
 
-1. Authenticated user opens `/projects/create`.
-2. User supplies project name and one target's type, category, country, region, and optional sub-region.
-3. `ProjectController::store()` checks the workspace plan's active-project limit.
-4. A transaction creates:
-   - a workspace-scoped `projects` row;
-   - a workspace-owned `targets` row;
-   - a `project_targets` attachment row.
-5. The current UI creates one target, but the schema permits multiple targets.
+1. An authenticated user opens `/projects/create`.
+2. The user supplies a project name and one setting's type, category, country, region, and optional sub-region.
+3. The selected category must belong to the selected setting type.
+4. A `CUSTOM` setting can carry a user-defined label and a `uses_departments` flag.
+5. The plan's active-project limit is checked.
+6. A transaction creates a workspace-scoped project, its workspace-owned target/setting, and the project-target attachment.
+
+The UI creates one setting initially, while the underlying schema still permits multiple targets per project.
 
 ## 2. Assessment creation
 
-1. User opens `/projects/{project}/assessments/create`.
-2. Workspace isolation is inherited from `Project` route binding and its global scope.
-3. The controller takes the first attached project target.
-4. It loads:
-   - category defaults from `target_category_default_modules`;
-   - active catalogue modules matching the target type.
-5. Current uncommitted UI preselects defaults and progressively reveals optional modules and exclusion reasons.
-6. On submit, the controller validates that at least one module ID exists globally, checks plan gates, and requires reasons for deselected defaults.
-7. It derives `scope_type`:
-   - `FULL_TARGET` when selected module IDs exactly equal defaults;
-   - `MODULE_PICKER` otherwise.
-8. A transaction creates an `assessments` row and one `assessment_module_scope` row per selected or excluded default module.
+There are exactly two user-facing creation paths.
 
-### Creation risks
+### Comprehensive Health Assessment
 
-- Module IDs are validated for existence but not for compatibility with the target type or category. A crafted request can attach an unrelated platform module.
-- Assessment creation has no template/version identifier and no content snapshot.
-- The tier is hard-coded by looking up `TIER_1`.
-- The schema and UI have no comprehensive-vs-focused product mode; `FULL_TARGET` and `MODULE_PICKER` are implementation scope labels, not governed template workflows.
-- Default-module composition is mutable platform data. Editing defaults later changes new assessments but provides no provenance for old ones.
+1. The controller loads published `COMPREHENSIVE` template versions compatible with the project's setting type.
+2. The user selects one framework.
+3. The framework's default areas are preselected. The user can remove areas that do not apply.
+4. Department language is used only when the selected setting explicitly uses departments; otherwise the UI uses neutral area/module language.
+5. The submitted template version and exclusions are revalidated on the server.
+
+### Focused Health Assessment
+
+1. The controller loads published `FOCUSED` template versions.
+2. The user chooses one health programme, topic, or intervention template.
+3. No department, standard-battery, grouped-module, or unrelated-topic picker is shown.
+4. The selected focused template must resolve to exactly one module.
+
+### Shared creation service
+
+Both paths delegate to `AssessmentCreationService`. It verifies the published immutable template version, setting compatibility, composition rules, and plan limits; creates the assessment and scope rows; and stores immutable composition/content snapshots with provenance and hashes. Runtime content for template-created assessments is loaded from the snapshot rather than mutable catalogue questions.
+
+The old default-battery/module-picker creation path is no longer used. The former PHSAI and school sample seeders are not part of normal database seeding. The repository's valid HIV focused content is seeded and published as a selectable template.
 
 ## 3. Authenticated runner
 
-1. `/assessments/{assessment}/run` performs a controller-level project/workspace check.
-2. The page mounts `AssessmentRunner` with a public `Assessment` property.
-3. The component loads all `assessment_module_scope` rows where `in_scope = true`.
-4. It loads active questions for those modules, sorts by module, module-local domain, and display order, and overlays translations for the active locale.
-5. Existing authenticated responses are rows with `respondent_id IS NULL`.
-6. If any in-scope module requires consent, the component chooses the first such module and checks for any assessment/user consent record.
-7. Selecting an option calls `Response::updateOrCreate()` and immediately advances to the next question.
-8. UI submission is shown only when every scored question has a saved option response.
+1. `/assessments/{assessment}/run` verifies project/workspace access.
+2. The Livewire component locks the assessment identifier and independently rechecks authorization during actions.
+3. For template-created assessments, questions, translations, options, and ordering come from the immutable assessment content snapshot.
+4. The runner covers every in-scope module.
+5. Option submissions are accepted only when the question is in scope and the option belongs to that question.
+6. Open-text questions use the supported text-response path; unsupported response types cannot be published in templates.
+7. Responses autosave. Authenticated responses have `respondent_id IS NULL`.
+8. Submission is rejected on the server until all required scored questions are complete.
 
-### Authenticated-runner risks
-
-- The Livewire assessment property is not `#[Locked]`, contrary to UI rules.
-- Livewire actions do not independently re-check workspace membership.
-- `selectOption()` does not verify that the question belongs to the assessment scope or that the option belongs to the supplied question.
-- Only option responses can be entered. Numeric, open-text, ranking, and multi-select types have no working control/storage path in the runner.
-- A scored question without options makes `canSubmit()` permanently false in the UI.
-- Consent is effectively assessment/user-level even when multiple modules require separate consent.
+Remaining authenticated-runner work is limited to future response types and more granular consent policy. It is no longer a reason to retain invalid sample content.
 
 ## 4. Public respondent runner
 
-1. An authenticated workspace user creates a random 32-character token for an in-progress assessment.
-2. `/respond/{token}` mounts `PublicRespondentRunner` without authentication.
-3. The component validates token existence/expiry and checks that the assessment is still in progress.
-4. It chooses only the first in-scope module.
-5. It creates a session-persisted UUID for the respondent.
-6. French is offered only when at least one question translation exists for that module.
-7. Consent, when required, is stored against the assessment, module, and respondent session UUID.
-8. Responses are saved with that session UUID in `responses.respondent_id`.
-9. Submit sets only a browser-session `submitted` flag and shows a thank-you state.
+The public token route remains the principal unresolved lifecycle path:
 
-### Public-runner risks
+1. A workspace user creates a time-limited token for an in-progress assessment.
+2. `/respond/{token}` validates token existence, expiry, and assessment state.
+3. The current component still selects only the first in-scope module.
+4. It creates a browser-session UUID, stores public responses with that UUID, and records consent where required.
+5. Submit still records completion only in the browser session.
 
-- Multi-module assessments are reduced to their first in-scope module without an explicit module choice or token-module binding.
-- Public responses are not included by the scoring service.
-- Submission is not persisted as a durable respondent-session state.
-- Token rows have no creator, revocation flag, use counter, or last-used audit fields.
-- Public-runner copy and language controls do not use the same localization infrastructure as the authenticated runner.
-- The dropped respondent foreign key allows arbitrary UUID values and removes referential integrity by design.
+### Remaining public-runner risks
+
+- Comprehensive assessments are reduced to the first module.
+- Respondent completion is not durable or referentially constrained.
+- Token creator, revocation, usage, and last-used audit data are absent.
+- Public responses intentionally remain a separate cohort and are not blended into staff assessment scores, but no first-class public/cohort report presents them yet.
+- Localization is not yet unified with the authenticated snapshot runner.
 
 ## 5. Submission and lifecycle
 
-1. Authenticated UI posts `/assessments/{assessment}/submit`.
-2. Controller checks workspace ownership through the assessment's project.
-3. It sets assessment status to `COMPLETE` and `completed_at` to the current time.
-4. All in-scope module rows become `COMPLETED`.
-5. Scoring runs synchronously.
-6. OWNER and ADMIN users receive a database notification, and optionally email.
+1. Authenticated submission verifies workspace ownership and required-response completeness.
+2. The assessment becomes `COMPLETE`, receives `completed_at`, and all in-scope module rows become `COMPLETED`.
+3. Scoring runs synchronously and stores the scoring algorithm/version used.
+4. OWNER and ADMIN users receive a database notification and optional email.
 
-### Lifecycle risks
-
-- Server-side submit does not enforce response completeness. A direct POST can complete an unanswered assessment; an existing test explicitly exercises this behavior.
-- Completed records are mutable through shared question/module edits because no snapshot exists.
-- `publish_status` is independent from completion and is not updated by normal submission.
-- Documented status `COMPLETED` differs from actual `COMPLETE`.
-- No reopen, archive, or correction workflow is implemented for assessments despite documented status values.
+The assessment content and composition are immutable through snapshots. Remaining lifecycle work includes a governed correction/reopen policy, harmonizing status terminology, and defining publication/archive transitions.
 
 ## 6. Scoring flow
 
-1. Read all in-scope module IDs.
-2. Read authenticated option responses only.
-3. Load sub-indices for selected modules and linked questions.
-4. For each sub-index:
-   - ignore unscored questions;
-   - include only answered options with non-null score values;
-   - calculate weighted mean using `sub_index_questions.weight`;
-   - persist `NOT_CALIBRATED`, `PARTIAL`, or `CALIBRATED`.
-5. Average non-null sub-index scores into global-domain scores.
-6. Average all non-null sub-index scores into the overall assessment score.
-7. Map the overall score to a maturity level.
+1. Read all in-scope module IDs and authenticated responses.
+2. Normalize option score scales to a canonical 0–100 range.
+3. Calculate weighted sub-index results with explicit calibration states.
+4. Aggregate domain and overall results and map the overall result to a maturity level.
+5. Persist the scoring version with calculated scores so future algorithm changes remain distinguishable.
 
-### Scoring risks
+### Remaining scoring risks
 
-- PHSAI and school yes/no seed options use `1.0/0.0`; HIVAW uses `100/0`. The service does not normalize these scales.
-- Most health-facility questions have no sub-index linkage in the current seed path; local data has 601 questions but only four sub-indices, all created by HIVAW.
-- Domain weights are present but unused.
-- Multi-module scores are an unweighted blend of all sub-indices, which may not preserve framework semantics.
-- Public responses, multi-select responses, numeric bands, observation records, corroboration gaps, topic scores, and project rollups are unused.
+- Snapshot-created assessments still need their scoring profile and weights made fully independent of mutable catalogue scoring relationships.
+- Domain weights and cross-module aggregation policy require an explicit governed formula.
+- Public/respondent cohort scoring must remain separate from staff/assessor scoring unless a future approved evidence model says otherwise.
+- Numeric, multi-select, ranking, observation, and corroboration models are postponed until their product need and scoring semantics are approved.
 
 ## 7. Results and reports
 
-- Results page loads assessment metadata, first-class scores, calculated domain/sub-index breakdowns, maturity, and generated findings text.
-- Score history currently groups by project plus `scope_type`; exact module composition is not compared.
-- Progress compares any two completed runs within a project.
-- PDF and signed public reports use separate Blade views built from the same score queries.
-- CSV exports one row per completed assessment but names only the first module.
-- Shared report links are stateless Laravel temporary signed URLs; `assessment_share_links` is unused.
-- No persisted report version, report snapshot, or report content hash exists.
+- Results, PDF, CSV, signed report, progress, and history read calculated assessment scores.
+- Reports do not yet persist a complete immutable report snapshot or content hash.
+- Historical comparisons still require composition-hash compatibility rules.
+- CSV and some report surfaces still need complete multi-module labels rather than first-module assumptions.
+- Signed links are stateless temporary URLs; the dormant share-link table is not yet the active governance mechanism.
 
-## Compatibility seam for future templates
+## Current implementation boundary
 
-The safest future seam is immediately before assessment creation: a template version should resolve to a validated, immutable composition and then populate the existing assessment/module scope and runner inputs through an adapter. The assessment runtime should not query mutable template content after creation. The exact snapshot strategy remains pending Isaac's approval and is not implemented in Phase 21.
+Template versions and assessment snapshots are now the creation/runtime boundary. Legacy sample data is not a compatibility contract. New work should strengthen this boundary, migrate or reseed valid content into it, and remove obsolete paths rather than weakening template validation to accommodate samples.
