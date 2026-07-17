@@ -10,6 +10,8 @@ class TemplatePublishingService
 {
     private const SUPPORTED_RESPONSE_TYPES = ['SINGLE_SELECT', 'LIKERT', 'OPEN_ENDED'];
 
+    public function __construct(private readonly TemplateContentService $content) {}
+
     public function publish(AssessmentTemplateVersion $version, ?string $publisherId = null): AssessmentTemplateVersion
     {
         $version->load(['template', 'modules.questions.options', 'modules.questions.questionType']);
@@ -73,30 +75,11 @@ class TemplatePublishingService
             throw ValidationException::withMessages($errors);
         }
 
-        $payload = $modules->map(fn ($module) => [
-            'module_id' => $module->module_id,
-            'module_code' => $module->module_code,
-            'module_name' => $module->module_name,
-            'display_order' => $module->pivot->display_order,
-            'area_label' => $module->pivot->area_label,
-            'questions' => $module->questions->map(fn ($question) => [
-                'question_id' => $question->question_id,
-                'question_text' => $question->question_text,
-                'response_type' => $question->questionType?->type_code,
-                'display_order' => $question->display_order,
-                'is_scored' => $question->is_scored,
-                'options' => $question->options->map(fn ($option) => [
-                    'option_id' => $option->option_id,
-                    'option_label' => $option->option_label,
-                    'option_order' => $option->option_order,
-                    'score_weight' => $option->score_weight,
-                ])->values()->all(),
-            ])->values()->all(),
-        ])->values()->all();
+        $payload = $this->content->payload($version);
 
         $version->update([
             'status' => 'PUBLISHED',
-            'content_hash' => hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR)),
+            'content_hash' => $this->content->hash($payload),
             'published_at' => now(),
             'published_by' => $publisherId,
         ]);

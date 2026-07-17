@@ -54,6 +54,35 @@ class AssessmentRunner extends Component
 
     private function loadQuestions(): void
     {
+        $snapshot = $this->assessment->snapshot()->first();
+        if ($snapshot) {
+            $locale = App::getLocale();
+            $this->moduleCount = count($snapshot->payload);
+            $this->questionData = collect($snapshot->payload)
+                ->sortBy('display_order')
+                ->flatMap(fn ($module) => collect($module['questions'])
+                    ->sortBy('display_order')
+                    ->map(fn ($question) => [
+                        'question_id' => $question['question_id'],
+                        'question_code' => $question['question_code'],
+                        'question_text' => $question['translations'][$locale] ?? $question['question_text'],
+                        'is_scored' => $question['is_scored'],
+                        'response_type' => $question['response_type'],
+                        'module_id' => $module['module_id'],
+                        'module_code' => $module['module_code'],
+                        'domain_label' => $question['domain_label'] ?? '',
+                        'domain_number' => $question['domain_number'] ?? 0,
+                        'options' => collect($question['options'])->map(fn ($option) => [
+                            'option_id' => $option['option_id'],
+                            'option_label' => $option['translations'][$locale] ?? $option['option_label'],
+                        ])->all(),
+                    ]))
+                ->values()
+                ->all();
+
+            return;
+        }
+
         $scopeRows = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
             ->where('in_scope', true)
             ->orderBy('module_id')

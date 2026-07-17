@@ -20,6 +20,9 @@ class Assessment extends Model
         'project_id',
         'assessment_tier_id',
         'scope_type',
+        'creation_path',
+        'template_version_id',
+        'composition_hash',
         'status',
         'publish_status',
         'published_at',
@@ -63,6 +66,16 @@ class Assessment extends Model
     public function score(): HasOne
     {
         return $this->hasOne(AssessmentScore::class, 'assessment_id', 'assessment_id');
+    }
+
+    public function snapshot(): HasOne
+    {
+        return $this->hasOne(AssessmentSnapshot::class, 'assessment_id', 'assessment_id');
+    }
+
+    public function templateVersion(): BelongsTo
+    {
+        return $this->belongsTo(AssessmentTemplateVersion::class, 'template_version_id', 'template_version_id');
     }
 
     public function getRouteKeyName(): string

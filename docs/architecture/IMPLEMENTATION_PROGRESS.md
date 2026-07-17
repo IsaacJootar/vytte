@@ -27,6 +27,28 @@ Isaac approved correction of all Phase 21/22 gaps on 17 July 2026. Work proceeds
 - Local SQLite migration: passed.
 - PostgreSQL parity: pending restoration of Docker/PostgreSQL.
 
+## Module 6 — Assessment-owned content snapshots
+
+**Status:** Complete
+
+**Resolved:**
+
+- New template-based assessments store creation path, template version, composition hash, and an assessment-owned immutable payload.
+- Both creation paths converge on one transactional `AssessmentCreationService` that creates assessment, module scope, exclusions, and snapshot atomically.
+- Focused creation resolves its one template scope directly; it accepts no unrelated module checklist.
+- Comprehensive creation accepts a validated subset of its framework and records reasons for excluded standard areas.
+- Comprehensive templates must match the project's setting; focused health domains remain independent of setting.
+- Snapshot payload freezes modules, questions, translations, response types, sections, options, ordering, observation flags, and score weights.
+- Template-based authenticated runners read frozen snapshot content rather than mutable catalogue text.
+- AG-43 is resolved for new template-based assessment presentation: later master edits no longer alter the assessment runner.
+
+**Verification:**
+
+- Focused snapshot/template/runner suite: 25 tests, 64 assertions, all passed.
+- Full suite: 340 tests, 800 assertions, all passed in 49.808 seconds.
+- Local SQLite migration: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 5 — Immutable template publishing and open-text responses
 
 **Status:** Complete

@@ -62,6 +62,11 @@ class Question extends Model
             ->orderBy('option_order');
     }
 
+    public function translations(): HasMany
+    {
+        return $this->hasMany(QuestionTranslation::class, 'question_id', 'question_id');
+    }
+
     public function subIndices(): BelongsToMany
     {
         return $this->belongsToMany(SubIndex::class, 'sub_index_questions', 'question_id', 'sub_index_id')
