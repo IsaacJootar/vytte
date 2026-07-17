@@ -120,7 +120,8 @@ The assessment content and composition are immutable through snapshots. Remainin
 - The structured report snapshot preserves assessment identity, all included areas, setting/project labels, score and maturity, scoring version, domain/sub-index labels and values, completion time, schema version, and content hash.
 - Historical comparisons require matching composition hashes. Legacy assessments without hashes fall back to exact sorted module-ID fingerprints.
 - CSV lists every included module rather than only the first.
-- Signed links are stateless temporary URLs; the dormant share-link table is not yet the active governance mechanism.
+- New shared-report links are persistent records with creator, expiry, revocation, use count, and last-used time. Legacy temporary signed URLs remain readable for backward compatibility.
+- Template publication, assessment creation/completion, report finalization, and public/report link lifecycle events write immutable audit records.
 
 ## Current implementation boundary
 

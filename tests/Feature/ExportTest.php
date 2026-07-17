@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Assessment;
 use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
+use App\Models\AssessmentShareLink;
 use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\Target;
@@ -12,6 +13,7 @@ use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\ReportSnapshotService;
 use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,7 +62,7 @@ class ExportTest extends TestCase
 
         $tierId = AssessmentTier::value('assessment_tier_id');
 
-        return Assessment::create([
+        $assessment = Assessment::create([
             'target_id' => $target->target_id,
             'project_id' => $project->project_id,
             'assessment_tier_id' => $tierId,
@@ -70,6 +72,9 @@ class ExportTest extends TestCase
             'completed_at' => now(),
             'started_at' => now(),
         ]);
+        app(ReportSnapshotService::class)->createFor($assessment);
+
+        return $assessment;
     }
 
     public function test_pdf_download_requires_auth(): void
@@ -218,9 +223,12 @@ class ExportTest extends TestCase
         $response->assertSessionHas('share_link');
 
         $link = $response->getSession()->get('share_link');
-        $this->assertStringContainsString(route('reports.shared', $assessment, false), $link);
-        $this->assertStringContainsString('signature=', $link);
-        $this->assertStringContainsString('expires=', $link);
+        $this->assertStringContainsString('/shared-reports/', $link);
+        $this->assertDatabaseHas('assessment_share_links', [
+            'assessment_id' => $assessment->assessment_id,
+            'created_by' => $user->user_id,
+            'is_active' => true,
+        ]);
     }
 
     public function test_share_link_blocked_for_other_workspace_assessment(): void
@@ -318,5 +326,26 @@ class ExportTest extends TestCase
 
         // No actingAs — unauthenticated request must succeed
         $this->get($signedUrl)->assertOk();
+    }
+
+    public function test_persistent_report_link_is_audited_and_revocable(): void
+    {
+        [$user, $workspace] = $this->createWorkspaceWithOwner();
+        $assessment = $this->createCompleteAssessment($workspace, $user);
+        $this->actingAs($user)->post(route('assessments.share', $assessment));
+        $shareLink = AssessmentShareLink::firstOrFail();
+
+        $this->get(route('reports.shared.token', $shareLink->token))->assertOk();
+        $this->assertSame(1, $shareLink->fresh()->use_count);
+        $this->assertNotNull($shareLink->fresh()->last_used_at);
+
+        $this->actingAs($user)
+            ->delete(route('assessments.share.revoke', [$assessment, $shareLink]))
+            ->assertRedirect();
+        $this->get(route('reports.shared.token', $shareLink->token))->assertNotFound();
+        $this->assertDatabaseHas('audit_logs', [
+            'event' => 'assessment.report_link.revoked',
+            'auditable_id' => $assessment->assessment_id,
+        ]);
     }
 }

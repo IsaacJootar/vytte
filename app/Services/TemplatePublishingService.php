@@ -127,6 +127,15 @@ class TemplatePublishingService
         ]);
         $template->update(['status' => 'PUBLISHED']);
 
-        return $version->fresh(['template', 'modules']);
+        $published = $version->fresh(['template', 'modules']);
+        app(AuditService::class)->record(
+            'template.version.published',
+            $published,
+            ['status' => 'DRAFT'],
+            ['status' => 'PUBLISHED', 'content_hash' => $published->content_hash],
+            userId: $publisherId,
+        );
+
+        return $published;
     }
 }

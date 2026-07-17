@@ -3,15 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Models\AssessmentShareLink;
 use App\Models\PlatformSetting;
 use App\Models\Project;
+use App\Services\AuditService;
 use App\Services\PlanService;
 use App\Services\ReportSnapshotService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
@@ -97,15 +99,46 @@ class ExportController extends Controller
             return back()->with('error', 'Shareable report links are not available on your current plan. Upgrade to share assessment results.');
         }
 
+        if ($assessment->status !== 'COMPLETE') {
+            return back()->with('error', 'Complete the assessment before sharing its final report.');
+        }
+        if (! $assessment->reportSnapshot()->exists()) {
+            app(ReportSnapshotService::class)->createFor($assessment);
+        }
+
         $expiryDays = (int) PlatformSetting::get('sharing.link_expiry_days', 30);
 
-        $link = URL::temporarySignedRoute(
-            'reports.shared',
-            now()->addDays($expiryDays),
-            ['assessment' => $assessment->assessment_id]
-        );
+        $shareLink = AssessmentShareLink::create([
+            'assessment_id' => $assessment->assessment_id,
+            'token' => Str::random(64),
+            'created_by' => auth()->id(),
+            'created_at' => now(),
+            'expires_at' => now()->addDays($expiryDays),
+            'is_active' => true,
+        ]);
+        app(AuditService::class)->record('assessment.report_link.created', $assessment, newValues: [
+            'link_id' => $shareLink->link_id,
+            'expires_at' => $shareLink->expires_at?->toIso8601String(),
+        ]);
+
+        $link = route('reports.shared.token', $shareLink->token);
 
         return back()->with('share_link', $link);
+    }
+
+    public function revokeShareLink(Assessment $assessment, AssessmentShareLink $shareLink): RedirectResponse
+    {
+        $this->authorizeAssessmentAccess($assessment);
+        if ($shareLink->assessment_id !== $assessment->assessment_id) {
+            abort(404);
+        }
+
+        $shareLink->update(['is_active' => false]);
+        app(AuditService::class)->record('assessment.report_link.revoked', $assessment, newValues: [
+            'link_id' => $shareLink->link_id,
+        ]);
+
+        return back()->with('success', 'The shared report link has been deactivated.');
     }
 
     public function sharedReport(Assessment $assessment, ReportSnapshotService $reports): View
@@ -117,6 +150,26 @@ class ExportController extends Controller
         $data = $this->assessmentReportData($assessment, $reports);
 
         return view('exports.shared-report', $data);
+    }
+
+    public function sharedReportByToken(string $token, ReportSnapshotService $reports): View
+    {
+        $shareLink = AssessmentShareLink::with('assessment')->where('token', $token)->first();
+        if (! $shareLink?->isUsable() || $shareLink->assessment?->status !== 'COMPLETE') {
+            abort(404);
+        }
+
+        $shareLink->increment('use_count');
+        $shareLink->update(['last_used_at' => now()]);
+        app(AuditService::class)->record(
+            'assessment.report_link.viewed',
+            $shareLink->assessment,
+            newValues: ['link_id' => $shareLink->link_id],
+            workspaceId: $shareLink->assessment->project()->withoutGlobalScopes()->value('workspace_id'),
+            userId: null,
+        );
+
+        return view('exports.shared-report', $this->assessmentReportData($shareLink->assessment, $reports));
     }
 
     private function assessmentReportData(Assessment $assessment, ReportSnapshotService $reports): array

@@ -23,13 +23,21 @@ class ReportSnapshotService
 
         $payload = $this->buildPayload($assessment);
 
-        return AssessmentReportSnapshot::create([
+        $snapshot = AssessmentReportSnapshot::create([
             'assessment_id' => $assessment->assessment_id,
             'schema_version' => self::SCHEMA_VERSION,
             'content_hash' => hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR)),
             'payload' => $payload,
             'created_at' => now(),
         ]);
+
+        app(AuditService::class)->record(
+            'assessment.report.finalized',
+            $assessment,
+            newValues: ['report_hash' => $snapshot->content_hash, 'schema_version' => $snapshot->schema_version],
+        );
+
+        return $snapshot;
     }
 
     public function payloadFor(Assessment $assessment): array

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\AssessmentRespondentToken;
 use App\Models\Project;
+use App\Services\AuditService;
 use App\Services\PlanService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
@@ -26,10 +27,13 @@ class RespondentLinkController extends Controller
 
         $token = Str::random(32);
 
-        AssessmentRespondentToken::create([
+        $respondentToken = AssessmentRespondentToken::create([
             'token' => $token,
             'assessment_id' => $assessment->assessment_id,
             'created_by' => auth()->id(),
+        ]);
+        app(AuditService::class)->record('assessment.respondent_link.created', $assessment, newValues: [
+            'token_prefix' => substr($respondentToken->token, 0, 8),
         ]);
 
         return back()->with('respondent_link', route('respondent.show', $token));
@@ -46,6 +50,9 @@ class RespondentLinkController extends Controller
         }
 
         $respondentToken->update(['revoked_at' => now()]);
+        app(AuditService::class)->record('assessment.respondent_link.revoked', $assessment, newValues: [
+            'token_prefix' => substr($respondentToken->token, 0, 8),
+        ]);
 
         return back()->with('success', 'The respondent link has been deactivated. Existing submitted responses were preserved.');
     }

@@ -12,6 +12,7 @@ use App\Models\Response;
 use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
 use App\Services\AssessmentCreationService;
+use App\Services\AuditService;
 use App\Services\PlanService;
 use App\Services\ReportSnapshotService;
 use App\Services\ScoringService;
@@ -178,6 +179,12 @@ class AssessmentController extends Controller
                 ->update(['status' => 'COMPLETED', 'completed_at' => $completedAt]);
             app(ScoringService::class)->calculate($assessment);
             app(ReportSnapshotService::class)->createFor($assessment->fresh());
+            app(AuditService::class)->record(
+                'assessment.completed',
+                $assessment,
+                ['status' => 'IN_PROGRESS'],
+                ['status' => 'COMPLETE', 'completed_at' => $completedAt->toIso8601String()],
+            );
         });
 
         $admins = WorkspaceMember::where('workspace_id', app('current.workspace')->workspace_id)

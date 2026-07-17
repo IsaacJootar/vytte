@@ -1,5 +1,26 @@
 # Architecture Remediation Progress
 
+## Module 11 — Content and sharing governance
+
+**Status:** Complete
+
+**Resolved:**
+
+- New shared-report URLs use the existing governed share-link table instead of stateless-only signatures.
+- Report links record creator, expiry, active/revoked state, use count, and last-used time; revocation preserves the final report and prior audit trail.
+- Legacy signed report URLs remain functional for backward compatibility.
+- Audit records are immutable at the model boundary and avoid storing full secret tokens.
+- Core audit events cover template publication, assessment creation/completion, final report capture, respondent-link creation/revocation, and report-link creation/view/revocation.
+- A dedicated curator middleware and route authorize CURATOR and PLATFORM_ADMIN users to publish validated template versions.
+- Template publication through the governed route records the publisher and immutable content hash.
+
+**Verification:**
+
+- Focused governance/export/template/completion/public-link suites: passed.
+- Clean temporary SQLite install, complete migrations, and full database seed: passed.
+- Full regression suite: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 10 — Immutable final reports and safe comparisons
 
 **Status:** Complete

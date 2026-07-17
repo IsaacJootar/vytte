@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\Curation\TemplateVersionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\FlutterwaveWebhookController;
@@ -27,6 +28,7 @@ use App\Http\Controllers\RespondentLinkController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserPreferenceController;
 use App\Http\Controllers\WorkspaceSettingsController;
+use App\Http\Middleware\EnsureCurator;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +55,7 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
     Route::get('assessments/{assessment}/export/pdf', [ExportController::class, 'assessmentPdf'])->name('assessments.export.pdf');
     Route::post('assessments/{assessment}/share', [ExportController::class, 'createShareLink'])->name('assessments.share');
+    Route::delete('assessments/{assessment}/share-links/{shareLink}', [ExportController::class, 'revokeShareLink'])->name('assessments.share.revoke');
     Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');
     Route::delete('assessments/{assessment}/respondent-links/{respondentToken}', [RespondentLinkController::class, 'destroy'])->name('assessments.respondent-link.destroy');
     Route::get('projects/{project}/export/csv', [ExportController::class, 'projectCsv'])->name('projects.export.csv');
@@ -80,6 +83,11 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/preferences/theme', [UserPreferenceController::class, 'setTheme'])->name('preferences.theme');
     Route::post('/locale', [LocaleController::class, 'store'])->name('locale.store');
+});
+
+Route::middleware(['auth', EnsureCurator::class])->prefix('curation')->name('curation.')->group(function () {
+    Route::post('template-versions/{templateVersion}/publish', [TemplateVersionController::class, 'publish'])
+        ->name('template-versions.publish');
 });
 
 // Platform admin routes
@@ -128,6 +136,8 @@ Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name(
 Route::get('/reports/{assessment}', [ExportController::class, 'sharedReport'])
     ->middleware('signed')
     ->name('reports.shared');
+Route::get('/shared-reports/{token}', [ExportController::class, 'sharedReportByToken'])
+    ->name('reports.shared.token');
 
 // Public respondent runner (token-based, no auth required)
 Route::get('/respond/{token}', function (string $token) {

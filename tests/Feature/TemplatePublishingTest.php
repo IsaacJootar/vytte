@@ -7,6 +7,7 @@ use App\Models\AssessmentTemplate;
 use App\Models\AssessmentTemplateVersion;
 use App\Models\HealthDomain;
 use App\Models\Question;
+use App\Models\User;
 use App\Services\TemplatePublishingService;
 use Database\Seeders\HivawQuestionsSeeder;
 use Database\Seeders\ReferenceDataSeeder;
@@ -138,5 +139,35 @@ class TemplatePublishingTest extends TestCase
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('provenance', $exception->errors());
         }
+    }
+
+    public function test_curator_can_publish_through_governed_route_and_action_is_audited(): void
+    {
+        [, $version] = $this->focusedTemplate();
+        $curator = User::factory()->create(['platform_role' => 'CURATOR']);
+
+        $this->actingAs($curator)
+            ->post(route('curation.template-versions.publish', $version))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame('PUBLISHED', $version->fresh()->status);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $curator->user_id,
+            'event' => 'template.version.published',
+            'auditable_id' => $version->template_version_id,
+        ]);
+    }
+
+    public function test_non_curator_cannot_publish_template(): void
+    {
+        [, $version] = $this->focusedTemplate();
+        $user = User::factory()->create(['platform_role' => null]);
+
+        $this->actingAs($user)
+            ->post(route('curation.template-versions.publish', $version))
+            ->assertForbidden();
+
+        $this->assertSame('DRAFT', $version->fresh()->status);
     }
 }

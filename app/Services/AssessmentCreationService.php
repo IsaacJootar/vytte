@@ -130,6 +130,17 @@ class AssessmentCreationService
                 'created_at' => now(),
             ]);
 
+            app(AuditService::class)->record(
+                'assessment.created',
+                $assessment,
+                newValues: [
+                    'creation_path' => $assessment->creation_path,
+                    'template_version_id' => $assessment->template_version_id,
+                    'composition_hash' => $assessment->composition_hash,
+                ],
+                userId: $creatorId,
+            );
+
             return $assessment->fresh(['snapshot', 'moduleScope']);
         });
     }
