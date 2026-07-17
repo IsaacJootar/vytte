@@ -70,6 +70,16 @@ class ProjectProgressController extends Controller
             ->with(['score.maturityLevel', 'moduleScope.module'])
             ->firstOrFail();
 
+        if ($assessmentA->assessment_id === $assessmentB->assessment_id) {
+            return redirect()->route('projects.progress', $project)
+                ->with('error', 'Choose two different assessment runs to compare.');
+        }
+
+        if ($this->compositionFingerprint($assessmentA) !== $this->compositionFingerprint($assessmentB)) {
+            return redirect()->route('projects.progress', $project)
+                ->with('error', 'These assessments use different content or areas and cannot be compared reliably.');
+        }
+
         $allDomains = DB::table('domains')
             ->where('is_operational', true)
             ->orderBy('display_order')
@@ -84,5 +94,17 @@ class ProjectProgressController extends Controller
             ->pluck('score', 'domain_id');
 
         return view('projects.compare', compact('project', 'assessmentA', 'assessmentB', 'allDomains', 'domainsA', 'domainsB'));
+    }
+
+    private function compositionFingerprint(Assessment $assessment): string
+    {
+        if ($assessment->composition_hash) {
+            return $assessment->composition_hash;
+        }
+
+        $moduleIds = $assessment->moduleScope->where('in_scope', true)
+            ->pluck('module_id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+
+        return hash('sha256', json_encode($moduleIds, JSON_THROW_ON_ERROR));
     }
 }

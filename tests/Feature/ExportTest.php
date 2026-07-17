@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Assessment;
+use App\Models\AssessmentModule;
+use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentTier;
 use App\Models\Project;
 use App\Models\Target;
@@ -155,6 +157,33 @@ class ExportTest extends TestCase
         $this->assertStringContainsString('Overall Score', $content);
         $this->assertStringContainsString('Calibration Status', $content);
         $this->assertStringContainsString('Maturity Level', $content);
+    }
+
+    public function test_csv_lists_every_in_scope_module(): void
+    {
+        [$user, $workspace] = $this->createWorkspaceWithOwner();
+        $assessment = $this->createCompleteAssessment($workspace, $user);
+        foreach (['Leadership', 'Pharmacy'] as $position => $name) {
+            $module = AssessmentModule::create([
+                'target_type_code' => 'COMMUNITY',
+                'module_code' => 'CSV'.($position + 1),
+                'module_name' => $name,
+                'is_active' => true,
+            ]);
+            AssessmentModuleScope::create([
+                'assessment_id' => $assessment->assessment_id,
+                'module_id' => $module->module_id,
+                'in_scope' => true,
+                'is_category_default' => true,
+                'status' => 'COMPLETED',
+            ]);
+        }
+
+        $content = $this->actingAs($user)
+            ->get(route('projects.export.csv', $assessment->project_id))
+            ->streamedContent();
+
+        $this->assertStringContainsString('Leadership | Pharmacy', $content);
     }
 
     public function test_csv_blocked_for_project_in_other_workspace(): void

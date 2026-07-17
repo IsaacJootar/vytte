@@ -30,7 +30,7 @@ This is not a production-data audit. Local row counts are included only to show 
 
 ### Responses, scoring, and outputs
 
-`responses`, `response_options`, `observation_records`, `sub_index_scores`, `corroboration_gaps`, `domain_scores`, `topic_scores`, `assessment_scores`, `project_domain_scores`, `project_scores`, `root_causes`, `recommendation_rules`, `recommendations`
+`responses`, `response_options`, `observation_records`, `sub_index_scores`, `corroboration_gaps`, `domain_scores`, `topic_scores`, `assessment_scores`, `project_domain_scores`, `project_scores`, `assessment_report_snapshots`, `root_causes`, `recommendation_rules`, `recommendations`
 
 ## Key implemented relationships
 
@@ -71,7 +71,7 @@ This is not a production-data audit. Local row counts are included only to show 
 | DM-19 | Domain score includes maturity and workspace | Maturity exists only on `assessment_scores`; domain rows have score/status | Medium | Document actual behavior; do not duplicate maturity until a reporting requirement exists. |
 | DM-20 | `facility_health_scores` | `assessment_scores` | Critical | Keep `assessment_scores` as the compatibility table. |
 | DM-21 | `root_cause_analyses` | `root_causes`; active application does not use it | Medium | Leave dormant schema untouched until recommendations are approved. |
-| DM-22 | Persisted `reports` and `report_sections` | No such tables; output is generated on demand | High | Do not promise report immutability until a report snapshot/version design is approved. |
+| DM-22 | Persisted `reports` and `report_sections` | Implemented as one immutable structured `assessment_report_snapshots` payload per completed assessment rather than mutable normalized sections | Resolved by equivalent model | Regenerate PDF/shared formats from the versioned payload; do not introduce parallel report authority. |
 | DM-23 | `platform_settings.id` UUID | Auto-increment integer | Low | Preserve current key; consumers use the unique setting key. |
 | DM-24 | Three assessment tiers | Seeder creates two | Medium | Decide whether tier three was removed or remains required before template applicability rules. |
 | DM-25 | Seven domains | Seeder creates eight, including non-operational Clinical & Service Quality | Medium | Preserve all rows; govern operational vs clinical taxonomy explicitly. |

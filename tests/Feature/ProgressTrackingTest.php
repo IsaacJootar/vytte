@@ -306,6 +306,24 @@ class ProgressTrackingTest extends TestCase
             ->assertSee('100'); // score visible in both cards
     }
 
+    public function test_compare_rejects_different_composition_hashes(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $this->seed(HivawQuestionsSeeder::class);
+
+        [$user, $workspace] = $this->userWithWorkspace();
+        $project = $this->makeProjectWithTarget($user, $workspace);
+        $a = $this->makeCompleteAssessment($workspace, $user, $project);
+        $a->update(['composition_hash' => str_repeat('a', 64)]);
+        $b = $this->makeCompleteAssessment($workspace, $user, $project);
+        $b->update(['composition_hash' => str_repeat('b', 64)]);
+
+        $this->actingAs($user)
+            ->get(route('projects.compare', $project)."?a={$a->assessment_id}&b={$b->assessment_id}")
+            ->assertRedirect(route('projects.progress', $project))
+            ->assertSessionHas('error');
+    }
+
     public function test_compare_page_404s_when_assessment_belongs_to_different_project(): void
     {
         $this->seed(ReferenceDataSeeder::class);

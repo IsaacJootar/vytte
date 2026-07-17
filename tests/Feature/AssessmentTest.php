@@ -390,6 +390,17 @@ class AssessmentTest extends TestCase
 
         $this->assertEquals('COMPLETE', $assessment->fresh()->status);
         $this->assertNotNull($assessment->fresh()->completed_at);
+        $reportSnapshot = $assessment->fresh()->reportSnapshot;
+        $this->assertNotNull($reportSnapshot);
+        $this->assertSame('vytte-report-1.0', $reportSnapshot->schema_version);
+        $this->assertSame(
+            $reportSnapshot->content_hash,
+            hash('sha256', json_encode($reportSnapshot->payload, JSON_THROW_ON_ERROR))
+        );
+
+        $originalTitle = $reportSnapshot->payload['title'];
+        AssessmentModule::where('module_code', 'HIVAW')->update(['module_name' => 'Changed after completion']);
+        $this->assertSame($originalTitle, $assessment->fresh()->reportSnapshot->payload['title']);
     }
 
     public function test_submit_already_complete_assessment_redirects_gracefully(): void

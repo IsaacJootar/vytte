@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $assessment->moduleScope->first()?->module?->module_name ?? 'Assessment Report' }} · Vytte</title>
+    <title>{{ $report['title'] }} · Vytte</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         @media print {
@@ -34,24 +34,27 @@
         <div class="mb-5">
             <p class="text-xs font-semibold text-vytte-700 uppercase tracking-widest mb-0.5">Assessment Report</p>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">
-                {{ $assessment->moduleScope->first()?->module?->module_name ?? 'Assessment' }}
+                {{ $report['title'] }}
             </h1>
             <p class="text-sm text-slate-500 mt-1">
-                {{ $assessment->target?->name }}
-                @if ($assessment->project)
-                    · {{ $assessment->project->name }}
+                {{ $report['target']['name'] }}
+                @if ($report['project']['name'])
+                    · {{ $report['project']['name'] }}
                 @endif
-                @if ($assessment->completed_at)
-                    · Completed {{ $assessment->completed_at->format('d M Y') }}
+                @if ($report['completed_at'])
+                    · Completed {{ \Illuminate\Support\Carbon::parse($report['completed_at'])->format('d M Y') }}
                 @endif
             </p>
+            @if (count($report['modules']) > 1)
+                <p class="mt-2 text-xs text-slate-500">Areas: {{ collect($report['modules'])->pluck('module_name')->join(', ') }}</p>
+            @endif
         </div>
 
         {{-- Score hero --}}
         @php
-            $score = $assessment->score;
-            $overall = $score ? (float) $score->overall_score : null;
-            $calibStatus = $score?->calibration_status ?? 'NOT_CALIBRATED';
+            $score = $report['score'];
+            $overall = $score['overall_score'] !== null ? (float) $score['overall_score'] : null;
+            $calibStatus = $score['calibration_status'];
             $band = match(true) {
                 $overall === null => 'uncal',
                 $overall >= 70 => 'strong',
@@ -69,8 +72,8 @@
             </div>
             <div>
                 <div class="text-lg font-black" style="color: {{ $bandColor }}">{{ $bandLabel }}</div>
-                @if ($score?->maturityLevel)
-                    <p class="text-sm text-slate-500 mt-0.5">Maturity: {{ $score->maturityLevel->level_name }}</p>
+                @if ($score['maturity_level'])
+                    <p class="text-sm text-slate-500 mt-0.5">Maturity: {{ $score['maturity_level']['name'] }}</p>
                 @endif
                 @if ($calibStatus === 'NOT_CALIBRATED')
                     <p class="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">

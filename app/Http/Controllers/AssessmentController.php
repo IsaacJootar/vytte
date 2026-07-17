@@ -13,6 +13,7 @@ use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
 use App\Services\AssessmentCreationService;
 use App\Services\PlanService;
+use App\Services\ReportSnapshotService;
 use App\Services\ScoringService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -115,54 +116,69 @@ class AssessmentController extends Controller
                 ->with('success', 'Assessment already submitted.');
         }
 
-        $moduleIds = AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
-            ->where('in_scope', true)
-            ->pluck('module_id');
+        $snapshot = $assessment->snapshot()->first();
+        if ($snapshot) {
+            $requiredQuestions = collect($snapshot->payload)
+                ->flatMap(fn ($module) => $module['questions'] ?? [])
+                ->where('is_scored', true)
+                ->values();
+            $responses = Response::where('assessment_id', $assessment->assessment_id)
+                ->whereNull('respondent_id')
+                ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
+                ->get()->keyBy('question_id');
+            $hasMissingResponse = $requiredQuestions->contains(function ($question) use ($responses) {
+                $response = $responses->get($question['question_id']);
+                if (! $response) {
+                    return true;
+                }
 
-        $requiredQuestions = Question::whereIn('module_id', $moduleIds)
-            ->where('is_active', true)
-            ->where('is_scored', true)
-            ->with(['options', 'questionType'])
-            ->get();
+                if ($question['response_type'] === 'OPEN_ENDED') {
+                    return blank($response->value_text);
+                }
 
-        $responses = Response::where('assessment_id', $assessment->assessment_id)
-            ->whereNull('respondent_id')
-            ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
-            ->with('selectedOption')
-            ->get()
-            ->keyBy('question_id');
+                return ! collect($question['options'] ?? [])
+                    ->contains('option_id', (int) $response->value_option_id);
+            });
+        } else {
+            $moduleIds = AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
+                ->where('in_scope', true)
+                ->pluck('module_id');
+            $requiredQuestions = Question::whereIn('module_id', $moduleIds)
+                ->where('is_active', true)
+                ->where('is_scored', true)
+                ->with(['options', 'questionType'])
+                ->get();
+            $responses = Response::where('assessment_id', $assessment->assessment_id)
+                ->whereNull('respondent_id')
+                ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
+                ->with('selectedOption')
+                ->get()->keyBy('question_id');
+            $hasMissingResponse = $requiredQuestions->contains(function (Question $question) use ($responses) {
+                $response = $responses->get($question->question_id);
+                if (! $response) {
+                    return true;
+                }
 
-        $hasMissingResponse = $requiredQuestions->contains(function (Question $question) use ($responses) {
-            $response = $responses->get($question->question_id);
-
-            if (! $response) {
-                return true;
-            }
-
-            if ($question->options->isNotEmpty()) {
-                return ! $response->selectedOption
-                    || $response->selectedOption->question_id !== $question->question_id;
-            }
-
-            return $question->questionType?->type_code !== 'OPEN_ENDED'
-                || blank($response->value_text);
-        });
+                return $question->options->isNotEmpty()
+                    ? (! $response->selectedOption || $response->selectedOption->question_id !== $question->question_id)
+                    : ($question->questionType?->type_code !== 'OPEN_ENDED' || blank($response->value_text));
+            });
+        }
 
         if ($hasMissingResponse) {
             return redirect()->route('assessments.run', $assessment)
                 ->with('error', 'Please answer every required scored question before submitting.');
         }
 
-        $assessment->update([
-            'status' => 'COMPLETE',
-            'completed_at' => now(),
-        ]);
-
-        AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
-            ->where('in_scope', true)
-            ->update(['status' => 'COMPLETED', 'completed_at' => now()]);
-
-        app(ScoringService::class)->calculate($assessment);
+        DB::transaction(function () use ($assessment): void {
+            $completedAt = now();
+            $assessment->update(['status' => 'COMPLETE', 'completed_at' => $completedAt]);
+            AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
+                ->where('in_scope', true)
+                ->update(['status' => 'COMPLETED', 'completed_at' => $completedAt]);
+            app(ScoringService::class)->calculate($assessment);
+            app(ReportSnapshotService::class)->createFor($assessment->fresh());
+        });
 
         $admins = WorkspaceMember::where('workspace_id', app('current.workspace')->workspace_id)
             ->whereIn('role', ['OWNER', 'ADMIN'])
@@ -177,7 +193,7 @@ class AssessmentController extends Controller
             ->with('success', 'Assessment submitted.');
     }
 
-    public function results(Assessment $assessment): View|RedirectResponse
+    public function results(Assessment $assessment, ReportSnapshotService $reports): View|RedirectResponse
     {
         $this->authorizeWorkspace($assessment);
 
@@ -192,42 +208,38 @@ class AssessmentController extends Controller
             'score.maturityLevel',
         ]);
 
-        $inScopeScopes = $assessment->moduleScope->where('in_scope', true);
-        $inScopeCount = $inScopeScopes->count();
-        $firstModule = $inScopeScopes->first()?->module;
+        $report = $reports->payloadFor($assessment);
+        $assessmentTitle = $report['title'];
+        $subIndexScores = collect($report['sub_index_scores'])->map(fn ($row) => (object) $row);
+        $domainScores = collect($report['domain_scores'])->map(fn ($row) => (object) $row);
+        if ($assessment->score) {
+            $assessment->score->overall_score = $report['score']['overall_score'];
+            $assessment->score->calibration_status = $report['score']['calibration_status'];
+            $assessment->score->scoring_version = $report['score']['scoring_version'];
+            if ($assessment->score->maturityLevel && $report['score']['maturity_level']) {
+                $assessment->score->maturityLevel->level_name = $report['score']['maturity_level']['name'];
+                $assessment->score->maturityLevel->level_number = $report['score']['maturity_level']['number'];
+            }
+        }
 
-        $assessmentTitle = $inScopeCount === 1
-            ? ($firstModule?->module_name ?? 'Assessment')
-            : match ($assessment->scope_type) {
-                'FULL_TARGET' => 'Full Assessment',
-                'MODULE_PICKER' => 'Custom Scope',
-                default => 'Assessment',
-            };
-
-        $subIndexScores = DB::table('sub_index_scores as sis')
-            ->join('sub_indices as si', 'si.sub_index_id', '=', 'sis.sub_index_id')
-            ->join('domains as d', 'd.domain_id', '=', 'si.domain_id')
-            ->where('sis.assessment_id', $assessment->assessment_id)
-            ->where('sis.respondent_type', 'STAFF')
-            ->select('sis.*', 'si.acronym', 'si.full_name', 'si.description', 'd.domain_name', 'd.domain_code')
-            ->orderBy('d.domain_code')
-            ->orderBy('si.acronym')
-            ->get();
-
-        $domainScores = DB::table('domain_scores as ds')
-            ->join('domains as d', 'd.domain_id', '=', 'ds.domain_id')
-            ->where('ds.assessment_id', $assessment->assessment_id)
-            ->select('ds.*', 'd.domain_name', 'd.domain_code')
-            ->orderBy('d.domain_code')
-            ->get();
-
-        // History: same scope_type on same project
+        // History is comparable only when the exact template composition matches.
         $history = Assessment::where('project_id', $assessment->project_id)
             ->where('status', 'COMPLETE')
-            ->where('scope_type', $assessment->scope_type)
-            ->with('score.maturityLevel')
+            ->when(
+                $assessment->composition_hash,
+                fn ($query, $hash) => $query->where('composition_hash', $hash),
+                fn ($query) => $query->where('assessment_id', $assessment->assessment_id)
+            )
+            ->with(['score.maturityLevel', 'reportSnapshot'])
             ->orderBy('completed_at')
             ->get();
+        foreach ($history as $historicalAssessment) {
+            $historicalScore = $historicalAssessment->reportSnapshot?->payload['score'] ?? null;
+            if ($historicalScore && $historicalAssessment->score) {
+                $historicalAssessment->score->overall_score = $historicalScore['overall_score'];
+                $historicalAssessment->score->calibration_status = $historicalScore['calibration_status'];
+            }
+        }
 
         return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history'));
     }

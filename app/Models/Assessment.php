@@ -73,6 +73,11 @@ class Assessment extends Model
         return $this->hasOne(AssessmentSnapshot::class, 'assessment_id', 'assessment_id');
     }
 
+    public function reportSnapshot(): HasOne
+    {
+        return $this->hasOne(AssessmentReportSnapshot::class, 'assessment_id', 'assessment_id');
+    }
+
     public function templateVersion(): BelongsTo
     {
         return $this->belongsTo(AssessmentTemplateVersion::class, 'template_version_id', 'template_version_id');

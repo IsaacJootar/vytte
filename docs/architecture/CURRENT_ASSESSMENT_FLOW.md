@@ -94,7 +94,8 @@ Public responses intentionally remain a separate voice cohort and are not blende
 1. Authenticated submission verifies workspace ownership and required-response completeness.
 2. The assessment becomes `COMPLETE`, receives `completed_at`, and all in-scope module rows become `COMPLETED`.
 3. Scoring runs synchronously and stores the scoring algorithm/version used.
-4. OWNER and ADMIN users receive a database notification and optional email.
+4. The same transaction persists an immutable structured report snapshot with schema version and SHA-256 content hash.
+5. OWNER and ADMIN users receive a database notification and optional email.
 
 The assessment content and composition are immutable through snapshots. Remaining lifecycle work includes a governed correction/reopen policy, harmonizing status terminology, and defining publication/archive transitions.
 
@@ -115,10 +116,10 @@ The assessment content and composition are immutable through snapshots. Remainin
 
 ## 7. Results and reports
 
-- Results, PDF, CSV, signed report, progress, and history read calculated assessment scores.
-- Reports do not yet persist a complete immutable report snapshot or content hash.
-- Historical comparisons still require composition-hash compatibility rules.
-- CSV and some report surfaces still need complete multi-module labels rather than first-module assumptions.
+- Newly completed results, PDF, shared reports, and history read the immutable final report snapshot rather than mutable catalogue labels or score joins.
+- The structured report snapshot preserves assessment identity, all included areas, setting/project labels, score and maturity, scoring version, domain/sub-index labels and values, completion time, schema version, and content hash.
+- Historical comparisons require matching composition hashes. Legacy assessments without hashes fall back to exact sorted module-ID fingerprints.
+- CSV lists every included module rather than only the first.
 - Signed links are stateless temporary URLs; the dormant share-link table is not yet the active governance mechanism.
 
 ## Current implementation boundary

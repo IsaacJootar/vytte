@@ -1,5 +1,26 @@
 # Architecture Remediation Progress
 
+## Module 10 — Immutable final reports and safe comparisons
+
+**Status:** Complete
+
+**Resolved:**
+
+- Completion, scoring, and final report capture now occur in one database transaction.
+- Each newly completed assessment receives one immutable structured report snapshot, schema version, and SHA-256 content hash.
+- Final payloads freeze title, every included area, target/project identity, assessor/completion metadata, score/maturity, scoring version, and domain/sub-index labels and values.
+- Results, PDF, shared report, and score history consume frozen report values.
+- CSV exports list all included modules instead of only the first.
+- Template history uses exact composition hashes; comparisons reject different compositions. Legacy comparisons require the exact same sorted module IDs.
+- Legacy completed assessments remain readable through a best-effort compatibility builder and are not silently rewritten.
+
+**Verification:**
+
+- Focused results/export/progress/completion suites: passed.
+- Clean temporary SQLite install, complete migrations, and full database seed: passed.
+- Full regression suite: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 9 — Frozen published content and scoring profiles
 
 **Status:** Complete
