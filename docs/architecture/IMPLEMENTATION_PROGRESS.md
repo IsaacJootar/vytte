@@ -1,5 +1,24 @@
 # Architecture Remediation Progress
 
+## Module 14 — Optional inline evidence
+
+**Status:** Complete
+
+**Resolved:**
+
+- Assessors can progressively reveal an optional evidence-note field on any question.
+- The note is stored on the exact response and remains visible in the read-only completed runner.
+- Evidence alone never satisfies answer completeness or changes scoring.
+- Clearing an answer preserves its evidence note, and clearing an evidence-only note removes the otherwise empty response row.
+- Server-side scope, workspace authority, completion state, and required-consent checks protect evidence writes.
+- No evidence library, document repository, upload subsystem, or parallel workflow was introduced.
+
+**Verification:**
+
+- Focused assessment, consent, and snapshot suites: 37 tests, 87 assertions, all passed.
+- Full regression suite: 360 tests, 858 assertions, all passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 13 — Unified community assessment architecture
 
 **Status:** Complete

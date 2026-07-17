@@ -44,6 +44,7 @@ This is not a production-data audit. Local row counts are included only to show 
 - Question/sub-index: many-to-many `sub_index_questions`.
 - Sub-index/global scoring domain: `sub_indices.domain_id`.
 - Response to assessment/question/option: direct foreign keys. New public responses also have an enforced `public_response_session_id`; the legacy mixed-purpose `respondent_id` remains for compatibility.
+- Optional evidence support is the nullable `responses.evidence_note`; it remains bound to the exact question response rather than becoming a separate evidence entity.
 - Scores to assessment: composite assessment/sub-index/respondent-type, assessment/domain, and one assessment-score row.
 
 ## Documentation-to-schema discrepancy register

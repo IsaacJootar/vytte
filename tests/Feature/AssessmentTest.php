@@ -347,6 +347,68 @@ class AssessmentTest extends TestCase
         ]);
     }
 
+    public function test_optional_evidence_note_is_attached_to_the_question_response(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+
+        $component = Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+        $question = $component->get('questionData')[0];
+        $optionId = $question['options'][0]['option_id'];
+
+        $component
+            ->call('selectOption', $question['question_id'], $optionId)
+            ->call('saveEvidenceNote', $question['question_id'], 'Observed register for the previous month.');
+
+        $this->assertDatabaseHas('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question['question_id'],
+            'value_option_id' => $optionId,
+            'evidence_note' => 'Observed register for the previous month.',
+        ]);
+    }
+
+    public function test_evidence_note_alone_does_not_count_as_an_answer(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+
+        $component = Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+        $question = $component->get('questionData')[0];
+
+        $component
+            ->call('saveEvidenceNote', $question['question_id'], 'Document is available for review.')
+            ->assertSet('savedResponses', [])
+            ->assertDontSee('Submit Assessment');
+    }
+
+    public function test_evidence_note_cannot_bypass_required_consent(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+
+        $component = Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $question = $component->get('questionData')[0];
+
+        $component->call('saveEvidenceNote', $question['question_id'], 'Should not be accepted.');
+
+        $this->assertDatabaseMissing('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question['question_id'],
+        ]);
+    }
+
     public function test_livewire_cannot_submit_with_unanswered_scored_questions(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();

@@ -30,6 +30,8 @@ class AssessmentRunner extends Component
 
     public array $savedTextResponses = [];
 
+    public array $savedEvidenceNotes = [];
+
     public string $lastSavedAt = '';
 
     public bool $isComplete = false;
@@ -164,6 +166,9 @@ class AssessmentRunner extends Component
             $this->savedResponses[$response->question_id] = $response->value_option_id;
             if ($response->value_text !== null) {
                 $this->savedTextResponses[$response->question_id] = $response->value_text;
+            }
+            if ($response->evidence_note !== null) {
+                $this->savedEvidenceNotes[$response->question_id] = $response->evidence_note;
             }
         }
     }
@@ -302,12 +307,23 @@ class AssessmentRunner extends Component
             return;
         }
 
+        if (! $this->hasRequiredConsent()) {
+            return;
+        }
+
         $value = trim($value);
         if ($value === '') {
-            Response::where('assessment_id', $this->assessment->assessment_id)
+            $response = Response::where('assessment_id', $this->assessment->assessment_id)
                 ->where('question_id', $questionId)
                 ->whereNull('respondent_id')
-                ->delete();
+                ->first();
+            if ($response) {
+                if (blank($response->evidence_note)) {
+                    $response->delete();
+                } else {
+                    $response->update(['value_text' => null]);
+                }
+            }
             unset($this->savedTextResponses[$questionId]);
 
             return;
@@ -319,6 +335,53 @@ class AssessmentRunner extends Component
             ['value_text' => $value, 'value_option_id' => null, 'answered_at' => now()]
         );
         $this->savedTextResponses[$questionId] = $value;
+        $this->lastSavedAt = now()->format('g:i A');
+    }
+
+    public function saveEvidenceNote(string $questionId, string $value): void
+    {
+        $this->authorizeAssessmentAccess();
+
+        if ($this->isComplete) {
+            return;
+        }
+
+        $validQuestion = $this->snapshotQuestion($questionId) !== null
+            || $this->liveQuestionInScope($questionId, fn ($query) => $query);
+
+        if (! $validQuestion) {
+            return;
+        }
+
+        if (! $this->hasRequiredConsent()) {
+            return;
+        }
+
+        $value = trim($value);
+        $response = Response::where('assessment_id', $this->assessment->assessment_id)
+            ->where('question_id', $questionId)
+            ->whereNull('respondent_id')
+            ->first();
+
+        if ($value === '') {
+            if ($response) {
+                if ($response->value_option_id === null && blank($response->value_text) && $response->value_numeric === null) {
+                    $response->delete();
+                } else {
+                    $response->update(['evidence_note' => null]);
+                }
+            }
+            unset($this->savedEvidenceNotes[$questionId]);
+
+            return;
+        }
+
+        $value = mb_substr($value, 0, 5000);
+        Response::updateOrCreate(
+            ['assessment_id' => $this->assessment->assessment_id, 'question_id' => $questionId, 'respondent_id' => null],
+            ['evidence_note' => $value]
+        );
+        $this->savedEvidenceNotes[$questionId] = $value;
         $this->lastSavedAt = now()->format('g:i A');
     }
 
@@ -385,5 +448,12 @@ class AssessmentRunner extends Component
         $constraint($query);
 
         return $query->exists();
+    }
+
+    private function hasRequiredConsent(): bool
+    {
+        return ! $this->needsConsent || RespondentConsent::where('assessment_id', $this->assessment->assessment_id)
+            ->where('consented_by', auth()->id())
+            ->exists();
     }
 }

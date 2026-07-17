@@ -22,6 +22,7 @@ class Response extends Model
         'value_text',
         'value_numeric',
         'value_option_id',
+        'evidence_note',
         'answered_at',
     ];
 

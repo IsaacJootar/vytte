@@ -143,6 +143,25 @@
             @else
                 <p class="text-sm text-slate-400 dark:text-slate-500 italic">{{ __('runner.open_ended') }}</p>
             @endif
+
+            <details class="mt-4 border-t border-slate-100 dark:border-slate-700 pt-3">
+                <summary class="cursor-pointer text-xs font-semibold text-vytte-700 dark:text-vytte-400">
+                    Add optional supporting evidence
+                </summary>
+                <div class="mt-3">
+                    <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1.5">
+                        Add a brief note about the document, observation, or source that supports this answer.
+                    </label>
+                    <textarea
+                        rows="3"
+                        maxlength="5000"
+                        @if ($isComplete) disabled @endif
+                        wire:change="saveEvidenceNote('{{ $q['question_id'] }}', $event.target.value)"
+                        class="w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:border-vytte-500 focus:ring-vytte-500"
+                        placeholder="Optional evidence note...">{{ $savedEvidenceNotes[$q['question_id']] ?? '' }}</textarea>
+                    <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">This note stays attached to this response. It does not create a separate evidence workflow.</p>
+                </div>
+            </details>
         </div>
 
         {{-- Navigation --}}

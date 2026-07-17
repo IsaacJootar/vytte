@@ -73,6 +73,7 @@ The old default-battery/module-picker creation path is no longer used. The forme
 6. Open-text questions use the supported text-response path; unsupported response types cannot be published in templates.
 7. Responses autosave. Authenticated responses have `respondent_id IS NULL`.
 8. Submission is rejected on the server until all required scored questions are complete.
+9. An assessor may progressively reveal an optional supporting-evidence note. The note is stored on that exact response, does not count as an answer, and does not create another workflow.
 
 Remaining authenticated-runner work is limited to future response types and more granular consent policy. It is no longer a reason to retain invalid sample content.
 
