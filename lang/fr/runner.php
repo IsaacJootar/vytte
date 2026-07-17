@@ -10,7 +10,7 @@ return [
     'no_questions_body'   => 'Ce module ne contient pas de questions actives.',
     'question_counter'    => 'Question :current sur :total',
     'answered_count'      => ':count réponse(s)',
-    'not_scored'          => 'Cette question n\'est pas notée — votre réponse est enregistrée comme note.',
+    'not_scored'          => 'Cette réponse fournit un contexte utile pour l\'analyse et les rapports.',
     'open_ended'          => 'Question ouverte — aucune option de réponse.',
     'previous'            => 'Précédent',
     'next'                => 'Suivant',
