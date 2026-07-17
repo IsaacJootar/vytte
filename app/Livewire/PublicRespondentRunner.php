@@ -87,7 +87,7 @@ class PublicRespondentRunner extends Component
         }
 
         $this->assessmentId = $assessment->assessment_id;
-        $this->assessmentClosed = $assessment->status === 'COMPLETE';
+        $this->assessmentClosed = $assessment->status === Assessment::STATUS_COMPLETE;
         if ($this->assessmentClosed) {
             return;
         }
@@ -530,7 +530,7 @@ class PublicRespondentRunner extends Component
             ->where('assessment_id', $this->assessmentId)
             ->whereNull('submitted_at')->exists();
         $assessmentOpen = Assessment::where('assessment_id', $this->assessmentId)
-            ->where('status', 'IN_PROGRESS')->exists();
+            ->where('status', Assessment::STATUS_IN_PROGRESS)->exists();
 
         return $tokenRecord?->isUsable() === true && $publicSession && $assessmentOpen;
     }

@@ -22,7 +22,7 @@ class ProjectProgressController extends Controller
         }
 
         $assessments = Assessment::where('project_id', $project->project_id)
-            ->where('status', 'COMPLETE')
+            ->where('status', Assessment::STATUS_COMPLETE)
             ->with(['score.maturityLevel', 'moduleScope.module'])
             ->orderBy('completed_at')
             ->get();
@@ -62,13 +62,13 @@ class ProjectProgressController extends Controller
 
         $assessmentA = Assessment::where('project_id', $project->project_id)
             ->where('assessment_id', $idA)
-            ->where('status', 'COMPLETE')
+            ->where('status', Assessment::STATUS_COMPLETE)
             ->with(['score.maturityLevel', 'moduleScope.module'])
             ->firstOrFail();
 
         $assessmentB = Assessment::where('project_id', $project->project_id)
             ->where('assessment_id', $idB)
-            ->where('status', 'COMPLETE')
+            ->where('status', Assessment::STATUS_COMPLETE)
             ->with(['score.maturityLevel', 'moduleScope.module'])
             ->firstOrFail();
 

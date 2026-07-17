@@ -20,7 +20,7 @@ class RespondentLinkController extends Controller
             return back()->with('error', 'Shareable respondent links are not available on your current plan. Upgrade to share assessments with external respondents.');
         }
 
-        if ($assessment->status !== 'IN_PROGRESS') {
+        if ($assessment->status !== Assessment::STATUS_IN_PROGRESS) {
             return back()->with('error', 'Respondent links can only be created for in-progress assessments.');
         }
 

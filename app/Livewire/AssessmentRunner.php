@@ -48,7 +48,7 @@ class AssessmentRunner extends Component
     {
         $this->assessment = $assessment;
         $this->authorizeAssessmentAccess();
-        $this->isComplete = $assessment->status === 'COMPLETE';
+        $this->isComplete = $assessment->status === Assessment::STATUS_COMPLETE;
         $this->loadQuestions();
         $this->loadExistingResponses();
         $this->checkConsentRequired();

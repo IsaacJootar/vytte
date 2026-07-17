@@ -11,13 +11,37 @@ class AssessmentTemplate extends Model
 {
     use HasUuids;
 
+    public const STATUS_DRAFT = 'DRAFT';
+
+    public const STATUS_PUBLISHED = 'PUBLISHED';
+
     protected $primaryKey = 'template_id';
+
+    protected $attributes = [
+        'status' => self::STATUS_DRAFT,
+    ];
 
     protected $fillable = [
         'template_code', 'template_name', 'description', 'creation_path',
         'setting_type_code', 'health_domain_id', 'source_authority',
         'source_url', 'license_code', 'status', 'created_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $template): void {
+            if (! in_array($template->status, [self::STATUS_DRAFT, self::STATUS_PUBLISHED], true)) {
+                throw new \LogicException("Unsupported template status: {$template->status}.");
+            }
+
+            if ($template->exists
+                && $template->isDirty('status')
+                && ! ($template->getOriginal('status') === self::STATUS_DRAFT && $template->status === self::STATUS_PUBLISHED)
+            ) {
+                throw new \LogicException('Templates can only transition from DRAFT to PUBLISHED.');
+            }
+        });
+    }
 
     public function healthDomain(): BelongsTo
     {

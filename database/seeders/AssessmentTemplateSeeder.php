@@ -37,7 +37,7 @@ class AssessmentTemplateSeeder extends Seeder
             'version_number' => 1,
         ]);
 
-        if ($version->status !== 'PUBLISHED') {
+        if ($version->status !== AssessmentTemplateVersion::STATUS_PUBLISHED) {
             $version->modules()->sync([
                 $module->module_id => ['display_order' => 1, 'is_default' => true, 'area_label' => 'HIV'],
             ]);

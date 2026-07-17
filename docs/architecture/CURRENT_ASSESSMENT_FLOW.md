@@ -98,7 +98,7 @@ External respondents are a respondent role within the same assessment architectu
 4. The same transaction persists an immutable structured report snapshot with schema version and SHA-256 content hash.
 5. OWNER and ADMIN users receive a database notification and optional email.
 
-The assessment content and composition are immutable through snapshots. Remaining lifecycle work includes a governed correction/reopen policy, harmonizing status terminology, and defining publication/archive transitions.
+The assessment content and composition are immutable through snapshots. `IN_PROGRESS -> COMPLETE` is the only assessment transition and completion is terminal. Area rows use `PENDING`, `COMPLETED`, or `EXCLUDED`; template versions use `DRAFT -> PUBLISHED` and become immutable. Reopen, correction-version, retirement, and archive behavior remain intentionally unavailable until their snapshot and audit semantics are approved.
 
 ## 6. Scoring flow
 

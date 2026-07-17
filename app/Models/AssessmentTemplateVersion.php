@@ -11,7 +11,15 @@ class AssessmentTemplateVersion extends Model
 {
     use HasUuids;
 
+    public const STATUS_DRAFT = 'DRAFT';
+
+    public const STATUS_PUBLISHED = 'PUBLISHED';
+
     protected $primaryKey = 'template_version_id';
+
+    protected $attributes = [
+        'status' => self::STATUS_DRAFT,
+    ];
 
     protected $fillable = [
         'template_id', 'version_number', 'status', 'scoring_version',
@@ -27,14 +35,20 @@ class AssessmentTemplateVersion extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $version): void {
+            if (! in_array($version->status, [self::STATUS_DRAFT, self::STATUS_PUBLISHED], true)) {
+                throw new \LogicException("Unsupported template-version status: {$version->status}.");
+            }
+        });
+
         static::updating(function (self $version) {
-            if ($version->getOriginal('status') === 'PUBLISHED') {
+            if ($version->getOriginal('status') === self::STATUS_PUBLISHED) {
                 throw new \LogicException('Published template versions are immutable. Create a new version instead.');
             }
         });
 
         static::deleting(function (self $version) {
-            if ($version->status === 'PUBLISHED') {
+            if ($version->status === self::STATUS_PUBLISHED) {
                 throw new \LogicException('Published template versions cannot be deleted. Retire the template instead.');
             }
         });

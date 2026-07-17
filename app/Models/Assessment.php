@@ -13,7 +13,20 @@ class Assessment extends Model
 {
     use HasFactory, HasUuids;
 
+    public const STATUS_IN_PROGRESS = 'IN_PROGRESS';
+
+    public const STATUS_COMPLETE = 'COMPLETE';
+
+    public const PUBLISH_DRAFT = 'DRAFT';
+
+    public const PUBLISH_PUBLISHED = 'PUBLISHED';
+
     protected $primaryKey = 'assessment_id';
+
+    protected $attributes = [
+        'status' => self::STATUS_IN_PROGRESS,
+        'publish_status' => self::PUBLISH_DRAFT,
+    ];
 
     protected $fillable = [
         'target_id',
@@ -37,6 +50,33 @@ class Assessment extends Model
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $assessment): void {
+            if (! in_array($assessment->status, [self::STATUS_IN_PROGRESS, self::STATUS_COMPLETE], true)) {
+                throw new \LogicException("Unsupported assessment status: {$assessment->status}.");
+            }
+
+            if (! in_array($assessment->publish_status, [self::PUBLISH_DRAFT, self::PUBLISH_PUBLISHED], true)) {
+                throw new \LogicException("Unsupported assessment publication status: {$assessment->publish_status}.");
+            }
+
+            if ($assessment->exists && $assessment->isDirty('status')) {
+                $from = $assessment->getOriginal('status');
+                $validCompletion = $from === self::STATUS_IN_PROGRESS
+                    && $assessment->status === self::STATUS_COMPLETE;
+
+                if (! $validCompletion) {
+                    throw new \LogicException("Assessment transition {$from} -> {$assessment->status} is not allowed.");
+                }
+            }
+
+            if ($assessment->status === self::STATUS_COMPLETE && $assessment->completed_at === null) {
+                throw new \LogicException('A completed assessment requires completed_at.');
+            }
+        });
+    }
 
     public function target(): BelongsTo
     {
@@ -90,16 +130,16 @@ class Assessment extends Model
 
     public function isDraft(): bool
     {
-        return $this->publish_status === 'DRAFT';
+        return $this->publish_status === self::PUBLISH_DRAFT;
     }
 
     public function isPublished(): bool
     {
-        return $this->publish_status === 'PUBLISHED';
+        return $this->publish_status === self::PUBLISH_PUBLISHED;
     }
 
     public function isComplete(): bool
     {
-        return $this->status === 'COMPLETE';
+        return $this->status === self::STATUS_COMPLETE;
     }
 }

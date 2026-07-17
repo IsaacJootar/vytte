@@ -48,16 +48,16 @@ class AssessmentController extends Controller
             ->where('setting_type_code', $settingTypeCode)
             ->value('uses_departments');
 
-        $templateQuery = fn ($query) => $query->where('status', 'PUBLISHED')
+        $templateQuery = fn ($query) => $query->where('status', AssessmentTemplateVersion::STATUS_PUBLISHED)
             ->whereNotNull('published_payload')
             ->orderByDesc('version_number');
-        $comprehensiveTemplates = AssessmentTemplate::where('status', 'PUBLISHED')
+        $comprehensiveTemplates = AssessmentTemplate::where('status', AssessmentTemplate::STATUS_PUBLISHED)
             ->where('creation_path', 'COMPREHENSIVE')
             ->where('setting_type_code', $settingTypeCode)
             ->with(['versions' => $templateQuery])
             ->orderBy('template_name')
             ->get();
-        $focusedTemplates = AssessmentTemplate::where('status', 'PUBLISHED')
+        $focusedTemplates = AssessmentTemplate::where('status', AssessmentTemplate::STATUS_PUBLISHED)
             ->where('creation_path', 'FOCUSED')
             ->with(['healthDomain', 'versions' => $templateQuery])
             ->orderBy('template_name')
@@ -114,7 +114,7 @@ class AssessmentController extends Controller
     {
         $this->authorizeWorkspace($assessment);
 
-        if ($assessment->status === 'COMPLETE') {
+        if ($assessment->status === Assessment::STATUS_COMPLETE) {
             return redirect()->route('projects.show', $assessment->project_id)
                 ->with('success', 'Assessment already submitted.');
         }
@@ -175,17 +175,17 @@ class AssessmentController extends Controller
 
         DB::transaction(function () use ($assessment): void {
             $completedAt = now();
-            $assessment->update(['status' => 'COMPLETE', 'completed_at' => $completedAt]);
+            $assessment->update(['status' => Assessment::STATUS_COMPLETE, 'completed_at' => $completedAt]);
             AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
                 ->where('in_scope', true)
-                ->update(['status' => 'COMPLETED', 'completed_at' => $completedAt]);
+                ->update(['status' => AssessmentModuleScope::STATUS_COMPLETED, 'completed_at' => $completedAt]);
             app(ScoringService::class)->calculate($assessment);
             app(ReportSnapshotService::class)->createFor($assessment->fresh());
             app(AuditService::class)->record(
                 'assessment.completed',
                 $assessment,
-                ['status' => 'IN_PROGRESS'],
-                ['status' => 'COMPLETE', 'completed_at' => $completedAt->toIso8601String()],
+                ['status' => Assessment::STATUS_IN_PROGRESS],
+                ['status' => Assessment::STATUS_COMPLETE, 'completed_at' => $completedAt->toIso8601String()],
             );
         });
 
@@ -206,7 +206,7 @@ class AssessmentController extends Controller
     {
         $this->authorizeWorkspace($assessment);
 
-        if ($assessment->status !== 'COMPLETE') {
+        if ($assessment->status !== Assessment::STATUS_COMPLETE) {
             return redirect()->route('assessments.run', $assessment);
         }
 
@@ -233,7 +233,7 @@ class AssessmentController extends Controller
 
         // History is comparable only when the exact template composition matches.
         $history = Assessment::where('project_id', $assessment->project_id)
-            ->where('status', 'COMPLETE')
+            ->where('status', Assessment::STATUS_COMPLETE)
             ->when(
                 $assessment->composition_hash,
                 fn ($query, $hash) => $query->where('composition_hash', $hash),

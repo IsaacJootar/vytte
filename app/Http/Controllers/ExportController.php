@@ -44,7 +44,7 @@ class ExportController extends Controller
         }
 
         $assessments = Assessment::where('project_id', $project->project_id)
-            ->where('status', 'COMPLETE')
+            ->where('status', Assessment::STATUS_COMPLETE)
             ->with(['target', 'score.maturityLevel', 'moduleScope.module', 'reportSnapshot'])
             ->orderBy('completed_at')
             ->get();
@@ -96,7 +96,7 @@ class ExportController extends Controller
             return back()->with('error', 'Shareable report links are not available on your current plan. Upgrade to share assessment results.');
         }
 
-        if ($assessment->status !== 'COMPLETE') {
+        if ($assessment->status !== Assessment::STATUS_COMPLETE) {
             return back()->with('error', 'Complete the assessment before sharing its final report.');
         }
         if (! $assessment->reportSnapshot()->exists()) {
@@ -140,7 +140,7 @@ class ExportController extends Controller
 
     public function sharedReport(Assessment $assessment, ReportSnapshotService $reports): View
     {
-        if ($assessment->status !== 'COMPLETE') {
+        if ($assessment->status !== Assessment::STATUS_COMPLETE) {
             abort(404);
         }
 
@@ -152,7 +152,7 @@ class ExportController extends Controller
     public function sharedReportByToken(string $token, ReportSnapshotService $reports): View
     {
         $shareLink = AssessmentShareLink::with('assessment')->where('token', $token)->first();
-        if (! $shareLink?->isUsable() || $shareLink->assessment?->status !== 'COMPLETE') {
+        if (! $shareLink?->isUsable() || $shareLink->assessment?->status !== Assessment::STATUS_COMPLETE) {
             abort(404);
         }
 

@@ -1,5 +1,25 @@
 # Architecture Remediation Progress
 
+## Module 15 — Canonical lifecycle states
+
+**Status:** Complete
+
+**Resolved:**
+
+- Assessment execution is formally `IN_PROGRESS -> COMPLETE`, with completion terminal.
+- Assessment-area execution uses the separate existing values `PENDING`, `COMPLETED`, and `EXCLUDED`.
+- Templates and template versions use `DRAFT -> PUBLISHED`; published versions remain immutable.
+- Models reject unknown assessment, publication, template, and template-version states.
+- A completed assessment cannot be silently reopened and must have `completed_at`.
+- Production services and controllers use canonical model constants instead of duplicating state strings.
+- Legacy assessment publication fields are documented as reserved and do not control report sharing or template publication.
+
+**Verification:**
+
+- Focused assessment, template, reporting, dashboard, progress, and public-runner suites: 111 tests, 263 assertions, all passed.
+- Full regression suite: 362 tests, 860 assertions, all passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 14 — Optional inline evidence
 
 **Status:** Complete

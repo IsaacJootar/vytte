@@ -29,7 +29,7 @@
 | AG-16 | Published/approved content is stable | Admin edits shared modules, domain labels, questions, active flags, and translations in place | Admin controllers, content tables | Critical | Freeze legacy behavior; template versions must isolate published content from master edits | Required |
 | AG-17 | Existing assessment creation is a stable one-module workflow | Current uncommitted worktree implements multi-module selection, exclusions, and `FULL_TARGET`/`MODULE_PICKER` | Assessment controller/runner/views/tests | Critical | Decide whether to accept, revert, or quarantine this work before Phase 22 baseline | Required |
 | AG-18 | Module selection is scoped to target applicability | Request validation checks only global module existence; crafted IDs can cross target types | Assessment controller and module tables | Critical | Add compatibility validation only after regression tests/approval | Required to fix |
-| AG-19 | Assessment statuses are documented consistently | Runtime uses `COMPLETE`, docs/UI rules use `COMPLETED`; publication has separate state | assessments and views/tests | High | Define state machine before snapshots; preserve existing values | Required |
+| AG-19 | Assessment statuses are documented consistently | Resolved: execution, area, and template-publication states have separate canonical constants, guarded transitions, and a documented state machine | Models, services, lifecycle documentation | Resolved | Preserve persisted compatibility values; add reopen/archive only with explicit snapshot and audit rules | Approved and implemented |
 | AG-20 | Incomplete assessments cannot be submitted | Direct submit marks an unanswered assessment complete; existing test expects this | Assessment controller/tests | Critical | Phase 22 should add characterization, then approve server-side completeness enforcement | Required to change behavior |
 | AG-21 | All documented question types are runnable | Runners save only scalar option choices; numeric/text/ranking/multi-select controls are absent | Livewire runners, responses, response_options | Critical | Postpone template breadth; support only proven response types until a storage/validation design is approved | Required |
 | AG-22 | Response uniqueness is enforced | Unique key includes nullable respondent ID, which permits duplicate authenticated rows under SQL NULL semantics | responses migration/model | Critical | Verify PostgreSQL behavior and concurrency in Phase 22; propose additive unique strategy | Required |
@@ -61,7 +61,6 @@
 
 - Current schema dictionary for the 60 migrated tables.
 - Supported question-type matrix and response-storage rules.
-- Assessment and publication state machine.
 - Public-response retention/privacy policy and respondent-role presentation within the standard assessment report.
 - Scoring scale, algorithm version, aggregation rules, and recalculation policy.
 - Content governance, curator permissions, and approval workflow.
@@ -113,6 +112,7 @@ These items require characterization and separate approvals. Template work must 
 - **Resolved in Module 12:** AG-07, AG-08, and AG-09. Workspace resolution requires membership, workspace-scoped queries fail closed, Project/Assessment policies centralize route authorization, and the database enforces one setting per project.
 - **Direction corrected in Module 13:** community, patient, citizen, and caregiver feedback are ordinary assessment templates. Their respondent roles must extend the existing scoring and reporting engine rather than create a parallel report.
 - **Resolved in Module 14:** AG-27 and AG-44. Optional supporting notes are progressively disclosed and attached directly to question responses; no evidence repository or parallel workflow was introduced.
+- **Resolved in Module 15:** AG-19. Canonical lifecycle constants, guarded terminal completion, immutable publication transitions, and a state-machine reference now distinguish assessment `COMPLETE` from area `COMPLETED`.
 - **Resolved in Module 7:** AG-15, AG-17, and the template-level enforcement portion of AG-45.
 - **Superseded in Module 7:** the legacy "standard battery" creation language and UI. Only the two approved creation paths remain.
 - **Additionally hardened in Module 1:** public Livewire identifiers and mutations now revalidate their token/assessment context; authenticated and public responses validate the question/option relationship.

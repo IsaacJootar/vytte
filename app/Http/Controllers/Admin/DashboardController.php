@@ -16,7 +16,7 @@ class DashboardController extends Controller
         $workspaceCount = Workspace::count();
         $moduleCount = AssessmentModule::count();
         $activeModuleCount = AssessmentModule::where('is_active', true)->count();
-        $totalAssessments = Assessment::where('status', 'COMPLETE')->count();
+        $totalAssessments = Assessment::where('status', Assessment::STATUS_COMPLETE)->count();
         $emailEnabled = PlatformSetting::get('email.notifications_enabled', false);
 
         return view('admin.dashboard', compact(

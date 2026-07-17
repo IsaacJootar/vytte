@@ -424,6 +424,29 @@ class AssessmentTest extends TestCase
 
     // ---- Submit ----
 
+    public function test_assessment_rejects_unknown_lifecycle_status(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+
+        $this->expectException(\LogicException::class);
+        $assessment->update(['status' => 'COMPLETED']);
+    }
+
+    public function test_completed_assessment_cannot_return_to_in_progress(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $this->seed(HivawQuestionsSeeder::class);
+        $assessment = $this->createAssessment($project, $target);
+        $assessment->update(['status' => Assessment::STATUS_COMPLETE, 'completed_at' => now()]);
+
+        $this->expectException(\LogicException::class);
+        $assessment->update(['status' => Assessment::STATUS_IN_PROGRESS, 'completed_at' => null]);
+    }
+
     public function test_submit_rejects_unanswered_scored_questions(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();

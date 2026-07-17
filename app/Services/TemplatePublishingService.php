@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AssessmentTemplate;
 use App\Models\AssessmentTemplateVersion;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -119,20 +120,20 @@ class TemplatePublishingService
         $payload = $this->content->payload($version);
 
         $version->update([
-            'status' => 'PUBLISHED',
+            'status' => AssessmentTemplateVersion::STATUS_PUBLISHED,
             'content_hash' => $this->content->hash($payload),
             'published_payload' => $payload,
             'published_at' => now(),
             'published_by' => $publisherId,
         ]);
-        $template->update(['status' => 'PUBLISHED']);
+        $template->update(['status' => AssessmentTemplate::STATUS_PUBLISHED]);
 
         $published = $version->fresh(['template', 'modules']);
         app(AuditService::class)->record(
             'template.version.published',
             $published,
-            ['status' => 'DRAFT'],
-            ['status' => 'PUBLISHED', 'content_hash' => $published->content_hash],
+            ['status' => AssessmentTemplateVersion::STATUS_DRAFT],
+            ['status' => AssessmentTemplateVersion::STATUS_PUBLISHED, 'content_hash' => $published->content_hash],
             userId: $publisherId,
         );
 

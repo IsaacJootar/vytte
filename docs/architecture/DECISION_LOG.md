@@ -183,6 +183,14 @@ Accepted items below record Isaac's explicit direction; all others remain implem
 - **Implementation consequence:** Remove the dedicated plan feature and any proposed separate reporting routes, services, views, and terminology. Preserve the durable external-response collection infrastructure, then extend the shared scoring and reporting contracts with explicit respondent-role semantics.
 - **Trade-off:** The shared scoring profile must become respondent-aware, but Vytte retains one coherent assessment and reporting model with lower maintenance cost and more consistent behavior.
 
+### DEC-021-021: Canonical lifecycle vocabulary
+
+- **Status:** Accepted, 17 July 2026
+- **Decision:** Preserve the existing persisted values while assigning each to one bounded state machine. Assessments use `IN_PROGRESS -> COMPLETE`; included assessment areas use `PENDING -> COMPLETED`; excluded areas use `EXCLUDED`; template versions use `DRAFT -> PUBLISHED`.
+- **Boundary:** `COMPLETE` and `COMPLETED` are not synonyms in storage. Completion and publication are terminal under the current product.
+- **Implementation consequence:** Application constants and model guards reject unknown assessment/template states, assessment reopening, and published-template mutation. Human-readable UI labels may say “Completed” without changing the database value.
+- **Postponed:** Assessment reopening, correction versions, cancellation, template retirement, and archival require explicit rules for immutable snapshots and audit history.
+
 ## Approval record
 
 Isaac granted approval on 17 July 2026 to apply every recommendation and correct all recorded gaps. Implementation remains incremental: complete, test, commit, and push each bounded module separately.

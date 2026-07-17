@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AssessmentModuleScope extends Model
 {
+    public const STATUS_PENDING = 'PENDING';
+
+    public const STATUS_COMPLETED = 'COMPLETED';
+
+    public const STATUS_EXCLUDED = 'EXCLUDED';
+
     protected $table = 'assessment_module_scope';
 
     protected $primaryKey = 'assessment_id';

@@ -12,7 +12,7 @@ class ReportSnapshotService
 
     public function createFor(Assessment $assessment): AssessmentReportSnapshot
     {
-        if ($assessment->status !== 'COMPLETE') {
+        if ($assessment->status !== Assessment::STATUS_COMPLETE) {
             throw new \LogicException('Only completed assessments can have a final report snapshot.');
         }
 

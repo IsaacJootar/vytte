@@ -17,7 +17,7 @@ class DashboardController extends Controller
         $activeProjectCount = Project::where('status', 'ACTIVE')->count();
 
         $totalAssessments = Assessment::whereIn('project_id', $workspaceProjectIds)
-            ->where('status', 'COMPLETE')
+            ->where('status', Assessment::STATUS_COMPLETE)
             ->count();
 
         $avgScore = null;
@@ -52,7 +52,7 @@ class DashboardController extends Controller
             ->get();
 
         $recentAssessments = Assessment::whereIn('project_id', $workspaceProjectIds)
-            ->where('status', 'COMPLETE')
+            ->where('status', Assessment::STATUS_COMPLETE)
             ->with(['project', 'moduleScope.module', 'score'])
             ->latest('completed_at')
             ->limit(5)

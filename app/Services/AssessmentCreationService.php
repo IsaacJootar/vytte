@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Assessment;
 use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentSnapshot;
+use App\Models\AssessmentTemplate;
 use App\Models\AssessmentTemplateVersion;
 use App\Models\AssessmentTier;
 use App\Models\Project;
@@ -26,7 +27,7 @@ class AssessmentCreationService
         $template = $version->template;
         $target = $project->targets()->first();
 
-        if ($version->status !== 'PUBLISHED' || $template->status !== 'PUBLISHED') {
+        if ($version->status !== AssessmentTemplateVersion::STATUS_PUBLISHED || $template->status !== AssessmentTemplate::STATUS_PUBLISHED) {
             throw ValidationException::withMessages(['template' => 'Only published template versions can start an assessment.']);
         }
 
@@ -90,8 +91,8 @@ class AssessmentCreationService
                 'creation_path' => $template->creation_path,
                 'template_version_id' => $version->template_version_id,
                 'composition_hash' => $hash,
-                'status' => 'IN_PROGRESS',
-                'publish_status' => 'DRAFT',
+                'status' => Assessment::STATUS_IN_PROGRESS,
+                'publish_status' => Assessment::PUBLISH_DRAFT,
                 'assessor_name' => auth()->user()?->name,
                 'started_at' => now(),
             ]);
@@ -102,7 +103,7 @@ class AssessmentCreationService
                     'module_id' => $moduleId,
                     'in_scope' => true,
                     'is_category_default' => true,
-                    'status' => 'PENDING',
+                    'status' => AssessmentModuleScope::STATUS_PENDING,
                 ]);
             }
 
@@ -113,7 +114,7 @@ class AssessmentCreationService
                     'in_scope' => false,
                     'is_category_default' => true,
                     'exclusion_reason' => trim($exclusionReasons[$moduleId]),
-                    'status' => 'EXCLUDED',
+                    'status' => AssessmentModuleScope::STATUS_EXCLUDED,
                 ]);
             }
 
