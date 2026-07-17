@@ -13,6 +13,8 @@ class TemplateContentService
             'modules.questions.translations',
             'modules.questions.questionType',
             'modules.questions.moduleDomain',
+            'modules.subIndices.domain',
+            'modules.subIndices.questions',
         ]);
         $modules = $version->modules;
 
@@ -24,6 +26,7 @@ class TemplateContentService
             'module_id' => $module->module_id,
             'module_code' => $module->module_code,
             'module_name' => $module->module_name,
+            'requires_consent' => (bool) $module->requires_consent,
             'display_order' => $module->pivot->display_order,
             'area_label' => $module->pivot->area_label,
             'questions' => $module->questions->map(fn ($question) => [
@@ -43,6 +46,19 @@ class TemplateContentService
                     'translations' => $option->translations->pluck('option_label', 'locale')->all(),
                     'option_order' => $option->option_order,
                     'score_weight' => $option->score_weight,
+                ])->values()->all(),
+            ])->values()->all(),
+            'scoring_profile' => $module->subIndices->map(fn ($subIndex) => [
+                'sub_index_id' => $subIndex->sub_index_id,
+                'acronym' => $subIndex->acronym,
+                'full_name' => $subIndex->full_name,
+                'domain_id' => $subIndex->domain_id,
+                'domain_code' => $subIndex->domain?->domain_code,
+                'domain_name' => $subIndex->domain?->domain_name,
+                'domain_display_order' => $subIndex->domain?->display_order,
+                'questions' => $subIndex->questions->map(fn ($question) => [
+                    'question_id' => $question->question_id,
+                    'weight' => (float) ($question->pivot->weight ?? 1.0),
                 ])->values()->all(),
             ])->values()->all(),
         ])->values()->all();

@@ -1,5 +1,27 @@
 # Architecture Remediation Progress
 
+## Module 9 — Frozen published content and scoring profiles
+
+**Status:** Complete
+
+**Resolved:**
+
+- Published versions now store the exact content payload represented by their SHA-256 hash.
+- Assessment creation reads that stored payload; later catalogue edits or template-pivot edits cannot change a published version.
+- Snapshot payloads include consent applicability and the full scoring profile: sub-index identity, domain identity, question membership/weights, and option weights.
+- Authenticated and public runners validate template responses and consent against the frozen snapshot contract.
+- Template assessment scoring reads frozen option weights and sub-index links and records algorithm `vytte-3.0-snapshot-profile`.
+- Legacy assessments retain a clearly separated live-profile compatibility path and are not silently recalculated.
+- Publishing rejects empty areas, unsupported response types, scored open text, missing option weights, and scored questions without sub-index mappings.
+- Incomplete school/facility sample content cannot weaken these rules; it must be curated and reseeded as a valid new template.
+
+**Verification:**
+
+- Focused template/snapshot/scoring suite: 25 tests, 77 assertions, all passed.
+- Clean temporary SQLite install, complete migrations, and full database seed: passed.
+- Full regression suite: passed.
+- PostgreSQL parity: pending restoration of Docker/PostgreSQL.
+
 ## Module 8 — Durable full-scope public responses
 
 **Status:** Complete

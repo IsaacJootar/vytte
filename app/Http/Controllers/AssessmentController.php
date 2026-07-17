@@ -45,7 +45,9 @@ class AssessmentController extends Controller
             ->where('setting_type_code', $settingTypeCode)
             ->value('uses_departments');
 
-        $templateQuery = fn ($query) => $query->where('status', 'PUBLISHED')->with('modules')->orderByDesc('version_number');
+        $templateQuery = fn ($query) => $query->where('status', 'PUBLISHED')
+            ->whereNotNull('published_payload')
+            ->orderByDesc('version_number');
         $comprehensiveTemplates = AssessmentTemplate::where('status', 'PUBLISHED')
             ->where('creation_path', 'COMPREHENSIVE')
             ->where('setting_type_code', $settingTypeCode)

@@ -9,16 +9,19 @@ use App\Models\AssessmentTemplateVersion;
 use App\Models\HealthDomain;
 use App\Models\Project;
 use App\Models\Question;
+use App\Models\Response;
 use App\Models\Target;
 use App\Models\TargetCategory;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
+use App\Services\ScoringService;
 use App\Services\TemplatePublishingService;
 use Database\Seeders\HivawQuestionsSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -116,6 +119,68 @@ class AssessmentSnapshotTest extends TestCase
 
         $this->assertSame($originalText, $assessment->snapshot->fresh()->payload[0]['questions'][0]['question_text']);
         $this->assertNotSame('Changed master question', $originalText);
+    }
+
+    public function test_new_assessment_uses_exact_published_content_after_catalogue_changes(): void
+    {
+        [$user, $project] = $this->projectContext();
+        $version = $this->publishedFocusedVersion();
+        $publishedQuestion = $version->published_payload[0]['questions'][0];
+
+        Question::where('question_id', $publishedQuestion['question_id'])
+            ->update(['question_text' => 'Catalogue text changed after publishing']);
+
+        $assessment = app(AssessmentCreationService::class)->create(
+            $project,
+            $version,
+            creatorId: $user->user_id,
+        );
+
+        $this->assertSame(
+            $publishedQuestion['question_text'],
+            $assessment->snapshot->payload[0]['questions'][0]['question_text']
+        );
+        $this->assertSame($version->content_hash, $assessment->snapshot->content_hash);
+    }
+
+    public function test_scoring_uses_frozen_option_and_sub_index_profile(): void
+    {
+        [$user, $project] = $this->projectContext();
+        $assessment = app(AssessmentCreationService::class)->create(
+            $project,
+            $this->publishedFocusedVersion(),
+            creatorId: $user->user_id,
+        );
+        $module = $assessment->snapshot->payload[0];
+        $chki = collect($module['scoring_profile'])->firstWhere('acronym', 'CHKI');
+        $questions = collect($module['questions'])->keyBy('question_id');
+
+        foreach ($chki['questions'] as $link) {
+            $question = $questions[$link['question_id']];
+            $option = collect($question['options'])->first(
+                fn ($candidate) => (float) $candidate['score_weight'] === 30.0
+            );
+            Response::create([
+                'assessment_id' => $assessment->assessment_id,
+                'question_id' => $question['question_id'],
+                'value_option_id' => $option['option_id'],
+                'answered_at' => now(),
+            ]);
+            DB::table('question_options')->where('option_id', $option['option_id'])->update(['score_weight' => 100]);
+            DB::table('sub_index_questions')
+                ->where('sub_index_id', $chki['sub_index_id'])
+                ->where('question_id', $question['question_id'])
+                ->update(['weight' => 99]);
+        }
+
+        app(ScoringService::class)->calculate($assessment);
+
+        $this->assertDatabaseHas('sub_index_scores', [
+            'assessment_id' => $assessment->assessment_id,
+            'sub_index_id' => $chki['sub_index_id'],
+            'score' => 30,
+            'scoring_version' => ScoringService::ALGORITHM_VERSION,
+        ]);
     }
 
     public function test_template_runner_reads_frozen_snapshot_content(): void

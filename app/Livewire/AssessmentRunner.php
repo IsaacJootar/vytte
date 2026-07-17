@@ -170,6 +170,21 @@ class AssessmentRunner extends Component
 
     private function checkConsentRequired(): void
     {
+        $snapshot = $this->assessment->snapshot()->first();
+        if ($snapshot && collect($snapshot->payload)->every(fn ($module) => array_key_exists('requires_consent', $module))) {
+            $consentModule = collect($snapshot->payload)->firstWhere('requires_consent', true);
+            $this->needsConsent = $consentModule !== null;
+            $this->consentModuleId = $consentModule ? (int) $consentModule['module_id'] : null;
+
+            if ($this->needsConsent) {
+                $this->consentGiven = RespondentConsent::where('assessment_id', $this->assessment->assessment_id)
+                    ->where('consented_by', auth()->id())
+                    ->exists();
+            }
+
+            return;
+        }
+
         $scopeModuleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
             ->where('in_scope', true)
             ->pluck('module_id');
@@ -219,15 +234,13 @@ class AssessmentRunner extends Component
             return;
         }
 
-        $moduleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
-            ->where('in_scope', true)
-            ->pluck('module_id');
-
-        $validSelection = Question::where('question_id', $questionId)
-            ->whereIn('module_id', $moduleIds)
-            ->where('is_active', true)
-            ->whereHas('options', fn ($query) => $query->where('option_id', $optionId))
-            ->exists();
+        $snapshotQuestion = $this->snapshotQuestion($questionId);
+        $validSelection = $snapshotQuestion
+            ? collect($snapshotQuestion['options'] ?? [])->contains('option_id', $optionId)
+            : $this->liveQuestionInScope($questionId, fn ($query) => $query->whereHas(
+                'options',
+                fn ($options) => $options->where('option_id', $optionId)
+            ));
 
         if (! $validSelection) {
             return;
@@ -277,14 +290,13 @@ class AssessmentRunner extends Component
             return;
         }
 
-        $moduleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
-            ->where('in_scope', true)
-            ->pluck('module_id');
-        $validQuestion = Question::where('question_id', $questionId)
-            ->whereIn('module_id', $moduleIds)
-            ->where('is_active', true)
-            ->whereHas('questionType', fn ($query) => $query->where('type_code', 'OPEN_ENDED'))
-            ->exists();
+        $snapshotQuestion = $this->snapshotQuestion($questionId);
+        $validQuestion = $snapshotQuestion
+            ? ($snapshotQuestion['response_type'] ?? null) === 'OPEN_ENDED'
+            : $this->liveQuestionInScope($questionId, fn ($query) => $query->whereHas(
+                'questionType',
+                fn ($types) => $types->where('type_code', 'OPEN_ENDED')
+            ));
 
         if (! $validQuestion) {
             return;
@@ -348,5 +360,30 @@ class AssessmentRunner extends Component
             ->exists();
 
         abort_unless($projectBelongsToWorkspace, 404);
+    }
+
+    private function snapshotQuestion(string $questionId): ?array
+    {
+        $snapshot = $this->assessment->snapshot()->first();
+        if (! $snapshot) {
+            return null;
+        }
+
+        return collect($snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->firstWhere('question_id', $questionId);
+    }
+
+    private function liveQuestionInScope(string $questionId, callable $constraint): bool
+    {
+        $moduleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
+            ->where('in_scope', true)
+            ->pluck('module_id');
+        $query = Question::where('question_id', $questionId)
+            ->whereIn('module_id', $moduleIds)
+            ->where('is_active', true);
+        $constraint($query);
+
+        return $query->exists();
     }
 }

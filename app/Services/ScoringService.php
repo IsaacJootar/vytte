@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class ScoringService
 {
-    public const ALGORITHM_VERSION = 'vytte-2.0-normalized';
+    public const ALGORITHM_VERSION = 'vytte-3.0-snapshot-profile';
 
     public function calculate(Assessment $assessment): void
     {
@@ -23,22 +23,14 @@ class ScoringService
             return;
         }
 
-        // All responses for this assessment that have a selected option
+        // Staff/assessor responses remain separate from public voice cohorts.
         $responses = Response::where('assessment_id', $assessment->assessment_id)
             ->whereNull('respondent_id')
             ->whereNotNull('value_option_id')
-            ->with('selectedOption:option_id,score_weight')
             ->get()
             ->keyBy('question_id');
 
-        // Sub-indices for all in-scope modules, with their linked scored questions
-        $subIndices = SubIndex::whereIn('module_id', $moduleIds)
-            ->with(['questions' => function ($q) {
-                $q->select('questions.question_id', 'questions.is_scored')
-                    ->withPivot('weight')
-                    ->with('options:option_id,question_id,score_weight');
-            }])
-            ->get();
+        $subIndices = $this->scoringProfile($assessment, $moduleIds);
 
         $subIndexResults = [];
 
@@ -48,20 +40,26 @@ class ScoringService
             $scoredTotal = 0;
             $answeredCount = 0;
 
-            foreach ($subIndex->questions as $question) {
-                if (! $question->is_scored) {
+            foreach ($subIndex['questions'] as $question) {
+                if (! $question['is_scored']) {
                     continue;
                 }
 
                 $scoredTotal++;
-                $weight = (float) ($question->pivot->weight ?? 1.0);
-                $response = $responses->get($question->question_id);
+                $weight = (float) $question['weight'];
+                $response = $responses->get($question['question_id']);
 
-                if ($response && $response->selectedOption && $response->selectedOption->score_weight !== null) {
-                    $optionScore = (float) $response->selectedOption->score_weight;
-                    $questionScaleMaximum = $question->options
+                if ($response) {
+                    $selectedOption = collect($question['options'])
+                        ->firstWhere('option_id', (int) $response->value_option_id);
+                    if ($selectedOption === null || $selectedOption['score_weight'] === null) {
+                        continue;
+                    }
+
+                    $optionScore = (float) $selectedOption['score_weight'];
+                    $questionScaleMaximum = collect($question['options'])
                         ->whereNotNull('score_weight')
-                        ->max(fn ($option) => (float) $option->score_weight);
+                        ->max(fn ($option) => (float) $option['score_weight']);
 
                     if ($questionScaleMaximum !== null && $questionScaleMaximum <= 1.0) {
                         $optionScore *= 100;
@@ -81,16 +79,16 @@ class ScoringService
                 $status = 'NOT_CALIBRATED';
             }
 
-            $subIndexResults[$subIndex->sub_index_id] = [
+            $subIndexResults[$subIndex['sub_index_id']] = [
                 'score' => $score,
                 'status' => $status,
-                'domain_id' => $subIndex->domain_id,
+                'domain_id' => $subIndex['domain_id'],
             ];
 
             DB::table('sub_index_scores')->upsert(
                 [
                     'assessment_id' => $assessment->assessment_id,
-                    'sub_index_id' => $subIndex->sub_index_id,
+                    'sub_index_id' => $subIndex['sub_index_id'],
                     'respondent_type' => 'STAFF',
                     'score' => $score,
                     'calibration_status' => $status,
@@ -180,6 +178,56 @@ class ScoringService
             ['assessment_id'],
             ['overall_score', 'calibration_status', 'scoring_version', 'expected_module_count', 'active_module_count', 'maturity_level_id', 'calculated_at']
         );
+    }
+
+    private function scoringProfile(Assessment $assessment, array $moduleIds): array
+    {
+        $snapshot = $assessment->snapshot()->first();
+        if ($snapshot && collect($snapshot->payload)->every(fn ($module) => array_key_exists('scoring_profile', $module))) {
+            return collect($snapshot->payload)->flatMap(function ($module) {
+                $questions = collect($module['questions'] ?? [])->keyBy('question_id');
+
+                return collect($module['scoring_profile'] ?? [])->map(function ($subIndex) use ($questions) {
+                    $profileQuestions = collect($subIndex['questions'] ?? [])->map(function ($link) use ($questions) {
+                        $question = $questions->get($link['question_id']);
+
+                        return [
+                            'question_id' => $link['question_id'],
+                            'is_scored' => (bool) ($question['is_scored'] ?? false),
+                            'weight' => (float) ($link['weight'] ?? 1.0),
+                            'options' => $question['options'] ?? [],
+                        ];
+                    })->all();
+
+                    return [
+                        'sub_index_id' => (int) $subIndex['sub_index_id'],
+                        'domain_id' => (int) $subIndex['domain_id'],
+                        'questions' => $profileQuestions,
+                    ];
+                });
+            })->values()->all();
+        }
+
+        return SubIndex::whereIn('module_id', $moduleIds)
+            ->with(['questions' => function ($query) {
+                $query->select('questions.question_id', 'questions.is_scored')
+                    ->withPivot('weight')
+                    ->with('options:option_id,question_id,score_weight');
+            }])
+            ->get()
+            ->map(fn ($subIndex) => [
+                'sub_index_id' => $subIndex->sub_index_id,
+                'domain_id' => $subIndex->domain_id,
+                'questions' => $subIndex->questions->map(fn ($question) => [
+                    'question_id' => $question->question_id,
+                    'is_scored' => (bool) $question->is_scored,
+                    'weight' => (float) ($question->pivot->weight ?? 1.0),
+                    'options' => $question->options->map(fn ($option) => [
+                        'option_id' => $option->option_id,
+                        'score_weight' => $option->score_weight,
+                    ])->all(),
+                ])->all(),
+            ])->all();
     }
 
     /**

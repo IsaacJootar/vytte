@@ -56,6 +56,11 @@ class TemplatePublishingTest extends TestCase
 
         $this->assertSame('PUBLISHED', $published->status);
         $this->assertSame(64, strlen($published->content_hash));
+        $this->assertIsArray($published->published_payload);
+        $this->assertSame(
+            $published->content_hash,
+            hash('sha256', json_encode($published->published_payload, JSON_THROW_ON_ERROR))
+        );
         $this->assertNotNull($published->published_at);
         $this->assertSame('PUBLISHED', $template->fresh()->status);
     }

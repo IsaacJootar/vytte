@@ -45,9 +45,15 @@ class TemplatePublishingService
             $errors['modules'][] = 'A template must contain at least one assessment module.';
         }
 
+        $moduleIds = $modules->pluck('module_id');
+        $modulesWithoutQuestions = $modules->filter(fn ($module) => ! $module->questions->contains('is_active', true));
+        if ($modulesWithoutQuestions->isNotEmpty()) {
+            $errors['questions'][] = 'Every assessment area must contain at least one active question.';
+        }
+
         $unsupportedTypes = DB::table('questions as q')
             ->join('question_types as qt', 'qt.type_id', '=', 'q.type_id')
-            ->whereIn('q.module_id', $modules->pluck('module_id'))
+            ->whereIn('q.module_id', $moduleIds)
             ->where('q.is_active', true)
             ->whereNotIn('qt.type_code', self::SUPPORTED_RESPONSE_TYPES)
             ->distinct()
@@ -60,7 +66,7 @@ class TemplatePublishingService
         $questionsWithoutOptions = DB::table('questions as q')
             ->join('question_types as qt', 'qt.type_id', '=', 'q.type_id')
             ->leftJoin('question_options as qo', 'qo.question_id', '=', 'q.question_id')
-            ->whereIn('q.module_id', $modules->pluck('module_id'))
+            ->whereIn('q.module_id', $moduleIds)
             ->where('q.is_active', true)
             ->where('qt.type_code', '!=', 'OPEN_ENDED')
             ->groupBy('q.question_id', 'qt.type_code')
@@ -69,6 +75,41 @@ class TemplatePublishingService
 
         if ($questionsWithoutOptions) {
             $errors['scoring'][] = 'Every active question must have a currently supported response input.';
+        }
+
+        $unscorableOpenText = DB::table('questions as q')
+            ->join('question_types as qt', 'qt.type_id', '=', 'q.type_id')
+            ->whereIn('q.module_id', $moduleIds)
+            ->where('q.is_active', true)
+            ->where('q.is_scored', true)
+            ->where('qt.type_code', 'OPEN_ENDED')
+            ->exists();
+        if ($unscorableOpenText) {
+            $errors['scoring'][] = 'Open-text questions must be unscored supporting context.';
+        }
+
+        $scoredQuestionsWithoutProfile = DB::table('questions as q')
+            ->leftJoin('sub_index_questions as siq', 'siq.question_id', '=', 'q.question_id')
+            ->whereIn('q.module_id', $moduleIds)
+            ->where('q.is_active', true)
+            ->where('q.is_scored', true)
+            ->whereNull('siq.sub_index_id')
+            ->exists();
+        if ($scoredQuestionsWithoutProfile) {
+            $errors['scoring'][] = 'Every scored question must belong to the template scoring profile.';
+        }
+
+        $scoredOptionsWithoutWeight = DB::table('questions as q')
+            ->join('question_types as qt', 'qt.type_id', '=', 'q.type_id')
+            ->join('question_options as qo', 'qo.question_id', '=', 'q.question_id')
+            ->whereIn('q.module_id', $moduleIds)
+            ->where('q.is_active', true)
+            ->where('q.is_scored', true)
+            ->where('qt.type_code', '!=', 'OPEN_ENDED')
+            ->whereNull('qo.score_weight')
+            ->exists();
+        if ($scoredOptionsWithoutWeight) {
+            $errors['scoring'][] = 'Every option on a scored question must have a score weight.';
         }
 
         if ($errors !== []) {
@@ -80,6 +121,7 @@ class TemplatePublishingService
         $version->update([
             'status' => 'PUBLISHED',
             'content_hash' => $this->content->hash($payload),
+            'published_payload' => $payload,
             'published_at' => now(),
             'published_by' => $publisherId,
         ]);

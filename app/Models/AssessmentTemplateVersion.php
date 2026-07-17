@@ -15,12 +15,13 @@ class AssessmentTemplateVersion extends Model
 
     protected $fillable = [
         'template_id', 'version_number', 'status', 'scoring_version',
-        'content_hash', 'parent_version_id', 'is_customized',
+        'content_hash', 'published_payload', 'parent_version_id', 'is_customized',
         'published_at', 'published_by',
     ];
 
     protected $casts = [
         'is_customized' => 'boolean',
+        'published_payload' => 'array',
         'published_at' => 'datetime',
     ];
 

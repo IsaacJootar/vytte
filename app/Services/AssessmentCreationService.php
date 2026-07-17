@@ -22,7 +22,7 @@ class AssessmentCreationService
         array $exclusionReasons = [],
         ?string $creatorId = null,
     ): Assessment {
-        $version->load(['template', 'modules']);
+        $version->load('template');
         $template = $version->template;
         $target = $project->targets()->first();
 
@@ -44,7 +44,15 @@ class AssessmentCreationService
             }
         }
 
-        $availableIds = $version->modules->pluck('module_id')->map(fn ($id) => (int) $id);
+        if (! is_array($version->published_payload)) {
+            throw ValidationException::withMessages([
+                'template' => 'This legacy template version has no immutable published content. Publish a new version before using it.',
+            ]);
+        }
+
+        $availableIds = collect($version->published_payload)
+            ->pluck('module_id')
+            ->map(fn ($id) => (int) $id);
 
         if ($template->creation_path === 'FOCUSED') {
             $selectedIds = $availableIds;
@@ -62,7 +70,11 @@ class AssessmentCreationService
             }
         }
 
-        $payload = $this->content->payload($version, $selectedIds->all());
+        $payload = collect($version->published_payload)
+            ->whereIn('module_id', $selectedIds->all())
+            ->sortBy('display_order')
+            ->values()
+            ->all();
         $hash = $this->content->hash($payload);
         $tierId = AssessmentTier::where('tier_code', 'TIER_1')->value('assessment_tier_id');
 

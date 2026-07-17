@@ -59,6 +59,8 @@ There are exactly two user-facing creation paths.
 
 Both paths delegate to `AssessmentCreationService`. It verifies the published immutable template version, setting compatibility, composition rules, and plan limits; creates the assessment and scope rows; and stores immutable composition/content snapshots with provenance and hashes. Runtime content for template-created assessments is loaded from the snapshot rather than mutable catalogue questions.
 
+Publishing stores both the SHA-256 hash and the exact hashed payload. New assessments are created from that stored payload, never by rebuilding a published version from the mutable catalogue.
+
 The old default-battery/module-picker creation path is no longer used. The former PHSAI and school sample seeders are not part of normal database seeding. The repository's valid HIV focused content is seeded and published as a selectable template.
 
 ## 3. Authenticated runner
@@ -99,14 +101,14 @@ The assessment content and composition are immutable through snapshots. Remainin
 ## 6. Scoring flow
 
 1. Read all in-scope module IDs and authenticated responses.
-2. Normalize option score scales to a canonical 0–100 range.
-3. Calculate weighted sub-index results with explicit calibration states.
-4. Aggregate domain and overall results and map the overall result to a maturity level.
-5. Persist the scoring version with calculated scores so future algorithm changes remain distinguishable.
+2. For template-created assessments, read sub-index membership, question weights, option weights, and domain identity from the assessment snapshot. Legacy assessments use the live profile compatibility path.
+3. Normalize option score scales to a canonical 0–100 range.
+4. Calculate weighted sub-index results with explicit calibration states.
+5. Aggregate domain and overall results and map the overall result to a maturity level.
+6. Persist the scoring version with calculated scores so future algorithm changes remain distinguishable.
 
 ### Remaining scoring risks
 
-- Snapshot-created assessments still need their scoring profile and weights made fully independent of mutable catalogue scoring relationships.
 - Domain weights and cross-module aggregation policy require an explicit governed formula.
 - Public/respondent cohort scoring must remain separate from staff/assessor scoring unless a future approved evidence model says otherwise.
 - Numeric, multi-select, ranking, observation, and corroboration models are postponed until their product need and scoring semantics are approved.

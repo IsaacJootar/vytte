@@ -57,14 +57,14 @@
                         @endif
 
                         <div class="mt-4 space-y-2">
-                            @foreach ($version->modules as $module)
+                            @foreach ($version->published_payload as $module)
                                 <div x-data="{ included: true }" class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
                                     <label class="flex items-center gap-3 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                                        <input type="checkbox" name="modules[]" value="{{ $module->module_id }}" x-model="included" checked class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500">
-                                        {{ $module->pivot->area_label ?: $module->module_name }}
+                                        <input type="checkbox" name="modules[]" value="{{ $module['module_id'] }}" x-model="included" checked class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500">
+                                        {{ $module['area_label'] ?: $module['module_name'] }}
                                     </label>
                                     <input x-show="!included" x-cloak :required="!included" type="text"
-                                           name="exclusion_reasons[{{ $module->module_id }}]"
+                                           name="exclusion_reasons[{{ $module['module_id'] }}]"
                                            placeholder="Why does this area not apply?"
                                            class="mt-3 w-full rounded-lg border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-700">
                                 </div>

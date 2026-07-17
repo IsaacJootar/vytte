@@ -464,6 +464,15 @@ class PublicRespondentRunner extends Component
 
     private function consentModuleIds(): array
     {
+        $snapshot = Assessment::with('snapshot')->find($this->assessmentId)?->snapshot;
+        if ($snapshot && collect($snapshot->payload)->every(fn ($module) => array_key_exists('requires_consent', $module))) {
+            return collect($snapshot->payload)
+                ->where('requires_consent', true)
+                ->pluck('module_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
+
         return AssessmentModule::whereIn('module_id', $this->moduleIds)
             ->where('requires_consent', true)
             ->pluck('module_id')->map(fn ($id) => (int) $id)->all();
