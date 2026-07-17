@@ -35,6 +35,80 @@
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
+/* ── Metric cards — gradient style ── */
+.metric-card {
+    border-radius: 14px;
+    padding: 1.25rem;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+}
+.metric-card::after {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(255,255,255,0.10) 0%, transparent 70%);
+    pointer-events: none;
+}
+.metric-card-label {
+    font-size: 0.70rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.82);
+    margin-bottom: 0.625rem;
+}
+.metric-card-value {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+}
+.metric-card-sub {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.78);
+    margin-top: 0.35rem;
+}
+.metric-icon-badge {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.metric-blue   { background: linear-gradient(135deg, #0369A1 0%, #0C4A6E 100%); box-shadow: 0 4px 14px rgba(3,105,161,0.30); }
+.metric-slate  { background: linear-gradient(135deg, #334155 0%, #0F172A 100%); box-shadow: 0 4px 14px rgba(15,23,42,0.25); }
+.metric-strong { background: linear-gradient(135deg, #059669 0%, #047857 100%); box-shadow: 0 4px 14px rgba(5,150,105,0.30); }
+.metric-moderate { background: linear-gradient(135deg, #D97706 0%, #B45309 100%); box-shadow: 0 4px 14px rgba(217,119,6,0.30); }
+.metric-weak   { background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%); box-shadow: 0 4px 14px rgba(220,38,38,0.30); }
+.metric-none   { background: linear-gradient(135deg, #64748B 0%, #334155 100%); box-shadow: 0 4px 14px rgba(51,65,85,0.25); }
+
+/* ── Section cards ── */
+.section-card {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+}
+.dark .section-card {
+    background: #1E293B;
+    border-color: #334155;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+.section-card-header {
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #F1F5F9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.dark .section-card-header {
+    border-color: #334155;
+}
+
 /* Sidebar active indicator — left border pill */
 .sb-active-bar::before {
     content: '';

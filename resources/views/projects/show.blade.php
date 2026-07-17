@@ -136,7 +136,16 @@
             @else
                 <div class="divide-y divide-slate-100 dark:divide-slate-700">
                     @foreach ($project->assessments as $assessment)
-                        @php $scope = $assessment->moduleScope->first(); @endphp
+                        @php
+                            $inScopeScopes  = $assessment->moduleScope->where('in_scope', true);
+                            $inScopeCount   = $inScopeScopes->count();
+                            $assessmentLabel = $assessment->reportSnapshot?->payload['title']
+                                ?? $assessment->templateVersion?->template?->template_name
+                                ?? ($inScopeCount === 1
+                                    ? ($inScopeScopes->first()?->module?->module_name ?? 'Focused Health Assessment')
+                                    : 'Comprehensive Health Assessment');
+                            $moduleCountLabel = $inScopeCount > 1 ? $inScopeCount . ' assessment areas' : null;
+                        @endphp
                         <div class="flex items-center justify-between px-5 py-3.5">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div class="flex-shrink-0">
@@ -156,7 +165,10 @@
                                 </div>
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">
-                                        {{ $scope?->module?->module_name ?? 'Unknown module' }}
+                                        {{ $assessmentLabel }}
+                                        @if ($moduleCountLabel)
+                                            <span class="ml-1 text-xs font-normal text-slate-400 dark:text-slate-500">· {{ $moduleCountLabel }}</span>
+                                        @endif
                                     </p>
                                     <p class="text-xs text-slate-400 dark:text-slate-500">
                                         {{ $assessment->status === 'COMPLETE' ? 'Completed' : 'In progress' }}

@@ -25,11 +25,6 @@
                 <div class="text-[10px] text-white/[0.35] leading-none mt-0.5 truncate">
                     {{ auth()->user()->activeWorkspace?->name ?? 'Workspace' }}
                 </div>
-                @php $sidebarPlan = auth()->user()->activeWorkspace?->plan ?? 'FREE'; @endphp
-                <span class="mt-1 inline-block text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded
-                    {{ $sidebarPlan === 'AGENCY' ? 'bg-violet-500/25 text-violet-200' : ($sidebarPlan === 'PRO' ? 'bg-vytte-500/25 text-vytte-200' : 'bg-white/10 text-white/40') }}">
-                    {{ $sidebarPlan }}
-                </span>
             </div>
         </div>
 
@@ -98,6 +93,12 @@
                 icon="cog-6-tooth"
                 :active="request()->routeIs('profile.*') || request()->routeIs('settings.*')"
             >Settings</x-sidebar-nav-item>
+
+            <x-sidebar-nav-item
+                href="{{ route('billing.index') }}"
+                icon="credit-card"
+                :active="request()->routeIs('billing.*')"
+            >Plans &amp; Billing</x-sidebar-nav-item>
         </nav>
 
         {{-- User footer --}}

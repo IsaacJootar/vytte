@@ -20,7 +20,12 @@
         @forelse ($assessments as $assessment)
             @php
                 $payload = $assessment->reportSnapshot?->payload ?? [];
-                $title = $payload['title'] ?? 'Assessment report';
+                $includedAreas = $assessment->moduleScope->where('in_scope', true);
+                $title = $payload['title']
+                    ?? $assessment->templateVersion?->template?->template_name
+                    ?? ($includedAreas->count() === 1
+                        ? ($includedAreas->first()?->module?->module_name ?? 'Focused Health Assessment')
+                        : 'Comprehensive Health Assessment');
                 $activeLinks = $assessment->shareLinks->filter(fn ($link) => $link->isUsable());
             @endphp
             <section class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">

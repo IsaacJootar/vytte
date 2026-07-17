@@ -1,5 +1,25 @@
 # Architecture Remediation Progress
 
+## Module 19 — UI review and local migration recovery
+
+**Status:** Complete locally
+
+**Resolved:**
+
+- Reviewed and retained the pending dashboard visual hierarchy, reusable section/metric styles, result-title correction, project assessment labels, and valid-form loading behavior.
+- Replaced remaining first-module and legacy scope labels with immutable report titles, published template names, or current comprehensive/focused terminology.
+- Moved Plans & Billing from the workspace header area to the sidebar immediately after Settings.
+- Improved metric-card text contrast and preserved responsive/dark-mode behavior.
+- Repaired the SQLite migration path that lost a partial-index predicate during a populated table rebuild; the migration can safely resume after a partial SQLite DDL failure.
+- Applied every pending migration to the local SQLite database without resetting its data, restoring the Reports page and multi-respondent tables.
+
+**Verification:**
+
+- UI/report/billing/project focused suite: 78 tests, 196 assertions, all passed.
+- Full regression suite: 376 tests, 918 assertions, all passed.
+- Eight-migration rollback/reapply cycle and complete seed: passed.
+- Production Vite frontend build: passed.
+
 ## Module 18 — Unified multi-respondent scoring
 
 **Status:** Complete locally

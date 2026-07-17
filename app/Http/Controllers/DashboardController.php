@@ -53,7 +53,7 @@ class DashboardController extends Controller
 
         $recentAssessments = Assessment::whereIn('project_id', $workspaceProjectIds)
             ->where('status', Assessment::STATUS_COMPLETE)
-            ->with(['project', 'moduleScope.module', 'score'])
+            ->with(['project', 'moduleScope.module', 'score', 'reportSnapshot', 'templateVersion.template'])
             ->latest('completed_at')
             ->limit(5)
             ->get();

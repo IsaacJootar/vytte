@@ -94,6 +94,16 @@ class BillingTest extends TestCase
             ->assertSee('Agency');
     }
 
+    public function test_plans_and_billing_appears_after_settings_in_the_sidebar(): void
+    {
+        [$user] = $this->createWorkspaceWithOwner();
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSeeInOrder(['Settings', 'Plans &amp; Billing'], false);
+    }
+
     public function test_billing_page_shows_current_plan(): void
     {
         [$user] = $this->createWorkspaceWithOwner('PRO');
