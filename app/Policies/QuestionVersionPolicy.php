@@ -14,7 +14,7 @@ class QuestionVersionPolicy
 
     public function update(User $user, QuestionVersion $version): bool
     {
-        return $user->isPlatformAdmin() && $version->status !== QuestionVersion::STATUS_PUBLISHED;
+        return $user->isPlatformAdmin() && $version->status === QuestionVersion::STATUS_DRAFT;
     }
 
     public function publish(User $user, QuestionVersion $version): bool

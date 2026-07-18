@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DepartmentFrameworkVersion extends Model
@@ -80,14 +81,21 @@ class DepartmentFrameworkVersion extends Model
         });
 
         static::updating(function (self $version): void {
-            if ($version->getOriginal('status') === self::STATUS_PUBLISHED) {
-                throw new \LogicException('Published department framework versions are immutable. Publish a new version instead.');
+            if (in_array($version->getOriginal('status'), [self::STATUS_PUBLISHED, self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true)) {
+                $dirty = array_keys($version->getDirty());
+                $disallowed = array_diff($dirty, ['status', 'updated_at']);
+                $statusTransitionAllowed = $version->getOriginal('status') === self::STATUS_PUBLISHED
+                    && in_array($version->status, [self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true);
+
+                if ($disallowed !== [] || ! $statusTransitionAllowed) {
+                    throw new \LogicException('Published, superseded, and archived framework versions are immutable. Publish a successor draft instead.');
+                }
             }
         });
 
         static::deleting(function (self $version): void {
-            if ($version->status === self::STATUS_PUBLISHED) {
-                throw new \LogicException('Published department framework versions cannot be deleted.');
+            if (in_array($version->status, [self::STATUS_PUBLISHED, self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true)) {
+                throw new \LogicException('Published, superseded, and archived framework versions cannot be deleted.');
             }
         });
     }
@@ -113,5 +121,20 @@ class DepartmentFrameworkVersion extends Model
     {
         return $this->hasMany(FrameworkQuestionPlacement::class, 'framework_version_id', 'framework_version_id')
             ->orderBy('display_order');
+    }
+
+    public function parentVersion(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_version_id', 'framework_version_id');
+    }
+
+    public function catalogueReleases(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AssessmentCatalogueRelease::class,
+            'assessment_catalogue_department_versions',
+            'framework_version_id',
+            'catalogue_release_id'
+        )->withPivot(['module_id', 'applicability', 'display_order', 'area_label']);
     }
 }

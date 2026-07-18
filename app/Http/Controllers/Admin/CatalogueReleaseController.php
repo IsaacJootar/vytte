@@ -7,11 +7,14 @@ use App\Models\AssessmentCatalogueRelease;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\FacilityProfile;
 use App\Models\HealthDomain;
+use App\Services\AuditService;
 use App\Services\ScoringService;
 use App\Services\CataloguePublishingService;
+use App\Services\GovernanceDependencyService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CatalogueReleaseController extends Controller
@@ -72,9 +75,9 @@ class CatalogueReleaseController extends Controller
             ->with('success', 'Draft catalogue release created.');
     }
 
-    public function show(AssessmentCatalogueRelease $release): View
+    public function show(AssessmentCatalogueRelease $release, GovernanceDependencyService $dependencies): View
     {
-        $release->load(['facilityProfile.departments', 'healthDomain', 'departmentFrameworkVersions.module']);
+        $release->load(['facilityProfile.departments', 'healthDomain', 'departmentFrameworkVersions.module', 'parentRelease']);
 
         return view('admin.catalogue-releases.show', [
             'release' => $release,
@@ -84,6 +87,7 @@ class CatalogueReleaseController extends Controller
                 ->get(),
             'facilityProfiles' => FacilityProfile::where('status', FacilityProfile::STATUS_PUBLISHED)->orderBy('profile_name')->get(),
             'healthDomains' => HealthDomain::orderBy('domain_name')->get(),
+            'dependencySummary' => $dependencies->catalogueRelease($release),
         ]);
     }
 
@@ -159,6 +163,83 @@ class CatalogueReleaseController extends Controller
         }
 
         return back()->with('success', 'Catalogue release published and frozen.');
+    }
+
+    public function supersede(AssessmentCatalogueRelease $release, AuditService $audit, GovernanceDependencyService $dependencies): RedirectResponse
+    {
+        if ($release->status !== AssessmentCatalogueRelease::STATUS_PUBLISHED) {
+            return back()->withErrors(['status' => 'Only published catalogue releases can be superseded.']);
+        }
+
+        $dependencySummary = $dependencies->catalogueRelease($release);
+
+        $successor = DB::transaction(function () use ($release, $audit, $dependencySummary): AssessmentCatalogueRelease {
+            $release->load('departmentFrameworkVersions');
+            $baseCode = preg_replace('/_V\d+$/', '', $release->release_code) ?: $release->release_code;
+            $nextNumber = AssessmentCatalogueRelease::where('release_code', 'LIKE', $baseCode.'_V%')->count() + 1;
+            $releaseCode = $baseCode.'_V'.$nextNumber;
+            while (AssessmentCatalogueRelease::where('release_code', $releaseCode)->exists()) {
+                $nextNumber++;
+                $releaseCode = $baseCode.'_V'.$nextNumber;
+            }
+
+            $successor = AssessmentCatalogueRelease::create([
+                'release_code' => $releaseCode,
+                'parent_release_id' => $release->catalogue_release_id,
+                'release_name' => $release->release_name,
+                'description' => $release->description,
+                'creation_path' => $release->creation_path,
+                'facility_profile_id' => $release->facility_profile_id,
+                'health_domain_id' => $release->health_domain_id,
+                'status' => AssessmentCatalogueRelease::STATUS_DRAFT,
+                'aggregation_policy' => $release->aggregation_policy,
+                'composition_rules' => $release->composition_rules,
+                'collection_config' => $release->collection_config,
+            ]);
+
+            foreach ($release->departmentFrameworkVersions as $framework) {
+                $successor->departmentFrameworkVersions()->attach($framework->framework_version_id, [
+                    'module_id' => $framework->pivot->module_id,
+                    'applicability' => $framework->pivot->applicability,
+                    'display_order' => $framework->pivot->display_order,
+                    'area_label' => $framework->pivot->area_label,
+                ]);
+            }
+
+            $old = ['status' => $release->status];
+            $release->update(['status' => AssessmentCatalogueRelease::STATUS_SUPERSEDED]);
+            $audit->record('assessment.catalogue.superseded', $release->fresh(), $old, [
+                'status' => AssessmentCatalogueRelease::STATUS_SUPERSEDED,
+                'successor_catalogue_release_id' => $successor->catalogue_release_id,
+                'dependency_summary' => $dependencySummary,
+            ]);
+
+            return $successor;
+        });
+
+        return redirect()->route('admin.catalogue-releases.show', $successor)
+            ->with('success', 'Successor draft catalogue release created. Existing assessments and reports still reference the original frozen release.');
+    }
+
+    public function archive(AssessmentCatalogueRelease $release, AuditService $audit, GovernanceDependencyService $dependencies): RedirectResponse
+    {
+        if (! in_array($release->status, [AssessmentCatalogueRelease::STATUS_DRAFT, AssessmentCatalogueRelease::STATUS_PUBLISHED], true)) {
+            return back()->withErrors(['status' => 'This catalogue release is already closed and cannot be archived again.']);
+        }
+
+        $dependencySummary = $dependencies->catalogueRelease($release);
+        if ($dependencies->hasBlockingArchiveDependencies($dependencySummary)) {
+            return back()->withErrors(['archive' => 'This catalogue release is referenced by assessments, snapshots, or reports and cannot be archived. Create a successor release instead.']);
+        }
+
+        $old = ['status' => $release->status];
+        $release->update(['status' => AssessmentCatalogueRelease::STATUS_ARCHIVED]);
+        $audit->record('assessment.catalogue.archived', $release->fresh(), $old, [
+            'status' => AssessmentCatalogueRelease::STATUS_ARCHIVED,
+            'dependency_summary' => $dependencySummary,
+        ]);
+
+        return back()->with('success', 'Catalogue release archived.');
     }
 
     private function ensureDraft(AssessmentCatalogueRelease $release): void

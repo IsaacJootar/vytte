@@ -26,6 +26,7 @@ class QuestionVersion extends Model
 
     protected $fillable = [
         'question_id',
+        'parent_version_id',
         'version_number',
         'status',
         'question_text',
@@ -71,14 +72,21 @@ class QuestionVersion extends Model
         });
 
         static::updating(function (self $version): void {
-            if ($version->getOriginal('status') === self::STATUS_PUBLISHED) {
-                throw new \LogicException('Published question versions are immutable. Create a new question version instead.');
+            if (in_array($version->getOriginal('status'), [self::STATUS_PUBLISHED, self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true)) {
+                $dirty = array_keys($version->getDirty());
+                $disallowed = array_diff($dirty, ['status', 'updated_at']);
+                $statusTransitionAllowed = $version->getOriginal('status') === self::STATUS_PUBLISHED
+                    && in_array($version->status, [self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true);
+
+                if ($disallowed !== [] || ! $statusTransitionAllowed) {
+                    throw new \LogicException('Published, superseded, and archived question versions are immutable. Create a successor draft instead.');
+                }
             }
         });
 
         static::deleting(function (self $version): void {
-            if ($version->status === self::STATUS_PUBLISHED) {
-                throw new \LogicException('Published question versions cannot be deleted.');
+            if (in_array($version->status, [self::STATUS_PUBLISHED, self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true)) {
+                throw new \LogicException('Published, superseded, and archived question versions cannot be deleted.');
             }
         });
     }
@@ -91,5 +99,10 @@ class QuestionVersion extends Model
     public function questionType(): BelongsTo
     {
         return $this->belongsTo(QuestionType::class, 'type_id', 'type_id');
+    }
+
+    public function parentVersion(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_version_id', 'question_version_id');
     }
 }

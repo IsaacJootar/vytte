@@ -160,8 +160,11 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
 
     Route::get('question-versions', [AdminQuestionVersionController::class, 'index'])->name('question-versions.index');
     Route::get('question-versions/{version}', [AdminQuestionVersionController::class, 'show'])->name('question-versions.show');
+    Route::put('question-versions/{version}', [AdminQuestionVersionController::class, 'update'])->name('question-versions.update');
     Route::patch('question-versions/{version}/approve', [AdminQuestionVersionController::class, 'markApproved'])->name('question-versions.approve');
     Route::patch('question-versions/{version}/publish', [AdminQuestionVersionController::class, 'publish'])->name('question-versions.publish');
+    Route::post('question-versions/{version}/supersede', [AdminQuestionVersionController::class, 'supersede'])->name('question-versions.supersede');
+    Route::patch('question-versions/{version}/archive', [AdminQuestionVersionController::class, 'archive'])->name('question-versions.archive');
 
     Route::get('framework-versions', [AdminFrameworkVersionController::class, 'index'])->name('framework-versions.index');
     Route::get('framework-versions/create', [AdminFrameworkVersionController::class, 'create'])->name('framework-versions.create');
@@ -169,6 +172,8 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::get('framework-versions/{framework}', [AdminFrameworkVersionController::class, 'show'])->name('framework-versions.show');
     Route::put('framework-versions/{framework}', [AdminFrameworkVersionController::class, 'update'])->name('framework-versions.update');
     Route::patch('framework-versions/{framework}/publish', [AdminFrameworkVersionController::class, 'publish'])->name('framework-versions.publish');
+    Route::post('framework-versions/{framework}/supersede', [AdminFrameworkVersionController::class, 'supersede'])->name('framework-versions.supersede');
+    Route::patch('framework-versions/{framework}/archive', [AdminFrameworkVersionController::class, 'archive'])->name('framework-versions.archive');
     Route::post('framework-versions/{framework}/sections', [AdminFrameworkVersionController::class, 'storeSection'])->name('framework-versions.sections.store');
     Route::put('framework-versions/{framework}/sections/{section}', [AdminFrameworkVersionController::class, 'updateSection'])->name('framework-versions.sections.update');
     Route::delete('framework-versions/{framework}/sections/{section}', [AdminFrameworkVersionController::class, 'destroySection'])->name('framework-versions.sections.destroy');
@@ -186,6 +191,8 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::post('catalogue-releases/{release}/frameworks', [AdminCatalogueReleaseController::class, 'attachFramework'])->name('catalogue-releases.frameworks.attach');
     Route::delete('catalogue-releases/{release}/frameworks/{framework}', [AdminCatalogueReleaseController::class, 'detachFramework'])->name('catalogue-releases.frameworks.detach');
     Route::patch('catalogue-releases/{release}/publish', [AdminCatalogueReleaseController::class, 'publish'])->name('catalogue-releases.publish');
+    Route::post('catalogue-releases/{release}/supersede', [AdminCatalogueReleaseController::class, 'supersede'])->name('catalogue-releases.supersede');
+    Route::patch('catalogue-releases/{release}/archive', [AdminCatalogueReleaseController::class, 'archive'])->name('catalogue-releases.archive');
 
     Route::get('facility-profiles', [AdminFacilityProfileController::class, 'index'])->name('facility-profiles.index');
     Route::get('facility-profiles/{profile}', [AdminFacilityProfileController::class, 'show'])->name('facility-profiles.show');

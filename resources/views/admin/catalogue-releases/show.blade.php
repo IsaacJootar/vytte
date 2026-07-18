@@ -5,13 +5,37 @@
             <h1 class="mt-1 text-xl font-bold text-slate-900 dark:text-white">{{ $release->release_name }}</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">{{ $release->release_code }} · {{ $release->creation_path }} · {{ $release->status }}</p>
         </div>
-        @if ($release->status === 'DRAFT')
-            <form method="POST" action="{{ route('admin.catalogue-releases.publish', $release) }}">
-                @csrf
-                @method('PATCH')
-                <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Publish release</button>
-            </form>
-        @endif
+        <div class="flex flex-wrap justify-end gap-2">
+            @if ($release->status === 'DRAFT')
+                <form method="POST" action="{{ route('admin.catalogue-releases.publish', $release) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Publish release</button>
+                </form>
+            @endif
+            @if ($release->status === 'PUBLISHED')
+                <form method="POST" action="{{ route('admin.catalogue-releases.supersede', $release) }}">
+                    @csrf
+                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300">Create successor draft</button>
+                </form>
+            @endif
+            @if (in_array($release->status, ['DRAFT', 'PUBLISHED'], true))
+                <form method="POST" action="{{ route('admin.catalogue-releases.archive', $release) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 dark:border-red-700 dark:text-red-300">Archive</button>
+                </form>
+            @endif
+        </div>
+    </div>
+
+    <div class="mb-5 grid gap-4 md:grid-cols-4">
+        @foreach ($dependencySummary as $label => $count)
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ str($label)->replace('_', ' ') }}</p>
+                <p class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ $count }}</p>
+            </div>
+        @endforeach
     </div>
 
     @if ($release->status === 'DRAFT')

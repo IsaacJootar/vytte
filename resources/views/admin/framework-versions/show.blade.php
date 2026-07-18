@@ -5,13 +5,37 @@
             <h1 class="mt-1 text-xl font-bold text-slate-900 dark:text-white">{{ $framework->display_name }}</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">{{ $framework->module?->module_name }} · {{ $framework->framework_type }} · v{{ $framework->version_number }} · {{ $framework->status }}</p>
         </div>
-        @if ($framework->status === 'DRAFT')
-            <form method="POST" action="{{ route('admin.framework-versions.publish', $framework) }}">
-                @csrf
-                @method('PATCH')
-                <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Publish immutable framework</button>
-            </form>
-        @endif
+        <div class="flex flex-wrap justify-end gap-2">
+            @if ($framework->status === 'DRAFT')
+                <form method="POST" action="{{ route('admin.framework-versions.publish', $framework) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Publish immutable framework</button>
+                </form>
+            @endif
+            @if ($framework->status === 'PUBLISHED')
+                <form method="POST" action="{{ route('admin.framework-versions.supersede', $framework) }}">
+                    @csrf
+                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300">Create successor draft</button>
+                </form>
+            @endif
+            @if (in_array($framework->status, ['DRAFT', 'PUBLISHED'], true))
+                <form method="POST" action="{{ route('admin.framework-versions.archive', $framework) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 dark:border-red-700 dark:text-red-300">Archive</button>
+                </form>
+            @endif
+        </div>
+    </div>
+
+    <div class="mb-5 grid gap-4 md:grid-cols-4">
+        @foreach ($dependencySummary as $label => $count)
+            <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ str($label)->replace('_', ' ') }}</p>
+                <p class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ $count }}</p>
+            </div>
+        @endforeach
     </div>
 
     @if ($framework->status === 'DRAFT')

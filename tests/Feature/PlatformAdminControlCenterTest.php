@@ -3,11 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\Assessment;
+use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentShareLink;
 use App\Models\AssessmentTier;
+use App\Models\DepartmentFrameworkVersion;
 use App\Models\Project;
 use App\Models\Question;
 use App\Models\QuestionGroup;
+use App\Models\QuestionType;
 use App\Models\QuestionVersion;
 use App\Models\Target;
 use App\Models\User;
@@ -149,6 +152,127 @@ class PlatformAdminControlCenterTest extends TestCase
         $this->assertSame(QuestionVersion::STATUS_APPROVED, $version->fresh()->status);
     }
 
+    public function test_platform_admin_can_edit_draft_option_question_version_configuration(): void
+    {
+        $admin = $this->platformAdmin();
+        $question = Question::firstOrFail();
+        $typeId = QuestionType::where('type_code', 'SINGLE_SELECT')->value('type_id');
+        $version = QuestionVersion::create([
+            'question_id' => $question->question_id,
+            'version_number' => ((int) $question->versions()->max('version_number')) + 1,
+            'status' => QuestionVersion::STATUS_DRAFT,
+            'question_text' => 'Draft option wording.',
+            'type_id' => $typeId,
+            'options' => [],
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.question-versions.update', $version), [
+            'question_text' => 'Updated option wording.',
+            'type_id' => $typeId,
+            'options' => [
+                ['option_label' => 'No', 'option_order' => 2, 'score_weight' => 0],
+                ['option_label' => 'Yes', 'option_order' => 1, 'score_weight' => 100],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $version = $version->fresh();
+        $this->assertSame('Updated option wording.', $version->question_text);
+        $this->assertSame('Yes', $version->options[0]['option_label']);
+        $this->assertEquals(100.0, $version->options[0]['score_weight']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'question.version.configured']);
+    }
+
+    public function test_option_question_version_validation_requires_working_options_and_scores(): void
+    {
+        $admin = $this->platformAdmin();
+        $question = Question::firstOrFail();
+        $typeId = QuestionType::where('type_code', 'SINGLE_SELECT')->value('type_id');
+        $version = QuestionVersion::create([
+            'question_id' => $question->question_id,
+            'version_number' => ((int) $question->versions()->max('version_number')) + 1,
+            'status' => QuestionVersion::STATUS_DRAFT,
+            'question_text' => 'Draft option wording.',
+            'type_id' => $typeId,
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.question-versions.update', $version), [
+            'question_text' => 'Invalid option wording.',
+            'type_id' => $typeId,
+            'options' => [
+                ['option_label' => '', 'option_order' => 1, 'score_weight' => 101],
+            ],
+        ])->assertRedirect()->assertSessionHasErrors(['options.0.option_label', 'options.0.score_weight']);
+    }
+
+    public function test_platform_admin_can_edit_draft_numeric_question_version_bands(): void
+    {
+        $admin = $this->platformAdmin();
+        $question = Question::firstOrFail();
+        $typeId = QuestionType::where('type_code', 'NUMERIC')->value('type_id');
+        $version = QuestionVersion::create([
+            'question_id' => $question->question_id,
+            'version_number' => ((int) $question->versions()->max('version_number')) + 1,
+            'status' => QuestionVersion::STATUS_DRAFT,
+            'question_text' => 'Numeric draft.',
+            'type_id' => $typeId,
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.question-versions.update', $version), [
+            'question_text' => 'Average occupancy.',
+            'type_id' => $typeId,
+            'numeric_min' => 0,
+            'numeric_max' => 100,
+            'numeric_unit' => 'percent',
+            'numeric_step' => 1,
+            'numeric_bands' => [
+                ['label' => 'Low', 'min_value' => 0, 'max_value' => 49, 'score_weight' => 25, 'display_order' => 1],
+                ['label' => 'Healthy', 'min_value' => 50, 'max_value' => 85, 'score_weight' => 100, 'display_order' => 2],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $version = $version->fresh();
+        $this->assertSame('percent', $version->numeric_config['unit']);
+        $this->assertSame('Healthy', $version->numeric_bands[1]['label']);
+        $this->assertEquals(100.0, $version->numeric_bands[1]['score_weight']);
+    }
+
+    public function test_published_question_version_cannot_be_edited_and_can_create_successor_draft(): void
+    {
+        $admin = $this->platformAdmin();
+        $version = QuestionVersion::where('status', QuestionVersion::STATUS_PUBLISHED)->firstOrFail();
+        $originalText = $version->question_text;
+
+        $this->actingAs($admin)->put(route('admin.question-versions.update', $version), [
+            'question_text' => 'Should not save.',
+            'type_id' => $version->type_id,
+        ])->assertRedirect()->assertSessionHasErrors(['status']);
+        $this->assertSame($originalText, $version->fresh()->question_text);
+
+        $this->actingAs($admin)->post(route('admin.question-versions.supersede', $version))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $version = $version->fresh();
+        $successor = QuestionVersion::where('parent_version_id', $version->question_version_id)->firstOrFail();
+        $this->assertSame(QuestionVersion::STATUS_SUPERSEDED, $version->status);
+        $this->assertSame(QuestionVersion::STATUS_DRAFT, $successor->status);
+        $this->assertSame($originalText, $successor->question_text);
+    }
+
+    public function test_referenced_question_version_archive_is_blocked(): void
+    {
+        $admin = $this->platformAdmin();
+        $placement = \App\Models\FrameworkQuestionPlacement::firstOrFail();
+        $version = QuestionVersion::findOrFail($placement->question_version_id);
+
+        $this->actingAs($admin)
+            ->patch(route('admin.question-versions.archive', $version))
+            ->assertRedirect()
+            ->assertSessionHasErrors(['archive']);
+
+        $this->assertSame(QuestionVersion::STATUS_PUBLISHED, $version->fresh()->status);
+    }
+
     public function test_platform_admin_can_create_framework_section_indicator_and_placement(): void
     {
         $admin = $this->platformAdmin();
@@ -220,6 +344,71 @@ class PlatformAdminControlCenterTest extends TestCase
             'catalogue_release_id' => $release->catalogue_release_id,
             'framework_version_id' => $framework->framework_version_id,
         ]);
+    }
+
+    public function test_framework_supersession_clones_structure_and_archive_blocks_dependencies(): void
+    {
+        $admin = $this->platformAdmin();
+        $framework = DepartmentFrameworkVersion::where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)
+            ->whereHas('questionPlacements')
+            ->firstOrFail();
+        $sectionCount = $framework->sections()->count();
+        $placementCount = $framework->questionPlacements()->count();
+
+        $this->actingAs($admin)
+            ->patch(route('admin.framework-versions.archive', $framework))
+            ->assertRedirect()
+            ->assertSessionHasErrors(['archive']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.framework-versions.supersede', $framework))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $successor = DepartmentFrameworkVersion::where('parent_version_id', $framework->framework_version_id)->firstOrFail();
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_SUPERSEDED, $framework->fresh()->status);
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $successor->status);
+        $this->assertSame($sectionCount, $successor->sections()->count());
+        $this->assertSame($placementCount, $successor->questionPlacements()->count());
+    }
+
+    public function test_catalogue_release_supersession_preserves_pinned_frameworks_and_archive_blocks_dependencies(): void
+    {
+        $admin = $this->platformAdmin();
+        $release = AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+            ->where('creation_path', 'COMPREHENSIVE')
+            ->whereHas('departmentFrameworkVersions')
+            ->firstOrFail();
+        [$owner, $workspace] = $this->workspaceOwner();
+        $project = Project::factory()->create([
+            'workspace_id' => $workspace->workspace_id,
+            'owner_user_id' => $owner->user_id,
+        ]);
+        $target = Target::create([
+            'owner_workspace_id' => $workspace->workspace_id,
+            'target_type_code' => 'HEALTH_FACILITY',
+            'name' => 'Governance Clinic',
+            'facility_profile_id' => $release->facility_profile_id,
+            'uses_departments' => true,
+        ]);
+        $project->targets()->attach($target->target_id, ['added_at' => now()]);
+        app(\App\Services\AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $owner->user_id);
+        $pinnedCount = $release->departmentFrameworkVersions()->count();
+
+        $this->actingAs($admin)
+            ->patch(route('admin.catalogue-releases.archive', $release))
+            ->assertRedirect()
+            ->assertSessionHasErrors(['archive']);
+
+        $this->actingAs($admin)
+            ->post(route('admin.catalogue-releases.supersede', $release))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $successor = AssessmentCatalogueRelease::where('parent_release_id', $release->catalogue_release_id)->firstOrFail();
+        $this->assertSame(AssessmentCatalogueRelease::STATUS_SUPERSEDED, $release->fresh()->status);
+        $this->assertSame(AssessmentCatalogueRelease::STATUS_DRAFT, $successor->status);
+        $this->assertSame($pinnedCount, $successor->departmentFrameworkVersions()->count());
     }
 
     public function test_platform_admin_can_assign_platform_admin_role(): void

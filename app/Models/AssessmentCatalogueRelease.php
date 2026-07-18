@@ -15,6 +15,10 @@ class AssessmentCatalogueRelease extends Model
 
     public const STATUS_PUBLISHED = 'PUBLISHED';
 
+    public const STATUS_ARCHIVED = 'ARCHIVED';
+
+    public const STATUS_SUPERSEDED = 'SUPERSEDED';
+
     protected $primaryKey = 'catalogue_release_id';
 
     protected $attributes = [
@@ -23,6 +27,7 @@ class AssessmentCatalogueRelease extends Model
 
     protected $fillable = [
         'release_code',
+        'parent_release_id',
         'release_name',
         'description',
         'creation_path',
@@ -47,7 +52,7 @@ class AssessmentCatalogueRelease extends Model
     protected static function booted(): void
     {
         static::saving(function (self $release): void {
-            if (! in_array($release->status, [self::STATUS_DRAFT, self::STATUS_PUBLISHED], true)) {
+            if (! in_array($release->status, [self::STATUS_DRAFT, self::STATUS_PUBLISHED, self::STATUS_ARCHIVED, self::STATUS_SUPERSEDED], true)) {
                 throw new \LogicException("Unsupported catalogue-release status: {$release->status}.");
             }
 
@@ -57,8 +62,21 @@ class AssessmentCatalogueRelease extends Model
         });
 
         static::updating(function (self $release): void {
-            if ($release->getOriginal('status') === self::STATUS_PUBLISHED) {
-                throw new \LogicException('Published catalogue releases are immutable. Publish a new release instead.');
+            if (in_array($release->getOriginal('status'), [self::STATUS_PUBLISHED, self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true)) {
+                $dirty = array_keys($release->getDirty());
+                $disallowed = array_diff($dirty, ['status', 'updated_at']);
+                $statusTransitionAllowed = $release->getOriginal('status') === self::STATUS_PUBLISHED
+                    && in_array($release->status, [self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true);
+
+                if ($disallowed !== [] || ! $statusTransitionAllowed) {
+                    throw new \LogicException('Published, superseded, and archived catalogue releases are immutable. Publish a successor release instead.');
+                }
+            }
+        });
+
+        static::deleting(function (self $release): void {
+            if (in_array($release->status, [self::STATUS_PUBLISHED, self::STATUS_SUPERSEDED, self::STATUS_ARCHIVED], true)) {
+                throw new \LogicException('Published, superseded, and archived catalogue releases cannot be deleted.');
             }
         });
     }
@@ -71,6 +89,11 @@ class AssessmentCatalogueRelease extends Model
     public function healthDomain(): BelongsTo
     {
         return $this->belongsTo(HealthDomain::class, 'health_domain_id', 'health_domain_id');
+    }
+
+    public function parentRelease(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_release_id', 'catalogue_release_id');
     }
 
     public function departmentFrameworkVersions(): BelongsToMany
