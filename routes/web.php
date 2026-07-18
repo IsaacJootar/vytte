@@ -26,13 +26,12 @@ use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
-use App\Http\Controllers\FlutterwaveWebhookController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ModuleLibraryController;
 use App\Http\Controllers\MultiRespondentAssessmentController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\PaystackWebhookController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectProgressController;
@@ -40,6 +39,7 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RespondentLinkController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserPreferenceController;
+use App\Http\Controllers\WorkspaceCustomAssessmentController;
 use App\Http\Controllers\WorkspaceSettingsController;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +47,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/health', HealthController::class)->name('health');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth'])->name('dashboard');
 
@@ -58,6 +60,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('modules', [ModuleLibraryController::class, 'index'])->name('modules.index');
     Route::get('modules/{module}', [ModuleLibraryController::class, 'show'])->name('modules.show');
+    Route::get('custom-assessments', [WorkspaceCustomAssessmentController::class, 'index'])->name('custom-assessments.index');
+    Route::get('custom-assessments/create', [WorkspaceCustomAssessmentController::class, 'create'])->name('custom-assessments.create');
+    Route::post('custom-assessments', [WorkspaceCustomAssessmentController::class, 'store'])->name('custom-assessments.store');
+    Route::get('custom-assessments/{customAssessment}', [WorkspaceCustomAssessmentController::class, 'show'])->name('custom-assessments.show');
+    Route::patch('custom-assessments/{customAssessment}/status', [WorkspaceCustomAssessmentController::class, 'updateStatus'])->name('custom-assessments.status');
 
     Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
     Route::get('reports', [ReportsController::class, 'index'])->name('reports.index');
@@ -157,15 +164,32 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::patch('question-versions/{version}/publish', [AdminQuestionVersionController::class, 'publish'])->name('question-versions.publish');
 
     Route::get('framework-versions', [AdminFrameworkVersionController::class, 'index'])->name('framework-versions.index');
+    Route::get('framework-versions/create', [AdminFrameworkVersionController::class, 'create'])->name('framework-versions.create');
+    Route::post('framework-versions', [AdminFrameworkVersionController::class, 'store'])->name('framework-versions.store');
     Route::get('framework-versions/{framework}', [AdminFrameworkVersionController::class, 'show'])->name('framework-versions.show');
+    Route::put('framework-versions/{framework}', [AdminFrameworkVersionController::class, 'update'])->name('framework-versions.update');
     Route::patch('framework-versions/{framework}/publish', [AdminFrameworkVersionController::class, 'publish'])->name('framework-versions.publish');
+    Route::post('framework-versions/{framework}/sections', [AdminFrameworkVersionController::class, 'storeSection'])->name('framework-versions.sections.store');
+    Route::put('framework-versions/{framework}/sections/{section}', [AdminFrameworkVersionController::class, 'updateSection'])->name('framework-versions.sections.update');
+    Route::delete('framework-versions/{framework}/sections/{section}', [AdminFrameworkVersionController::class, 'destroySection'])->name('framework-versions.sections.destroy');
+    Route::post('framework-versions/{framework}/indicators', [AdminFrameworkVersionController::class, 'storeIndicator'])->name('framework-versions.indicators.store');
+    Route::put('framework-versions/{framework}/indicators/{indicator}', [AdminFrameworkVersionController::class, 'updateIndicator'])->name('framework-versions.indicators.update');
+    Route::delete('framework-versions/{framework}/indicators/{indicator}', [AdminFrameworkVersionController::class, 'destroyIndicator'])->name('framework-versions.indicators.destroy');
+    Route::post('framework-versions/{framework}/placements', [AdminFrameworkVersionController::class, 'storePlacement'])->name('framework-versions.placements.store');
+    Route::delete('framework-versions/{framework}/placements/{placement}', [AdminFrameworkVersionController::class, 'destroyPlacement'])->name('framework-versions.placements.destroy');
 
     Route::get('catalogue-releases', [AdminCatalogueReleaseController::class, 'index'])->name('catalogue-releases.index');
+    Route::get('catalogue-releases/create', [AdminCatalogueReleaseController::class, 'create'])->name('catalogue-releases.create');
+    Route::post('catalogue-releases', [AdminCatalogueReleaseController::class, 'store'])->name('catalogue-releases.store');
     Route::get('catalogue-releases/{release}', [AdminCatalogueReleaseController::class, 'show'])->name('catalogue-releases.show');
+    Route::put('catalogue-releases/{release}', [AdminCatalogueReleaseController::class, 'update'])->name('catalogue-releases.update');
+    Route::post('catalogue-releases/{release}/frameworks', [AdminCatalogueReleaseController::class, 'attachFramework'])->name('catalogue-releases.frameworks.attach');
+    Route::delete('catalogue-releases/{release}/frameworks/{framework}', [AdminCatalogueReleaseController::class, 'detachFramework'])->name('catalogue-releases.frameworks.detach');
     Route::patch('catalogue-releases/{release}/publish', [AdminCatalogueReleaseController::class, 'publish'])->name('catalogue-releases.publish');
 
     Route::get('facility-profiles', [AdminFacilityProfileController::class, 'index'])->name('facility-profiles.index');
     Route::get('facility-profiles/{profile}', [AdminFacilityProfileController::class, 'show'])->name('facility-profiles.show');
+    Route::put('facility-profiles/{profile}', [AdminFacilityProfileController::class, 'update'])->name('facility-profiles.update');
 
     Route::get('scoring-policies', [AdminScoringPolicyController::class, 'index'])->name('scoring-policies.index');
 
@@ -176,13 +200,6 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::post('modules/{module}/translations/{locale?}', [ModuleTranslationController::class, 'update'])->name('modules.translations.update');
 });
 
-// Payment webhooks (no auth, no CSRF — signatures validated in controllers)
-Route::post('/billing/webhook/paystack', [PaystackWebhookController::class, 'handle'])
-    ->name('billing.webhook.paystack');
-
-Route::post('/billing/webhook/flutterwave', [FlutterwaveWebhookController::class, 'handle'])
-    ->name('billing.webhook.flutterwave');
-
 // Public invitation show (no auth required — shows invite details before accepting)
 Route::get('/invitations/{token}', [InvitationController::class, 'show'])->name('invitations.show');
 
@@ -191,11 +208,12 @@ Route::get('/reports/{assessment}', [ExportController::class, 'sharedReport'])
     ->middleware('signed')
     ->name('reports.shared');
 Route::get('/shared-reports/{token}', [ExportController::class, 'sharedReportByToken'])
+    ->middleware('throttle:60,1')
     ->name('reports.shared.token');
 
 // Public respondent runner (token-based, no auth required)
 Route::get('/respond/{token}', function (string $token) {
     return view('respondent.run', compact('token'));
-})->name('respondent.show');
+})->middleware('throttle:30,1')->name('respondent.show');
 
 require __DIR__.'/auth.php';

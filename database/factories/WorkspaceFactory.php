@@ -21,7 +21,7 @@ class WorkspaceFactory extends Factory
             'name' => $name,
             'workspace_type' => 'INDIVIDUAL',
             'slug' => Str::slug($name).'-'.Str::lower(Str::random(6)),
-            'plan' => 'FREE',
+            'plan' => 'STARTER',
             'status' => 'ACTIVE',
         ];
     }

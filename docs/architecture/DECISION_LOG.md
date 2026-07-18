@@ -64,3 +64,10 @@
 - **Decision:** Vytte Platform Admin uses the same application shell and visual language as the workspace app, with only a subtle sidebar color distinction to signal elevated platform authority.
 - **Account boundary:** the demo Platform Admin account is not an Agency customer account; workspace plan labels must not be used as the visible authority label for Platform Admins.
 - **UI rule:** Platform Admin users should see `Vytte Platform Admin` as their access label, while ordinary workspace users continue to see their configured paid-plan label.
+
+### DEC-2026-07-18-010: Beta Licensing Without Payments
+
+- **Status:** Accepted and partially implemented.
+- **Decision:** Public beta uses configurable Starter, Professional, and Organization plan records with all features unlocked through plan configuration.
+- **Boundary:** Payment processing, billing, subscriptions, invoices, provider webhooks, refunds, taxes, coupons, and ledgers are deferred until after beta.
+- **Implementation rule:** Do not hardcode free access; use `subscription_plans`, `plan_features`, and `PlanService`.

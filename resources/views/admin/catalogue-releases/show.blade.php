@@ -13,20 +13,81 @@
             </form>
         @endif
     </div>
+
+    @if ($release->status === 'DRAFT')
+        <form method="POST" action="{{ route('admin.catalogue-releases.update', $release) }}" class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            @csrf
+            @method('PUT')
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Release settings</h2>
+            <input name="release_name" value="{{ $release->release_name }}" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+            <textarea name="description" rows="2" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ $release->description }}</textarea>
+            <div class="mt-4 grid gap-4 md:grid-cols-3">
+                @if ($release->creation_path === 'COMPREHENSIVE')
+                    <select name="facility_profile_id" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                        @foreach ($facilityProfiles as $profile)
+                            <option value="{{ $profile->facility_profile_id }}" @selected($release->facility_profile_id === $profile->facility_profile_id)>{{ $profile->profile_name }}</option>
+                        @endforeach
+                    </select>
+                @else
+                    <select name="health_domain_id" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                        @foreach ($healthDomains as $domain)
+                            <option value="{{ $domain->health_domain_id }}" @selected($release->health_domain_id === $domain->health_domain_id)>{{ $domain->domain_name }}</option>
+                        @endforeach
+                    </select>
+                @endif
+                <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"><input type="checkbox" name="allows_multi_respondent" value="1" @checked($release->collection_config['allows_multi_respondent'] ?? false)> Multi-respondent</label>
+                <input name="minimum_completed_respondents" type="number" min="1" value="{{ $release->collection_config['minimum_completed_respondents'] ?? 1 }}" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+            </div>
+            <div class="mt-4 text-right"><button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Save release</button></div>
+        </form>
+    @endif
+
     <div class="grid gap-4 xl:grid-cols-3">
         <div class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Pinned framework versions</h2>
             <div class="mt-3 space-y-3">
-                @foreach ($release->departmentFrameworkVersions as $framework)
-                    <a href="{{ route('admin.framework-versions.show', $framework) }}" class="block rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $framework->module?->module_name }}</p>
-                            <span class="text-xs font-bold text-slate-500">{{ $framework->status }}</span>
+                @forelse ($release->departmentFrameworkVersions as $framework)
+                    <div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
+                        <div class="flex items-center justify-between gap-3">
+                            <a href="{{ route('admin.framework-versions.show', $framework) }}" class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $framework->module?->module_name }}</p>
+                                <p class="mt-1 text-xs text-slate-500">{{ $framework->display_name }} · v{{ $framework->version_number }} · {{ $framework->pivot->applicability }}</p>
+                            </a>
+                            @if ($release->status === 'DRAFT')
+                                <form method="POST" action="{{ route('admin.catalogue-releases.frameworks.detach', [$release, $framework]) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-xs font-semibold text-red-600">Remove</button>
+                                </form>
+                            @endif
                         </div>
-                        <p class="mt-1 text-xs text-slate-500">{{ $framework->display_name }} · v{{ $framework->version_number }} · {{ $framework->pivot->applicability }}</p>
-                    </a>
-                @endforeach
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-500">No framework versions pinned yet.</p>
+                @endforelse
             </div>
+
+            @if ($release->status === 'DRAFT')
+                <form method="POST" action="{{ route('admin.catalogue-releases.frameworks.attach', $release) }}" class="mt-5 rounded-xl border border-dashed border-slate-300 p-4 dark:border-slate-700">
+                    @csrf
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Pin published framework</h3>
+                    <select name="framework_version_id" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                        @foreach ($publishedFrameworks as $framework)
+                            <option value="{{ $framework->framework_version_id }}">{{ $framework->module?->module_name }} · {{ $framework->display_name }} · v{{ $framework->version_number }}</option>
+                        @endforeach
+                    </select>
+                    <div class="mt-3 grid gap-3 md:grid-cols-3">
+                        <select name="applicability" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                            <option value="DEFAULT">Default</option>
+                            <option value="REQUIRED">Required</option>
+                            <option value="OPTIONAL">Optional</option>
+                        </select>
+                        <input name="display_order" type="number" min="1" value="{{ $release->departmentFrameworkVersions->count() + 1 }}" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                        <input name="area_label" placeholder="Optional area label" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                    </div>
+                    <button class="mt-3 rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Pin framework</button>
+                </form>
+            @endif
         </div>
         <div class="space-y-4">
             <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">

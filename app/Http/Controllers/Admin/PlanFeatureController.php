@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\SubscriptionPlan;
 use App\Services\PlanService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -27,12 +28,39 @@ class PlanFeatureController extends Controller
         return view('admin.plan-features.index', [
             'matrix' => $matrix,
             'features' => PlanService::FEATURES,
-            'plans' => PlanService::PLANS,
+            'plans' => SubscriptionPlan::orderBy('display_order')->get(),
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
+        $validated = $request->validate([
+            'plans' => ['nullable', 'array'],
+            'plans.*.public_label' => ['required', 'string', 'max:120'],
+            'plans.*.description' => ['nullable', 'string'],
+            'plans.*.display_order' => ['required', 'integer', 'min:1', 'max:999'],
+            'plans.*.is_active' => ['nullable', 'boolean'],
+            'plans.*.is_beta_unlocked' => ['nullable', 'boolean'],
+            'plans.*.limits_json' => ['nullable', 'json'],
+            'features' => ['nullable', 'array'],
+        ]);
+
+        foreach ($validated['plans'] ?? [] as $planCode => $planData) {
+            $plan = SubscriptionPlan::find($planCode);
+            if (! $plan) {
+                continue;
+            }
+
+            $plan->update([
+                'public_label' => $planData['public_label'],
+                'description' => $planData['description'] ?? null,
+                'display_order' => $planData['display_order'],
+                'is_active' => $request->boolean("plans.{$planCode}.is_active"),
+                'is_beta_unlocked' => $request->boolean("plans.{$planCode}.is_beta_unlocked"),
+                'limits' => json_decode($planData['limits_json'] ?: '{}', true, flags: JSON_THROW_ON_ERROR),
+            ]);
+        }
+
         foreach (array_keys(PlanService::FEATURES) as $featureKey) {
             foreach (PlanService::PLANS as $plan) {
                 $enabled = $request->boolean("features.{$plan}.{$featureKey}");

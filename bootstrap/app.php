@@ -24,10 +24,6 @@ return Application::configure(basePath: dirname(__DIR__))
             ResolveWorkspace::class,
         );
 
-        $middleware->validateCsrfTokens(except: [
-            '/billing/webhook/paystack',
-            '/billing/webhook/flutterwave',
-        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

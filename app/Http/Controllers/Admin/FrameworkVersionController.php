@@ -3,11 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AssessmentModule;
 use App\Models\DepartmentFrameworkVersion;
+use App\Models\FrameworkIndicator;
+use App\Models\FrameworkQuestionPlacement;
+use App\Models\FrameworkSection;
+use App\Models\QuestionVersion;
+use App\Models\SubIndex;
 use App\Services\DepartmentFrameworkPublishingService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class FrameworkVersionController extends Controller
 {
@@ -30,6 +37,40 @@ class FrameworkVersionController extends Controller
         ]);
     }
 
+    public function create(): View
+    {
+        return view('admin.framework-versions.create', [
+            'modules' => AssessmentModule::where('is_active', true)->orderBy('module_name')->get(),
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'module_id' => ['required', 'integer', Rule::exists('assessment_modules', 'module_id')],
+            'framework_type' => ['required', 'in:DEPARTMENT,FOCUSED'],
+            'display_name' => ['required', 'string', 'max:180'],
+            'description' => ['nullable', 'string'],
+            'purpose' => ['nullable', 'string'],
+            'source_authority' => ['required', 'string', 'max:180'],
+            'source_url' => ['nullable', 'url', 'max:2000'],
+            'license_code' => ['required', 'string', 'max:80'],
+            'methodology_notes' => ['nullable', 'string'],
+            'source_summary' => ['nullable', 'string'],
+        ]);
+
+        $nextVersion = ((int) DepartmentFrameworkVersion::where('module_id', $validated['module_id'])->max('version_number')) + 1;
+
+        $framework = DepartmentFrameworkVersion::create([
+            ...$validated,
+            'version_number' => $nextVersion,
+            'status' => DepartmentFrameworkVersion::STATUS_DRAFT,
+        ]);
+
+        return redirect()->route('admin.framework-versions.show', $framework)
+            ->with('success', 'Draft framework version created.');
+    }
+
     public function show(DepartmentFrameworkVersion $framework): View
     {
         $framework->load([
@@ -40,7 +81,167 @@ class FrameworkVersionController extends Controller
             'questionPlacements.indicator',
         ]);
 
-        return view('admin.framework-versions.show', compact('framework'));
+        return view('admin.framework-versions.show', [
+            'framework' => $framework,
+            'modules' => AssessmentModule::where('is_active', true)->orderBy('module_name')->get(),
+            'publishedQuestionVersions' => QuestionVersion::with(['question', 'questionType'])
+                ->where('status', QuestionVersion::STATUS_PUBLISHED)
+                ->orderByDesc('published_at')
+                ->limit(500)
+                ->get(),
+            'subIndices' => SubIndex::orderBy('full_name')->get(),
+        ]);
+    }
+
+    public function update(Request $request, DepartmentFrameworkVersion $framework): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+
+        $validated = $request->validate([
+            'display_name' => ['required', 'string', 'max:180'],
+            'description' => ['nullable', 'string'],
+            'purpose' => ['nullable', 'string'],
+            'source_authority' => ['required', 'string', 'max:180'],
+            'source_url' => ['nullable', 'url', 'max:2000'],
+            'license_code' => ['required', 'string', 'max:80'],
+            'methodology_notes' => ['nullable', 'string'],
+            'source_summary' => ['nullable', 'string'],
+            'review_notes' => ['nullable', 'string'],
+            'effective_date' => ['nullable', 'date'],
+        ]);
+
+        $framework->update($validated);
+
+        return back()->with('success', 'Framework metadata saved.');
+    }
+
+    public function storeSection(Request $request, DepartmentFrameworkVersion $framework): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+
+        $validated = $request->validate([
+            'section_code' => ['required', 'string', 'max:80'],
+            'section_name' => ['required', 'string', 'max:180'],
+            'purpose' => ['nullable', 'string'],
+            'display_order' => ['required', 'integer', 'min:1', 'max:999'],
+        ]);
+
+        FrameworkSection::create([
+            ...$validated,
+            'section_code' => strtoupper($validated['section_code']),
+            'framework_version_id' => $framework->framework_version_id,
+        ]);
+
+        return back()->with('success', 'Section added.');
+    }
+
+    public function updateSection(Request $request, DepartmentFrameworkVersion $framework, FrameworkSection $section): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+        abort_unless($section->framework_version_id === $framework->framework_version_id, 404);
+
+        $section->update($request->validate([
+            'section_name' => ['required', 'string', 'max:180'],
+            'purpose' => ['nullable', 'string'],
+            'display_order' => ['required', 'integer', 'min:1', 'max:999'],
+        ]));
+
+        return back()->with('success', 'Section saved.');
+    }
+
+    public function destroySection(DepartmentFrameworkVersion $framework, FrameworkSection $section): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+        abort_unless($section->framework_version_id === $framework->framework_version_id, 404);
+        $section->delete();
+
+        return back()->with('success', 'Section removed.');
+    }
+
+    public function storeIndicator(Request $request, DepartmentFrameworkVersion $framework): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+
+        $validated = $request->validate([
+            'framework_section_id' => ['required', 'uuid', Rule::exists('framework_sections', 'framework_section_id')->where('framework_version_id', $framework->framework_version_id)],
+            'indicator_code' => ['required', 'string', 'max:80'],
+            'indicator_name' => ['required', 'string', 'max:180'],
+            'description' => ['nullable', 'string'],
+            'display_order' => ['required', 'integer', 'min:1', 'max:999'],
+        ]);
+
+        FrameworkIndicator::create([
+            ...$validated,
+            'indicator_code' => strtoupper($validated['indicator_code']),
+            'framework_version_id' => $framework->framework_version_id,
+        ]);
+
+        return back()->with('success', 'Indicator added.');
+    }
+
+    public function updateIndicator(Request $request, DepartmentFrameworkVersion $framework, FrameworkIndicator $indicator): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+        abort_unless($indicator->framework_version_id === $framework->framework_version_id, 404);
+
+        $indicator->update($request->validate([
+            'framework_section_id' => ['required', 'uuid', Rule::exists('framework_sections', 'framework_section_id')->where('framework_version_id', $framework->framework_version_id)],
+            'indicator_name' => ['required', 'string', 'max:180'],
+            'description' => ['nullable', 'string'],
+            'display_order' => ['required', 'integer', 'min:1', 'max:999'],
+        ]));
+
+        return back()->with('success', 'Indicator saved.');
+    }
+
+    public function destroyIndicator(DepartmentFrameworkVersion $framework, FrameworkIndicator $indicator): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+        abort_unless($indicator->framework_version_id === $framework->framework_version_id, 404);
+        $indicator->delete();
+
+        return back()->with('success', 'Indicator removed.');
+    }
+
+    public function storePlacement(Request $request, DepartmentFrameworkVersion $framework): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+
+        $validated = $request->validate([
+            'framework_section_id' => ['required', 'uuid', Rule::exists('framework_sections', 'framework_section_id')->where('framework_version_id', $framework->framework_version_id)],
+            'framework_indicator_id' => ['required', 'uuid', Rule::exists('framework_indicators', 'framework_indicator_id')->where('framework_version_id', $framework->framework_version_id)],
+            'question_version_id' => ['required', 'uuid', Rule::exists('question_versions', 'question_version_id')->where('status', QuestionVersion::STATUS_PUBLISHED)],
+            'sub_index_id' => ['nullable', 'integer', Rule::exists('sub_indices', 'sub_index_id')],
+            'display_order' => ['required', 'integer', 'min:1', 'max:9999'],
+            'is_required' => ['nullable', 'boolean'],
+            'scoring_contribution' => ['nullable', 'boolean'],
+            'weight' => ['required', 'numeric', 'min:0', 'max:999'],
+            'criticality' => ['required', 'string', 'max:30'],
+            'evidence_expectation' => ['nullable', 'string'],
+            'help_text' => ['nullable', 'string'],
+            'local_display_text' => ['nullable', 'string'],
+        ]);
+
+        $questionVersion = QuestionVersion::findOrFail($validated['question_version_id']);
+
+        FrameworkQuestionPlacement::create([
+            ...$validated,
+            'framework_version_id' => $framework->framework_version_id,
+            'question_id' => $questionVersion->question_id,
+            'is_required' => (bool) ($validated['is_required'] ?? true),
+            'scoring_contribution' => (bool) ($validated['scoring_contribution'] ?? false),
+        ]);
+
+        return back()->with('success', 'Question placement added.');
+    }
+
+    public function destroyPlacement(DepartmentFrameworkVersion $framework, FrameworkQuestionPlacement $placement): RedirectResponse
+    {
+        $this->ensureDraft($framework);
+        abort_unless($placement->framework_version_id === $framework->framework_version_id, 404);
+        $placement->delete();
+
+        return back()->with('success', 'Question placement removed.');
     }
 
     public function publish(DepartmentFrameworkVersion $framework, DepartmentFrameworkPublishingService $publisher): RedirectResponse
@@ -52,5 +253,10 @@ class FrameworkVersionController extends Controller
         }
 
         return back()->with('success', 'Framework version published and frozen.');
+    }
+
+    private function ensureDraft(DepartmentFrameworkVersion $framework): void
+    {
+        abort_unless($framework->status === DepartmentFrameworkVersion::STATUS_DRAFT, 403, 'Only draft framework versions can be edited.');
     }
 }

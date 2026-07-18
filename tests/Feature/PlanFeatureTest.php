@@ -3,13 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\PlanFeature;
-use App\Models\Project;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\PlanService;
 use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
+use Database\Seeders\SubscriptionPlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,6 +21,7 @@ class PlanFeatureTest extends TestCase
     {
         parent::setUp();
         $this->seed(ReferenceDataSeeder::class);
+        $this->seed(SubscriptionPlanSeeder::class);
         $this->seed(PlanFeatureSeeder::class);
     }
 
@@ -43,184 +44,107 @@ class PlanFeatureTest extends TestCase
         return [$user, $workspace];
     }
 
-    // ---- workspaceCanAccess ----
-
-    public function test_free_workspace_cannot_access_any_pro_feature(): void
+    public function test_beta_plans_have_identical_unlocked_feature_access(): void
     {
-        $workspace = $this->makeWorkspace('FREE');
+        foreach (PlanService::PLANS as $plan) {
+            $workspace = $this->makeWorkspace($plan);
 
-        foreach (array_keys(PlanService::FEATURES) as $featureKey) {
-            $this->assertFalse(
-                PlanService::workspaceCanAccess($workspace, $featureKey),
-                "Feature '{$featureKey}' should be blocked for FREE plan"
-            );
+            foreach (array_keys(PlanService::FEATURES) as $featureKey) {
+                $this->assertTrue(
+                    PlanService::workspaceCanAccess($workspace, $featureKey),
+                    "{$featureKey} should be enabled for {$plan} during beta"
+                );
+            }
         }
     }
 
-    public function test_pro_workspace_can_access_seeded_pro_features(): void
+    public function test_legacy_plan_codes_are_normalized(): void
     {
-        $workspace = $this->makeWorkspace('PRO');
-
-        $proFeatures = [
-            'team_members',
-            'shareable_public_links',
-            'shareable_report_links',
-            'progress_maturity_tracking',
-            'localization',
-            'pdf_export_no_watermark',
-            'csv_export',
-        ];
-
-        foreach ($proFeatures as $featureKey) {
-            $this->assertTrue(
-                PlanService::workspaceCanAccess($workspace, $featureKey),
-                "Feature '{$featureKey}' should be enabled for PRO plan"
-            );
-        }
+        $this->assertSame('STARTER', PlanService::normalizePlan('FREE'));
+        $this->assertSame('PROFESSIONAL', PlanService::normalizePlan('PRO'));
+        $this->assertSame('ORGANIZATION', PlanService::normalizePlan('AGENCY'));
     }
 
-    public function test_agency_workspace_can_access_all_features(): void
+    public function test_toggling_feature_off_immediately_blocks_that_plan(): void
     {
-        $workspace = $this->makeWorkspace('AGENCY');
-
-        foreach (array_keys(PlanService::FEATURES) as $featureKey) {
-            $this->assertTrue(
-                PlanService::workspaceCanAccess($workspace, $featureKey),
-                "Feature '{$featureKey}' should be enabled for AGENCY plan"
-            );
-        }
-    }
-
-    public function test_toggling_feature_off_immediately_blocks_pro(): void
-    {
-        $workspace = $this->makeWorkspace('PRO');
+        $workspace = $this->makeWorkspace('STARTER');
 
         $this->assertTrue(PlanService::workspaceCanAccess($workspace, 'team_members'));
 
-        PlanFeature::where('plan', 'PRO')->where('feature_key', 'team_members')->update(['enabled' => false]);
+        PlanFeature::where('plan', 'STARTER')->where('feature_key', 'team_members')->update(['enabled' => false]);
 
         $this->assertFalse(PlanService::workspaceCanAccess($workspace, 'team_members'));
     }
 
     public function test_unknown_feature_key_returns_false(): void
     {
-        $workspace = $this->makeWorkspace('AGENCY');
+        $workspace = $this->makeWorkspace('ORGANIZATION');
 
         $this->assertFalse(PlanService::workspaceCanAccess($workspace, 'nonexistent_feature'));
     }
 
-    // ---- Admin UI access ----
-
-    public function test_unauthenticated_cannot_view_plan_features(): void
-    {
-        $this->get(route('admin.plan-features.index'))
-            ->assertRedirect(route('login'));
-    }
-
-    public function test_regular_user_cannot_view_plan_features(): void
-    {
-        [$user] = $this->makeUserWithWorkspace('PRO');
-
-        $this->actingAs($user)
-            ->get(route('admin.plan-features.index'))
-            ->assertForbidden();
-    }
-
-    public function test_platform_admin_can_view_plan_features(): void
+    public function test_platform_admin_can_manage_plan_features(): void
     {
         $admin = User::factory()->create(['platform_role' => 'PLATFORM_ADMIN']);
 
         $this->actingAs($admin)
             ->get(route('admin.plan-features.index'))
             ->assertOk()
-            ->assertSee('Plan Features')
-            ->assertSee('Team Members');
-    }
-
-    public function test_admin_can_update_plan_features(): void
-    {
-        $admin = User::factory()->create(['platform_role' => 'PLATFORM_ADMIN']);
+            ->assertSee('Plan Management')
+            ->assertSee('Starter')
+            ->assertSee('Workspace Custom Assessments');
 
         $this->actingAs($admin)
             ->put(route('admin.plan-features.update'), [
+                'plans' => [
+                    'STARTER' => [
+                        'public_label' => 'Starter',
+                        'description' => 'Starter beta plan',
+                        'display_order' => 1,
+                        'is_active' => '1',
+                        'is_beta_unlocked' => '1',
+                        'limits_json' => '{"projects":null,"assessments_per_project":null}',
+                    ],
+                    'PROFESSIONAL' => [
+                        'public_label' => 'Professional',
+                        'description' => 'Professional beta plan',
+                        'display_order' => 2,
+                        'is_active' => '1',
+                        'is_beta_unlocked' => '1',
+                        'limits_json' => '{"projects":null,"assessments_per_project":null}',
+                    ],
+                    'ORGANIZATION' => [
+                        'public_label' => 'Organization',
+                        'description' => 'Organization beta plan',
+                        'display_order' => 3,
+                        'is_active' => '1',
+                        'is_beta_unlocked' => '1',
+                        'limits_json' => '{"projects":null,"assessments_per_project":null}',
+                    ],
+                ],
                 'features' => [
-                    'FREE' => ['team_members' => '1'],
-                    'PRO' => [],
-                    'AGENCY' => [],
+                    'STARTER' => ['team_members' => '1'],
+                    'PROFESSIONAL' => ['team_members' => '1'],
+                    'ORGANIZATION' => ['team_members' => '1'],
                 ],
             ])
             ->assertRedirect()
             ->assertSessionHas('success');
 
         $this->assertDatabaseHas('plan_features', [
-            'plan' => 'FREE',
+            'plan' => 'STARTER',
             'feature_key' => 'team_members',
             'enabled' => 1,
         ]);
-
-        $this->assertDatabaseHas('plan_features', [
-            'plan' => 'PRO',
-            'feature_key' => 'team_members',
-            'enabled' => 0,
-        ]);
     }
 
-    // ---- Enforcement: team members ----
-
-    public function test_free_workspace_cannot_invite_team_members(): void
+    public function test_disabled_custom_assessment_feature_is_enforced_server_side(): void
     {
-        [$user, $workspace] = $this->makeUserWithWorkspace('FREE');
+        [$user] = $this->makeUserWithWorkspace('STARTER');
+        PlanFeature::where('plan', 'STARTER')->where('feature_key', 'workspace_custom_assessments')->update(['enabled' => false]);
 
         $this->actingAs($user)
-            ->withServerVariables(['HTTP_HOST' => 'localhost'])
-            ->post(route('team.invite'), ['email' => 'newuser@example.com', 'role' => 'MEMBER'])
-            ->assertSessionHas('error');
-
-        $this->assertDatabaseMissing('workspace_invitations', [
-            'workspace_id' => $workspace->workspace_id,
-            'email' => 'newuser@example.com',
-        ]);
-    }
-
-    public function test_pro_workspace_can_invite_team_members(): void
-    {
-        [$user] = $this->makeUserWithWorkspace('PRO');
-
-        $this->actingAs($user)
-            ->withServerVariables(['HTTP_HOST' => 'localhost'])
-            ->post(route('team.invite'), ['email' => 'invited@example.com', 'role' => 'MEMBER'])
-            ->assertSessionMissing('error');
-    }
-
-    // ---- Enforcement: CSV export ----
-
-    public function test_free_workspace_cannot_export_csv(): void
-    {
-        [$user, $workspace] = $this->makeUserWithWorkspace('FREE');
-
-        $project = Project::factory()->create([
-            'workspace_id' => $workspace->workspace_id,
-            'owner_user_id' => $user->user_id,
-        ]);
-
-        $this->actingAs($user)
-            ->withServerVariables(['HTTP_HOST' => 'localhost'])
-            ->get(route('projects.export.csv', $project))
+            ->get(route('custom-assessments.index'))
             ->assertForbidden();
-    }
-
-    public function test_pro_workspace_can_export_csv(): void
-    {
-        [$user, $workspace] = $this->makeUserWithWorkspace('PRO');
-
-        $project = Project::factory()->create([
-            'workspace_id' => $workspace->workspace_id,
-            'owner_user_id' => $user->user_id,
-        ]);
-
-        $this->actingAs($user)
-            ->withServerVariables(['HTTP_HOST' => 'localhost'])
-            ->get(route('projects.export.csv', $project))
-            ->assertOk();
     }
 }

@@ -1,24 +1,12 @@
 @props(['feature'])
 @php
     use App\Services\PlanService;
-    use Illuminate\Support\Facades\DB;
-
     $workspace    = app('current.workspace');
     $allowed      = $workspace && PlanService::workspaceCanAccess($workspace, $feature);
-    $currentPlan  = $workspace?->plan ?? 'FREE';
+    $currentPlan  = PlanService::normalizePlan($workspace?->plan ?? 'STARTER');
 
     if (! $allowed) {
-        $requiredPlan = 'PRO';
-        foreach (['FREE', 'PRO', 'AGENCY'] as $p) {
-            $on = DB::table('plan_features')
-                ->where('plan', $p)
-                ->where('feature_key', $feature)
-                ->value('enabled');
-            if ($on) {
-                $requiredPlan = $p;
-                break;
-            }
-        }
+        $requiredPlan = PlanService::requiredPlanForFeature($feature) ?? 'PROFESSIONAL';
         $featureLabel  = PlanService::FEATURES[$feature] ?? ucwords(str_replace('_', ' ', $feature));
         $requiredLabel = PlanService::planLabel($requiredPlan);
         $currentLabel  = PlanService::planLabel($currentPlan);

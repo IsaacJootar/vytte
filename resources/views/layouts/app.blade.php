@@ -65,6 +65,12 @@
             >Modules</x-sidebar-nav-item>
 
             <x-sidebar-nav-item
+                href="{{ route('custom-assessments.index') }}"
+                icon="clipboard-document-list"
+                :active="request()->routeIs('custom-assessments.*')"
+            >Custom Assessments</x-sidebar-nav-item>
+
+            <x-sidebar-nav-item
                 href="{{ route('team.index') }}"
                 icon="users"
                 :active="request()->routeIs('team.*')"
@@ -100,15 +106,15 @@
                 href="{{ route('billing.index') }}"
                 icon="credit-card"
                 :active="request()->routeIs('billing.*')"
-            >Plans &amp; Billing</x-sidebar-nav-item>
+            >Plans</x-sidebar-nav-item>
 
             @php
-                $sidebarPlan = auth()->user()->activeWorkspace?->plan ?? 'FREE';
+                $sidebarPlan = \App\Services\PlanService::normalizePlan(auth()->user()->activeWorkspace?->plan ?? 'STARTER');
                 $isPlatformAdmin = auth()->user()->isPlatformAdmin();
             @endphp
             <div class="mx-1 mt-3 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2">
                 <p class="text-[9px] font-semibold uppercase tracking-wider text-white/35">{{ $isPlatformAdmin ? 'Access level' : 'Current plan' }}</p>
-                <p class="mt-0.5 text-[11px] font-bold text-white/75">{{ $isPlatformAdmin ? 'Vytte Platform Admin' : ucfirst(strtolower($sidebarPlan)) }}</p>
+                <p class="mt-0.5 text-[11px] font-bold text-white/75">{{ $isPlatformAdmin ? 'Vytte Platform Admin' : \App\Services\PlanService::planLabel($sidebarPlan) }}</p>
                 @if ($isPlatformAdmin)
                     <a href="{{ route('admin.dashboard') }}" class="mt-1 inline-flex text-[10px] font-semibold text-vytte-300 hover:text-white">
                         Open admin center

@@ -1,7 +1,10 @@
 <x-admin-layout title="Catalogue Releases">
-    <div class="mb-5">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">Catalogue Releases</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Published releases are the official entry points for assessment creation.</p>
+    <div class="mb-5 flex items-start justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Catalogue Releases</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Published releases are the official entry points for assessment creation.</p>
+        </div>
+        <a href="{{ route('admin.catalogue-releases.create') }}" class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">New release</a>
     </div>
     <form method="GET" class="mb-4 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
         <select name="creation_path" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">

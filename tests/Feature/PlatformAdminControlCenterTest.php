@@ -149,6 +149,79 @@ class PlatformAdminControlCenterTest extends TestCase
         $this->assertSame(QuestionVersion::STATUS_APPROVED, $version->fresh()->status);
     }
 
+    public function test_platform_admin_can_create_framework_section_indicator_and_placement(): void
+    {
+        $admin = $this->platformAdmin();
+        $module = \App\Models\AssessmentModule::firstOrFail();
+        $publishedQuestionVersion = QuestionVersion::where('status', QuestionVersion::STATUS_PUBLISHED)->firstOrFail();
+
+        $this->actingAs($admin)->post(route('admin.framework-versions.store'), [
+            'module_id' => $module->module_id,
+            'framework_type' => 'DEPARTMENT',
+            'display_name' => 'Beta editable framework',
+            'source_authority' => 'Vytte Beta',
+            'license_code' => 'INTERNAL-BETA',
+        ])->assertRedirect();
+
+        $framework = \App\Models\DepartmentFrameworkVersion::where('display_name', 'Beta editable framework')->firstOrFail();
+
+        $this->actingAs($admin)->post(route('admin.framework-versions.sections.store', $framework), [
+            'section_code' => 'BETA_SECTION',
+            'section_name' => 'Beta Section',
+            'display_order' => 1,
+        ])->assertRedirect();
+        $section = \App\Models\FrameworkSection::where('framework_version_id', $framework->framework_version_id)->firstOrFail();
+
+        $this->actingAs($admin)->post(route('admin.framework-versions.indicators.store', $framework), [
+            'framework_section_id' => $section->framework_section_id,
+            'indicator_code' => 'BETA_IND',
+            'indicator_name' => 'Beta Indicator',
+            'display_order' => 1,
+        ])->assertRedirect();
+        $indicator = \App\Models\FrameworkIndicator::where('framework_version_id', $framework->framework_version_id)->firstOrFail();
+
+        $this->actingAs($admin)->post(route('admin.framework-versions.placements.store', $framework), [
+            'framework_section_id' => $section->framework_section_id,
+            'framework_indicator_id' => $indicator->framework_indicator_id,
+            'question_version_id' => $publishedQuestionVersion->question_version_id,
+            'display_order' => 1,
+            'weight' => 1,
+            'criticality' => 'STANDARD',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('framework_question_placements', [
+            'framework_version_id' => $framework->framework_version_id,
+            'question_version_id' => $publishedQuestionVersion->question_version_id,
+        ]);
+    }
+
+    public function test_platform_admin_can_create_catalogue_release_and_pin_framework(): void
+    {
+        $admin = $this->platformAdmin();
+        $profile = \App\Models\FacilityProfile::where('status', \App\Models\FacilityProfile::STATUS_PUBLISHED)->firstOrFail();
+        $framework = \App\Models\DepartmentFrameworkVersion::where('status', \App\Models\DepartmentFrameworkVersion::STATUS_PUBLISHED)->firstOrFail();
+
+        $this->actingAs($admin)->post(route('admin.catalogue-releases.store'), [
+            'release_code' => 'BETA_RELEASE_TEST',
+            'release_name' => 'Beta Release Test',
+            'creation_path' => 'COMPREHENSIVE',
+            'facility_profile_id' => $profile->facility_profile_id,
+        ])->assertRedirect();
+
+        $release = \App\Models\AssessmentCatalogueRelease::where('release_code', 'BETA_RELEASE_TEST')->firstOrFail();
+
+        $this->actingAs($admin)->post(route('admin.catalogue-releases.frameworks.attach', $release), [
+            'framework_version_id' => $framework->framework_version_id,
+            'applicability' => 'DEFAULT',
+            'display_order' => 1,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('assessment_catalogue_department_versions', [
+            'catalogue_release_id' => $release->catalogue_release_id,
+            'framework_version_id' => $framework->framework_version_id,
+        ]);
+    }
+
     public function test_platform_admin_can_assign_platform_admin_role(): void
     {
         $admin = $this->platformAdmin();

@@ -3,60 +3,165 @@
 namespace App\Services;
 
 use App\Models\Assessment;
-use App\Models\PlatformSetting;
 use App\Models\Project;
+use App\Models\SubscriptionPlan;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 
 class PlanService
 {
-    const PLANS = ['FREE', 'PRO', 'AGENCY'];
+    public const PLANS = ['STARTER', 'PROFESSIONAL', 'ORGANIZATION'];
 
-    const FEATURES = [
-        'team_members' => 'Team Members',
+    public const LEGACY_PLAN_ALIASES = [
+        'FREE' => 'STARTER',
+        'PRO' => 'PROFESSIONAL',
+        'AGENCY' => 'ORGANIZATION',
+    ];
+
+    public const FEATURES = [
+        'projects' => 'Projects',
+        'assessments' => 'Assessments',
+        'respondent_collection' => 'Respondent Collection',
         'shareable_public_links' => 'Shareable Public Links',
         'shareable_report_links' => 'Shareable Report Links',
-        'progress_maturity_tracking' => 'Progress & Maturity Tracking',
-        'localization' => 'Localization (Multi-language)',
-        'pdf_export_no_watermark' => 'PDF Export (No Watermark)',
+        'reports' => 'Reports',
+        'pdf_export' => 'PDF Export',
+        'pdf_export_no_watermark' => 'PDF Export Without Watermark',
         'csv_export' => 'CSV Export',
+        'progress_maturity_tracking' => 'Progress & Maturity Tracking',
+        'team_members' => 'Team Members',
+        'workspace_custom_assessments' => 'Workspace Custom Assessments',
+        'local_sections' => 'Local Sections',
+        'localization' => 'Localization (Multi-language)',
+        'module_library' => 'Module Library',
+        'notifications' => 'Notifications',
+        'audit_logs' => 'Audit Logs',
     ];
 
-    const LIMITS = [
-        'FREE' => ['projects' => 1, 'assessments_per_project' => 3],
-        'PRO' => ['projects' => 10, 'assessments_per_project' => null],
-        'AGENCY' => ['projects' => null, 'assessments_per_project' => null],
+    public const PLAN_DEFINITIONS = [
+        'STARTER' => [
+            'name' => 'Starter',
+            'label' => 'Starter',
+            'description' => 'For a single team beginning structured health assessments.',
+            'display_order' => 1,
+            'limits' => [
+                'projects' => null,
+                'assessments_per_project' => null,
+                'respondents_per_assessment' => null,
+                'storage_mb' => null,
+                'reports' => null,
+                'seats' => null,
+            ],
+            'pricing_metadata' => [
+                'billing_status' => 'future',
+                'monthly_price' => null,
+                'currency' => null,
+            ],
+        ],
+        'PROFESSIONAL' => [
+            'name' => 'Professional',
+            'label' => 'Professional',
+            'description' => 'For growing teams running repeated assessments and sharing reports.',
+            'display_order' => 2,
+            'limits' => [
+                'projects' => null,
+                'assessments_per_project' => null,
+                'respondents_per_assessment' => null,
+                'storage_mb' => null,
+                'reports' => null,
+                'seats' => null,
+            ],
+            'pricing_metadata' => [
+                'billing_status' => 'future',
+                'monthly_price' => null,
+                'currency' => null,
+            ],
+        ],
+        'ORGANIZATION' => [
+            'name' => 'Organization',
+            'label' => 'Organization',
+            'description' => 'For agencies and organizations managing multiple projects and teams.',
+            'display_order' => 3,
+            'limits' => [
+                'projects' => null,
+                'assessments_per_project' => null,
+                'respondents_per_assessment' => null,
+                'storage_mb' => null,
+                'reports' => null,
+                'seats' => null,
+            ],
+            'pricing_metadata' => [
+                'billing_status' => 'future',
+                'monthly_price' => null,
+                'currency' => null,
+            ],
+        ],
     ];
 
-    const PRICES_KOBO = [
-        'PRO' => 500000,
-        'AGENCY' => 1500000,
-    ];
+    public static function normalizePlan(?string $plan): string
+    {
+        $plan = strtoupper((string) ($plan ?: 'STARTER'));
+
+        return self::LEGACY_PLAN_ALIASES[$plan] ?? $plan;
+    }
+
+    public static function activePlans()
+    {
+        if (! DB::getSchemaBuilder()->hasTable('subscription_plans')) {
+            return collect(self::PLAN_DEFINITIONS)->map(function (array $definition, string $code) {
+                return (object) [
+                    'plan_code' => $code,
+                    'plan_name' => $definition['name'],
+                    'public_label' => $definition['label'],
+                    'description' => $definition['description'],
+                    'display_order' => $definition['display_order'],
+                    'is_active' => true,
+                    'is_beta_unlocked' => true,
+                    'pricing_metadata' => $definition['pricing_metadata'],
+                    'limits' => $definition['limits'],
+                ];
+            })->values();
+        }
+
+        return SubscriptionPlan::query()
+            ->where('is_active', true)
+            ->orderBy('display_order')
+            ->get();
+    }
+
+    public static function plan(?string $plan): ?SubscriptionPlan
+    {
+        if (! DB::getSchemaBuilder()->hasTable('subscription_plans')) {
+            return null;
+        }
+
+        return SubscriptionPlan::find(self::normalizePlan($plan));
+    }
+
+    public static function limitsFor(Workspace $workspace): array
+    {
+        $plan = self::plan($workspace->plan);
+
+        if ($plan) {
+            return $plan->limits ?? [];
+        }
+
+        return self::PLAN_DEFINITIONS[self::normalizePlan($workspace->plan)]['limits']
+            ?? self::PLAN_DEFINITIONS['STARTER']['limits'];
+    }
 
     public static function projectLimit(Workspace $workspace): ?int
     {
-        $plan = $workspace->plan ?? 'FREE';
+        $limit = self::limitsFor($workspace)['projects'] ?? null;
 
-        if ($plan === 'FREE') {
-            return (int) PlatformSetting::get('plan.free_projects', self::LIMITS['FREE']['projects']);
-        }
-
-        if ($plan === 'PRO') {
-            return (int) PlatformSetting::get('plan.pro_projects', self::LIMITS['PRO']['projects']);
-        }
-
-        return array_key_exists($plan, self::LIMITS) ? self::LIMITS[$plan]['projects'] : null;
+        return $limit === null ? null : (int) $limit;
     }
 
     public static function assessmentLimit(Workspace $workspace): ?int
     {
-        $plan = $workspace->plan ?? 'FREE';
+        $limit = self::limitsFor($workspace)['assessments_per_project'] ?? null;
 
-        if ($plan === 'FREE') {
-            return (int) PlatformSetting::get('plan.free_assessments_per_project', self::LIMITS['FREE']['assessments_per_project']);
-        }
-
-        return array_key_exists($plan, self::LIMITS) ? self::LIMITS[$plan]['assessments_per_project'] : null;
+        return $limit === null ? null : (int) $limit;
     }
 
     public static function hasReachedProjectLimit(Workspace $workspace): bool
@@ -86,34 +191,43 @@ class PlanService
 
     public static function planLabel(string $plan): string
     {
-        return match ($plan) {
-            'PRO' => 'Pro',
-            'AGENCY' => 'Agency',
-            default => 'Free',
-        };
+        $plan = self::normalizePlan($plan);
+
+        return self::PLAN_DEFINITIONS[$plan]['label'] ?? ucfirst(strtolower($plan));
     }
 
-    public static function priceKobo(string $plan): int
+    public static function featureLabel(string $featureKey): string
     {
-        return self::PRICES_KOBO[$plan] ?? 0;
-    }
-
-    public static function priceNgn(string $plan): string
-    {
-        $kobo = self::priceKobo($plan);
-
-        return number_format($kobo / 100, 0).' NGN/month';
+        return self::FEATURES[$featureKey] ?? ucwords(str_replace('_', ' ', $featureKey));
     }
 
     public static function workspaceCanAccess(Workspace $workspace, string $featureKey): bool
     {
-        $plan = $workspace->plan ?? 'FREE';
+        if (! array_key_exists($featureKey, self::FEATURES)) {
+            return false;
+        }
 
         $enabled = DB::table('plan_features')
-            ->where('plan', $plan)
+            ->where('plan', self::normalizePlan($workspace->plan ?? 'STARTER'))
             ->where('feature_key', $featureKey)
             ->value('enabled');
 
         return (bool) $enabled;
+    }
+
+    public static function requiredPlanForFeature(string $featureKey): ?string
+    {
+        foreach (self::PLANS as $plan) {
+            $enabled = DB::table('plan_features')
+                ->where('plan', $plan)
+                ->where('feature_key', $featureKey)
+                ->value('enabled');
+
+            if ($enabled) {
+                return $plan;
+            }
+        }
+
+        return null;
     }
 }

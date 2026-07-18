@@ -1,7 +1,10 @@
 <x-admin-layout title="Frameworks">
-    <div class="mb-5">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">Framework Versions</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Official department and focused-assessment frameworks.</p>
+    <div class="mb-5 flex items-start justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">Framework Versions</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Official department and focused-assessment frameworks.</p>
+        </div>
+        <a href="{{ route('admin.framework-versions.create') }}" class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">New framework</a>
     </div>
     <form method="GET" class="mb-4 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
         <select name="framework_type" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">

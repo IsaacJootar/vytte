@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             PlatformSettingsSeeder::class,
             ReferenceDataSeeder::class,
             PlatformGovernedDemoSeeder::class,
+            SubscriptionPlanSeeder::class,
             PlanFeatureSeeder::class,
             DemoAccountSeeder::class,
             DemoDataSeeder::class,
