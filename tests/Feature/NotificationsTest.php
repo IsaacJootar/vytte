@@ -3,20 +3,18 @@
 namespace Tests\Feature;
 
 use App\Models\Assessment;
-use App\Models\AssessmentModule;
-use App\Models\AssessmentModuleScope;
-use App\Models\AssessmentTier;
+use App\Models\AssessmentCatalogueRelease;
 use App\Models\PlatformSetting;
 use App\Models\Project;
-use App\Models\Question;
 use App\Models\Response;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\AssessmentCreationService;
 use App\Notifications\AssessmentCompletedNotification;
 use App\Notifications\MemberJoinedNotification;
-use Database\Seeders\HivawQuestionsSeeder;
+use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -44,7 +42,7 @@ class NotificationsTest extends TestCase
     private function createCompletedAssessment(Workspace $workspace, User $user): Assessment
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $project = Project::create(['name' => 'Notif Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
@@ -53,37 +51,18 @@ class NotificationsTest extends TestCase
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
 
-        $tier = AssessmentTier::where('tier_code', 'TIER_1')->first();
-        $module = AssessmentModule::where('module_code', 'HIVAW')->first();
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+        $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $user->user_id);
+        $assessment->update(['assessor_name' => 'Tester', 'started_at' => now()->subHour()]);
 
-        $assessment = Assessment::create([
-            'target_id' => $target->target_id,
-            'project_id' => $project->project_id,
-            'assessment_tier_id' => $tier->assessment_tier_id,
-            'status' => 'IN_PROGRESS',
-            'publish_status' => 'DRAFT',
-            'assessor_name' => 'Tester',
-            'started_at' => now()->subHour(),
-        ]);
-
-        AssessmentModuleScope::create([
-            'assessment_id' => $assessment->assessment_id,
-            'module_id' => $module->module_id,
-            'in_scope' => true,
-            'is_category_default' => true,
-            'status' => 'PENDING',
-        ]);
-
-        Question::where('module_id', $module->module_id)
-            ->where('is_active', true)
+        collect($assessment->snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
             ->where('is_scored', true)
-            ->with('options')
-            ->get()
-            ->each(function (Question $question) use ($assessment) {
+            ->each(function (array $question) use ($assessment) {
                 Response::create([
                     'assessment_id' => $assessment->assessment_id,
-                    'question_id' => $question->question_id,
-                    'value_option_id' => $question->options->firstOrFail()->option_id,
+                    'question_id' => $question['question_id'],
+                    'value_option_id' => collect($question['options'])->first()['option_id'],
                     'answered_at' => now(),
                 ]);
             });

@@ -134,7 +134,6 @@
                             $inScopeCount   = $inScopeScopes->count();
                             $assessmentLabel = $assessment->reportSnapshot?->payload['title']
                                 ?? $assessment->catalogueRelease?->release_name
-                                ?? $assessment->templateVersion?->template?->template_name
                                 ?? ($inScopeCount === 1
                                     ? ($inScopeScopes->first()?->module?->module_name ?? 'Focused Health Assessment')
                                     : 'Comprehensive Health Assessment');

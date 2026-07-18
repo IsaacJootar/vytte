@@ -3,11 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Assessment;
-use App\Models\AssessmentModule;
+use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentRespondentToken;
 use App\Models\AssessmentShareLink;
-use App\Models\AssessmentTemplate;
-use App\Models\AssessmentTemplateVersion;
+use App\Models\DepartmentFrameworkVersion;
 use App\Models\HealthDomain;
 use App\Models\Project;
 use App\Models\PublicResponseSession;
@@ -17,10 +16,10 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
+use App\Services\CataloguePublishingService;
 use App\Services\MultiRespondentAggregationService;
 use App\Services\RespondentSubmissionService;
-use App\Services\TemplatePublishingService;
-use Database\Seeders\HivawQuestionsSeeder;
+use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,31 +35,35 @@ class MultiRespondentScoringTest extends TestCase
     {
         parent::setUp();
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $this->seed(PlanFeatureSeeder::class);
     }
 
-    public function test_template_must_freeze_a_supported_multi_respondent_contract_before_publication(): void
+    public function test_catalogue_release_must_freeze_a_supported_multi_respondent_contract_before_publication(): void
     {
-        [, , $version] = $this->context(minimum: null, publish: false);
+        [, , $release] = $this->context(minimum: null, publish: false);
 
         try {
-            app(TemplatePublishingService::class)->publish($version);
+            app(CataloguePublishingService::class)->publish($release);
             $this->fail('Publishing should require a completed multi-respondent contract.');
         } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('minimum_completed_respondents', $exception->errors());
+            $this->assertArrayHasKey('collection_config', $exception->errors());
         }
 
-        $version->update([
-            'minimum_completed_respondents' => 2,
-            'aggregation_method' => 'MEDIAN',
+        $release->update([
+            'collection_config' => [
+                'allows_multi_respondent' => true,
+                'minimum_completed_respondents' => 2,
+                'aggregation_method' => 'MEDIAN',
+                'scoring_profile_version' => 'vytte-4.0-numeric-bands',
+            ],
         ]);
 
         try {
-            app(TemplatePublishingService::class)->publish($version);
+            app(CataloguePublishingService::class)->publish($release);
             $this->fail('An unsupported aggregation method should be rejected.');
         } catch (ValidationException $exception) {
-            $this->assertArrayHasKey('aggregation_method', $exception->errors());
+            $this->assertArrayHasKey('collection_config', $exception->errors());
         }
     }
 
@@ -220,7 +223,7 @@ class MultiRespondentScoringTest extends TestCase
 
     public function test_final_aggregate_records_reproducible_inputs_and_report_metadata(): void
     {
-        [$owner, $assessment, $version] = $this->context(minimum: 2);
+        [$owner, $assessment, $release] = $this->context(minimum: 2);
         $this->submitRespondent($assessment, 'low');
         $this->submitRespondent($assessment, 'high');
         $preview = app(MultiRespondentAggregationService::class)->preview($assessment);
@@ -239,7 +242,7 @@ class MultiRespondentScoringTest extends TestCase
             hash('sha256', json_encode($preview['result'], JSON_THROW_ON_ERROR)),
             $aggregation->result_hash
         );
-        $this->assertSame($version->template_version_id, $report['respondent_collection']['assessment_template_version_id']);
+        $this->assertSame($release->catalogue_release_id, $report['respondent_collection']['catalogue_release_id']);
         $this->assertSame(2, $report['respondent_collection']['eligible_completed_respondents']);
         $this->assertCount(2, $report['respondent_collection']['contributing_session_references']);
         $this->assertSame($owner->user_id, $report['respondent_collection']['finalized_by']['user_id']);
@@ -287,39 +290,48 @@ class MultiRespondentScoringTest extends TestCase
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
 
-        $template = AssessmentTemplate::create([
-            'template_code' => 'MULTI_'.Str::upper(Str::random(8)),
-            'template_name' => 'Patient experience assessment',
+        $release = AssessmentCatalogueRelease::create([
+            'release_code' => 'MULTI_'.Str::upper(Str::random(8)),
+            'release_name' => 'Patient experience assessment',
+            'description' => 'Multi-respondent governed demonstration assessment.',
             'creation_path' => 'FOCUSED',
-            'health_domain_id' => HealthDomain::where('domain_code', 'HIV')->value('health_domain_id'),
-            'source_authority' => 'Vytte approved content',
-            'license_code' => 'INTERNAL-CURATED',
+            'health_domain_id' => HealthDomain::where('domain_code', 'MENTAL_HEALTH')->value('health_domain_id'),
+            'aggregation_policy' => [
+                'method' => 'MEAN_OF_SCORED_SUB_INDICES',
+                'critical_failures' => ['enabled' => false],
+            ],
+            'composition_rules' => ['latest_resolution' => 'forbidden'],
+            'collection_config' => [
+                'allows_multi_respondent' => true,
+                'minimum_completed_respondents' => $minimum,
+                'aggregation_method' => 'ARITHMETIC_MEAN',
+                'respondent_eligibility_rules' => $eligibilityRules,
+                'scoring_profile_version' => 'vytte-4.0-numeric-bands',
+            ],
         ]);
-        $version = AssessmentTemplateVersion::create([
-            'template_id' => $template->template_id,
-            'version_number' => 1,
-            'allows_multi_respondent' => true,
-            'minimum_completed_respondents' => $minimum,
-            'aggregation_method' => 'ARITHMETIC_MEAN',
-            'respondent_eligibility_rules' => $eligibilityRules,
+        $framework = DepartmentFrameworkVersion::query()
+            ->whereHas('module', fn ($query) => $query->where('module_code', 'DMNH'))
+            ->where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)
+            ->firstOrFail();
+        $release->departmentFrameworkVersions()->attach($framework->framework_version_id, [
+            'module_id' => $framework->module_id,
+            'applicability' => 'REQUIRED',
+            'display_order' => 1,
+            'area_label' => 'Patient experience',
         ]);
-        $version->modules()->attach(
-            AssessmentModule::where('module_code', 'HIVAW')->value('module_id'),
-            ['display_order' => 1, 'area_label' => 'Patient experience']
-        );
 
         if (! $publish) {
-            return [$owner, null, $version, $workspace];
+            return [$owner, null, $release, $workspace];
         }
 
-        $version = app(TemplatePublishingService::class)->publish($version, $owner->user_id);
-        $assessment = app(AssessmentCreationService::class)->create(
+        $release = app(CataloguePublishingService::class)->publish($release, $owner->user_id);
+        $assessment = app(AssessmentCreationService::class)->createFromCatalogue(
             $project,
-            $version,
+            $release,
             creatorId: $owner->user_id,
         );
 
-        return [$owner, $assessment, $version, $workspace];
+        return [$owner, $assessment, $release, $workspace];
     }
 
     private function newSession(Assessment $assessment): PublicResponseSession

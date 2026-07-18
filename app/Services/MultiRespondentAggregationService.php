@@ -58,7 +58,7 @@ class MultiRespondentAggregationService
             'excluded_sessions' => $excluded->sortBy('session_id')->values()->all(),
             'result' => $aggregate,
             'scoring_version' => $config['scoring_profile_version'],
-            'template_version_id' => $assessment->template_version_id,
+            'catalogue_release_id' => $assessment->catalogue_release_id,
             'respondent_eligibility_rules' => $config['respondent_eligibility_rules'],
         ];
     }
@@ -148,7 +148,7 @@ class MultiRespondentAggregationService
     {
         $config = $assessment->snapshot?->collection_config ?? [];
         if (! ($config['allows_multi_respondent'] ?? false)) {
-            throw ValidationException::withMessages(['assessment' => 'This template does not allow multi-respondent collection.']);
+            throw ValidationException::withMessages(['assessment' => 'This catalogue release does not allow multi-respondent collection.']);
         }
         if (($config['aggregation_method'] ?? null) !== self::METHOD_ARITHMETIC_MEAN) {
             throw ValidationException::withMessages(['assessment' => 'This assessment uses an unsupported aggregation method.']);

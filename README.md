@@ -33,7 +33,6 @@ Workspace-local custom sections are allowed only as clearly marked local context
 - PHP 8.3+ and Laravel 13
 - Blade, Livewire 4, Alpine.js, Tailwind CSS 4, and Vite
 - PostgreSQL as the production authority
-- SQLite for temporary local desktop development and automated tests
 - PHPUnit 12
 
 ## Local Setup
@@ -48,15 +47,9 @@ npm run build
 php artisan serve
 ```
 
-The default local example uses `database/database.sqlite`. Create it when needed:
-
-```bash
-php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
-```
-
 ## PostgreSQL Configuration
 
-Production and release-candidate verification must use PostgreSQL:
+Local development, automated tests, production, and release-candidate verification use PostgreSQL:
 
 ```dotenv
 DB_CONNECTION=pgsql
@@ -67,8 +60,6 @@ DB_USERNAME=vytte
 DB_PASSWORD=change-me
 ```
 
-SQLite passing is not a substitute for PostgreSQL parity on migrations, partial indexes, foreign keys, upserts, and concurrency-sensitive response writes.
-
 ## Verification
 
 ```bash
@@ -76,7 +67,7 @@ php artisan test
 npm.cmd run build
 ```
 
-Before release, also run the full test suite against PostgreSQL.
+The full test suite is expected to run against PostgreSQL.
 
 ## Architecture References
 

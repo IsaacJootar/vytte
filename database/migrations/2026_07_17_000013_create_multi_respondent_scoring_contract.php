@@ -21,13 +21,6 @@ return new class extends Migration
              WHERE public_response_session_id IS NOT NULL'
         );
 
-        Schema::table('assessment_template_versions', function (Blueprint $table) {
-            $table->boolean('allows_multi_respondent')->default(false);
-            $table->unsignedInteger('minimum_completed_respondents')->nullable();
-            $table->string('aggregation_method', 40)->nullable();
-            $table->json('respondent_eligibility_rules')->nullable();
-        });
-
         Schema::table('assessment_snapshots', function (Blueprint $table) {
             $table->json('collection_config')->nullable();
         });
@@ -108,13 +101,5 @@ return new class extends Migration
             $table->dropColumn('collection_config');
         });
 
-        Schema::table('assessment_template_versions', function (Blueprint $table) {
-            $table->dropColumn([
-                'allows_multi_respondent',
-                'minimum_completed_respondents',
-                'aggregation_method',
-                'respondent_eligibility_rules',
-            ]);
-        });
     }
 };

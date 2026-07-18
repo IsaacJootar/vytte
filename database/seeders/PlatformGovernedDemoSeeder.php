@@ -26,14 +26,14 @@ class PlatformGovernedDemoSeeder extends Seeder
     private function seedDemoDepartments(): array
     {
         $definitions = [
-            'DOPD' => ['Outpatient', 'Patient flow and routine outpatient service readiness.', 'CQ'],
-            'DPHM' => ['Pharmacy', 'Medicine availability and pharmacy service readiness.', 'CQ'],
-            'DLAB' => ['Laboratory', 'Essential laboratory readiness and safety.', 'CQ'],
-            'DMNH' => ['Mental Health', 'Basic mental health service readiness.', 'CQ'],
+            'DOPD' => ['Outpatient', 'Patient flow and routine outpatient service readiness.', 'CQ', false],
+            'DPHM' => ['Pharmacy', 'Medicine availability and pharmacy service readiness.', 'CQ', false],
+            'DLAB' => ['Laboratory', 'Essential laboratory readiness and safety.', 'CQ', false],
+            'DMNH' => ['Mental Health', 'Basic mental health service readiness.', 'CQ', true],
         ];
 
         $modules = [];
-        foreach ($definitions as $code => [$name, $description, $domainCode]) {
+        foreach ($definitions as $code => [$name, $description, $domainCode, $requiresConsent]) {
             $module = AssessmentModule::firstOrCreate(
                 ['target_type_code' => 'HEALTH_FACILITY', 'module_code' => $code],
                 [
@@ -44,6 +44,7 @@ class PlatformGovernedDemoSeeder extends Seeder
                     'is_active' => true,
                 ]
             );
+            $module->update(['requires_consent' => $requiresConsent]);
             $modules[$code] = $module;
             $this->seedDemoQuestions($module, $description, $domainCode);
         }
@@ -55,6 +56,7 @@ class PlatformGovernedDemoSeeder extends Seeder
     {
         $singleSelectTypeId = DB::table('question_types')->where('type_code', 'SINGLE_SELECT')->value('type_id');
         $openEndedTypeId = DB::table('question_types')->where('type_code', 'OPEN_ENDED')->value('type_id');
+        $numericTypeId = DB::table('question_types')->where('type_code', 'NUMERIC')->value('type_id');
         $domainId = DB::table('domains')->where('domain_code', $domainCode)->value('domain_id');
 
         $moduleDomainId = DB::table('module_domains')
@@ -116,6 +118,18 @@ class PlatformGovernedDemoSeeder extends Seeder
                 'order' => 3,
                 'options' => [],
             ],
+            [
+                'code' => "{$module->module_code}.DEMO.Q4",
+                'text' => "Record the most relevant service-volume measure for {$module->module_name}.",
+                'type_id' => $numericTypeId,
+                'is_scored' => false,
+                'order' => 4,
+                'numeric_unit' => 'count',
+                'numeric_min' => 0,
+                'numeric_max' => 365,
+                'numeric_step' => 1,
+                'options' => [],
+            ],
         ];
 
         foreach ($questions as $index => $definition) {
@@ -137,6 +151,10 @@ class PlatformGovernedDemoSeeder extends Seeder
                     'source' => 'DEMO_CURATED',
                     'question_status' => 'APPROVED',
                     'standard_alignment_status' => 'DEMO_CONTENT',
+                    'numeric_unit' => $definition['numeric_unit'] ?? null,
+                    'numeric_min' => $definition['numeric_min'] ?? null,
+                    'numeric_max' => $definition['numeric_max'] ?? null,
+                    'numeric_step' => $definition['numeric_step'] ?? null,
                 ]);
             }
 

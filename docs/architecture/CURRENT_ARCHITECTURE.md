@@ -7,10 +7,10 @@ This document describes the implemented Vytte platform-governed composition arch
 Verified locally:
 
 - `php artisan test`: 395 tests, 972 assertions passing.
-- Clean disposable SQLite `migrate:fresh --seed`: passing.
+- Clean disposable PostgreSQL `migrate:fresh --seed`: passing.
 - Production frontend build with `npm.cmd run build`: passing.
 
-PostgreSQL remains the production database authority. SQLite is allowed for desktop development and fast automated tests while local Docker/PostgreSQL is unavailable.
+PostgreSQL is the database authority for local development, automated tests, release verification, and production.
 
 ## Runtime Stack
 
@@ -21,7 +21,7 @@ PostgreSQL remains the production database authority. SQLite is allowed for desk
 | Styling/build | Tailwind CSS 4 and Vite |
 | Data access | Eloquent plus bounded query-builder operations |
 | Production database | PostgreSQL |
-| Local/test database | SQLite |
+| Local/test database | PostgreSQL |
 | Auth | Laravel Breeze email/password |
 | PDF | DomPDF |
 | Payments | Paystack and Flutterwave webhooks |

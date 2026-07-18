@@ -70,7 +70,5 @@ The current scoring algorithm is `vytte-4.0-numeric-bands` with canonical 0-100 
 Current local verification:
 
 - `php artisan test`: 395 tests, 972 assertions passing.
-- Disposable SQLite `migrate:fresh --seed`: passing.
+- Disposable PostgreSQL `migrate:fresh --seed`: passing.
 - Production frontend build: passing.
-
-PostgreSQL parity remains required before release.

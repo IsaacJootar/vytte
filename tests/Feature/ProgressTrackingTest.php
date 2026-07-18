@@ -3,17 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\Assessment;
-use App\Models\AssessmentModule;
-use App\Models\AssessmentModuleScope;
-use App\Models\AssessmentTier;
+use App\Models\AssessmentCatalogueRelease;
 use App\Models\Project;
 use App\Models\Response;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
-use Database\Seeders\HivawQuestionsSeeder;
+use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,52 +46,27 @@ class ProgressTrackingTest extends TestCase
 
     private function makeCompleteAssessment(Workspace $workspace, User $user, Project $project, bool $withAnswers = true): Assessment
     {
-        $target = $project->targets->first();
-        $tier = AssessmentTier::where('tier_code', 'TIER_1')->first();
-        $module = AssessmentModule::where('module_code', 'HIVAW')->first();
-
-        $assessment = Assessment::create([
-            'target_id' => $target->target_id,
-            'project_id' => $project->project_id,
-            'assessment_tier_id' => $tier->assessment_tier_id,
-            'status' => 'COMPLETE',
-            'publish_status' => 'DRAFT',
-            'assessor_name' => 'Tester',
-            'started_at' => now()->subHour(),
-            'completed_at' => now(),
-        ]);
-
-        AssessmentModuleScope::create([
-            'assessment_id' => $assessment->assessment_id,
-            'module_id' => $module->module_id,
-            'in_scope' => true,
-            'is_category_default' => true,
-            'status' => 'COMPLETED',
-            'completed_at' => now(),
-        ]);
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+        $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
 
         if ($withAnswers) {
-            $questions = DB::table('questions')
-                ->where('module_id', $module->module_id)
-                ->where('is_scored', true)
-                ->pluck('question_id');
+            $questions = collect($assessment->snapshot->payload)
+                ->flatMap(fn ($module) => $module['questions'] ?? [])
+                ->where('is_scored', true);
 
-            foreach ($questions as $qId) {
-                $optionId = DB::table('question_options')
-                    ->where('question_id', $qId)
-                    ->orderByDesc('score_weight')
-                    ->value('option_id');
-
+            foreach ($questions as $question) {
+                $optionId = collect($question['options'])->sortByDesc('score_weight')->first()['option_id'];
                 Response::updateOrCreate(
-                    ['assessment_id' => $assessment->assessment_id, 'question_id' => $qId, 'respondent_id' => null],
+                    ['assessment_id' => $assessment->assessment_id, 'question_id' => $question['question_id'], 'respondent_id' => null],
                     ['value_option_id' => $optionId, 'answered_at' => now()]
                 );
             }
         }
 
         app(ScoringService::class)->calculate($assessment);
+        $assessment->update(['status' => Assessment::STATUS_COMPLETE, 'completed_at' => now()]);
 
-        return $assessment;
+        return $assessment->fresh(['score', 'snapshot']);
     }
 
     private function makeProjectWithTarget(User $user, Workspace $workspace): Project
@@ -113,7 +87,7 @@ class ProgressTrackingTest extends TestCase
     public function test_progress_page_requires_auth(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -127,7 +101,7 @@ class ProgressTrackingTest extends TestCase
     public function test_progress_page_shows_empty_state_with_no_complete_assessments(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -143,7 +117,7 @@ class ProgressTrackingTest extends TestCase
     public function test_progress_page_renders_with_one_complete_assessment(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -158,7 +132,7 @@ class ProgressTrackingTest extends TestCase
     public function test_progress_page_shows_maturity_level_for_scored_assessment(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -175,7 +149,7 @@ class ProgressTrackingTest extends TestCase
     public function test_progress_page_shows_view_link_for_each_run(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -189,10 +163,10 @@ class ProgressTrackingTest extends TestCase
 
     // ---- Domain matrix visible at ≥ 2 runs ----
 
-    public function test_domain_matrix_shown_when_two_or_more_complete_assessments(): void
+    public function test_compare_two_runs_shown_when_two_or_more_complete_assessments(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -202,13 +176,13 @@ class ProgressTrackingTest extends TestCase
         $this->actingAs($user)
             ->get(route('projects.progress', $project))
             ->assertOk()
-            ->assertSee('Domain Score History');
+            ->assertSee('Compare Two Runs');
     }
 
     public function test_domain_matrix_not_shown_for_single_run(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -225,7 +199,7 @@ class ProgressTrackingTest extends TestCase
     public function test_compare_form_shown_when_two_or_more_complete_assessments(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -241,7 +215,7 @@ class ProgressTrackingTest extends TestCase
     public function test_compare_form_not_shown_for_single_run(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -258,7 +232,7 @@ class ProgressTrackingTest extends TestCase
     public function test_compare_page_requires_auth(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -272,7 +246,7 @@ class ProgressTrackingTest extends TestCase
     public function test_compare_page_renders_with_two_assessments(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -289,7 +263,7 @@ class ProgressTrackingTest extends TestCase
     public function test_compare_page_shows_both_assessment_scores(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -306,7 +280,7 @@ class ProgressTrackingTest extends TestCase
     public function test_compare_rejects_different_composition_hashes(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -324,7 +298,7 @@ class ProgressTrackingTest extends TestCase
     public function test_compare_page_404s_when_assessment_belongs_to_different_project(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $projectA = $this->makeProjectWithTarget($user, $workspace);
@@ -344,7 +318,7 @@ class ProgressTrackingTest extends TestCase
     public function test_workspace_b_cannot_view_workspace_a_progress_page(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$userA, $workspaceA] = $this->userWithWorkspace();
         $projectA = $this->makeProjectWithTarget($userA, $workspaceA);

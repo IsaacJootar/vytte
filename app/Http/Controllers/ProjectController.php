@@ -111,7 +111,6 @@ class ProjectController extends Controller
             'assessments.moduleScope.module',
             'assessments.score',
             'assessments.reportSnapshot',
-            'assessments.templateVersion.template',
             'assessments.catalogueRelease',
         ]);
 

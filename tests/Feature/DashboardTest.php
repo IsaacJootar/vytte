@@ -3,20 +3,18 @@
 namespace Tests\Feature;
 
 use App\Models\Assessment;
-use App\Models\AssessmentModule;
-use App\Models\AssessmentModuleScope;
-use App\Models\AssessmentTier;
+use App\Models\AssessmentCatalogueRelease;
 use App\Models\Project;
 use App\Models\Response;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
-use Database\Seeders\HivawQuestionsSeeder;
+use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
@@ -41,7 +39,7 @@ class DashboardTest extends TestCase
     private function createScoredAssessment(Workspace $workspace, User $user, bool $bestAnswers = true): Assessment
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $project = Project::create(['name' => 'Dashboard Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
@@ -50,41 +48,26 @@ class DashboardTest extends TestCase
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
 
-        $tier = AssessmentTier::where('tier_code', 'TIER_1')->first();
-        $module = AssessmentModule::where('module_code', 'HIVAW')->first();
-
-        $assessment = Assessment::create([
-            'target_id' => $target->target_id,
-            'project_id' => $project->project_id,
-            'assessment_tier_id' => $tier->assessment_tier_id,
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+        $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $user->user_id);
+        $assessment->update([
             'status' => 'COMPLETE',
-            'publish_status' => 'DRAFT',
             'assessor_name' => 'Tester',
             'started_at' => now()->subHour(),
             'completed_at' => now(),
         ]);
 
-        AssessmentModuleScope::create([
-            'assessment_id' => $assessment->assessment_id,
-            'module_id' => $module->module_id,
-            'in_scope' => true,
-            'is_category_default' => true,
-            'status' => 'COMPLETED',
-            'completed_at' => now(),
-        ]);
+        $questions = collect($assessment->snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->where('is_scored', true);
 
-        $questions = DB::table('questions')
-            ->where('module_id', $module->module_id)
-            ->where('is_scored', true)
-            ->pluck('question_id');
-
-        foreach ($questions as $qId) {
+        foreach ($questions as $question) {
             $optionId = $bestAnswers
-                ? DB::table('question_options')->where('question_id', $qId)->orderByDesc('score_weight')->value('option_id')
-                : DB::table('question_options')->where('question_id', $qId)->orderBy('score_weight')->value('option_id');
+                ? collect($question['options'])->sortByDesc('score_weight')->first()['option_id']
+                : collect($question['options'])->sortBy('score_weight')->first()['option_id'];
 
             Response::updateOrCreate(
-                ['assessment_id' => $assessment->assessment_id, 'question_id' => $qId, 'respondent_id' => null],
+                ['assessment_id' => $assessment->assessment_id, 'question_id' => $question['question_id'], 'respondent_id' => null],
                 ['value_option_id' => $optionId, 'answered_at' => now()]
             );
         }

@@ -20,7 +20,7 @@
 ### DEC-2026-07-18-002: Production Database Authority
 
 - **Status:** Accepted.
-- **Decision:** PostgreSQL is the production and release-candidate authority. SQLite remains allowed for local development and automated tests while the local Docker/PostgreSQL environment is unavailable.
+- **Decision:** PostgreSQL is the database authority for local development, automated tests, release verification, and production.
 - **Release gate:** run migrations, full tests, and concurrency-sensitive checks against PostgreSQL before production release.
 
 ### DEC-2026-07-18-003: Two Creation Paths

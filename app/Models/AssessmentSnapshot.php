@@ -15,7 +15,7 @@ class AssessmentSnapshot extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'assessment_id', 'template_version_id', 'creation_path',
+        'assessment_id', 'creation_path',
         'catalogue_release_id', 'facility_profile_id', 'setting_type_code',
         'health_domain_id', 'content_hash', 'is_customized',
         'composition_manifest', 'aggregation_policy', 'payload',

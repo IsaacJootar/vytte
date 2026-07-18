@@ -7,7 +7,7 @@ use App\Models\ModuleDomain;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use Database\Seeders\HivawQuestionsSeeder;
+use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -52,6 +52,7 @@ class ModuleLibraryTest extends TestCase
     {
         [$user] = $this->userWithWorkspace();
         $this->seed(ReferenceDataSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $this->actingAs($user)
             ->get(route('modules.index'))
@@ -63,16 +64,17 @@ class ModuleLibraryTest extends TestCase
     {
         [$user] = $this->userWithWorkspace();
         $this->seed(ReferenceDataSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $this->actingAs($user)
             ->get(route('modules.index'))
             ->assertOk()
             ->assertSee('Health Facility')
-            ->assertSee('OPD')
-            ->assertSee('Outpatient Department');
+            ->assertSee('DOPD')
+            ->assertSee('Outpatient');
     }
 
-    public function test_community_assessment_templates_are_not_a_separate_plan_feature(): void
+    public function test_community_voice_is_not_a_separate_module_subsystem(): void
     {
         [$user] = $this->userWithWorkspace();
         $this->seed(ReferenceDataSeeder::class);
@@ -80,8 +82,7 @@ class ModuleLibraryTest extends TestCase
         $this->actingAs($user)
             ->get(route('modules.index'))
             ->assertOk()
-            ->assertSee('Community')
-            ->assertSee('HIV Awareness & Service Uptake');
+            ->assertDontSee('Separate community reporting');
     }
 
     public function test_module_library_index_shows_empty_state_when_no_modules(): void
@@ -100,49 +101,47 @@ class ModuleLibraryTest extends TestCase
     {
         [$user] = $this->userWithWorkspace();
         $this->seed(ReferenceDataSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
-        $module = AssessmentModule::where('module_code', 'OPD')->first();
+        $module = AssessmentModule::where('module_code', 'DOPD')->first();
 
         $this->actingAs($user)
             ->get(route('modules.show', $module))
             ->assertOk()
-            ->assertSee('Outpatient Department')
-            ->assertSee('OPD')
+            ->assertSee('Outpatient')
+            ->assertSee('DOPD')
             ->assertSee('Health Facility');
     }
 
-    public function test_module_show_displays_domains_and_questions_from_hivaw_seeder(): void
+    public function test_module_show_displays_domains_and_questions_from_governed_demo_seeder(): void
     {
         [$user] = $this->userWithWorkspace();
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
-        $module = AssessmentModule::where('module_code', 'HIVAW')->first();
+        $module = AssessmentModule::where('module_code', 'DMNH')->first();
 
         $this->actingAs($user)
             ->get(route('modules.show', $module))
             ->assertOk()
-            ->assertSee('HIVAW')
-            ->assertSee('AWARENESS & KNOWLEDGE')
-            ->assertSee('STIGMA & SOCIAL NORMS')
-            ->assertSee('SERVICE ACCESS & UTILIZATION')
-            ->assertSee('HIVAW.D1.Q1');
+            ->assertSee('DMNH')
+            ->assertSee('DEMONSTRATION READINESS')
+            ->assertSee('DMNH.DEMO.Q1');
     }
 
     public function test_module_show_displays_sub_indices(): void
     {
         [$user] = $this->userWithWorkspace();
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
-        $module = AssessmentModule::where('module_code', 'HIVAW')->first();
+        $module = AssessmentModule::where('module_code', 'DMNH')->first();
 
         $this->actingAs($user)
             ->get(route('modules.show', $module))
             ->assertOk()
-            ->assertSee('CHKI')
-            ->assertSee('Community HIV Knowledge Index')
-            ->assertSee('HTAB');
+            ->assertSee('DMNHR')
+            ->assertSee('Mental Health Readiness Score');
     }
 
     public function test_module_show_returns_404_for_nonexistent_module(): void
@@ -159,34 +158,34 @@ class ModuleLibraryTest extends TestCase
     public function test_assessment_module_has_correct_question_count_after_seeding(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
-        $module = AssessmentModule::where('module_code', 'HIVAW')->first();
+        $module = AssessmentModule::where('module_code', 'DMNH')->first();
 
-        $this->assertEquals(9, $module->questions()->count());
-        $this->assertEquals(3, $module->moduleDomains()->count());
-        $this->assertEquals(4, $module->subIndices()->count());
+        $this->assertEquals(4, $module->questions()->count());
+        $this->assertEquals(1, $module->moduleDomains()->count());
+        $this->assertEquals(1, $module->subIndices()->count());
     }
 
     public function test_module_domains_have_questions_with_options(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
-        $domain = ModuleDomain::where('domain_label', 'AWARENESS & KNOWLEDGE')->first();
+        $domain = ModuleDomain::where('domain_label', 'DEMONSTRATION READINESS')->first();
 
         $this->assertNotNull($domain);
-        $this->assertEquals(3, $domain->questions()->count());
+        $this->assertEquals(4, $domain->questions()->count());
         $this->assertTrue($domain->questions->first()->options->isNotEmpty());
     }
 
     public function test_sub_index_belongs_to_global_domain(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
 
-        $module = AssessmentModule::where('module_code', 'HIVAW')->first();
-        $subIndex = $module->subIndices()->with('domain')->where('acronym', 'CHKI')->first();
+        $module = AssessmentModule::where('module_code', 'DMNH')->first();
+        $subIndex = $module->subIndices()->with('domain')->where('acronym', 'DMNHR')->first();
 
         $this->assertNotNull($subIndex);
         $this->assertNotNull($subIndex->domain);

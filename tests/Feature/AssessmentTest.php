@@ -7,20 +7,17 @@ use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
-use App\Models\AssessmentTier;
 use App\Models\FacilityProfile;
 use App\Models\Project;
 use App\Models\Question;
-use App\Models\QuestionType;
 use App\Models\Response;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use Database\Seeders\AssessmentTemplateSeeder;
-use Database\Seeders\HivawQuestionsSeeder;
-use Database\Seeders\PlanFeatureSeeder;
+use App\Services\AssessmentCreationService;
 use Database\Seeders\PlatformGovernedDemoSeeder;
+use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -96,28 +93,9 @@ class AssessmentTest extends TestCase
 
     private function createAssessment(Project $project, Target $target): Assessment
     {
-        $tier = AssessmentTier::where('tier_code', 'TIER_1')->first();
-        $module = AssessmentModule::where('module_code', 'HIVAW')->first();
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
 
-        $assessment = Assessment::create([
-            'target_id' => $target->target_id,
-            'project_id' => $project->project_id,
-            'assessment_tier_id' => $tier->assessment_tier_id,
-            'status' => 'IN_PROGRESS',
-            'publish_status' => 'DRAFT',
-            'assessor_name' => 'Test Assessor',
-            'started_at' => now(),
-        ]);
-
-        AssessmentModuleScope::create([
-            'assessment_id' => $assessment->assessment_id,
-            'module_id' => $module->module_id,
-            'in_scope' => true,
-            'is_category_default' => true,
-            'status' => 'PENDING',
-        ]);
-
-        return $assessment;
+        return app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
     }
 
     // ---- Auth gate ----
@@ -136,7 +114,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         // Request without actingAs — unauthenticated
@@ -156,8 +134,7 @@ class AssessmentTest extends TestCase
             ->assertSee('Comprehensive Health Assessment')
             ->assertSee('Focused Health Assessment')
             ->assertSee('Demo Clinic Comprehensive Health Assessment')
-            ->assertSee('Demo Focused Mental Health Assessment')
-            ->assertDontSee('Standard Battery');
+            ->assertSee('Demo Focused Mental Health Assessment');
     }
 
     // ---- Store ----
@@ -227,7 +204,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $this->actingAs($user)
@@ -240,27 +217,20 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
-        $question = Question::where('question_code', 'HIVAW.D3.Q3')->firstOrFail();
-        $question->update([
-            'type_id' => QuestionType::where('type_code', 'NUMERIC')->value('type_id'),
-            'numeric_unit' => 'days',
-            'numeric_min' => 0,
-            'numeric_max' => 365,
-            'numeric_step' => 0.1,
-        ]);
+        $question = Question::where('question_code', 'DMNH.DEMO.Q4')->firstOrFail();
 
         Livewire::actingAs($user)
             ->test(AssessmentRunner::class, ['assessment' => $assessment])
             ->call('giveConsent')
-            ->call('saveNumeric', $question->question_id, '4.5')
-            ->assertSet("savedNumericResponses.{$question->question_id}", 4.5);
+            ->call('saveNumeric', $question->question_id, '4')
+            ->assertSet("savedNumericResponses.{$question->question_id}", 4.0);
 
         $this->assertDatabaseHas('responses', [
             'assessment_id' => $assessment->assessment_id,
             'question_id' => $question->question_id,
-            'value_numeric' => 4.5,
+            'value_numeric' => 4,
             'value_option_id' => null,
         ]);
     }
@@ -269,19 +239,14 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
-        $question = Question::where('question_code', 'HIVAW.D3.Q3')->firstOrFail();
-        $question->update([
-            'type_id' => QuestionType::where('type_code', 'NUMERIC')->value('type_id'),
-            'numeric_min' => 0,
-            'numeric_max' => 100,
-        ]);
+        $question = Question::where('question_code', 'DMNH.DEMO.Q4')->firstOrFail();
 
         Livewire::actingAs($user)
             ->test(AssessmentRunner::class, ['assessment' => $assessment])
             ->call('giveConsent')
-            ->call('saveNumeric', $question->question_id, '101')
+            ->call('saveNumeric', $question->question_id, '366')
             ->assertHasErrors("numeric.{$question->question_id}");
 
         $this->assertDatabaseMissing('responses', [
@@ -296,7 +261,7 @@ class AssessmentTest extends TestCase
     {
         [$userA, $workspaceA] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspaceA, $userA);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $userB = User::factory()->create();
@@ -318,7 +283,7 @@ class AssessmentTest extends TestCase
     {
         [$owner, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $owner);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
         $outsider = User::factory()->create(['active_workspace_id' => $workspace->workspace_id]);
 
@@ -333,20 +298,20 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         Livewire::actingAs($user)
             ->test(AssessmentRunner::class, ['assessment' => $assessment])
             ->assertSet('currentIndex', 0)
-            ->assertCount('questionData', 9);
+            ->assertCount('questionData', 4);
     }
 
     public function test_livewire_select_option_saves_response_and_advances(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -371,7 +336,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -400,7 +365,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -424,7 +389,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -449,7 +414,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -467,7 +432,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -486,7 +451,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         Livewire::actingAs($user)
@@ -501,7 +466,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $this->expectException(\LogicException::class);
@@ -512,7 +477,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
         $assessment->update(['status' => Assessment::STATUS_COMPLETE, 'completed_at' => now()]);
 
@@ -524,7 +489,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $this->actingAs($user)
@@ -539,7 +504,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         Question::where('is_active', true)
@@ -570,7 +535,7 @@ class AssessmentTest extends TestCase
         );
 
         $originalTitle = $reportSnapshot->payload['title'];
-        AssessmentModule::where('module_code', 'HIVAW')->update(['module_name' => 'Changed after completion']);
+        AssessmentModule::where('module_code', 'DMNH')->update(['module_name' => 'Changed after completion']);
         $this->assertSame($originalTitle, $assessment->fresh()->reportSnapshot->payload['title']);
     }
 
@@ -578,7 +543,7 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(HivawQuestionsSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
         $assessment->update(['status' => 'COMPLETE', 'completed_at' => now()]);
 

@@ -2,35 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\AssessmentTemplateVersion;
 use App\Models\AssessmentModule;
 
-class TemplateContentService
+class FrameworkContentService
 {
-    public function payload(AssessmentTemplateVersion $version, ?array $moduleIds = null): array
-    {
-        $version->load([
-            'modules.questions.options.translations',
-            'modules.questions.numericBands',
-            'modules.questions.translations',
-            'modules.questions.questionType',
-            'modules.questions.moduleDomain',
-            'modules.subIndices.domain',
-            'modules.subIndices.questions',
-        ]);
-        $modules = $version->modules;
-
-        if ($moduleIds !== null) {
-            $modules = $modules->whereIn('module_id', $moduleIds);
-        }
-
-        return $modules->map(fn ($module): array => $this->modulePayload(
-            $module,
-            (int) $module->pivot->display_order,
-            $module->pivot->area_label,
-        ))->values()->all();
-    }
-
     public function modulePayload(AssessmentModule $module, int $displayOrder = 1, ?string $areaLabel = null): array
     {
         $module->loadMissing([

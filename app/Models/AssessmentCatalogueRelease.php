@@ -31,6 +31,7 @@ class AssessmentCatalogueRelease extends Model
         'status',
         'aggregation_policy',
         'composition_rules',
+        'collection_config',
         'content_hash',
         'published_at',
         'published_by',
@@ -39,6 +40,7 @@ class AssessmentCatalogueRelease extends Model
     protected $casts = [
         'aggregation_policy' => 'array',
         'composition_rules' => 'array',
+        'collection_config' => 'array',
         'published_at' => 'datetime',
     ];
 

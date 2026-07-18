@@ -2,7 +2,7 @@
 
 ## Authority
 
-Laravel migrations are the database source of truth. PostgreSQL is the production authority. SQLite is used for local development and automated tests.
+Laravel migrations are the database source of truth. PostgreSQL is the database authority for local development, automated tests, release verification, and production.
 
 ## Core Table Groups
 
@@ -164,7 +164,7 @@ The demonstration catalogue is not production clinical methodology.
 Current local checks:
 
 - full PHPUnit suite passes;
-- disposable SQLite `migrate:fresh --seed` passes;
+- disposable PostgreSQL `migrate:fresh --seed` passes;
 - production frontend build passes.
 
 Before release, run the same migration and test suite against PostgreSQL.

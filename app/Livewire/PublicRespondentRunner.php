@@ -3,13 +3,9 @@
 namespace App\Livewire;
 
 use App\Models\Assessment;
-use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentRespondentToken;
 use App\Models\PublicResponseSession;
-use App\Models\Question;
-use App\Models\QuestionOptionTranslation;
-use App\Models\QuestionTranslation;
 use App\Models\RespondentConsent;
 use App\Models\Response;
 use App\Services\RespondentSubmissionService;
@@ -34,7 +30,6 @@ class PublicRespondentRunner extends Component
     #[Locked]
     public array $moduleIds = [];
 
-    /** Retained for view and backwards compatibility; all modules are now loaded. */
     #[Locked]
     public int $moduleId = 0;
 
@@ -83,7 +78,7 @@ class PublicRespondentRunner extends Component
         }
 
         $assessment = Assessment::find($tokenRecord->assessment_id);
-        if (! $assessment) {
+        if (! $assessment || ! $assessment->snapshot) {
             $this->tokenValid = false;
 
             return;
@@ -398,80 +393,34 @@ class PublicRespondentRunner extends Component
     private function questionDefinitions(string $locale): array
     {
         $assessment = Assessment::with('snapshot')->find($this->assessmentId);
-        if ($assessment?->snapshot) {
-            return collect($assessment->snapshot->payload)
-                ->filter(fn ($module) => in_array((int) $module['module_id'], $this->moduleIds, true))
+        if (! $assessment?->snapshot) {
+            return [];
+        }
+
+        return collect($assessment->snapshot->payload)
+            ->filter(fn ($module) => in_array((int) $module['module_id'], $this->moduleIds, true))
+            ->sortBy('display_order')
+            ->flatMap(fn ($module) => collect($module['questions'] ?? [])
                 ->sortBy('display_order')
-                ->flatMap(fn ($module) => collect($module['questions'] ?? [])
-                    ->sortBy('display_order')
-                    ->map(fn ($question) => [
-                        'question_id' => $question['question_id'],
-                        'question_code' => $question['question_code'],
-                        'question_text' => Arr::get($question, "translations.{$locale}", $question['question_text']),
-                        'is_scored' => (bool) $question['is_scored'],
-                        'response_type' => $question['response_type'],
-                        'module_id' => (int) $module['module_id'],
-                        'module_code' => $module['module_code'],
-                        'module_name' => $module['module_name'] ?? $module['module_code'],
-                        'domain_label' => $question['domain_label'] ?? '',
-                        'domain_number' => $question['domain_number'] ?? 0,
-                        'numeric_config' => $question['numeric_config'] ?? null,
-                        'options' => collect($question['options'] ?? [])->map(fn ($option) => [
-                            'option_id' => (int) $option['option_id'],
-                            'option_label' => Arr::get($option, "translations.{$locale}", $option['option_label']),
-                        ])->all(),
-                    ]))
-                ->values()
-                ->all();
-        }
-
-        $moduleNames = AssessmentModule::whereIn('module_id', $this->moduleIds)
-            ->get()->keyBy('module_id');
-        $questions = Question::with(['options', 'moduleDomain', 'questionType'])
-            ->whereIn('module_id', $this->moduleIds)
-            ->where('is_active', true)
-            ->get()
-            ->sortBy(fn (Question $question) => sprintf(
-                '%05d-%05d-%05d',
-                array_search($question->module_id, $this->moduleIds, true),
-                $question->moduleDomain?->domain_number ?? 0,
-                $question->display_order
-            ))
-            ->values();
-
-        $questionTranslations = collect();
-        $optionTranslations = collect();
-        if ($locale !== 'en' && $questions->isNotEmpty()) {
-            $questionTranslations = QuestionTranslation::where('locale', $locale)
-                ->whereIn('question_id', $questions->pluck('question_id'))
-                ->pluck('question_text', 'question_id');
-            $optionTranslations = QuestionOptionTranslation::where('locale', $locale)
-                ->whereIn('option_id', $questions->flatMap(fn ($question) => $question->options->pluck('option_id')))
-                ->pluck('option_label', 'option_id');
-        }
-
-        return $questions->map(fn (Question $question) => [
-            'question_id' => $question->question_id,
-            'question_code' => $question->question_code,
-            'question_text' => $questionTranslations->get($question->question_id, $question->question_text),
-            'is_scored' => (bool) $question->is_scored,
-            'response_type' => $question->questionType?->type_code,
-            'module_id' => (int) $question->module_id,
-            'module_code' => $moduleNames[$question->module_id]?->module_code ?? '',
-            'module_name' => $moduleNames[$question->module_id]?->module_name ?? '',
-            'domain_label' => $question->moduleDomain?->domain_label ?? '',
-            'domain_number' => $question->moduleDomain?->domain_number ?? 0,
-            'numeric_config' => $question->questionType?->type_code === 'NUMERIC' ? [
-                'unit' => $question->numeric_unit,
-                'min' => $question->numeric_min !== null ? (float) $question->numeric_min : null,
-                'max' => $question->numeric_max !== null ? (float) $question->numeric_max : null,
-                'step' => $question->numeric_step !== null ? (float) $question->numeric_step : null,
-            ] : null,
-            'options' => $question->options->map(fn ($option) => [
-                'option_id' => (int) $option->option_id,
-                'option_label' => $optionTranslations->get($option->option_id, $option->option_label),
-            ])->all(),
-        ])->all();
+                ->map(fn ($question) => [
+                    'question_id' => $question['question_id'],
+                    'question_code' => $question['question_code'],
+                    'question_text' => Arr::get($question, "translations.{$locale}", $question['question_text']),
+                    'is_scored' => (bool) $question['is_scored'],
+                    'response_type' => $question['response_type'],
+                    'module_id' => (int) $module['module_id'],
+                    'module_code' => $module['module_code'],
+                    'module_name' => $module['module_name'] ?? $module['module_code'],
+                    'domain_label' => $question['domain_label'] ?? '',
+                    'domain_number' => $question['domain_number'] ?? 0,
+                    'numeric_config' => $question['numeric_config'] ?? null,
+                    'options' => collect($question['options'] ?? [])->map(fn ($option) => [
+                        'option_id' => (int) $option['option_id'],
+                        'option_label' => Arr::get($option, "translations.{$locale}", $option['option_label']),
+                    ])->all(),
+                ]))
+            ->values()
+            ->all();
     }
 
     private function authoritativeQuestion(string $questionId): ?array
@@ -501,19 +450,17 @@ class PublicRespondentRunner extends Component
     private function resolveAvailableLocales(): array
     {
         $assessment = Assessment::with('snapshot')->find($this->assessmentId);
-        if ($assessment?->snapshot) {
-            $translatedLocales = collect($assessment->snapshot->payload)
-                ->flatMap(fn ($module) => collect($module['questions'] ?? [])->flatMap(function ($question) {
-                    return array_merge(
-                        array_keys($question['translations'] ?? []),
-                        collect($question['options'] ?? [])->flatMap(fn ($option) => array_keys($option['translations'] ?? []))->all()
-                    );
-                }))->unique()->values()->all();
-        } else {
-            $questionIds = Question::whereIn('module_id', $this->moduleIds)->where('is_active', true)->pluck('question_id');
-            $translatedLocales = QuestionTranslation::whereIn('question_id', $questionIds)
-                ->distinct()->pluck('locale')->all();
+        if (! $assessment?->snapshot) {
+            return [['code' => 'en', 'label' => 'English']];
         }
+
+        $translatedLocales = collect($assessment->snapshot->payload)
+            ->flatMap(fn ($module) => collect($module['questions'] ?? [])->flatMap(function ($question) {
+                return array_merge(
+                    array_keys($question['translations'] ?? []),
+                    collect($question['options'] ?? [])->flatMap(fn ($option) => array_keys($option['translations'] ?? []))->all()
+                );
+            }))->unique()->values()->all();
 
         $labels = ['fr' => 'Français'];
         $locales = [['code' => 'en', 'label' => 'English']];
@@ -558,17 +505,15 @@ class PublicRespondentRunner extends Component
     private function consentModuleIds(): array
     {
         $snapshot = Assessment::with('snapshot')->find($this->assessmentId)?->snapshot;
-        if ($snapshot && collect($snapshot->payload)->every(fn ($module) => array_key_exists('requires_consent', $module))) {
-            return collect($snapshot->payload)
-                ->where('requires_consent', true)
-                ->pluck('module_id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
+        if (! $snapshot || ! collect($snapshot->payload)->every(fn ($module) => array_key_exists('requires_consent', $module))) {
+            return [];
         }
 
-        return AssessmentModule::whereIn('module_id', $this->moduleIds)
+        return collect($snapshot->payload)
             ->where('requires_consent', true)
-            ->pluck('module_id')->map(fn ($id) => (int) $id)->all();
+            ->pluck('module_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     private function hasCompleteRequiredResponses(): bool

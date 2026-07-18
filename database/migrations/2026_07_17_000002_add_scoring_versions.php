@@ -9,15 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sub_index_scores', function (Blueprint $table) {
-            $table->string('scoring_version', 50)->default('legacy-v1');
+            $table->string('scoring_version', 50)->default('vytte-4.0-numeric-bands');
         });
 
         Schema::table('domain_scores', function (Blueprint $table) {
-            $table->string('scoring_version', 50)->default('legacy-v1');
+            $table->string('scoring_version', 50)->default('vytte-4.0-numeric-bands');
         });
 
         Schema::table('assessment_scores', function (Blueprint $table) {
-            $table->string('scoring_version', 50)->default('legacy-v1');
+            $table->string('scoring_version', 50)->default('vytte-4.0-numeric-bands');
         });
     }
 

@@ -52,33 +52,26 @@ class ReportSnapshotService
             'target.targetType',
             'score.maturityLevel',
             'snapshot',
-            'templateVersion.template',
             'catalogueRelease',
             'moduleScope.module',
             'aggregationResult.finalizer',
         ]);
         $contentModules = $assessment->snapshot?->payload;
-        $modules = $contentModules
-            ? collect($contentModules)->map(fn ($module) => [
-                'module_id' => (int) $module['module_id'],
-                'module_code' => $module['module_code'],
-                'module_name' => $module['module_name'],
-                'area_label' => $module['area_label'] ?? null,
-            ])->values()->all()
-            : $assessment->moduleScope->where('in_scope', true)->map(fn ($scope) => [
-                'module_id' => (int) $scope->module_id,
-                'module_code' => $scope->module?->module_code,
-                'module_name' => $scope->module?->module_name,
-                'area_label' => null,
-            ])->values()->all();
+        if (! $contentModules) {
+            throw new \LogicException('Governed reports require an immutable assessment snapshot.');
+        }
+
+        $modules = collect($contentModules)->map(fn ($module) => [
+            'module_id' => (int) $module['module_id'],
+            'module_code' => $module['module_code'],
+            'module_name' => $module['module_name'],
+            'area_label' => $module['area_label'] ?? null,
+        ])->values()->all();
 
         $title = $assessment->catalogueRelease?->release_name
-            ?? $assessment->templateVersion?->template?->template_name
             ?? (count($modules) === 1 ? ($modules[0]['module_name'] ?? 'Assessment') : 'Comprehensive Health Assessment');
 
-        [$subIndices, $domains] = $contentModules
-            ? $this->snapshotScoreBreakdown($assessment, $contentModules)
-            : $this->legacyScoreBreakdown($assessment);
+        [$subIndices, $domains] = $this->snapshotScoreBreakdown($assessment, $contentModules);
 
         $aggregation = $assessment->aggregationResult;
 
@@ -115,7 +108,7 @@ class ReportSnapshotService
                 'minimum_completed_respondents' => $aggregation->minimum_completed_respondents,
                 'excluded_session_count' => $aggregation->excluded_session_count,
                 'aggregation_method' => $aggregation->aggregation_method,
-                'assessment_template_version_id' => $assessment->template_version_id,
+                'catalogue_release_id' => $assessment->catalogue_release_id,
                 'scoring_profile_version' => $aggregation->scoring_version,
                 'finalized_at' => $aggregation->finalized_at?->toIso8601String(),
                 'finalized_by' => [
@@ -174,27 +167,6 @@ class ReportSnapshotService
                 'scoring_version' => $score?->scoring_version,
             ];
         })->values()->all();
-
-        return [$subIndices, $domains];
-    }
-
-    private function legacyScoreBreakdown(Assessment $assessment): array
-    {
-        $respondentType = ($assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false)
-            ? 'AGGREGATE'
-            : 'STAFF';
-        $subIndices = DB::table('sub_index_scores as sis')
-            ->join('sub_indices as si', 'si.sub_index_id', '=', 'sis.sub_index_id')
-            ->join('domains as d', 'd.domain_id', '=', 'si.domain_id')
-            ->where('sis.assessment_id', $assessment->assessment_id)
-            ->where('sis.respondent_type', $respondentType)
-            ->select('sis.sub_index_id', 'sis.score', 'sis.calibration_status', 'sis.scoring_version', 'si.acronym', 'si.full_name', 'd.domain_id', 'd.domain_name', 'd.domain_code')
-            ->get()->map(fn ($row) => (array) $row)->all();
-        $domains = DB::table('domain_scores as ds')
-            ->join('domains as d', 'd.domain_id', '=', 'ds.domain_id')
-            ->where('ds.assessment_id', $assessment->assessment_id)
-            ->select('ds.domain_id', 'ds.score', 'ds.calibration_status', 'ds.scoring_version', 'd.domain_name', 'd.domain_code')
-            ->get()->map(fn ($row) => (array) $row)->all();
 
         return [$subIndices, $domains];
     }

@@ -68,7 +68,7 @@
         <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <div><dt class="text-slate-500">Method</dt><dd class="font-medium">Arithmetic mean</dd></div>
             <div><dt class="text-slate-500">Scoring profile</dt><dd class="font-medium">{{ $preview['scoring_version'] }}</dd></div>
-            <div><dt class="text-slate-500">Template version</dt><dd class="font-mono text-xs">{{ $preview['template_version_id'] }}</dd></div>
+            <div><dt class="text-slate-500">Catalogue release</dt><dd class="font-mono text-xs">{{ $preview['catalogue_release_id'] }}</dd></div>
             <div><dt class="text-slate-500">State</dt><dd class="font-medium">{{ $isComplete ? 'Final and immutable' : 'Provisional' }}</dd></div>
         </dl>
         @if ($preview['respondent_eligibility_rules'])

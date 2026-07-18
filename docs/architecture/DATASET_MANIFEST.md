@@ -8,12 +8,10 @@ The default seed sequence is:
 
 1. `PlatformSettingsSeeder`
 2. `ReferenceDataSeeder`
-3. `HivawQuestionsSeeder`
-4. `PlatformGovernedDemoSeeder`
-5. `AssessmentTemplateSeeder`
-6. `PlanFeatureSeeder`
-7. `DemoAccountSeeder`
-8. `DemoDataSeeder`
+3. `PlatformGovernedDemoSeeder`
+4. `PlanFeatureSeeder`
+5. `DemoAccountSeeder`
+6. `DemoDataSeeder`
 
 The default seed is repository-contained. It does not read personal Downloads folders or external documents.
 

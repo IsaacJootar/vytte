@@ -3,11 +3,6 @@
 namespace App\Livewire;
 
 use App\Models\Assessment;
-use App\Models\AssessmentModule;
-use App\Models\AssessmentModuleScope;
-use App\Models\Question;
-use App\Models\QuestionOptionTranslation;
-use App\Models\QuestionTranslation;
 use App\Models\RespondentConsent;
 use App\Models\Response;
 use Illuminate\Contracts\View\View;
@@ -63,110 +58,34 @@ class AssessmentRunner extends Component
     private function loadQuestions(): void
     {
         $snapshot = $this->assessment->snapshot()->first();
-        if ($snapshot) {
-            $locale = App::getLocale();
-            $this->moduleCount = count($snapshot->payload);
-            $this->questionData = collect($snapshot->payload)
-                ->sortBy('display_order')
-                ->flatMap(fn ($module) => collect($module['questions'])
-                    ->sortBy('display_order')
-                    ->map(fn ($question) => [
-                        'question_id' => $question['question_id'],
-                        'question_code' => $question['question_code'],
-                        'question_text' => $question['translations'][$locale] ?? $question['question_text'],
-                        'is_scored' => $question['is_scored'],
-                        'response_type' => $question['response_type'],
-                        'module_id' => $module['module_id'],
-                        'module_code' => $module['module_code'],
-                        'domain_label' => $question['domain_label'] ?? '',
-                        'domain_number' => $question['domain_number'] ?? 0,
-                        'numeric_config' => $question['numeric_config'] ?? null,
-                        'options' => collect($question['options'])->map(fn ($option) => [
-                            'option_id' => $option['option_id'],
-                            'option_label' => $option['translations'][$locale] ?? $option['option_label'],
-                        ])->all(),
-                    ]))
-                ->values()
-                ->all();
-
+        if (! $snapshot) {
             return;
         }
-
-        $scopeRows = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
-            ->where('in_scope', true)
-            ->orderBy('module_id')
-            ->get();
-
-        if ($scopeRows->isEmpty()) {
-            return;
-        }
-
-        $moduleIds = $scopeRows->pluck('module_id')->toArray();
-        $this->moduleCount = count($moduleIds);
-
-        // Load module codes for section headers
-        $moduleCodes = AssessmentModule::whereIn('module_id', $moduleIds)
-            ->pluck('module_code', 'module_id');
-
-        $questions = Question::with(['options', 'moduleDomain', 'questionType'])
-            ->whereIn('module_id', $moduleIds)
-            ->where('is_active', true)
-            ->get()
-            ->sort(function (Question $a, Question $b) use ($moduleIds) {
-                $aPos = array_search($a->module_id, $moduleIds);
-                $bPos = array_search($b->module_id, $moduleIds);
-                if ($aPos !== $bPos) {
-                    return $aPos - $bPos;
-                }
-                $aDomain = $a->moduleDomain?->domain_number ?? 0;
-                $bDomain = $b->moduleDomain?->domain_number ?? 0;
-                if ($aDomain !== $bDomain) {
-                    return $aDomain - $bDomain;
-                }
-
-                return $a->display_order - $b->display_order;
-            })
-            ->values();
 
         $locale = App::getLocale();
-
-        $questionTranslations = collect();
-        $optionTranslations = collect();
-
-        if ($locale !== 'en' && $questions->isNotEmpty()) {
-            $questionIds = $questions->pluck('question_id');
-            $optionIds = $questions->flatMap(fn ($q) => $q->options->pluck('option_id'));
-
-            $questionTranslations = QuestionTranslation::where('locale', $locale)
-                ->whereIn('question_id', $questionIds)
-                ->pluck('question_text', 'question_id');
-
-            $optionTranslations = QuestionOptionTranslation::where('locale', $locale)
-                ->whereIn('option_id', $optionIds)
-                ->pluck('option_label', 'option_id');
-        }
-
-        $this->questionData = $questions->map(fn (Question $q) => [
-            'question_id' => $q->question_id,
-            'question_code' => $q->question_code,
-            'question_text' => $questionTranslations->get($q->question_id, $q->question_text),
-            'is_scored' => $q->is_scored,
-            'response_type' => $q->questionType?->type_code,
-            'module_id' => $q->module_id,
-            'module_code' => $moduleCodes[$q->module_id] ?? '',
-            'domain_label' => $q->moduleDomain?->domain_label ?? '',
-            'domain_number' => $q->moduleDomain?->domain_number ?? 0,
-            'numeric_config' => $q->questionType?->type_code === 'NUMERIC' ? [
-                'unit' => $q->numeric_unit,
-                'min' => $q->numeric_min !== null ? (float) $q->numeric_min : null,
-                'max' => $q->numeric_max !== null ? (float) $q->numeric_max : null,
-                'step' => $q->numeric_step !== null ? (float) $q->numeric_step : null,
-            ] : null,
-            'options' => $q->options->map(fn ($o) => [
-                'option_id' => $o->option_id,
-                'option_label' => $optionTranslations->get($o->option_id, $o->option_label),
-            ])->toArray(),
-        ])->toArray();
+        $this->moduleCount = count($snapshot->payload);
+        $this->questionData = collect($snapshot->payload)
+            ->sortBy('display_order')
+            ->flatMap(fn ($module) => collect($module['questions'])
+                ->sortBy('display_order')
+                ->map(fn ($question) => [
+                    'question_id' => $question['question_id'],
+                    'question_code' => $question['question_code'],
+                    'question_text' => $question['translations'][$locale] ?? $question['question_text'],
+                    'is_scored' => $question['is_scored'],
+                    'response_type' => $question['response_type'],
+                    'module_id' => $module['module_id'],
+                    'module_code' => $module['module_code'],
+                    'domain_label' => $question['domain_label'] ?? '',
+                    'domain_number' => $question['domain_number'] ?? 0,
+                    'numeric_config' => $question['numeric_config'] ?? null,
+                    'options' => collect($question['options'])->map(fn ($option) => [
+                        'option_id' => $option['option_id'],
+                        'option_label' => $option['translations'][$locale] ?? $option['option_label'],
+                    ])->all(),
+                ]))
+            ->values()
+            ->all();
     }
 
     private function loadExistingResponses(): void
@@ -193,34 +112,13 @@ class AssessmentRunner extends Component
     private function checkConsentRequired(): void
     {
         $snapshot = $this->assessment->snapshot()->first();
-        if ($snapshot && collect($snapshot->payload)->every(fn ($module) => array_key_exists('requires_consent', $module))) {
-            $consentModule = collect($snapshot->payload)->firstWhere('requires_consent', true);
-            $this->needsConsent = $consentModule !== null;
-            $this->consentModuleId = $consentModule ? (int) $consentModule['module_id'] : null;
-
-            if ($this->needsConsent) {
-                $this->consentGiven = RespondentConsent::where('assessment_id', $this->assessment->assessment_id)
-                    ->where('consented_by', auth()->id())
-                    ->exists();
-            }
-
+        if (! $snapshot || ! collect($snapshot->payload)->every(fn ($module) => array_key_exists('requires_consent', $module))) {
             return;
         }
 
-        $scopeModuleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
-            ->where('in_scope', true)
-            ->pluck('module_id');
-
-        if ($scopeModuleIds->isEmpty()) {
-            return;
-        }
-
-        $consentModule = AssessmentModule::whereIn('module_id', $scopeModuleIds)
-            ->where('requires_consent', true)
-            ->first();
-
+        $consentModule = collect($snapshot->payload)->firstWhere('requires_consent', true);
         $this->needsConsent = $consentModule !== null;
-        $this->consentModuleId = $consentModule?->module_id;
+        $this->consentModuleId = $consentModule ? (int) $consentModule['module_id'] : null;
 
         if ($this->needsConsent) {
             $this->consentGiven = RespondentConsent::where('assessment_id', $this->assessment->assessment_id)
@@ -258,11 +156,7 @@ class AssessmentRunner extends Component
 
         $snapshotQuestion = $this->snapshotQuestion($questionId);
         $validSelection = $snapshotQuestion
-            ? collect($snapshotQuestion['options'] ?? [])->contains('option_id', $optionId)
-            : $this->liveQuestionInScope($questionId, fn ($query) => $query->whereHas(
-                'options',
-                fn ($options) => $options->where('option_id', $optionId)
-            ));
+            && collect($snapshotQuestion['options'] ?? [])->contains('option_id', $optionId);
 
         if (! $validSelection) {
             return;
@@ -318,11 +212,7 @@ class AssessmentRunner extends Component
 
         $snapshotQuestion = $this->snapshotQuestion($questionId);
         $validQuestion = $snapshotQuestion
-            ? ($snapshotQuestion['response_type'] ?? null) === 'OPEN_ENDED'
-            : $this->liveQuestionInScope($questionId, fn ($query) => $query->whereHas(
-                'questionType',
-                fn ($types) => $types->where('type_code', 'OPEN_ENDED')
-            ));
+            && ($snapshotQuestion['response_type'] ?? null) === 'OPEN_ENDED';
 
         if (! $validQuestion) {
             return;
@@ -375,14 +265,8 @@ class AssessmentRunner extends Component
         }
 
         $snapshotQuestion = $this->snapshotQuestion($questionId);
-        $liveQuestion = $snapshotQuestion ? null : Question::with('questionType')
-            ->where('question_id', $questionId)
-            ->where('is_active', true)
-            ->first();
         $isNumeric = $snapshotQuestion
-            ? ($snapshotQuestion['response_type'] ?? null) === 'NUMERIC'
-            : $liveQuestion?->questionType?->type_code === 'NUMERIC'
-                && $this->liveQuestionInScope($questionId, fn ($query) => $query);
+            && ($snapshotQuestion['response_type'] ?? null) === 'NUMERIC';
         if (! $isNumeric) {
             return;
         }
@@ -412,10 +296,7 @@ class AssessmentRunner extends Component
         }
 
         $number = (float) $value;
-        $config = $snapshotQuestion['numeric_config'] ?? ($liveQuestion ? [
-            'min' => $liveQuestion->numeric_min,
-            'max' => $liveQuestion->numeric_max,
-        ] : []);
+        $config = $snapshotQuestion['numeric_config'] ?? [];
         if (($config['min'] ?? null) !== null && $number < (float) $config['min']) {
             $this->addError("numeric.{$questionId}", 'The value is below the allowed minimum.');
 
@@ -426,7 +307,7 @@ class AssessmentRunner extends Component
 
             return;
         }
-        $step = ($snapshotQuestion['numeric_config']['step'] ?? null) ?? $liveQuestion?->numeric_step;
+        $step = $snapshotQuestion['numeric_config']['step'] ?? null;
         $base = ($config['min'] ?? null) !== null ? (float) $config['min'] : 0.0;
         if ($step !== null && (float) $step > 0) {
             $steps = ($number - $base) / (float) $step;
@@ -461,13 +342,9 @@ class AssessmentRunner extends Component
         }
 
         $validQuestion = $this->snapshotQuestion($questionId) !== null
-            || $this->liveQuestionInScope($questionId, fn ($query) => $query);
+            && $this->hasRequiredConsent();
 
         if (! $validQuestion) {
-            return;
-        }
-
-        if (! $this->hasRequiredConsent()) {
             return;
         }
 
@@ -557,19 +434,6 @@ class AssessmentRunner extends Component
         return collect($snapshot->payload)
             ->flatMap(fn ($module) => $module['questions'] ?? [])
             ->firstWhere('question_id', $questionId);
-    }
-
-    private function liveQuestionInScope(string $questionId, callable $constraint): bool
-    {
-        $moduleIds = AssessmentModuleScope::where('assessment_id', $this->assessment->assessment_id)
-            ->where('in_scope', true)
-            ->pluck('module_id');
-        $query = Question::where('question_id', $questionId)
-            ->whereIn('module_id', $moduleIds)
-            ->where('is_active', true);
-        $constraint($query);
-
-        return $query->exists();
     }
 
     private function hasRequiredConsent(): bool

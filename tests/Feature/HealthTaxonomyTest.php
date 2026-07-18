@@ -39,7 +39,7 @@ class HealthTaxonomyTest extends TestCase
         $this->assertSame(10, SettingType::count());
     }
 
-    public function test_legacy_target_category_architecture_is_absent(): void
+    public function test_target_category_architecture_is_absent(): void
     {
         $this->assertFalse(Schema::hasTable('target_categories'));
         $this->assertFalse(Schema::hasTable('target_category_default_modules'));

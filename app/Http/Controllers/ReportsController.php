@@ -19,7 +19,6 @@ class ReportsController extends Controller
                 'target',
                 'score.maturityLevel',
                 'reportSnapshot',
-                'templateVersion.template',
                 'catalogueRelease',
                 'moduleScope.module',
                 'shareLinks' => fn ($query) => $query->latest('created_at'),

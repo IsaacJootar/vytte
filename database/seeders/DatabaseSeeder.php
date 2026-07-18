@@ -11,9 +11,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PlatformSettingsSeeder::class,
             ReferenceDataSeeder::class,
-            HivawQuestionsSeeder::class,
             PlatformGovernedDemoSeeder::class,
-            AssessmentTemplateSeeder::class,
             PlanFeatureSeeder::class,
             DemoAccountSeeder::class,
             DemoDataSeeder::class,

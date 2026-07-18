@@ -77,4 +77,4 @@ Any formula, scale, weight interpretation, aggregation, maturity range, responde
 - fixed test fixtures;
 - snapshot compatibility review;
 - report compatibility review;
-- PostgreSQL and SQLite verification.
+- PostgreSQL verification.

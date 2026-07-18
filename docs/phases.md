@@ -63,8 +63,8 @@
 **Commit:** `4156a38`
 
 - `AssessmentModule`, `ModuleDomain`, `Question`, `QuestionOption` models
-- HIVAW full module seeded via `HivawQuestionsSeeder` (all domains, questions, options)
-- `ReferenceDataSeeder` seeds target types, categories, assessment tiers
+- Governed demonstration modules seeded via `PlatformGovernedDemoSeeder` (department frameworks and catalogue releases)
+- `ReferenceDataSeeder` seeds setting types, target types, assessment tiers, scoring levels, and health domains
 - Module library: `/modules` list + `/modules/{id}` detail
 - Read-only for workspace users
 - Tests: library list, module detail, domain/question structure — 12 tests
@@ -75,10 +75,10 @@
 
 **Commit:** `c570562`
 
-- Create Assessment (links Project + AssessmentModule via `AssessmentModuleScope`)
+- Create Assessment from a published catalogue release and frozen assessment snapshot
 - Livewire 3 runner: one-domain-at-a-time layout, progress bar, back/next
-- Response auto-save on every option click (no explicit save button)
-- `Response` model: stores `assessment_id`, `question_id`, `selected_option_id`
+- Response auto-save for supported option, numeric, and open-text inputs
+- `Response` model stores frozen-snapshot answers against `assessment_id`, `question_id`, and respondent/session context
 - Draft state (`IN_PROGRESS`) until submit
 - Submit locks assessment to `COMPLETE`
 - Tests: create, save, submit, cannot submit incomplete — 13 tests
@@ -218,7 +218,7 @@
 
 - Dark/light theme toggle — server-rendered via `users.theme` column; `<html class="dark">` set per user; toggle is a POST form reload
 - Full dark mode sweep across every Blade view: user app + admin panel
-- Project search by name — GET `?search=` param, `whereRaw LOWER(name) LIKE LOWER(?)` (works on PostgreSQL and SQLite)
+- Project search by name — GET `?search=` param, `whereRaw LOWER(name) LIKE LOWER(?)` for PostgreSQL-safe case-insensitive search
 - Share link expiry — configurable via `PlatformSetting::get('sharing.link_expiry_days', 30)`, no longer hardcoded
 - Plan limits (FREE projects, FREE assessments, PRO projects) — all read from `PlatformSetting`, overridable from admin without a code deploy
 - Payment gateway toggles — Paystack and Flutterwave each independently enabled/disabled from platform admin
@@ -226,7 +226,7 @@
 - Flutterwave route added to `routes/web.php` (CSRF-exempt, signature-validated)
 - `config/services.php` + `.env.example` updated with Flutterwave keys
 - Platform admin settings page expanded: Email, Shared Reports, Payment Gateways, Plan Limits sections
-- Test DB switched from Docker PostgreSQL to SQLite in-memory (`phpunit.xml`) — no Docker required to run tests
+- Test DB uses PostgreSQL through `phpunit.xml`
 - All `ilike` queries replaced with `whereRaw('LOWER(name) LIKE LOWER(?)')` for cross-DB compatibility
 - Tests: `ThemeTest` (4), `ProjectSearchTest` (5), `ConfigurabilityTest` (11) — 231 total passing
 
@@ -236,7 +236,7 @@
 
 **Commit:** `23145b5`
 
-- `requires_consent` boolean on `assessment_modules` (default false); HIVAW flagged true
+- `requires_consent` boolean on `assessment_modules` (default false); governed modules opt in when participant consent is required
 - `respondent_consents` table: `consent_id` UUID, `assessment_id`, `module_id`, `consent_text` (verbatim), `consented_by` (user_id), `consented_at`
 - `RespondentConsent` model with UUID PK, FK to assessment + module + user
 - `AssessmentRunner`: detects consent requirement on `mount()`, shows consent screen before first question, blocks `selectOption` without consent, persists consent across page reloads
@@ -373,7 +373,7 @@ The Phase 21 audit and Phase 22 baseline were followed by bounded corrective mod
 | Reports index | `e46eb2b` | Working workspace report navigation and share-link management |
 | Operating baseline | `1f3e559` | Repository authority, setup, schema cleanup, and architecture contracts |
 | Unified multi-respondent scoring | this module | Independent session scores, eligibility exclusions, manual arithmetic-mean finalization, immutable ordinary reports |
-| UI review and migration recovery | this module | Reviewed pending UI, moved billing navigation, corrected assessment labels, and repaired populated SQLite migration |
+| UI review and migration recovery | this module | Reviewed pending UI, moved billing navigation, corrected assessment labels, and repaired populated PostgreSQL migration |
 | Universal setting creation | this module | Type-and-name creation, dashboard logo navigation, and footer plan label |
 
-Current verified boundary: **376 tests, 925 assertions passing** on SQLite. A clean 43-migration seed, rollback/reapply cycle, and production frontend build also pass. PostgreSQL parity remains a release requirement while local Docker is unavailable.
+Current verified boundary: **376 tests, 925 assertions passing** on PostgreSQL. A clean 43-migration seed, rollback/reapply cycle, and production frontend build also pass.

@@ -61,6 +61,19 @@ class CataloguePublishingService
             $errors['aggregation_policy'][] = 'MEAN_OF_SCORED_SUB_INDICES is the only demonstration facility aggregation method currently implemented.';
         }
 
+        $collectionConfig = $release->collection_config ?? ['allows_multi_respondent' => false];
+        if (($collectionConfig['allows_multi_respondent'] ?? false) === true) {
+            if (! isset($collectionConfig['minimum_completed_respondents']) || (int) $collectionConfig['minimum_completed_respondents'] < 1) {
+                $errors['collection_config'][] = 'Multi-respondent catalogue releases require a minimum completed respondent threshold.';
+            }
+            if (($collectionConfig['aggregation_method'] ?? null) !== 'ARITHMETIC_MEAN') {
+                $errors['collection_config'][] = 'ARITHMETIC_MEAN is the only supported respondent aggregation method.';
+            }
+            if (($collectionConfig['scoring_profile_version'] ?? null) !== ScoringService::ALGORITHM_VERSION) {
+                $errors['collection_config'][] = 'Multi-respondent catalogue releases must pin the current scoring profile version.';
+            }
+        }
+
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
@@ -72,6 +85,7 @@ class CataloguePublishingService
             'health_domain_id' => $release->health_domain_id,
             'aggregation_policy' => $release->aggregation_policy,
             'composition_rules' => $release->composition_rules ?? [],
+            'collection_config' => $collectionConfig,
             'department_versions' => $versions->map(fn ($version) => [
                 'module_id' => (int) $version->module_id,
                 'module_code' => $version->module?->module_code,

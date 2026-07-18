@@ -151,12 +151,7 @@ class ReferenceDataSeeder extends Seeder
             ['target_type_code' => 'SCHOOL', 'module_code' => 'WASH', 'module_name' => 'Water, Sanitation & Hygiene Facilities', 'primary_respondent' => 'Head Teacher · School Health Focal Teacher', 'estimated_duration_minutes' => 20, 'data_collection_methods' => 'Interview · Observation'],
             ['target_type_code' => 'SCHOOL', 'module_code' => 'HYGED', 'module_name' => 'Hygiene Education & Practice', 'primary_respondent' => 'Class Teacher · School Health Focal Teacher', 'estimated_duration_minutes' => 18, 'data_collection_methods' => 'Interview · Observation'],
             ['target_type_code' => 'SCHOOL', 'module_code' => 'MHM', 'module_name' => 'Menstrual Health Management', 'primary_respondent' => 'School Health Focal Teacher · Female Staff Member', 'estimated_duration_minutes' => 15, 'data_collection_methods' => 'Interview'],
-            ['target_type_code' => 'COMMUNITY', 'module_code' => 'HIVAW', 'module_name' => 'HIV Awareness & Service Uptake', 'primary_respondent' => 'Community Member', 'estimated_duration_minutes' => 12, 'data_collection_methods' => 'Interview'],
         ]);
-
-        DB::table('assessment_modules')
-            ->where('module_code', 'HIVAW')
-            ->update(['requires_consent' => true]);
     }
 
     private function seedRespondentRoles(): void
@@ -220,7 +215,6 @@ class ReferenceDataSeeder extends Seeder
 
         $moduleMappings = [
             'MNH' => ['MENTAL_HEALTH'],
-            'HIVAW' => ['HIV'],
             'HTB' => ['HIV', 'TUBERCULOSIS'],
             'WASH' => ['WASH'],
             'HYGED' => ['WASH', 'INFECTION_PREVENTION'],

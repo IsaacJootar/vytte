@@ -30,7 +30,6 @@ return new class extends Migration
             $table->timestamps();
             $table->unique(['module_id', 'version_number']);
             $table->foreign('module_id')->references('module_id')->on('assessment_modules');
-            $table->foreign('parent_version_id')->references('framework_version_id')->on('department_framework_versions');
             $table->foreign('published_by')->references('user_id')->on('users');
             $table->index(['module_id', 'status']);
         });
@@ -71,6 +70,7 @@ return new class extends Migration
             $table->string('status', 20)->default('DRAFT');
             $table->json('aggregation_policy');
             $table->json('composition_rules')->nullable();
+            $table->json('collection_config')->nullable();
             $table->string('content_hash', 64)->nullable();
             $table->timestamp('published_at')->nullable();
             $table->uuid('published_by')->nullable();
@@ -119,12 +119,12 @@ return new class extends Migration
         });
 
         Schema::table('assessments', function (Blueprint $table) {
-            $table->uuid('catalogue_release_id')->nullable()->after('template_version_id');
+            $table->uuid('catalogue_release_id')->nullable()->after('creation_path');
             $table->foreign('catalogue_release_id')->references('catalogue_release_id')->on('assessment_catalogue_releases');
         });
 
         Schema::table('assessment_snapshots', function (Blueprint $table) {
-            $table->uuid('catalogue_release_id')->nullable()->after('template_version_id');
+            $table->uuid('catalogue_release_id')->nullable()->after('assessment_id');
             $table->uuid('facility_profile_id')->nullable()->after('catalogue_release_id');
             $table->json('composition_manifest')->nullable()->after('is_customized');
             $table->json('aggregation_policy')->nullable()->after('composition_manifest');

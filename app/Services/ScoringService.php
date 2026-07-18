@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Assessment;
 use App\Models\Response;
-use App\Models\SubIndex;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -160,7 +159,10 @@ class ScoringService
                     array_sum(array_column($nonNull, 'score')) / count($nonNull),
                     2
                 );
-                $domainStatus = count($nonNull) === count($items) ? 'CALIBRATED' : 'PARTIAL';
+                $domainStatus = count($nonNull) === count($items)
+                    && collect($items)->every(fn ($item) => $item['calibration_status'] === 'CALIBRATED')
+                        ? 'CALIBRATED'
+                        : 'PARTIAL';
             }
 
             $domainResults[$domainId] = [
@@ -180,7 +182,10 @@ class ScoringService
                 array_sum(array_column($nonNullSubs, 'score')) / count($nonNullSubs),
                 2
             );
-            $overallStatus = count($nonNullSubs) === count($subIndexResults) ? 'CALIBRATED' : 'PARTIAL';
+            $overallStatus = count($nonNullSubs) === count($subIndexResults)
+                && collect($subIndexResults)->every(fn ($item) => $item['calibration_status'] === 'CALIBRATED')
+                    ? 'CALIBRATED'
+                    : 'PARTIAL';
         }
 
         if ($criticalFailureTriggered && ($criticalPolicy['overall_score'] ?? null) === 'ZERO') {
@@ -243,10 +248,7 @@ class ScoringService
             }
         }
 
-        $moduleCount = DB::table('assessment_module_scope')
-            ->where('assessment_id', $assessment->assessment_id)
-            ->where('in_scope', true)
-            ->count();
+        $moduleCount = count($assessment->snapshot?->payload ?? []);
         DB::table('assessment_scores')->upsert(
             [[
                 'assessment_id' => $assessment->assessment_id,
@@ -266,6 +268,10 @@ class ScoringService
     private function scoringProfile(Assessment $assessment, array $moduleIds): array
     {
         $snapshot = $assessment->snapshot()->first();
+        if (! $snapshot) {
+            return [];
+        }
+
         if ($snapshot && collect($snapshot->payload)->every(fn ($module) => array_key_exists('scoring_profile', $module))) {
             return collect($snapshot->payload)->flatMap(function ($module) {
                 $questions = collect($module['questions'] ?? [])->keyBy('question_id');
@@ -293,36 +299,7 @@ class ScoringService
             })->values()->all();
         }
 
-        return SubIndex::whereIn('module_id', $moduleIds)
-            ->with(['questions' => function ($query) {
-                $query->select('questions.question_id', 'questions.is_scored', 'questions.type_id')
-                    ->withPivot('weight')
-                    ->with([
-                        'options:option_id,question_id,score_weight',
-                        'numericBands:band_id,question_id,min_value,max_value,score_weight,band_order',
-                        'questionType:type_id,type_code',
-                    ]);
-            }])
-            ->get()
-            ->map(fn ($subIndex) => [
-                'sub_index_id' => $subIndex->sub_index_id,
-                'domain_id' => $subIndex->domain_id,
-                'questions' => $subIndex->questions->map(fn ($question) => [
-                    'question_id' => $question->question_id,
-                    'is_scored' => (bool) $question->is_scored,
-                    'weight' => (float) ($question->pivot->weight ?? 1.0),
-                    'response_type' => $question->questionType?->type_code,
-                    'options' => $question->options->map(fn ($option) => [
-                        'option_id' => $option->option_id,
-                        'score_weight' => $option->score_weight,
-                    ])->all(),
-                    'numeric_bands' => $question->numericBands->map(fn ($band) => [
-                        'min_value' => $band->min_value !== null ? (float) $band->min_value : null,
-                        'max_value' => $band->max_value !== null ? (float) $band->max_value : null,
-                        'score_weight' => (float) $band->score_weight,
-                    ])->all(),
-                ])->all(),
-            ])->all();
+        return [];
     }
 
     private function scoringVersion(Assessment $assessment): string

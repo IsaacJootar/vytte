@@ -3,16 +3,18 @@
 namespace Tests\Feature;
 
 use App\Models\Assessment;
-use App\Models\AssessmentModule;
-use App\Models\AssessmentModuleScope;
+use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentShareLink;
-use App\Models\AssessmentTier;
 use App\Models\Project;
+use App\Models\Response;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\AssessmentCreationService;
 use App\Services\ReportSnapshotService;
+use App\Services\ScoringService;
+use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,6 +29,7 @@ class ExportTest extends TestCase
     {
         parent::setUp();
         $this->seed(ReferenceDataSeeder::class);
+        $this->seed(PlatformGovernedDemoSeeder::class);
         $this->seed(PlanFeatureSeeder::class);
     }
 
@@ -40,12 +43,15 @@ class ExportTest extends TestCase
             'role' => 'OWNER',
         ]);
         $user->update(['active_workspace_id' => $workspace->workspace_id]);
+        app()->instance('current.workspace', $workspace);
 
         return [$user, $workspace];
     }
 
     private function createCompleteAssessment(Workspace $workspace, ?User $owner = null): Assessment
     {
+        app()->instance('current.workspace', $workspace);
+
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
             'name' => 'Test Community',
@@ -57,21 +63,52 @@ class ExportTest extends TestCase
             'owner_user_id' => $owner?->user_id ?? User::factory()->create()->user_id,
         ]);
 
-        $tierId = AssessmentTier::value('assessment_tier_id');
+        $project->targets()->attach($target->target_id, ['added_at' => now()]);
 
-        $assessment = Assessment::create([
-            'target_id' => $target->target_id,
-            'project_id' => $project->project_id,
-            'assessment_tier_id' => $tierId,
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+        $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $owner?->user_id);
+
+        collect($assessment->snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->where('is_scored', true)
+            ->each(function (array $question) use ($assessment) {
+                Response::create([
+                    'assessment_id' => $assessment->assessment_id,
+                    'question_id' => $question['question_id'],
+                    'value_option_id' => collect($question['options'])->sortByDesc('score_weight')->first()['option_id'],
+                    'answered_at' => now(),
+                ]);
+            });
+
+        $assessment->update([
             'status' => 'COMPLETE',
-            'publish_status' => 'DRAFT',
-            'scope_type' => 'FULL',
             'completed_at' => now(),
-            'started_at' => now(),
+            'started_at' => now()->subHour(),
         ]);
+        app(ScoringService::class)->calculate($assessment);
         app(ReportSnapshotService::class)->createFor($assessment);
 
         return $assessment;
+    }
+
+    private function createIncompleteAssessment(Workspace $workspace, User $owner): Assessment
+    {
+        app()->instance('current.workspace', $workspace);
+
+        $target = Target::create([
+            'target_type_code' => 'COMMUNITY',
+            'name' => 'Test Target',
+            'owner_workspace_id' => $workspace->workspace_id,
+        ]);
+        $project = Project::factory()->create([
+            'workspace_id' => $workspace->workspace_id,
+            'owner_user_id' => $owner->user_id,
+        ]);
+        $project->targets()->attach($target->target_id, ['added_at' => now()]);
+
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+
+        return app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $owner->user_id);
     }
 
     public function test_pdf_download_requires_auth(): void
@@ -206,27 +243,11 @@ class ExportTest extends TestCase
     {
         [$user, $workspace] = $this->createWorkspaceWithOwner();
         $assessment = $this->createCompleteAssessment($workspace, $user);
-        foreach (['Leadership', 'Pharmacy'] as $position => $name) {
-            $module = AssessmentModule::create([
-                'target_type_code' => 'COMMUNITY',
-                'module_code' => 'CSV'.($position + 1),
-                'module_name' => $name,
-                'is_active' => true,
-            ]);
-            AssessmentModuleScope::create([
-                'assessment_id' => $assessment->assessment_id,
-                'module_id' => $module->module_id,
-                'in_scope' => true,
-                'is_category_default' => true,
-                'status' => 'COMPLETED',
-            ]);
-        }
-
         $content = $this->actingAs($user)
             ->get(route('projects.export.csv', $assessment->project_id))
             ->streamedContent();
 
-        $this->assertStringContainsString('Leadership | Pharmacy', $content);
+        $this->assertStringContainsString('Mental Health', $content);
     }
 
     public function test_csv_blocked_for_project_in_other_workspace(): void
@@ -320,25 +341,7 @@ class ExportTest extends TestCase
     public function test_shared_report_404_for_incomplete_assessment(): void
     {
         [$user, $workspace] = $this->createWorkspaceWithOwner();
-        $target = Target::create([
-            'target_type_code' => 'COMMUNITY',
-            'name' => 'Test Target',
-            'owner_workspace_id' => $workspace->workspace_id,
-        ]);
-        $project = Project::factory()->create([
-            'workspace_id' => $workspace->workspace_id,
-            'owner_user_id' => $user->user_id,
-        ]);
-        $tierId = AssessmentTier::value('assessment_tier_id');
-        $assessment = Assessment::create([
-            'target_id' => $target->target_id,
-            'project_id' => $project->project_id,
-            'assessment_tier_id' => $tierId,
-            'status' => 'IN_PROGRESS',
-            'publish_status' => 'DRAFT',
-            'scope_type' => 'FULL',
-            'started_at' => now(),
-        ]);
+        $assessment = $this->createIncompleteAssessment($workspace, $user);
 
         $signedUrl = URL::temporarySignedRoute(
             'reports.shared',

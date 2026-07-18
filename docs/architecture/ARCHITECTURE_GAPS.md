@@ -7,7 +7,7 @@ The former assessment-creation discrepancy has been resolved by the platform-gov
 Current verified local state:
 
 - `php artisan test`: 395 tests, 972 assertions passing.
-- Disposable SQLite `migrate:fresh --seed`: passing.
+- Disposable PostgreSQL `migrate:fresh --seed`: passing.
 - Production frontend build: passing.
 - Commit `44f0186` implements the governed composition model.
 
@@ -31,13 +31,12 @@ Current verified local state:
 
 | ID | Gap | Risk | Recommended next action |
 |---|---|---|---|
-| GAP-01 | PostgreSQL parity not yet verified locally | SQLite can hide constraint, index, and concurrency issues | Restore PostgreSQL/Docker and run migrations, full suite, and response-concurrency checks |
-| GAP-02 | Curator UI for framework/catalogue management is not implemented | Platform content publication currently lacks a full admin workflow | Build curator screens around the existing publishing services |
-| GAP-03 | Production clinical content is not curated | Demo data proves architecture only | Create governed source/licence/scoring review workflow for real content |
-| GAP-04 | Facility profile editing after project creation is not exposed | Incorrect profile choice requires manual correction | Add a profile-change flow with clear effect on future assessments only |
-| GAP-05 | Additional response types are declared but unavailable | Publishing unsupported types would break runners | Implement each type only with full contract and tests |
-| GAP-06 | Recommendation/action planning remains inactive | Reports currently summarize scores rather than action workflows | Design only after the assessment/report core is stable |
-| GAP-07 | Generic external API is not implemented | Unapproved API surface can increase security burden | Add only for an approved consumer and versioned contract |
+| GAP-01 | Curator UI for framework/catalogue management is not implemented | Platform content publication currently lacks a full admin workflow | Build curator screens around the existing publishing services |
+| GAP-02 | Production clinical content is not curated | Demo data proves architecture only | Create governed source/licence/scoring review workflow for real content |
+| GAP-03 | Facility profile editing after project creation is not exposed | Incorrect profile choice requires manual correction | Add a profile-change flow with clear effect on future assessments only |
+| GAP-04 | Additional response types are declared but unavailable | Publishing unsupported types would break runners | Implement each type only with full contract and tests |
+| GAP-05 | Recommendation/action planning remains inactive | Reports currently summarize scores rather than action workflows | Design only after the assessment/report core is stable |
+| GAP-06 | Generic external API is not implemented | Unapproved API surface can increase security burden | Add only for an approved consumer and versioned contract |
 
 ## Rule
 

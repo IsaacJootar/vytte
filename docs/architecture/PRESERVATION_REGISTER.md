@@ -63,4 +63,4 @@ Do not build new product behavior on reserved structures without a fresh design 
 - Score normalization, calibration, critical failure, version, and idempotence
 - Final-report immutability
 - Respondent/report token expiry and revocation
-- SQLite fast-suite behavior and PostgreSQL release parity
+- PostgreSQL migration, seeding, and test behavior

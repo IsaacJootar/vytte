@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 class DepartmentFrameworkPublishingService
 {
-    public function __construct(private readonly TemplateContentService $content) {}
+    public function __construct(private readonly FrameworkContentService $content) {}
 
     public function publish(DepartmentFrameworkVersion $version, ?string $publisherId = null): DepartmentFrameworkVersion
     {
@@ -57,6 +57,7 @@ class DepartmentFrameworkPublishingService
             ->whereIn('q.module_id', $moduleIds)
             ->where('q.is_active', true)
             ->whereIn('qt.type_code', ResponseInputContract::OPTION_TYPES)
+            ->select('q.question_id')
             ->groupBy('q.question_id', 'qt.type_code')
             ->havingRaw('COUNT(qo.option_id) = 0')
             ->exists();

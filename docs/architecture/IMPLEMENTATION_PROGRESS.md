@@ -26,12 +26,11 @@ Implemented:
 - Project suite: 17 tests, 60 assertions, passing.
 - Existing assessment suite: 24 tests, 68 assertions, passing.
 - Full suite: 395 tests, 972 assertions, passing.
-- Disposable SQLite clean `migrate:fresh --seed`: passing.
+- Disposable PostgreSQL clean `migrate:fresh --seed`: passing.
 - Production frontend build with `npm.cmd run build`: passing.
 
 ## Current Boundaries
 
-- PostgreSQL parity remains required before release.
 - Demo content is not production clinical methodology.
 - Curator UI for framework and catalogue publication remains future work.
 - Facility profile editing after project creation remains future work.

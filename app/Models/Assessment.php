@@ -34,7 +34,6 @@ class Assessment extends Model
         'assessment_tier_id',
         'scope_type',
         'creation_path',
-        'template_version_id',
         'catalogue_release_id',
         'composition_hash',
         'status',
@@ -132,11 +131,6 @@ class Assessment extends Model
     public function aggregationResult(): HasOne
     {
         return $this->hasOne(AssessmentAggregationResult::class, 'assessment_id', 'assessment_id');
-    }
-
-    public function templateVersion(): BelongsTo
-    {
-        return $this->belongsTo(AssessmentTemplateVersion::class, 'template_version_id', 'template_version_id');
     }
 
     public function catalogueRelease(): BelongsTo

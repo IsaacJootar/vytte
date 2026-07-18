@@ -5,10 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModuleScope;
-use App\Models\AssessmentTemplateVersion;
 use App\Models\FacilityProfile;
 use App\Models\Project;
-use App\Models\Question;
 use App\Models\Response;
 use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
@@ -140,57 +138,33 @@ class AssessmentController extends Controller
                 ->with('error', 'Multi-respondent collections require authorized manual finalization.');
         }
 
-        if ($snapshot) {
-            $requiredQuestions = collect($snapshot->payload)
-                ->flatMap(fn ($module) => $module['questions'] ?? [])
-                ->where('is_scored', true)
-                ->values();
-            $responses = Response::where('assessment_id', $assessment->assessment_id)
-                ->whereNull('respondent_id')
-                ->whereNull('public_response_session_id')
-                ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
-                ->get()->keyBy('question_id');
-            $hasMissingResponse = $requiredQuestions->contains(function ($question) use ($responses) {
-                $response = $responses->get($question['question_id']);
-                if (! $response) {
-                    return true;
-                }
-
-                return match ($question['response_type']) {
-                    'OPEN_ENDED' => blank($response->value_text),
-                    'NUMERIC' => $response->value_numeric === null,
-                    default => ! collect($question['options'] ?? [])
-                        ->contains('option_id', (int) $response->value_option_id),
-                };
-            });
-        } else {
-            $moduleIds = AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
-                ->where('in_scope', true)
-                ->pluck('module_id');
-            $requiredQuestions = Question::whereIn('module_id', $moduleIds)
-                ->where('is_active', true)
-                ->where('is_scored', true)
-                ->with(['options', 'questionType'])
-                ->get();
-            $responses = Response::where('assessment_id', $assessment->assessment_id)
-                ->whereNull('respondent_id')
-                ->whereNull('public_response_session_id')
-                ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
-                ->with('selectedOption')
-                ->get()->keyBy('question_id');
-            $hasMissingResponse = $requiredQuestions->contains(function (Question $question) use ($responses) {
-                $response = $responses->get($question->question_id);
-                if (! $response) {
-                    return true;
-                }
-
-                return match ($question->questionType?->type_code) {
-                    'OPEN_ENDED' => blank($response->value_text),
-                    'NUMERIC' => $response->value_numeric === null,
-                    default => ! $response->selectedOption || $response->selectedOption->question_id !== $question->question_id,
-                };
-            });
+        if (! $snapshot) {
+            return redirect()->route('projects.show', $assessment->project_id)
+                ->with('error', 'This assessment has no governed content snapshot and cannot be submitted.');
         }
+
+        $requiredQuestions = collect($snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->where('is_scored', true)
+            ->values();
+        $responses = Response::where('assessment_id', $assessment->assessment_id)
+            ->whereNull('respondent_id')
+            ->whereNull('public_response_session_id')
+            ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
+            ->get()->keyBy('question_id');
+        $hasMissingResponse = $requiredQuestions->contains(function ($question) use ($responses) {
+            $response = $responses->get($question['question_id']);
+            if (! $response) {
+                return true;
+            }
+
+            return match ($question['response_type']) {
+                'OPEN_ENDED' => blank($response->value_text),
+                'NUMERIC' => $response->value_numeric === null,
+                default => ! collect($question['options'] ?? [])
+                    ->contains('option_id', (int) $response->value_option_id),
+            };
+        });
 
         if ($hasMissingResponse) {
             return redirect()->route('assessments.run', $assessment)
@@ -255,7 +229,7 @@ class AssessmentController extends Controller
             }
         }
 
-        // History is comparable only when the exact template composition matches.
+        // History is comparable only when the exact governed composition matches.
         $history = Assessment::where('project_id', $assessment->project_id)
             ->where('status', Assessment::STATUS_COMPLETE)
             ->when(

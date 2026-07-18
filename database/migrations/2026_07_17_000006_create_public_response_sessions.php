@@ -37,8 +37,7 @@ return new class extends Migration
             });
         }
 
-        // SQLite table rebuilds do not preserve partial-index predicates. Drop the
-        // staff-only index explicitly and recreate it after the new identity column exists.
+        // Recreate the staff-only partial index after the public-response identity column exists.
         DB::statement('DROP INDEX IF EXISTS responses_staff_assessment_question_unique');
         if (! Schema::hasColumn('responses', 'public_response_session_id')) {
             Schema::table('responses', function (Blueprint $table) {
