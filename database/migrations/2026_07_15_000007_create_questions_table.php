@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('questions', function (Blueprint $table) {
             $table->uuid('question_id')->primary();
             $table->unsignedInteger('module_id')->nullable();
-            $table->unsignedInteger('module_domain_id')->nullable();
+            $table->unsignedInteger('question_group_id')->nullable();
             $table->smallInteger('question_number')->nullable();
             $table->string('question_code', 20)->unique();
             $table->text('question_text');
@@ -26,9 +26,9 @@ return new class extends Migration
             $table->unsignedInteger('standard_reference_id')->nullable();
             $table->string('standard_alignment_status', 25)->default('NEEDS_REVIEW');
             $table->unsignedInteger('corroborates_sub_index_id')->nullable();
-            $table->unique(['module_domain_id', 'question_number']);
+            $table->unique(['question_group_id', 'question_number']);
             $table->foreign('module_id')->references('module_id')->on('assessment_modules');
-            $table->foreign('module_domain_id')->references('module_domain_id')->on('module_domains');
+            $table->foreign('question_group_id')->references('question_group_id')->on('question_groups');
             $table->foreign('type_id')->references('type_id')->on('question_types');
             $table->foreign('standard_reference_id')->references('standard_id')->on('standards_registry');
             $table->foreign('corroborates_sub_index_id')->references('sub_index_id')->on('sub_indices');

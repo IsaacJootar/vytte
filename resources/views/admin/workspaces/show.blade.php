@@ -19,6 +19,15 @@
                 {{ $workspace->status === 'ACTIVE' ? 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' : 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600' }}">
                 {{ $workspace->status ?? 'ACTIVE' }}
             </span>
+            <form method="POST" action="{{ route('admin.workspaces.status', $workspace) }}">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="{{ $workspace->status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' }}">
+                <button class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border
+                    {{ $workspace->status === 'ACTIVE' ? 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300' : 'border-green-300 text-green-700 dark:border-green-700 dark:text-green-300' }}">
+                    {{ $workspace->status === 'ACTIVE' ? 'Suspend' : 'Reactivate' }}
+                </button>
+            </form>
         </div>
     </div>
 

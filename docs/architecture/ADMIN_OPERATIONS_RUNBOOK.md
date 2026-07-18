@@ -1,0 +1,30 @@
+# Admin Operations Runbook
+
+## Platform Admin entry point
+
+Open `/admin` as a user with `platform_role = PLATFORM_ADMIN`.
+
+## Common operations
+
+- Official content overview: `/admin/official-content`.
+- Assign Platform Admin role: `/admin/platform-users`.
+- Suspend/reactivate workspace: `/admin/workspaces/{workspace}`.
+- Review assessment lifecycle state: `/admin/assessment-oversight`.
+- Revoke shared report link: `/admin/report-shares`.
+- Review audit trail: `/admin/audit-logs`.
+- Manage plan features: `/admin/plan-features`.
+- Manage platform settings: `/admin/settings`.
+
+## Publication operations
+
+- Approve and publish question versions through `/admin/question-versions`.
+- Publish framework versions through `/admin/framework-versions`.
+- Publish catalogue releases through `/admin/catalogue-releases`.
+
+## Safety checks
+
+- Never edit a published immutable object in place.
+- Use a new version for methodology changes.
+- Keep Platform Admin and Workspace Admin boundaries separate.
+- Verify audit logs after consequential administrative actions.
+- Run sequential test batches when PostgreSQL schema refreshes are slow.

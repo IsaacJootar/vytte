@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentModule;
-use App\Models\ModuleDomain;
+use App\Models\QuestionGroup;
 use App\Models\Question;
 use App\Models\QuestionNumericBand;
 use App\Models\QuestionOption;
@@ -104,19 +104,19 @@ class ModuleImportController extends Controller
             'is_active' => true,
         ]);
 
-        foreach ($data['question_groups'] as $domainData) {
-            $domain = ModuleDomain::create([
+        foreach ($data['question_groups'] as $groupData) {
+            $group = QuestionGroup::create([
                 'module_id' => $module->module_id,
-                'domain_number' => (int) $domainData['domain_number'],
-                'domain_label' => trim($domainData['domain_label']),
+                'group_number' => (int) $groupData['group_number'],
+                'group_label' => trim($groupData['group_label']),
             ]);
 
-            foreach ($domainData['questions'] ?? [] as $qIdx => $qData) {
+            foreach ($groupData['questions'] ?? [] as $qIdx => $qData) {
                 $responseType = strtoupper($qData['response_type'] ?? 'SINGLE_SELECT');
                 $typeId = DB::table('question_types')->where('type_code', $responseType)->value('type_id');
                 $question = Question::create([
                     'module_id' => $module->module_id,
-                    'module_domain_id' => $domain->module_domain_id,
+                    'question_group_id' => $group->question_group_id,
                     'question_number' => $qIdx + 1,
                     'question_code' => strtoupper(trim($qData['question_code'])),
                     'question_text' => trim($qData['question_text']),

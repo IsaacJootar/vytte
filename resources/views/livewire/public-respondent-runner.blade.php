@@ -116,7 +116,7 @@
 
         @php $q = $questionData[$currentIndex]; @endphp
 
-        {{-- Module and domain headers --}}
+        {{-- Module and Section headers --}}
         @php $prevModule = $currentIndex > 0 ? $questionData[$currentIndex - 1]['module_id'] : null; @endphp
         @if ($moduleCount > 1 && ($currentIndex === 0 || $q['module_id'] !== $prevModule))
             <div class="mb-3 rounded-xl border border-vytte-100 bg-vytte-50 px-4 py-3">
@@ -124,11 +124,11 @@
                 <p class="mt-0.5 text-sm font-semibold text-vytte-900">{{ $q['module_name'] ?: $q['module_code'] }}</p>
             </div>
         @endif
-        @php $prevDomain = $currentIndex > 0 ? $questionData[$currentIndex - 1]['domain_number'] : null; @endphp
-        @if (($currentIndex === 0 || $q['domain_number'] !== $prevDomain) && $q['domain_label'])
+        @php $prevSection = $currentIndex > 0 ? $questionData[$currentIndex - 1]['section_number'] : null; @endphp
+        @if (($currentIndex === 0 || $q['section_number'] !== $prevSection) && $q['section_label'])
             <div class="mb-3 flex items-center gap-2">
-                <span class="w-5 h-5 rounded-full bg-vytte-100 text-vytte-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{{ $q['domain_number'] }}</span>
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">{{ $q['domain_label'] }}</span>
+                <span class="w-5 h-5 rounded-full bg-vytte-100 text-vytte-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{{ $q['section_number'] }}</span>
+                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">{{ $q['section_label'] }}</span>
             </div>
         @endif
 

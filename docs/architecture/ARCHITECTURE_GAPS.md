@@ -31,7 +31,7 @@ Current verified local state:
 
 | ID | Gap | Risk | Recommended next action |
 |---|---|---|---|
-| GAP-01 | Curator UI for framework/catalogue management is not implemented | Platform content publication currently lacks a full admin workflow | Build curator screens around the existing publishing services |
+| GAP-01 | Deep dependency-graph and comparison views are not implemented | Platform Admins can inspect/publish content, but advanced impact review is still manual | Add dependency graph and version comparison views after core admin workflows stabilize |
 | GAP-02 | Production clinical content is not curated | Demo data proves architecture only | Create governed source/licence/scoring review workflow for real content |
 | GAP-03 | Facility profile editing after project creation is not exposed | Incorrect profile choice requires manual correction | Add a profile-change flow with clear effect on future assessments only |
 | GAP-04 | Additional response types are declared but unavailable | Publishing unsupported types would break runners | Implement each type only with full contract and tests |

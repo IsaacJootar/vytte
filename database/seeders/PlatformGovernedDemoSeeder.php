@@ -156,9 +156,9 @@ class PlatformGovernedDemoSeeder extends Seeder
     {
         $domainId = DB::table('domains')->where('domain_code', $domainCode)->value('domain_id');
 
-        DB::table('module_domains')->updateOrInsert(
-            ['module_id' => $module->module_id, 'domain_number' => 1],
-            ['domain_label' => 'DEMONSTRATION READINESS']
+        DB::table('question_groups')->updateOrInsert(
+            ['module_id' => $module->module_id, 'group_number' => 1],
+            ['group_label' => 'DEMONSTRATION READINESS']
         );
 
         if (! DB::table('sub_indices')->where('module_id', $module->module_id)->where('acronym', $module->module_code.'R')->exists()) {
@@ -289,16 +289,16 @@ class PlatformGovernedDemoSeeder extends Seeder
 
     private function upsertQuestionIdentity(AssessmentModule $module, array $definition): Question
     {
-        $moduleDomainId = DB::table('module_domains')
+        $questionGroupId = DB::table('question_groups')
             ->where('module_id', $module->module_id)
-            ->where('domain_number', 1)
-            ->value('module_domain_id');
+            ->where('group_number', 1)
+            ->value('question_group_id');
 
         return Question::firstOrCreate(
             ['question_code' => $definition['code']],
             [
                 'module_id' => $module->module_id,
-                'module_domain_id' => $moduleDomainId,
+                'question_group_id' => $questionGroupId,
                 'question_number' => $definition['order'],
                 'question_text' => $definition['text'],
                 'type_id' => $definition['type_id'],

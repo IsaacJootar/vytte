@@ -36,7 +36,7 @@ Official production content requires:
 - completed scoring profile;
 - supported response types;
 - evidence and critical-failure rules where applicable;
-- curator review;
+- Vytte Platform Admin review;
 - immutable framework version publication;
 - immutable catalogue release publication.
 

@@ -18,7 +18,7 @@ class Question extends Model
 
     protected $fillable = [
         'module_id',
-        'module_domain_id',
+        'question_group_id',
         'question_number',
         'question_code',
         'question_text',
@@ -58,9 +58,9 @@ class Question extends Model
         return $this->belongsTo(QuestionType::class, 'type_id', 'type_id');
     }
 
-    public function moduleDomain(): BelongsTo
+    public function questionGroup(): BelongsTo
     {
-        return $this->belongsTo(ModuleDomain::class, 'module_domain_id', 'module_domain_id');
+        return $this->belongsTo(QuestionGroup::class, 'question_group_id', 'question_group_id');
     }
 
     public function options(): HasMany

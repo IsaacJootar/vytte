@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AssessmentModule;
-use App\Models\ModuleDomain;
+use App\Models\QuestionGroup;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -163,7 +163,7 @@ class ModuleLibraryTest extends TestCase
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
 
         $this->assertEquals(4, $module->questions()->count());
-        $this->assertEquals(1, $module->moduleDomains()->count());
+        $this->assertEquals(1, $module->questionGroups()->count());
         $this->assertEquals(1, $module->subIndices()->count());
     }
 
@@ -172,11 +172,11 @@ class ModuleLibraryTest extends TestCase
         $this->seed(ReferenceDataSeeder::class);
         $this->seed(PlatformGovernedDemoSeeder::class);
 
-        $domain = ModuleDomain::where('domain_label', 'DEMONSTRATION READINESS')->first();
+        $group = QuestionGroup::where('group_label', 'DEMONSTRATION READINESS')->first();
 
-        $this->assertNotNull($domain);
-        $this->assertEquals(4, $domain->questions()->count());
-        $this->assertTrue($domain->questions->first()->options->isNotEmpty());
+        $this->assertNotNull($group);
+        $this->assertEquals(4, $group->questions()->count());
+        $this->assertTrue($group->questions->first()->options->isNotEmpty());
     }
 
     public function test_sub_index_uses_service_delivery_as_internal_analytical_lens(): void

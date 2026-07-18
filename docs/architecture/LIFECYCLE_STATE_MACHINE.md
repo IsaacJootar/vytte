@@ -25,7 +25,7 @@ Rows in `assessment_module_scope` use:
 
 | State | Meaning | Allowed next state |
 |---|---|---|
-| `DRAFT` | Mutable curator working version. | `PUBLISHED` |
+| `DRAFT` | Mutable Vytte Platform Admin working version. | `PUBLISHED` |
 | `PUBLISHED` | Immutable official department framework version. | None |
 
 Published department framework versions cannot be edited or deleted.

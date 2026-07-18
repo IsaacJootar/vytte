@@ -17,8 +17,7 @@ Workspace users consume published Vytte content and may add local custom section
 
 ## Roles
 
-- **Platform administrator:** manages platform configuration and may perform curator actions.
-- **Curator:** prepares, validates, and publishes official Vytte framework and catalogue content.
+- **Vytte Platform Admin:** manages platform configuration, official content governance, validation, publication, and operational oversight.
 - **Workspace owner/admin/member:** creates projects, runs assessments, manages workspace users, and consumes approved content.
 
 ## Department Framework Publication

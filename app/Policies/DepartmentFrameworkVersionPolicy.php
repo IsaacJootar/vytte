@@ -9,16 +9,16 @@ class DepartmentFrameworkVersionPolicy
 {
     public function create(User $user): bool
     {
-        return $user->isCurator();
+        return $user->isPlatformAdmin();
     }
 
     public function update(User $user, DepartmentFrameworkVersion $version): bool
     {
-        return $user->isCurator() && $version->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED;
+        return $user->isPlatformAdmin() && $version->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED;
     }
 
     public function publish(User $user, DepartmentFrameworkVersion $version): bool
     {
-        return $user->isCurator() && $version->status === DepartmentFrameworkVersion::STATUS_DRAFT;
+        return $user->isPlatformAdmin() && $version->status === DepartmentFrameworkVersion::STATUS_DRAFT;
     }
 }

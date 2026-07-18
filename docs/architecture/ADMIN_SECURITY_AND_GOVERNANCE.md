@@ -1,27 +1,40 @@
 # Admin Security and Governance
 
+## Role boundary
+
+Vytte has two administration levels.
+
+- **Vytte Platform Admin:** platform-wide methodology, official content, publication, roles, operational oversight, audit, and compliance.
+- **Workspace Admin:** workspace-only people, assessments, respondents, reports, sharing, custom local content, and workspace settings.
+
+`PLATFORM_ADMIN` is the only platform governance role used in active source. Older platform-content role terminology has been removed from active authorization paths.
+
 ## Authorization
 
-Platform admin routes require authenticated users with `platform_role = PLATFORM_ADMIN`.
+All Platform Admin routes use `auth` plus `EnsurePlatformAdmin`. Workspace routes remain governed by workspace membership, route policies, and workspace-scoped models.
 
-Workspace routes remain scoped through workspace membership, route policies, and workspace-bound models.
+## Immutable content
+
+Published question versions, framework versions, catalogue releases, assessment snapshots, respondent score results, aggregation results, and final reports are not edited in place.
 
 ## Audit logging
 
-Consequential actions record audit events through `AuditService`, including:
+Consequential Platform Admin actions record audit events through `AuditService`, including:
 
+- question-group create/update/archive;
+- question-version approval/publication;
 - framework publication;
 - catalogue publication;
-- domain taxonomy publication;
-- domain taxonomy supersession;
-- assessment creation;
-- multi-respondent finalization;
-- final report generation.
+- platform-user role changes;
+- workspace status changes;
+- report share-link revocation;
+- report link creation/view/revocation;
+- assessment creation/finalization/report generation.
 
 ## Privacy
 
-Report sharing uses governed share links. Multi-respondent reports show aggregate results by default, while traceability remains available through authorized audit access.
+Platform Admin oversight pages expose operational metadata and governed artifact status. Shared reports remain governed through share-link controls. Multi-respondent reports show aggregate results by default; traceability of contributing sessions remains restricted to authorized audit access.
 
-## Immutable records
+## Payments and plans
 
-Published content and final snapshots are not edited in place. Changes require new versions.
+Plan-feature controls are administered through Platform Admin. Payment events are accepted through signed/verified provider webhooks and must not become a separate assessment-governance path.

@@ -39,7 +39,7 @@ Laravel migrations are the database source of truth. PostgreSQL is the database 
 ### Official Assessment Content
 
 - `assessment_modules`
-- `module_domains`
+- `question_groups`
 - `sub_indices`
 - `questions`
 - `question_options`

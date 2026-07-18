@@ -34,11 +34,23 @@
     <div class="flex-1 flex max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 gap-6">
 
         {{-- Sidebar --}}
-        <nav class="w-44 flex-shrink-0 hidden sm:block">
+        <nav class="w-56 flex-shrink-0 hidden sm:block">
             <ul class="space-y-0.5">
                 @foreach ([
                     ['route' => 'admin.dashboard', 'label' => 'Dashboard'],
+                    ['route' => 'admin.official-content.index', 'label' => 'Official Content'],
+                    ['route' => 'admin.question-groups.index', 'label' => 'Question Groups'],
+                    ['route' => 'admin.question-identities.index', 'label' => 'Questions'],
+                    ['route' => 'admin.question-versions.index', 'label' => 'Question Versions'],
+                    ['route' => 'admin.framework-versions.index', 'label' => 'Frameworks'],
+                    ['route' => 'admin.catalogue-releases.index', 'label' => 'Catalogue Releases'],
+                    ['route' => 'admin.facility-profiles.index', 'label' => 'Facility Profiles'],
+                    ['route' => 'admin.scoring-policies.index', 'label' => 'Scoring Policies'],
                     ['route' => 'admin.workspaces.index', 'label' => 'Workspaces'],
+                    ['route' => 'admin.platform-users.index', 'label' => 'Platform Users'],
+                    ['route' => 'admin.assessment-oversight.index', 'label' => 'Assessment Oversight'],
+                    ['route' => 'admin.report-shares.index', 'label' => 'Report Shares'],
+                    ['route' => 'admin.audit-logs.index', 'label' => 'Audit Logs'],
                     ['route' => 'admin.modules.index', 'label' => 'Modules'],
                     ['route' => 'admin.domain-taxonomies.index', 'label' => 'Domain Taxonomies'],
                     ['route' => 'admin.geographic-usage.index', 'label' => 'Geographic Usage'],

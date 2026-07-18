@@ -41,10 +41,4 @@ class UserFactory extends Factory
         ]);
     }
 
-    public function curator(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'platform_role' => 'CURATOR',
-        ]);
-    }
 }

@@ -102,11 +102,10 @@ The extra question version is a deliberately published future version proving th
 ## Remaining methodological decisions
 
 - Production clinical methodology remains uncurated.
-- Future curator UI needs to expose question version review and publication workflows.
+- Future Platform Admin work should add dependency graph and version comparison views.
 - Future workspace custom assessment runner/report UX is still a product-design task.
 - Domain architecture review is intentionally postponed.
 
 ## Remaining risk
 
 The architecture is ready for governed content, but demo content remains demonstration-only and must not be presented as validated clinical methodology.
-

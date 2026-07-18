@@ -9,16 +9,16 @@ class QuestionVersionPolicy
 {
     public function create(User $user): bool
     {
-        return $user->isCurator();
+        return $user->isPlatformAdmin();
     }
 
     public function update(User $user, QuestionVersion $version): bool
     {
-        return $user->isCurator() && $version->status !== QuestionVersion::STATUS_PUBLISHED;
+        return $user->isPlatformAdmin() && $version->status !== QuestionVersion::STATUS_PUBLISHED;
     }
 
     public function publish(User $user, QuestionVersion $version): bool
     {
-        return $user->isCurator() && $version->status === QuestionVersion::STATUS_APPROVED;
+        return $user->isPlatformAdmin() && $version->status === QuestionVersion::STATUS_APPROVED;
     }
 }

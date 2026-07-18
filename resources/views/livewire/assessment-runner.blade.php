@@ -80,8 +80,8 @@
             $q            = $questionData[$currentIndex];
             $prevModuleId = $currentIndex > 0 ? ($questionData[$currentIndex - 1]['module_id'] ?? null) : null;
             $showModuleHeader = $moduleCount > 1 && ($currentIndex === 0 || $q['module_id'] !== $prevModuleId);
-            $prevDomain   = ($showModuleHeader || $currentIndex === 0) ? null : ($questionData[$currentIndex - 1]['domain_number'] ?? null);
-            $showDomainHeader = $prevDomain === null || $q['domain_number'] !== $prevDomain;
+            $prevSection   = ($showModuleHeader || $currentIndex === 0) ? null : ($questionData[$currentIndex - 1]['section_number'] ?? null);
+            $showSectionHeader = $prevSection === null || $q['section_number'] !== $prevSection;
         @endphp
 
         {{-- Module header (shown when assessment spans multiple modules) --}}
@@ -94,13 +94,13 @@
             </div>
         @endif
 
-        {{-- Domain header --}}
-        @if ($showDomainHeader && $q['domain_label'])
+        {{-- Section header --}}
+        @if ($showSectionHeader && $q['section_label'])
             <div class="mb-3 flex items-center gap-2">
                 <span class="w-5 h-5 rounded-full bg-vytte-100 dark:bg-vytte-900/30 text-vytte-700 dark:text-vytte-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                    {{ $q['domain_number'] }}
+                    {{ $q['section_number'] }}
                 </span>
-                <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ $q['domain_label'] }}</span>
+                <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{{ $q['section_label'] }}</span>
             </div>
         @endif
 

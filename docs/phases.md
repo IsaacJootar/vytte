@@ -62,7 +62,7 @@
 
 **Commit:** `4156a38`
 
-- `AssessmentModule`, `ModuleDomain`, `Question`, `QuestionOption` models
+- `AssessmentModule`, `QuestionGroup`, `Question`, `QuestionOption` models
 - Governed demonstration modules seeded via `PlatformGovernedDemoSeeder` (department frameworks and catalogue releases)
 - `ReferenceDataSeeder` seeds setting types, target types, assessment tiers, scoring levels, and health domains
 - Module library: `/modules` list + `/modules/{id}` detail
@@ -365,7 +365,7 @@ The Phase 21 audit and Phase 22 baseline were followed by bounded corrective mod
 | Durable external responses | `9ebb7cd` | Full-scope sessions, consent, auditing, and revocation |
 | Frozen scoring profiles | `3971c48` | Published payload is the scoring/content authority |
 | Immutable final reports | `417d8bc` | Structured report snapshots and safe comparison fingerprints |
-| Governance and sharing | `dbc7e72` | Curator authority, audit events, governed report links |
+| Governance and sharing | `dbc7e72` | Platform Admin authority, audit events, governed report links |
 | Tenant boundaries | `a72a7b5`, `dc51578` | Membership authority, policies, fail-closed scope ordering |
 | Unified community templates | `f7f5807` | Removed separate community reporting/product gate |
 | Optional inline evidence | `bea3021` | Response-bound supporting notes with progressive disclosure |

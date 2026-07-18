@@ -43,8 +43,8 @@
   "estimated_duration_minutes": 45,
   "question_groups": [
     {
-      "domain_number": 1,
-      "domain_label": "Question Group Label",
+      "group_number": 1,
+      "group_label": "Question Group Label",
       "questions": [
         {
           "question_code": "Q001",

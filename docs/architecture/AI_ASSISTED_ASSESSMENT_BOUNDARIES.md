@@ -52,5 +52,4 @@ AI must not:
 
 Official Vytte content can use AI only as a drafting or review support tool under human methodology governance.
 
-Publication still requires Vytte curator authority and immutable versioning.
-
+Publication still requires Vytte Platform Admin authority and immutable versioning.

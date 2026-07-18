@@ -1,15 +1,26 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\AssessmentOversightController as AdminAssessmentOversightController;
+use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
+use App\Http\Controllers\Admin\CatalogueReleaseController as AdminCatalogueReleaseController;
 use App\Http\Controllers\Admin\DomainTaxonomyController as AdminDomainTaxonomyController;
+use App\Http\Controllers\Admin\FacilityProfileController as AdminFacilityProfileController;
+use App\Http\Controllers\Admin\FrameworkVersionController as AdminFrameworkVersionController;
 use App\Http\Controllers\Admin\GeographicUsageController as AdminGeographicUsageController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
-use App\Http\Controllers\Admin\ModuleDomainController as AdminModuleDomainController;
+use App\Http\Controllers\Admin\OfficialContentController as AdminOfficialContentController;
+use App\Http\Controllers\Admin\QuestionGroupController as AdminQuestionGroupController;
 use App\Http\Controllers\Admin\ModuleImportController;
 use App\Http\Controllers\Admin\ModuleTranslationController;
 use App\Http\Controllers\Admin\PlanFeatureController;
+use App\Http\Controllers\Admin\PlatformUserController as AdminPlatformUserController;
 use App\Http\Controllers\Admin\PlatformSettingController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
+use App\Http\Controllers\Admin\QuestionIdentityController as AdminQuestionIdentityController;
+use App\Http\Controllers\Admin\QuestionVersionController as AdminQuestionVersionController;
+use App\Http\Controllers\Admin\ReportShareController as AdminReportShareController;
+use App\Http\Controllers\Admin\ScoringPolicyController as AdminScoringPolicyController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\BillingController;
@@ -94,6 +105,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('official-content', [AdminOfficialContentController::class, 'index'])->name('official-content.index');
+
     Route::get('geographic-usage', [AdminGeographicUsageController::class, 'index'])->name('geographic-usage.index');
 
     Route::get('plan-features', [PlanFeatureController::class, 'index'])->name('plan-features.index');
@@ -101,6 +114,15 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
 
     Route::get('workspaces', [AdminWorkspaceController::class, 'index'])->name('workspaces.index');
     Route::get('workspaces/{workspace}', [AdminWorkspaceController::class, 'show'])->name('workspaces.show');
+    Route::patch('workspaces/{workspace}/status', [AdminWorkspaceController::class, 'updateStatus'])->name('workspaces.status');
+
+    Route::get('platform-users', [AdminPlatformUserController::class, 'index'])->name('platform-users.index');
+    Route::patch('platform-users/{user}/role', [AdminPlatformUserController::class, 'updateRole'])->name('platform-users.role');
+
+    Route::get('assessment-oversight', [AdminAssessmentOversightController::class, 'index'])->name('assessment-oversight.index');
+    Route::get('report-shares', [AdminReportShareController::class, 'index'])->name('report-shares.index');
+    Route::patch('report-shares/{shareLink}/revoke', [AdminReportShareController::class, 'revoke'])->name('report-shares.revoke');
+    Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
 
     Route::get('settings', [PlatformSettingController::class, 'index'])->name('settings.index');
     Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');
@@ -116,7 +138,36 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::get('domain-taxonomies', [AdminDomainTaxonomyController::class, 'index'])->name('domain-taxonomies.index');
     Route::get('domain-taxonomy-versions/{version}', [AdminDomainTaxonomyController::class, 'show'])->name('domain-taxonomies.show');
 
-    Route::put('question-groups/{domain}', [AdminModuleDomainController::class, 'update'])->name('question-groups.update');
+    Route::get('question-groups', [AdminQuestionGroupController::class, 'index'])->name('question-groups.index');
+    Route::get('question-groups/create', [AdminQuestionGroupController::class, 'create'])->name('question-groups.create');
+    Route::post('question-groups', [AdminQuestionGroupController::class, 'store'])->name('question-groups.store');
+    Route::get('question-groups/{group}', [AdminQuestionGroupController::class, 'show'])->name('question-groups.show');
+    Route::get('question-groups/{group}/edit', [AdminQuestionGroupController::class, 'edit'])->name('question-groups.edit');
+    Route::put('question-groups/{group}', [AdminQuestionGroupController::class, 'update'])->name('question-groups.update');
+    Route::patch('question-groups/{group}/archive', [AdminQuestionGroupController::class, 'archive'])->name('question-groups.archive');
+
+    Route::get('question-identities', [AdminQuestionIdentityController::class, 'index'])->name('question-identities.index');
+    Route::get('question-identities/create', [AdminQuestionIdentityController::class, 'create'])->name('question-identities.create');
+    Route::post('question-identities', [AdminQuestionIdentityController::class, 'store'])->name('question-identities.store');
+    Route::get('question-identities/{question}', [AdminQuestionIdentityController::class, 'show'])->name('question-identities.show');
+
+    Route::get('question-versions', [AdminQuestionVersionController::class, 'index'])->name('question-versions.index');
+    Route::get('question-versions/{version}', [AdminQuestionVersionController::class, 'show'])->name('question-versions.show');
+    Route::patch('question-versions/{version}/approve', [AdminQuestionVersionController::class, 'markApproved'])->name('question-versions.approve');
+    Route::patch('question-versions/{version}/publish', [AdminQuestionVersionController::class, 'publish'])->name('question-versions.publish');
+
+    Route::get('framework-versions', [AdminFrameworkVersionController::class, 'index'])->name('framework-versions.index');
+    Route::get('framework-versions/{framework}', [AdminFrameworkVersionController::class, 'show'])->name('framework-versions.show');
+    Route::patch('framework-versions/{framework}/publish', [AdminFrameworkVersionController::class, 'publish'])->name('framework-versions.publish');
+
+    Route::get('catalogue-releases', [AdminCatalogueReleaseController::class, 'index'])->name('catalogue-releases.index');
+    Route::get('catalogue-releases/{release}', [AdminCatalogueReleaseController::class, 'show'])->name('catalogue-releases.show');
+    Route::patch('catalogue-releases/{release}/publish', [AdminCatalogueReleaseController::class, 'publish'])->name('catalogue-releases.publish');
+
+    Route::get('facility-profiles', [AdminFacilityProfileController::class, 'index'])->name('facility-profiles.index');
+    Route::get('facility-profiles/{profile}', [AdminFacilityProfileController::class, 'show'])->name('facility-profiles.show');
+
+    Route::get('scoring-policies', [AdminScoringPolicyController::class, 'index'])->name('scoring-policies.index');
 
     Route::put('questions/{question}', [AdminQuestionController::class, 'update'])->name('questions.update');
     Route::patch('questions/{question}/toggle', [AdminQuestionController::class, 'toggleActive'])->name('questions.toggle');

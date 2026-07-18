@@ -11,7 +11,7 @@ class ModuleLibraryController extends Controller
     public function index(): View
     {
         $targetTypes = TargetType::with([
-            'modules' => fn ($q) => $q->withCount(['questions', 'moduleDomains', 'subIndices']),
+            'modules' => fn ($q) => $q->withCount(['questions', 'questionGroups', 'subIndices']),
         ])->get();
 
         return view('modules.index', compact('targetTypes'));
@@ -21,7 +21,7 @@ class ModuleLibraryController extends Controller
     {
         $module->load([
             'targetType',
-            'moduleDomains.questions.options',
+            'questionGroups.questions.options',
             'subIndices.domain',
         ]);
 

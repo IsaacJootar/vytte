@@ -55,9 +55,4 @@ class User extends Authenticatable
     {
         return $this->platform_role === 'PLATFORM_ADMIN';
     }
-
-    public function isCurator(): bool
-    {
-        return in_array($this->platform_role, ['PLATFORM_ADMIN', 'CURATOR']);
-    }
 }

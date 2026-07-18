@@ -1,18 +1,45 @@
 # Platform Admin Implementation Report
 
-## Added
+## Completed
 
-- `App\Http\Controllers\Admin\DomainTaxonomyController`
-- `resources/views/admin/domain-taxonomies/index.blade.php`
-- `resources/views/admin/domain-taxonomies/show.blade.php`
-- Sidebar link for Domain Taxonomies
+- Built a polished Vytte Platform Admin control center.
+- Added official content dashboard for governed Vytte content.
+- Added question-group list/create/show/edit/archive workflows.
+- Added reusable question identity list/create/show workflows.
+- Added question-version list/show/approve/publish workflows using the governed publishing service.
+- Added framework-version list/show/publish workflows using the governed publishing service.
+- Added catalogue-release list/show/publish workflows using the governed publishing service.
+- Added facility-profile list/show views.
+- Added scoring and aggregation policy visibility.
+- Added platform-user role assignment for `PLATFORM_ADMIN`.
+- Added workspace status control for Platform Admin suspension/reactivation.
+- Added assessment lifecycle oversight.
+- Added report share-link oversight and emergency revocation.
+- Added audit-log review.
+- Expanded the Platform Admin sidebar and dashboard.
+- Removed active source use of the old platform-content role terminology.
 
-## Changed
+## Existing controls preserved
 
-- Admin module question-group route changed from `admin.domains.update` to `admin.question-groups.update`.
-- Admin module import expects `question_groups` instead of `domains`.
-- Admin module pages label legacy structural groups as question groups.
+- Plan-feature controls remain in `admin.plan-features.*`.
+- Platform settings remain in `admin.settings.*`.
+- Payment webhooks remain handled by Paystack and Flutterwave webhook controllers.
+- Workspace-level team, invitation, assessment, respondent, report, and share-link workflows remain outside Platform Admin methodology control.
 
-## Not added
+## Governance behavior
 
-A full curator CRUD workbench was not added because the current backend still relies on governed services and seed/demo content for several objects. Creating broad CRUD screens without finalized curator workflows would risk unsafe mutation of immutable methodology content.
+The UI does not bypass publication services. Question versions, framework versions, and catalogue releases still pass through validation and immutable publication logic before becoming official content.
+
+## Tests added or updated
+
+- Added `tests/Feature/PlatformAdminControlCenterTest.php`.
+- Updated `tests/Feature/AdminTest.php` for the new Platform Admin dashboard title.
+
+## Verification status
+
+- Batched full test-tree verification passed: 401 tests, 1,015 assertions.
+- Clean PostgreSQL migration/seed passed.
+- Schema rename verification passed.
+- Frontend build passed.
+- Active-source reference audit passed.
+- Commit and push are pending final git review.

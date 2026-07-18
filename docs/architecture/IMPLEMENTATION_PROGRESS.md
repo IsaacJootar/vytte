@@ -32,7 +32,7 @@ Implemented:
 ## Current Boundaries
 
 - Demo content is not production clinical methodology.
-- Curator UI for framework and catalogue publication remains future work.
+- Advanced Platform Admin dependency graph and version comparison views remain future work.
 - Facility profile editing after project creation remains future work.
 - Additional response types require explicit contracts and tests before publication.
 

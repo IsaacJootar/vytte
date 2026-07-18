@@ -24,7 +24,7 @@ class ModuleController extends Controller
     public function show(AssessmentModule $module): View
     {
         $module->load([
-            'moduleDomains.questions.options',
+            'questionGroups.questions.options',
             'targetType',
         ]);
 

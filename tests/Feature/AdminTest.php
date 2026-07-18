@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AssessmentModule;
-use App\Models\ModuleDomain;
+use App\Models\QuestionGroup;
 use App\Models\PlatformSetting;
 use App\Models\Question;
 use App\Models\User;
@@ -65,7 +65,7 @@ class AdminTest extends TestCase
         $this->actingAs($this->makeAdmin())
             ->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('Platform Overview');
+            ->assertSee('Vytte Platform Admin Control Center');
     }
 
     // ─── Workspaces ───────────────────────────────────────────────
@@ -233,16 +233,16 @@ class AdminTest extends TestCase
 
     public function test_admin_can_edit_question_group_label(): void
     {
-        $domain = ModuleDomain::first();
-        $this->assertNotNull($domain, 'Reference data must provide domains');
+        $group = QuestionGroup::first();
+        $this->assertNotNull($group, 'Reference data must provide question groups');
 
         $this->actingAs($this->makeAdmin())
-            ->put(route('admin.question-groups.update', $domain), ['domain_label' => 'New Question Group Label'])
+            ->put(route('admin.question-groups.update', $group), ['group_label' => 'New Question Group Label'])
             ->assertRedirect();
 
-        $this->assertDatabaseHas('module_domains', [
-            'module_domain_id' => $domain->module_domain_id,
-            'domain_label' => 'New Question Group Label',
+        $this->assertDatabaseHas('question_groups', [
+            'question_group_id' => $group->question_group_id,
+            'group_label' => 'New Question Group Label',
         ]);
     }
 
@@ -307,8 +307,8 @@ class AdminTest extends TestCase
             'estimated_duration_minutes' => 20,
             'question_groups' => [
                 [
-                    'domain_number' => 1,
-                    'domain_label' => 'Test Question Group',
+                    'group_number' => 1,
+                    'group_label' => 'Test Question Group',
                     'questions' => [
                         [
                             'question_code' => 'TMOD_Q001',
@@ -333,7 +333,7 @@ class AdminTest extends TestCase
             'module_code' => 'TESTMOD',
             'module_name' => 'Test Import Module',
         ]);
-        $this->assertDatabaseHas('module_domains', ['domain_label' => 'Test Question Group']);
+        $this->assertDatabaseHas('question_groups', ['group_label' => 'Test Question Group']);
         $this->assertDatabaseHas('questions', ['question_code' => 'TMOD_Q001']);
         $this->assertDatabaseHas('question_options', ['option_label' => 'Yes']);
     }
@@ -363,8 +363,8 @@ class AdminTest extends TestCase
             'module_name' => 'Facility Metrics',
             'target_type_code' => 'HEALTH_FACILITY',
             'question_groups' => [[
-                'domain_number' => 1,
-                'domain_label' => 'Utilization',
+                'group_number' => 1,
+                'group_label' => 'Utilization',
                 'questions' => [[
                     'question_code' => 'METRICS.Q1',
                     'question_text' => 'Average bed occupancy rate',
@@ -401,8 +401,8 @@ class AdminTest extends TestCase
             'module_name' => 'Broken Input',
             'target_type_code' => 'COMMUNITY',
             'question_groups' => [[
-                'domain_number' => 1,
-                'domain_label' => 'Broken',
+                'group_number' => 1,
+                'group_label' => 'Broken',
                 'questions' => [[
                     'question_code' => 'BROKEN.Q1',
                     'question_text' => 'Rank these choices',

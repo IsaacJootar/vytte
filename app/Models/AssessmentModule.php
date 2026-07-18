@@ -33,10 +33,10 @@ class AssessmentModule extends Model
         return $this->belongsTo(TargetType::class, 'target_type_code', 'target_type_code');
     }
 
-    public function moduleDomains(): HasMany
+    public function questionGroups(): HasMany
     {
-        return $this->hasMany(ModuleDomain::class, 'module_id', 'module_id')
-            ->orderBy('domain_number');
+        return $this->hasMany(QuestionGroup::class, 'module_id', 'module_id')
+            ->orderBy('group_number');
     }
 
     public function subIndices(): HasMany

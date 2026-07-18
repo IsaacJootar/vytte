@@ -58,20 +58,20 @@
     </div>
 
     {{-- Question groups & questions --}}
-    @forelse ($module->moduleDomains as $domain)
+    @forelse ($module->questionGroups as $group)
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-4">
 
             {{-- Question group header --}}
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3">
                 <div>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold">Question group {{ $domain->domain_number }}</p>
-                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $domain->domain_label }}</h2>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold">Question group {{ $group->group_number }}</p>
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $group->group_label }}</h2>
                 </div>
                 {{-- Inline edit question group label --}}
-                <form method="POST" action="{{ route('admin.question-groups.update', $domain) }}" class="flex items-center gap-2" x-data="{ editing: false }">
+                <form method="POST" action="{{ route('admin.question-groups.update', $group) }}" class="flex items-center gap-2" x-data="{ editing: false }">
                     @csrf
                     @method('PUT')
-                    <input type="text" name="domain_label" value="{{ $domain->domain_label }}"
+                    <input type="text" name="group_label" value="{{ $group->group_label }}"
                            x-show="editing"
                            class="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-vytte-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                            style="display:none">
@@ -93,11 +93,11 @@
             </div>
 
             {{-- Questions --}}
-            @if ($domain->questions->isEmpty())
+            @if ($group->questions->isEmpty())
                 <p class="px-5 py-4 text-sm text-slate-400 dark:text-slate-500 italic">No questions in this group.</p>
             @else
                 <div class="divide-y divide-slate-100 dark:divide-slate-700">
-                    @foreach ($domain->questions as $question)
+                    @foreach ($group->questions as $question)
                         <div class="px-5 py-3 flex items-start gap-3" x-data="{ editing: false }">
                             <div class="flex-shrink-0 w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center mt-0.5">
                                 <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">{{ $question->question_number }}</span>

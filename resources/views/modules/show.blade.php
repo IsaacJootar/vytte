@@ -63,26 +63,26 @@
 
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">
                 Question Groups &amp; Questions
-                <span class="ml-1 text-slate-400 dark:text-slate-500 font-normal">({{ $module->moduleDomains->count() }} {{ Str::plural('group', $module->moduleDomains->count()) }})</span>
+                <span class="ml-1 text-slate-400 dark:text-slate-500 font-normal">({{ $module->questionGroups->count() }} {{ Str::plural('group', $module->questionGroups->count()) }})</span>
             </h2>
 
-            @forelse ($module->moduleDomains as $domain)
+            @forelse ($module->questionGroups as $group)
                 <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
 
                     {{-- Question group header --}}
                     <div class="px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <span class="w-5 h-5 rounded-full bg-vytte-100 dark:bg-vytte-900/40 text-vytte-700 dark:text-vytte-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
-                                {{ $domain->domain_number }}
+                                {{ $group->group_number }}
                             </span>
-                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">{{ $domain->domain_label }}</span>
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">{{ $group->group_label }}</span>
                         </div>
-                        <span class="text-[11px] text-slate-400 dark:text-slate-500">{{ $domain->questions->count() }} {{ Str::plural('question', $domain->questions->count()) }}</span>
+                        <span class="text-[11px] text-slate-400 dark:text-slate-500">{{ $group->questions->count() }} {{ Str::plural('question', $group->questions->count()) }}</span>
                     </div>
 
                     {{-- Questions --}}
                     <div class="divide-y divide-slate-100 dark:divide-slate-700">
-                        @foreach ($domain->questions as $question)
+                        @foreach ($group->questions as $question)
                             <div class="px-4 py-3.5">
                                 <div class="flex items-start gap-2.5">
                                     <span class="text-[11px] font-mono text-slate-400 dark:text-slate-500 mt-0.5 flex-shrink-0 pt-px">{{ $question->question_code }}</span>

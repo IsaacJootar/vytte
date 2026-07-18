@@ -16,7 +16,7 @@ The migration set is the schema source of truth. Current active assessment archi
 
 ### Official Vytte Content
 
-`assessment_modules`, `module_domains`, `sub_indices`, `questions`, `question_options`, `question_numeric_bands`, `sub_index_questions`, `question_topics`, `question_drafts`, `question_translations`, `question_option_translations`.
+`assessment_modules`, `question_groups`, `sub_indices`, `questions`, `question_options`, `question_numeric_bands`, `sub_index_questions`, `question_topics`, `question_drafts`, `question_translations`, `question_option_translations`.
 
 ### Governed Composition
 
@@ -86,5 +86,5 @@ Counts are not architecture contracts. They describe only the current developmen
 ## Release Gates
 
 - PostgreSQL migration and concurrency parity.
-- Curator UI for framework/catalogue authoring and publishing.
+- Advanced Platform Admin dependency graph and version comparison views.
 - Production clinical content curation with source, licence, scoring, and review metadata.

@@ -411,8 +411,8 @@ class PublicRespondentRunner extends Component
                     'module_id' => (int) $module['module_id'],
                     'module_code' => $module['module_code'],
                     'module_name' => $module['module_name'] ?? $module['module_code'],
-                    'domain_label' => $question['domain_label'] ?? '',
-                    'domain_number' => $question['domain_number'] ?? 0,
+                    'section_label' => $question['section_label'] ?? '',
+                    'section_number' => $question['section_number'] ?? 0,
                     'numeric_config' => $question['numeric_config'] ?? null,
                     'options' => collect($question['options'] ?? [])->map(fn ($option) => [
                         'option_id' => (int) $option['option_id'],

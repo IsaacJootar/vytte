@@ -184,13 +184,13 @@ Workspace users may create local custom sections attached to an assessment. Thes
 ## Authorization and Audit
 
 - Workspace access is enforced through active workspace membership, scoped project/target ownership, and policies.
-- Platform admin and curator authority are separate from workspace roles.
+- Vytte Platform Admin authority is separate from workspace roles.
 - Publication, assessment creation, completion, report finalization, respondent-link lifecycle, share-link lifecycle, department-framework publication, and catalogue publication are auditable events.
 
 ## Current Boundaries
 
 - The seeded governed catalogue is demonstration-only.
-- A full curator UI for framework and catalogue management is not yet implemented.
+- A Platform Admin control center exists for official content, publication, roles, workspace oversight, share-link control, and audit review.
 - Facility profile selection exists during project creation; profile editing after project creation is not yet exposed.
 - PostgreSQL parity and concurrency verification remain release gates.
 - Additional response types require renderer, storage, validation, completeness, snapshot, and scoring contracts before publication.

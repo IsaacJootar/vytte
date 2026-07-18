@@ -29,12 +29,14 @@ return new class extends Migration
             $table->foreign('module_id')->references('module_id')->on('assessment_modules');
         });
 
-        Schema::create('module_domains', function (Blueprint $table) {
-            $table->increments('module_domain_id');
+        Schema::create('question_groups', function (Blueprint $table) {
+            $table->increments('question_group_id');
             $table->unsignedInteger('module_id');
-            $table->smallInteger('domain_number');
-            $table->string('domain_label', 150);
-            $table->unique(['module_id', 'domain_number']);
+            $table->smallInteger('group_number');
+            $table->string('group_label', 150);
+            $table->string('status', 20)->default('ACTIVE');
+            $table->timestamps();
+            $table->unique(['module_id', 'group_number']);
             $table->foreign('module_id')->references('module_id')->on('assessment_modules');
         });
 
@@ -52,7 +54,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('respondent_roles');
-        Schema::dropIfExists('module_domains');
+        Schema::dropIfExists('question_groups');
         Schema::dropIfExists('target_category_default_modules');
         Schema::dropIfExists('assessment_modules');
     }
