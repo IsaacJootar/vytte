@@ -6,19 +6,27 @@ use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\FacilityProfile;
+use App\Models\FrameworkIndicator;
+use App\Models\FrameworkQuestionPlacement;
+use App\Models\FrameworkSection;
 use App\Models\HealthDomain;
+use App\Models\Question;
+use App\Models\QuestionNumericBand;
+use App\Models\QuestionOption;
+use App\Models\QuestionVersion;
 use App\Services\CataloguePublishingService;
 use App\Services\DepartmentFrameworkPublishingService;
+use App\Services\QuestionVersionPublishingService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class PlatformGovernedDemoSeeder extends Seeder
 {
     public function run(): void
     {
         $modules = $this->seedDemoDepartments();
-        $frameworks = $this->seedFrameworkVersions($modules);
+        $questionVersions = $this->seedQuestionBank($modules);
+        $frameworks = $this->seedFrameworkVersions($modules, $questionVersions);
         $profiles = $this->seedFacilityProfiles($modules);
         $this->seedCatalogueReleases($frameworks, $profiles);
     }
@@ -46,52 +54,94 @@ class PlatformGovernedDemoSeeder extends Seeder
             );
             $module->update(['requires_consent' => $requiresConsent]);
             $modules[$code] = $module;
-            $this->seedDemoQuestions($module, $description, $domainCode);
+            $this->ensureDemoScoringProfile($module, $description, $domainCode);
         }
 
         return $modules;
     }
 
-    private function seedDemoQuestions(AssessmentModule $module, string $description, string $domainCode): void
+    private function ensureDemoScoringProfile(AssessmentModule $module, string $description, string $domainCode): void
     {
-        $singleSelectTypeId = DB::table('question_types')->where('type_code', 'SINGLE_SELECT')->value('type_id');
-        $openEndedTypeId = DB::table('question_types')->where('type_code', 'OPEN_ENDED')->value('type_id');
-        $numericTypeId = DB::table('question_types')->where('type_code', 'NUMERIC')->value('type_id');
         $domainId = DB::table('domains')->where('domain_code', $domainCode)->value('domain_id');
 
-        $moduleDomainId = DB::table('module_domains')
-            ->where('module_id', $module->module_id)
-            ->where('domain_number', 1)
-            ->value('module_domain_id');
-        if (! $moduleDomainId) {
-            $moduleDomainId = DB::table('module_domains')->insertGetId([
-                'module_id' => $module->module_id,
-                'domain_number' => 1,
-                'domain_label' => 'DEMONSTRATION READINESS',
-            ], 'module_domain_id');
-        }
+        DB::table('module_domains')->updateOrInsert(
+            ['module_id' => $module->module_id, 'domain_number' => 1],
+            ['domain_label' => 'DEMONSTRATION READINESS']
+        );
 
-        $subIndexId = DB::table('sub_indices')
-            ->where('module_id', $module->module_id)
-            ->where('acronym', $module->module_code.'R')
-            ->value('sub_index_id');
-        if (! $subIndexId) {
-            $subIndexId = DB::table('sub_indices')->insertGetId([
+        if (! DB::table('sub_indices')->where('module_id', $module->module_id)->where('acronym', $module->module_code.'R')->exists()) {
+            DB::table('sub_indices')->insert([
                 'module_id' => $module->module_id,
                 'domain_id' => $domainId,
                 'acronym' => $module->module_code.'R',
                 'full_name' => $module->module_name.' Readiness Score',
                 'description' => $description,
-            ], 'sub_index_id');
+            ]);
+        }
+    }
+
+    private function seedQuestionBank(array $modules): array
+    {
+        $singleSelectTypeId = DB::table('question_types')->where('type_code', 'SINGLE_SELECT')->value('type_id');
+        $openEndedTypeId = DB::table('question_types')->where('type_code', 'OPEN_ENDED')->value('type_id');
+        $numericTypeId = DB::table('question_types')->where('type_code', 'NUMERIC')->value('type_id');
+
+        $versions = [];
+        foreach ($modules as $code => $module) {
+            $definitions = $this->questionDefinitionsFor($module, $singleSelectTypeId, $openEndedTypeId, $numericTypeId);
+            foreach ($definitions as $definition) {
+                $question = $this->upsertQuestionIdentity($module, $definition);
+                $this->mirrorRuntimeQuestionShape($question, $definition);
+                $versions[$definition['key']] = $this->publishQuestionVersion($question, 1, $definition);
+            }
         }
 
-        $questions = [
+        $shared = $versions['DOPD_PROCESS'];
+        $futureVersion = QuestionVersion::firstOrCreate(
+            ['question_id' => $shared->question_id, 'version_number' => 2],
             [
-                'code' => "{$module->module_code}.DEMO.Q1",
-                'text' => "Does {$module->module_name} have a documented service process available today?",
+                'question_id' => $shared->question_id,
+                'version_number' => 2,
+                'status' => QuestionVersion::STATUS_APPROVED,
+                'question_text' => 'Does the service routinely use its documented process during day-to-day operations?',
                 'type_id' => $singleSelectTypeId,
+                'options' => $shared->options,
+                'numeric_config' => null,
+                'numeric_bands' => [],
+                'requires_observation' => false,
+                'methodology_notes' => 'Demonstration-only future wording. Existing published frameworks intentionally remain pinned to version 1.',
+                'source_summary' => 'Vytte demonstration content; not validated production methodology.',
+                'approved_by' => null,
+                'effective_date' => now()->toDateString(),
+            ]
+        );
+        if ($futureVersion->status !== QuestionVersion::STATUS_PUBLISHED) {
+            app(QuestionVersionPublishingService::class)->publish($futureVersion);
+        }
+
+        return $versions;
+    }
+
+    private function questionDefinitionsFor(AssessmentModule $module, int $singleSelectTypeId, int $openEndedTypeId, int $numericTypeId): array
+    {
+        $isSharedProcessQuestion = $module->module_code === 'DOPD';
+        $processCode = $isSharedProcessQuestion ? 'DEMO.SERVICE_PROCESS' : "{$module->module_code}.DEMO.Q1";
+        $processText = $isSharedProcessQuestion
+            ? 'Does the service have a documented process available today?'
+            : "Does {$module->module_name} have a documented service process available today?";
+
+        return [
+            [
+                'key' => "{$module->module_code}_PROCESS",
+                'code' => $processCode,
+                'text' => $processText,
+                'display_text' => "Does {$module->module_name} have a documented service process available today?",
+                'type_id' => $singleSelectTypeId,
+                'response_type' => 'SINGLE_SELECT',
                 'is_scored' => true,
                 'order' => 1,
+                'indicator' => 'SERVICE_PROCESS',
+                'evidence' => 'Optional: note where the process is documented or observed.',
                 'options' => [
                     ['Yes, current and used', 100, false],
                     ['Partially available', 50, false],
@@ -99,11 +149,16 @@ class PlatformGovernedDemoSeeder extends Seeder
                 ],
             ],
             [
+                'key' => "{$module->module_code}_SUPPLIES",
                 'code' => "{$module->module_code}.DEMO.Q2",
                 'text' => "Are minimum supplies for {$module->module_name} available at the time of assessment?",
+                'display_text' => null,
                 'type_id' => $singleSelectTypeId,
+                'response_type' => 'SINGLE_SELECT',
                 'is_scored' => true,
                 'order' => 2,
+                'indicator' => 'SUPPLIES',
+                'evidence' => 'Optional: summarize observed supply availability.',
                 'options' => [
                     ['Available and adequate', 100, false],
                     ['Available but inadequate', 50, false],
@@ -111,102 +166,261 @@ class PlatformGovernedDemoSeeder extends Seeder
                 ],
             ],
             [
+                'key' => "{$module->module_code}_CONTEXT",
                 'code' => "{$module->module_code}.DEMO.Q3",
                 'text' => "Add any local context that would help interpret {$module->module_name} readiness.",
+                'display_text' => null,
                 'type_id' => $openEndedTypeId,
+                'response_type' => 'OPEN_ENDED',
                 'is_scored' => false,
                 'order' => 3,
+                'indicator' => 'CONTEXT',
+                'evidence' => 'This answer provides useful context for analysis and reporting.',
                 'options' => [],
             ],
             [
+                'key' => "{$module->module_code}_VOLUME",
                 'code' => "{$module->module_code}.DEMO.Q4",
                 'text' => "Record the most relevant service-volume measure for {$module->module_name}.",
+                'display_text' => null,
                 'type_id' => $numericTypeId,
+                'response_type' => 'NUMERIC',
                 'is_scored' => false,
                 'order' => 4,
-                'numeric_unit' => 'count',
-                'numeric_min' => 0,
-                'numeric_max' => 365,
-                'numeric_step' => 1,
+                'indicator' => 'SERVICE_VOLUME',
+                'evidence' => 'This numeric answer provides useful context for analysis and reporting.',
+                'numeric_config' => ['unit' => 'count', 'min' => 0, 'max' => 365, 'step' => 1],
                 'options' => [],
             ],
         ];
+    }
 
-        foreach ($questions as $index => $definition) {
-            $questionId = DB::table('questions')->where('question_code', $definition['code'])->value('question_id');
-            if (! $questionId) {
-                $questionId = (string) Str::uuid();
-                DB::table('questions')->insert([
-                    'question_id' => $questionId,
-                    'module_id' => $module->module_id,
-                    'module_domain_id' => $moduleDomainId,
-                    'question_number' => $index + 1,
-                    'question_code' => $definition['code'],
-                    'question_text' => $definition['text'],
-                    'type_id' => $definition['type_id'],
-                    'requires_observation' => false,
-                    'display_order' => $definition['order'],
-                    'is_active' => true,
-                    'is_scored' => $definition['is_scored'],
-                    'source' => 'DEMO_CURATED',
-                    'question_status' => 'APPROVED',
-                    'standard_alignment_status' => 'DEMO_CONTENT',
-                    'numeric_unit' => $definition['numeric_unit'] ?? null,
-                    'numeric_min' => $definition['numeric_min'] ?? null,
-                    'numeric_max' => $definition['numeric_max'] ?? null,
-                    'numeric_step' => $definition['numeric_step'] ?? null,
-                ]);
+    private function upsertQuestionIdentity(AssessmentModule $module, array $definition): Question
+    {
+        $moduleDomainId = DB::table('module_domains')
+            ->where('module_id', $module->module_id)
+            ->where('domain_number', 1)
+            ->value('module_domain_id');
+
+        return Question::firstOrCreate(
+            ['question_code' => $definition['code']],
+            [
+                'module_id' => $module->module_id,
+                'module_domain_id' => $moduleDomainId,
+                'question_number' => $definition['order'],
+                'question_text' => $definition['text'],
+                'type_id' => $definition['type_id'],
+                'requires_observation' => false,
+                'display_order' => $definition['order'],
+                'is_active' => true,
+                'is_scored' => $definition['is_scored'],
+                'source' => 'DEMO_CURATED',
+                'question_status' => 'APPROVED',
+                'standard_alignment_status' => 'DEMO_CONTENT',
+                'numeric_unit' => $definition['numeric_config']['unit'] ?? null,
+                'numeric_min' => $definition['numeric_config']['min'] ?? null,
+                'numeric_max' => $definition['numeric_config']['max'] ?? null,
+                'numeric_step' => $definition['numeric_config']['step'] ?? null,
+            ]
+        );
+    }
+
+    private function publishQuestionVersion(Question $question, int $versionNumber, array $definition): QuestionVersion
+    {
+        $version = QuestionVersion::firstOrCreate(
+            ['question_id' => $question->question_id, 'version_number' => $versionNumber],
+            [
+                'status' => QuestionVersion::STATUS_APPROVED,
+                'question_text' => $definition['text'],
+                'type_id' => $definition['type_id'],
+                'options' => $this->optionPayload($question, $definition['options']),
+                'numeric_config' => $definition['numeric_config'] ?? null,
+                'numeric_bands' => $definition['numeric_bands'] ?? [],
+                'requires_observation' => false,
+                'methodology_notes' => 'Demonstration-only Vytte methodology fixture.',
+                'source_summary' => 'Vytte demonstration content; not validated production methodology.',
+                'approved_by' => null,
+                'effective_date' => now()->toDateString(),
+            ]
+        );
+
+        if ($version->status !== QuestionVersion::STATUS_PUBLISHED) {
+            $version = app(QuestionVersionPublishingService::class)->publish($version);
+        }
+
+        return $version->fresh(['question', 'questionType']);
+    }
+
+    private function optionPayload(Question $question, array $options): array
+    {
+        return collect($options)->map(fn ($option, $index) => [
+            'option_id' => QuestionOption::where('question_id', $question->question_id)
+                ->where('option_order', $index + 1)
+                ->value('option_id'),
+            'option_key' => 'OPT'.($index + 1),
+            'option_label' => $option[0],
+            'option_order' => $index + 1,
+            'score_weight' => $option[1],
+            'critical_failure' => (bool) $option[2],
+        ])->values()->all();
+    }
+
+    private function mirrorRuntimeQuestionShape(Question $question, array $definition): void
+    {
+        foreach ($definition['options'] as $optionOrder => [$label, $weight, $criticalFailure]) {
+            QuestionOption::firstOrCreate(
+                ['question_id' => $question->question_id, 'option_order' => $optionOrder + 1],
+                [
+                    'option_label' => $label,
+                    'score_weight' => $weight,
+                    'is_flagged_pain_point' => $criticalFailure,
+                ]
+            );
+        }
+
+        foreach ($definition['numeric_bands'] ?? [] as $bandIndex => $bandData) {
+            QuestionNumericBand::firstOrCreate(
+                ['question_id' => $question->question_id, 'band_order' => $bandIndex + 1],
+                [
+                    'min_value' => $bandData['min_value'] ?? null,
+                    'max_value' => $bandData['max_value'] ?? null,
+                    'score_weight' => (float) $bandData['score_weight'],
+                ]
+            );
+        }
+    }
+
+    private function seedFrameworkVersions(array $modules, array $questionVersions): array
+    {
+        $frameworks = [];
+        foreach ($modules as $code => $module) {
+            $framework = $this->createFramework(
+                $module,
+                DepartmentFrameworkVersion::TYPE_DEPARTMENT,
+                1,
+                $module->module_name.' Demonstration Framework v1',
+                'Demonstration-only official Vytte department framework used to exercise governed composition.',
+            );
+
+            $this->placeQuestions($framework, [
+                [$questionVersions["{$code}_PROCESS"], $code === 'DOPD' ? "Does {$module->module_name} have a documented service process available today?" : null, 1, true, 'SERVICE_PROCESS'],
+                [$questionVersions["{$code}_SUPPLIES"], null, 2, true, 'SUPPLIES'],
+                [$questionVersions["{$code}_CONTEXT"], null, 3, false, 'CONTEXT'],
+                [$questionVersions["{$code}_VOLUME"], null, 4, false, 'SERVICE_VOLUME'],
+            ]);
+
+            if ($framework->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED) {
+                $framework = app(DepartmentFrameworkPublishingService::class)->publish($framework);
             }
+            $frameworks[$code] = $framework;
+        }
 
-            foreach ($definition['options'] as $optionOrder => [$label, $weight, $criticalFailure]) {
-                $exists = DB::table('question_options')
-                    ->where('question_id', $questionId)
-                    ->where('option_order', $optionOrder + 1)
-                    ->exists();
-                if (! $exists) {
-                    DB::table('question_options')->insert([
-                        'question_id' => $questionId,
-                        'option_label' => $label,
-                        'option_order' => $optionOrder + 1,
-                        'score_weight' => $weight,
-                        'is_flagged_pain_point' => $criticalFailure,
-                    ]);
-                }
-            }
+        $focused = $this->createFramework(
+            $modules['DMNH'],
+            DepartmentFrameworkVersion::TYPE_FOCUSED,
+            2,
+            'Focused Mental Health Demonstration Framework v1',
+            'Focused demonstration framework deliberately scoped to basic mental health readiness.',
+        );
+        $this->placeQuestions($focused, [
+            [$questionVersions['DOPD_PROCESS'], 'Does Mental Health have a documented service process available today?', 1, true, 'SERVICE_PROCESS'],
+            [$questionVersions['DMNH_SUPPLIES'], null, 2, true, 'SUPPLIES'],
+            [$questionVersions['DMNH_CONTEXT'], null, 3, false, 'CONTEXT'],
+            [$questionVersions['DMNH_VOLUME'], null, 4, false, 'SERVICE_VOLUME'],
+        ]);
+        if ($focused->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED) {
+            $focused = app(DepartmentFrameworkPublishingService::class)->publish($focused);
+        }
+        $frameworks['DMNH_FOCUSED'] = $focused;
 
-            if ($definition['is_scored']) {
+        return $frameworks;
+    }
+
+    private function createFramework(AssessmentModule $module, string $type, int $versionNumber, string $name, string $description): DepartmentFrameworkVersion
+    {
+        return DepartmentFrameworkVersion::firstOrCreate(
+            ['module_id' => $module->module_id, 'version_number' => $versionNumber],
+            [
+                'framework_type' => $type,
+                'display_name' => $name,
+                'description' => $description,
+                'purpose' => $description,
+                'source_authority' => 'Vytte demonstration content',
+                'license_code' => 'DEMO-NOT-FOR-PRODUCTION',
+                'methodology_notes' => 'Demo-only content proving reusable question versions and framework-specific placements.',
+                'source_summary' => 'Internally curated demonstration fixture; not validated clinical methodology.',
+                'provenance' => ['content_kind' => 'demonstration'],
+                'critical_failure_rules' => ['uses_flagged_options' => true],
+                'effective_date' => now()->toDateString(),
+            ]
+        );
+    }
+
+    private function placeQuestions(DepartmentFrameworkVersion $framework, array $placements): void
+    {
+        $section = FrameworkSection::firstOrCreate(
+            ['framework_version_id' => $framework->framework_version_id, 'section_code' => 'DEMO_READINESS'],
+            [
+                'section_name' => 'Demonstration Readiness',
+                'purpose' => 'Prove framework sections independent from later analysis domains.',
+                'display_order' => 1,
+            ]
+        );
+
+        $indicators = [];
+        foreach ([
+            'SERVICE_PROCESS' => 'Documented service process',
+            'SUPPLIES' => 'Minimum service supplies',
+            'CONTEXT' => 'Local interpretation context',
+            'SERVICE_VOLUME' => 'Service volume context',
+        ] as $code => $name) {
+            $indicators[$code] = FrameworkIndicator::firstOrCreate(
+                ['framework_version_id' => $framework->framework_version_id, 'indicator_code' => $code],
+                [
+                    'framework_section_id' => $section->framework_section_id,
+                    'indicator_name' => $name,
+                    'description' => 'Demonstration-only indicator.',
+                    'display_order' => count($indicators) + 1,
+                ]
+            );
+        }
+
+        $subIndexId = DB::table('sub_indices')
+            ->where('module_id', $framework->module_id)
+            ->where('acronym', $framework->module?->module_code.'R')
+            ->value('sub_index_id');
+
+        foreach ($placements as [$questionVersion, $displayText, $order, $scored, $indicatorCode]) {
+            FrameworkQuestionPlacement::firstOrCreate(
+                ['framework_version_id' => $framework->framework_version_id, 'display_order' => $order],
+                [
+                    'framework_section_id' => $section->framework_section_id,
+                    'framework_indicator_id' => $indicators[$indicatorCode]->framework_indicator_id,
+                    'question_id' => $questionVersion->question_id,
+                    'question_version_id' => $questionVersion->question_version_id,
+                    'sub_index_id' => $scored ? $subIndexId : null,
+                    'is_required' => $scored,
+                    'applicability' => ['demo' => true],
+                    'evidence_expectation' => $indicatorCode === 'CONTEXT' || $indicatorCode === 'SERVICE_VOLUME'
+                        ? 'This answer provides useful context for analysis and reporting.'
+                        : 'Optional supporting evidence may be added to explain the answer.',
+                    'weight' => 1,
+                    'scoring_contribution' => $scored,
+                    'criticality' => $indicatorCode === 'SERVICE_PROCESS' ? 'CRITICAL_IF_FLAGGED' : 'STANDARD',
+                    'help_text' => 'Demonstration-only placement.',
+                    'local_display_text' => $displayText,
+                    'metadata' => ['demo_only' => true],
+                ]
+            );
+
+            if ($scored) {
                 DB::table('sub_index_questions')->insertOrIgnore([
                     'sub_index_id' => $subIndexId,
-                    'question_id' => $questionId,
+                    'question_id' => $questionVersion->question_id,
                     'weight' => 1,
                 ]);
             }
         }
-    }
-
-    private function seedFrameworkVersions(array $modules): array
-    {
-        $frameworks = [];
-        foreach ($modules as $code => $module) {
-            $version = DepartmentFrameworkVersion::firstOrCreate(
-                ['module_id' => $module->module_id, 'version_number' => 1],
-                [
-                    'display_name' => $module->module_name.' Demonstration Framework v1',
-                    'description' => 'Demonstration-only official Vytte framework used to exercise the governed composition architecture.',
-                    'source_authority' => 'Vytte demonstration content',
-                    'license_code' => 'DEMO-NOT-FOR-PRODUCTION',
-                    'provenance' => ['content_kind' => 'demonstration'],
-                    'critical_failure_rules' => ['uses_flagged_options' => true],
-                ]
-            );
-
-            if ($version->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED) {
-                $version = app(DepartmentFrameworkPublishingService::class)->publish($version);
-            }
-            $frameworks[$code] = $version;
-        }
-
-        return $frameworks;
     }
 
     private function seedFacilityProfiles(array $modules): array
@@ -282,7 +496,7 @@ class PlatformGovernedDemoSeeder extends Seeder
             ['release_code' => 'DEMO_MENTAL_HEALTH_FOCUSED_V1'],
             [
                 'release_name' => 'Demo Focused Mental Health Assessment',
-                'description' => 'Focused demonstration assessment that opens only the Mental Health framework.',
+                'description' => 'Focused demonstration assessment that opens only the Mental Health focused framework.',
                 'creation_path' => 'FOCUSED',
                 'health_domain_id' => $mentalHealthId,
                 'aggregation_policy' => [
@@ -293,7 +507,7 @@ class PlatformGovernedDemoSeeder extends Seeder
             ]
         );
         $this->attachFrameworks($focusedRelease, [
-            ['DMNH', 'REQUIRED', 'Mental Health', 1],
+            ['DMNH_FOCUSED', 'REQUIRED', 'Mental Health', 1],
         ], $frameworks);
         if ($focusedRelease->status !== AssessmentCatalogueRelease::STATUS_PUBLISHED) {
             app(CataloguePublishingService::class)->publish($focusedRelease);

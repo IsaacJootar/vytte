@@ -166,9 +166,11 @@ class PlatformGovernedCompositionTest extends TestCase
 
         $questionId = $assessment->snapshot->payload[0]['questions'][0]['question_id'];
         Question::where('question_id', $questionId)->update(['question_text' => 'Future version question text']);
+        $nextVersion = DepartmentFrameworkVersion::where('module_id', $assessment->snapshot->payload[0]['module_id'])
+            ->max('version_number') + 1;
         DepartmentFrameworkVersion::create([
             'module_id' => $assessment->snapshot->payload[0]['module_id'],
-            'version_number' => 2,
+            'version_number' => $nextVersion,
             'display_name' => 'Future Mental Health Demo Framework',
             'source_authority' => 'Vytte demonstration content',
             'license_code' => 'DEMO-NOT-FOR-PRODUCTION',

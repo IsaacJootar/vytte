@@ -69,6 +69,17 @@ class Question extends Model
             ->orderBy('option_order');
     }
 
+    public function versions(): HasMany
+    {
+        return $this->hasMany(QuestionVersion::class, 'question_id', 'question_id')
+            ->orderBy('version_number');
+    }
+
+    public function placements(): HasMany
+    {
+        return $this->hasMany(FrameworkQuestionPlacement::class, 'question_id', 'question_id');
+    }
+
     public function numericBands(): HasMany
     {
         return $this->hasMany(QuestionNumericBand::class, 'question_id', 'question_id')

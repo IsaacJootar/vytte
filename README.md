@@ -74,6 +74,10 @@ The full test suite is expected to run against PostgreSQL.
 - `docs/architecture/CURRENT_ARCHITECTURE.md` - implemented platform model
 - `docs/architecture/CURRENT_ASSESSMENT_FLOW.md` - assessment lifecycle
 - `docs/architecture/DATA_MODEL_AUDIT.md` - schema authority
+- `docs/architecture/QUESTION_BANK_ARCHITECTURE.md` - reusable question identity, question version, and framework placement model
+- `docs/architecture/OFFICIAL_ASSESSMENT_CONTENT_LIFECYCLE.md` - official content publication lifecycle
+- `docs/architecture/WORKSPACE_CUSTOM_ASSESSMENT_ARCHITECTURE.md` - customer-created assessment boundaries
+- `docs/architecture/AI_ASSISTED_ASSESSMENT_BOUNDARIES.md` - future AI drafting limits
 - `docs/architecture/CONTENT_GOVERNANCE.md` - publication and curation rules
 - `docs/architecture/SCORING_CONTRACT.md` - scoring and aggregation rules
 - `docs/architecture/DECISION_LOG.md` - controlling decisions

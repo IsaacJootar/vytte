@@ -3,77 +3,136 @@
 namespace App\Services;
 
 use App\Models\AssessmentModule;
+use App\Models\DepartmentFrameworkVersion;
 
 class FrameworkContentService
 {
-    public function modulePayload(AssessmentModule $module, int $displayOrder = 1, ?string $areaLabel = null): array
+    public function frameworkPayload(DepartmentFrameworkVersion $version, int $displayOrder = 1, ?string $areaLabel = null): array
     {
-        $module->loadMissing([
-            'questions.options.translations',
-            'questions.numericBands',
-            'questions.translations',
-            'questions.questionType',
-            'questions.moduleDomain',
-            'subIndices.domain',
-            'subIndices.questions',
+        $version->loadMissing([
+            'module',
+            'sections',
+            'indicators.section',
+            'questionPlacements.section',
+            'questionPlacements.indicator',
+            'questionPlacements.question',
+            'questionPlacements.questionVersion.questionType',
+            'questionPlacements.subIndex.domain',
         ]);
 
-        $activeQuestions = $module->questions->where('is_active', true)->values();
-        $activeQuestionIds = $activeQuestions->pluck('question_id');
+        $placements = $version->questionPlacements
+            ->sortBy('display_order')
+            ->values();
+
+        $questions = $placements->map(function ($placement) {
+            $questionVersion = $placement->questionVersion;
+            $responseType = $questionVersion->questionType?->type_code;
+            $renderedText = $placement->local_display_text ?: $questionVersion->question_text;
+
+            return [
+                'framework_question_placement_id' => $placement->framework_question_placement_id,
+                'question_id' => $placement->question_id,
+                'question_code' => $placement->question?->question_code,
+                'question_version_id' => $placement->question_version_id,
+                'question_version_number' => (int) $questionVersion->version_number,
+                'question_version_hash' => $questionVersion->content_hash,
+                'question_text' => $renderedText,
+                'canonical_question_text' => $questionVersion->question_text,
+                'response_type' => $responseType,
+                'display_order' => (int) $placement->display_order,
+                'section_id' => $placement->framework_section_id,
+                'section_code' => $placement->section?->section_code,
+                'section_name' => $placement->section?->section_name,
+                'section_display_order' => $placement->section?->display_order,
+                'indicator_id' => $placement->framework_indicator_id,
+                'indicator_code' => $placement->indicator?->indicator_code,
+                'indicator_name' => $placement->indicator?->indicator_name,
+                'indicator_display_order' => $placement->indicator?->display_order,
+                'domain_label' => $placement->section?->section_name,
+                'domain_number' => $placement->section?->display_order,
+                'is_required' => (bool) $placement->is_required,
+                'is_scored' => (bool) $placement->scoring_contribution,
+                'requires_observation' => (bool) $questionVersion->requires_observation,
+                'evidence_expectation' => $placement->evidence_expectation,
+                'applicability' => $placement->applicability,
+                'weight' => (float) $placement->weight,
+                'criticality' => $placement->criticality,
+                'help_text' => $placement->help_text,
+                'respondent_role_hint' => $questionVersion->respondent_role_hint,
+                'methodology_notes' => $questionVersion->methodology_notes,
+                'source_summary' => $questionVersion->source_summary,
+                'numeric_config' => $responseType === 'NUMERIC' ? $questionVersion->numeric_config : null,
+                'numeric_bands' => collect($questionVersion->numeric_bands ?? [])->values()->all(),
+                'options' => collect($questionVersion->options ?? [])->values()->all(),
+            ];
+        })->values();
+
+        $scoringProfile = $placements
+            ->filter(fn ($placement) => $placement->scoring_contribution && $placement->subIndex)
+            ->groupBy('sub_index_id')
+            ->map(function ($group) {
+                $first = $group->first();
+                $subIndex = $first->subIndex;
+
+                return [
+                    'sub_index_id' => $subIndex->sub_index_id,
+                    'acronym' => $subIndex->acronym,
+                    'full_name' => $subIndex->full_name,
+                    'domain_id' => $subIndex->domain_id,
+                    'domain_code' => $subIndex->domain?->domain_code,
+                    'domain_name' => $subIndex->domain?->domain_name,
+                    'domain_display_order' => $subIndex->domain?->display_order,
+                    'questions' => $group->map(fn ($placement) => [
+                        'question_id' => $placement->question_id,
+                        'question_version_id' => $placement->question_version_id,
+                        'framework_question_placement_id' => $placement->framework_question_placement_id,
+                        'weight' => (float) $placement->weight,
+                    ])->values()->all(),
+                ];
+            })->values();
 
         return [
-            'module_id' => $module->module_id,
-            'module_code' => $module->module_code,
-            'module_name' => $module->module_name,
-            'requires_consent' => (bool) $module->requires_consent,
+            'module_id' => $version->module_id,
+            'module_code' => $version->module?->module_code,
+            'module_name' => $version->module?->module_name,
+            'framework_version_id' => $version->framework_version_id,
+            'framework_type' => $version->framework_type,
+            'framework_version_number' => (int) $version->version_number,
+            'framework_display_name' => $version->display_name,
+            'purpose' => $version->purpose,
+            'methodology_notes' => $version->methodology_notes,
+            'source_summary' => $version->source_summary,
+            'requires_consent' => (bool) $version->module?->requires_consent,
             'display_order' => $displayOrder,
             'area_label' => $areaLabel,
-            'questions' => $activeQuestions->map(fn ($question) => [
-                'question_id' => $question->question_id,
-                'question_code' => $question->question_code,
-                'question_text' => $question->question_text,
-                'translations' => $question->translations->pluck('question_text', 'locale')->all(),
-                'response_type' => $question->questionType?->type_code,
-                'display_order' => $question->display_order,
-                'domain_label' => $question->moduleDomain?->domain_label,
-                'domain_number' => $question->moduleDomain?->domain_number,
-                'is_scored' => $question->is_scored,
-                'requires_observation' => $question->requires_observation,
-                'numeric_config' => $question->questionType?->type_code === 'NUMERIC' ? [
-                    'unit' => $question->numeric_unit,
-                    'min' => $question->numeric_min !== null ? (float) $question->numeric_min : null,
-                    'max' => $question->numeric_max !== null ? (float) $question->numeric_max : null,
-                    'step' => $question->numeric_step !== null ? (float) $question->numeric_step : null,
-                ] : null,
-                'numeric_bands' => $question->numericBands->map(fn ($band) => [
-                    'min_value' => $band->min_value !== null ? (float) $band->min_value : null,
-                    'max_value' => $band->max_value !== null ? (float) $band->max_value : null,
-                    'score_weight' => (float) $band->score_weight,
-                    'band_order' => $band->band_order,
-                ])->values()->all(),
-                'options' => $question->options->map(fn ($option) => [
-                    'option_id' => $option->option_id,
-                    'option_label' => $option->option_label,
-                    'translations' => $option->translations->pluck('option_label', 'locale')->all(),
-                    'option_order' => $option->option_order,
-                    'score_weight' => $option->score_weight,
-                    'critical_failure' => (bool) $option->is_flagged_pain_point,
-                ])->values()->all(),
+            'sections' => $version->sections->map(fn ($section) => [
+                'framework_section_id' => $section->framework_section_id,
+                'section_code' => $section->section_code,
+                'section_name' => $section->section_name,
+                'purpose' => $section->purpose,
+                'display_order' => (int) $section->display_order,
             ])->values()->all(),
-            'scoring_profile' => $module->subIndices->map(fn ($subIndex) => [
-                'sub_index_id' => $subIndex->sub_index_id,
-                'acronym' => $subIndex->acronym,
-                'full_name' => $subIndex->full_name,
-                'domain_id' => $subIndex->domain_id,
-                'domain_code' => $subIndex->domain?->domain_code,
-                'domain_name' => $subIndex->domain?->domain_name,
-                'domain_display_order' => $subIndex->domain?->display_order,
-                'questions' => $subIndex->questions->whereIn('question_id', $activeQuestionIds)->map(fn ($question) => [
-                    'question_id' => $question->question_id,
-                    'weight' => (float) ($question->pivot->weight ?? 1.0),
-                ])->values()->all(),
+            'indicators' => $version->indicators->map(fn ($indicator) => [
+                'framework_indicator_id' => $indicator->framework_indicator_id,
+                'framework_section_id' => $indicator->framework_section_id,
+                'indicator_code' => $indicator->indicator_code,
+                'indicator_name' => $indicator->indicator_name,
+                'description' => $indicator->description,
+                'display_order' => (int) $indicator->display_order,
             ])->values()->all(),
+            'questions' => $questions->all(),
+            'scoring_profile' => $scoringProfile->all(),
         ];
+    }
+
+    public function modulePayload(AssessmentModule $module, int $displayOrder = 1, ?string $areaLabel = null): array
+    {
+        $version = $module->frameworkVersions()
+            ->where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)
+            ->orderByDesc('version_number')
+            ->firstOrFail();
+
+        return $this->frameworkPayload($version, $displayOrder, $areaLabel);
     }
 
     public function hash(array $payload): string

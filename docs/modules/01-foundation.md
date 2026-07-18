@@ -7,7 +7,7 @@ Everything needed to have a running, deployable, testable skeleton:
 - Laravel Breeze auth (register/login/logout/password reset)
 - Workspace auto-creation on signup (transaction: user + workspace + workspace_member OWNER)
 - BelongsToWorkspace global scope trait
-- All 42 migrations (schema from phsai_schema.sql v1.1)
+- Laravel migrations as the schema source of truth
 - All reference seeders (domains, modules, sub-indices, questions, platform_settings)
 - Tailwind v4 base layout (authenticated + guest shells)
 - Dashboard stub (workspace name + welcome message)
