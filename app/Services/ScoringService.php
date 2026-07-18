@@ -51,6 +51,14 @@ class ScoringService
             $responses = $responses->keyBy('question_id');
         }
 
+        $snapshot = $assessment->snapshot()->first();
+        $criticalPolicy = $snapshot?->aggregation_policy['critical_failures'] ?? [];
+        $criticalFailuresEnabled = (bool) ($criticalPolicy['enabled'] ?? false);
+        $criticalThreshold = array_key_exists('option_score_at_or_below', $criticalPolicy)
+            ? (float) $criticalPolicy['option_score_at_or_below']
+            : null;
+        $criticalFailureTriggered = false;
+
         $subIndices = $this->scoringProfile($assessment, $moduleIds);
         $subIndexResults = [];
 
@@ -70,6 +78,7 @@ class ScoringService
                 $response = $responses->get($question['question_id']);
 
                 if ($response) {
+                    $selectedOption = null;
                     if (($question['response_type'] ?? null) === 'NUMERIC') {
                         if ($response->value_numeric === null) {
                             continue;
@@ -103,6 +112,13 @@ class ScoringService
 
                     if ($questionScaleMaximum !== null && $questionScaleMaximum <= 1.0) {
                         $questionScore *= 100;
+                    }
+
+                    if ($criticalFailuresEnabled && (
+                        ($selectedOption['critical_failure'] ?? false)
+                        || ($criticalThreshold !== null && $questionScore <= $criticalThreshold)
+                    )) {
+                        $criticalFailureTriggered = true;
                     }
 
                     $weightedSum += $questionScore * $weight;
@@ -165,6 +181,11 @@ class ScoringService
                 2
             );
             $overallStatus = count($nonNullSubs) === count($subIndexResults) ? 'CALIBRATED' : 'PARTIAL';
+        }
+
+        if ($criticalFailureTriggered && ($criticalPolicy['overall_score'] ?? null) === 'ZERO') {
+            $overallScore = 0.0;
+            $overallStatus = 'CRITICAL_FAILURE';
         }
 
         return [

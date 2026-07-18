@@ -275,6 +275,7 @@
                                     ? (float) $assessment->score->overall_score
                                     : null;
                                 $assessmentTitle = $assessment->reportSnapshot?->payload['title']
+                                    ?? $assessment->catalogueRelease?->release_name
                                     ?? $assessment->templateVersion?->template?->template_name
                                     ?? ($assessment->moduleScope->where('in_scope', true)->count() === 1
                                         ? $assessment->moduleScope->where('in_scope', true)->first()?->module?->module_name

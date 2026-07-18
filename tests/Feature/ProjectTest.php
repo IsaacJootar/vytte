@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\Project;
+use App\Models\FacilityProfile;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -84,12 +86,15 @@ class ProjectTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         $this->seedReferenceData();
+        $this->seed(PlatformGovernedDemoSeeder::class);
+        $profile = FacilityProfile::where('profile_code', 'PRIMARY_HEALTH_CENTRE')->firstOrFail();
 
         $this->actingAs($user)->post(route('projects.store'), [
             'name' => 'Q2 Assessment',
             'description' => 'Lagos PHC assessment.',
             'target_name' => 'Ikeja PHC',
             'target_type_code' => 'HEALTH_FACILITY',
+            'facility_profile_id' => $profile->facility_profile_id,
             'country' => 'Nigeria',
             'region' => 'Lagos',
             'sub_region' => 'Ikeja',
@@ -105,6 +110,7 @@ class ProjectTest extends TestCase
         $this->assertNotNull($target);
         $this->assertEquals('Ikeja PHC', $target->name);
         $this->assertEquals('HEALTH_FACILITY', $target->target_type_code);
+        $this->assertEquals($profile->facility_profile_id, $target->facility_profile_id);
         $this->assertEquals('Nigeria', $target->country);
         $this->assertEquals('Lagos', $target->region);
         $this->assertEquals('Ikeja', $target->sub_region);

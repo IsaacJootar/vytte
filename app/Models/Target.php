@@ -26,6 +26,7 @@ class Target extends Model
         'ownership',
         'custom_setting_label',
         'uses_departments',
+        'facility_profile_id',
         'latitude',
         'longitude',
     ];
@@ -47,6 +48,11 @@ class Target extends Model
     public function targetType(): BelongsTo
     {
         return $this->belongsTo(TargetType::class, 'target_type_code', 'target_type_code');
+    }
+
+    public function facilityProfile(): BelongsTo
+    {
+        return $this->belongsTo(FacilityProfile::class, 'facility_profile_id', 'facility_profile_id');
     }
 
     public function projects(): BelongsToMany

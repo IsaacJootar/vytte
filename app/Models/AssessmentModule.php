@@ -50,6 +50,12 @@ class AssessmentModule extends Model
             ->orderBy('display_order');
     }
 
+    public function frameworkVersions(): HasMany
+    {
+        return $this->hasMany(DepartmentFrameworkVersion::class, 'module_id', 'module_id')
+            ->orderByDesc('version_number');
+    }
+
     public function getRouteKeyName(): string
     {
         return 'module_id';

@@ -53,6 +53,7 @@ class ReportSnapshotService
             'score.maturityLevel',
             'snapshot',
             'templateVersion.template',
+            'catalogueRelease',
             'moduleScope.module',
             'aggregationResult.finalizer',
         ]);
@@ -71,7 +72,8 @@ class ReportSnapshotService
                 'area_label' => null,
             ])->values()->all();
 
-        $title = $assessment->templateVersion?->template?->template_name
+        $title = $assessment->catalogueRelease?->release_name
+            ?? $assessment->templateVersion?->template?->template_name
             ?? (count($modules) === 1 ? ($modules[0]['module_name'] ?? 'Assessment') : 'Comprehensive Health Assessment');
 
         [$subIndices, $domains] = $contentModules

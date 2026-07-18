@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\FacilityProfile;
 use App\Models\Target;
 use App\Models\TargetType;
 use App\Services\PlanService;
@@ -36,8 +37,12 @@ class ProjectController extends Controller
             ->get();
 
         $countries = $this->countries();
+        $facilityProfiles = FacilityProfile::where('status', FacilityProfile::STATUS_PUBLISHED)
+            ->where('setting_type_code', 'HEALTH_FACILITY')
+            ->orderBy('display_order')
+            ->get();
 
-        return view('projects.create', compact('targetTypes', 'countries'));
+        return view('projects.create', compact('targetTypes', 'countries', 'facilityProfiles'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -54,6 +59,7 @@ class ProjectController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'target_name' => ['required', 'string', 'max:255'],
             'target_type_code' => ['required', 'string', 'exists:target_types,target_type_code'],
+            'facility_profile_id' => ['nullable', 'required_if:target_type_code,HEALTH_FACILITY', 'uuid', 'exists:facility_profiles,facility_profile_id'],
             'custom_setting_label' => ['nullable', 'required_if:target_type_code,CUSTOM', 'string', 'max:120'],
             'uses_departments' => ['nullable', 'boolean'],
             'country' => ['required', 'string', 'max:100'],
@@ -71,6 +77,9 @@ class ProjectController extends Controller
             $target = Target::create([
                 'target_type_code' => $validated['target_type_code'],
                 'name' => $validated['target_name'],
+                'facility_profile_id' => $validated['target_type_code'] === 'HEALTH_FACILITY'
+                    ? $validated['facility_profile_id']
+                    : null,
                 'custom_setting_label' => $validated['custom_setting_label'] ?? null,
                 'uses_departments' => $validated['target_type_code'] === 'CUSTOM'
                     ? (bool) ($validated['uses_departments'] ?? false)
@@ -97,11 +106,13 @@ class ProjectController extends Controller
         $this->authorize('view', $project);
         $project->load([
             'targets.targetType',
+            'targets.facilityProfile',
             'owner',
             'assessments.moduleScope.module',
             'assessments.score',
             'assessments.reportSnapshot',
             'assessments.templateVersion.template',
+            'assessments.catalogueRelease',
         ]);
 
         return view('projects.show', compact('project'));

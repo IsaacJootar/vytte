@@ -22,6 +22,7 @@
                 $payload = $assessment->reportSnapshot?->payload ?? [];
                 $includedAreas = $assessment->moduleScope->where('in_scope', true);
                 $title = $payload['title']
+                    ?? $assessment->catalogueRelease?->release_name
                     ?? $assessment->templateVersion?->template?->template_name
                     ?? ($includedAreas->count() === 1
                         ? ($includedAreas->first()?->module?->module_name ?? 'Focused Health Assessment')

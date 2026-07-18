@@ -35,6 +35,7 @@ class Assessment extends Model
         'scope_type',
         'creation_path',
         'template_version_id',
+        'catalogue_release_id',
         'composition_hash',
         'status',
         'publish_status',
@@ -136,6 +137,16 @@ class Assessment extends Model
     public function templateVersion(): BelongsTo
     {
         return $this->belongsTo(AssessmentTemplateVersion::class, 'template_version_id', 'template_version_id');
+    }
+
+    public function catalogueRelease(): BelongsTo
+    {
+        return $this->belongsTo(AssessmentCatalogueRelease::class, 'catalogue_release_id', 'catalogue_release_id');
+    }
+
+    public function localCustomSections(): HasMany
+    {
+        return $this->hasMany(LocalCustomSection::class, 'assessment_id', 'assessment_id');
     }
 
     public function getRouteKeyName(): string

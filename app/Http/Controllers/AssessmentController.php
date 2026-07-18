@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModuleScope;
-use App\Models\AssessmentTemplate;
 use App\Models\AssessmentTemplateVersion;
+use App\Models\FacilityProfile;
 use App\Models\Project;
 use App\Models\Question;
 use App\Models\Response;
@@ -48,22 +49,27 @@ class AssessmentController extends Controller
             ->where('setting_type_code', $settingTypeCode)
             ->value('uses_departments');
 
-        $templateQuery = fn ($query) => $query->where('status', AssessmentTemplateVersion::STATUS_PUBLISHED)
-            ->whereNotNull('published_payload')
-            ->orderByDesc('version_number');
-        $comprehensiveTemplates = AssessmentTemplate::where('status', AssessmentTemplate::STATUS_PUBLISHED)
-            ->where('creation_path', 'COMPREHENSIVE')
+        $facilityProfiles = FacilityProfile::where('status', FacilityProfile::STATUS_PUBLISHED)
             ->where('setting_type_code', $settingTypeCode)
-            ->with(['versions' => $templateQuery])
-            ->orderBy('template_name')
+            ->orderBy('display_order')
             ->get();
-        $focusedTemplates = AssessmentTemplate::where('status', AssessmentTemplate::STATUS_PUBLISHED)
+        $profileIds = $target?->facility_profile_id
+            ? collect([$target->facility_profile_id])
+            : $facilityProfiles->pluck('facility_profile_id');
+
+        $comprehensiveReleases = AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+            ->where('creation_path', 'COMPREHENSIVE')
+            ->whereIn('facility_profile_id', $profileIds)
+            ->with(['facilityProfile', 'departmentFrameworkVersions.module'])
+            ->orderBy('release_name')
+            ->get();
+        $focusedReleases = AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
             ->where('creation_path', 'FOCUSED')
-            ->with(['healthDomain', 'versions' => $templateQuery])
-            ->orderBy('template_name')
+            ->with(['healthDomain', 'departmentFrameworkVersions.module'])
+            ->orderBy('release_name')
             ->get();
 
-        return view('assessments.create', compact('project', 'target', 'usesDepartments', 'comprehensiveTemplates', 'focusedTemplates'));
+        return view('assessments.create', compact('project', 'target', 'usesDepartments', 'facilityProfiles', 'comprehensiveReleases', 'focusedReleases'));
     }
 
     public function store(Request $request, Project $project, AssessmentCreationService $creator): RedirectResponse
@@ -78,22 +84,22 @@ class AssessmentController extends Controller
 
         $validated = $request->validate([
             'creation_path' => ['required', 'in:COMPREHENSIVE,FOCUSED'],
-            'template_version_id' => ['required', 'uuid', 'exists:assessment_template_versions,template_version_id'],
-            'modules' => ['nullable', 'array'],
-            'modules.*' => ['integer'],
+            'catalogue_release_id' => ['required', 'uuid', 'exists:assessment_catalogue_releases,catalogue_release_id'],
+            'departments' => ['nullable', 'array'],
+            'departments.*' => ['integer'],
             'exclusion_reasons' => ['nullable', 'array'],
             'exclusion_reasons.*' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $version = AssessmentTemplateVersion::with('template')->findOrFail($validated['template_version_id']);
-        if ($version->template->creation_path !== $validated['creation_path']) {
-            return back()->withErrors(['template_version_id' => 'The selected template does not match this assessment path.'])->withInput();
+        $release = AssessmentCatalogueRelease::findOrFail($validated['catalogue_release_id']);
+        if ($release->creation_path !== $validated['creation_path']) {
+            return back()->withErrors(['catalogue_release_id' => 'The selected catalogue release does not match this assessment path.'])->withInput();
         }
 
-        $assessment = $creator->create(
+        $assessment = $creator->createFromCatalogue(
             $project,
-            $version,
-            $validated['modules'] ?? [],
+            $release,
+            $validated['departments'] ?? [],
             $validated['exclusion_reasons'] ?? [],
             auth()->id(),
         );

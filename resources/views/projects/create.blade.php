@@ -106,6 +106,25 @@
                         </label>
                     </div>
 
+                    <div x-show="targetType === 'HEALTH_FACILITY'" x-cloak>
+                        <x-input-label for="facility_profile_id" value="Health facility profile" />
+                        <select
+                            id="facility_profile_id"
+                            name="facility_profile_id"
+                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
+                            x-bind:required="targetType === 'HEALTH_FACILITY'"
+                        >
+                            <option value="" disabled {{ old('facility_profile_id') ? '' : 'selected' }}>Select facility profile...</option>
+                            @foreach ($facilityProfiles as $profile)
+                                <option value="{{ $profile->facility_profile_id }}" {{ old('facility_profile_id') === $profile->facility_profile_id ? 'selected' : '' }}>
+                                    {{ $profile->profile_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Vytte uses this to load the right governed catalogue release.</p>
+                        <x-input-error :messages="$errors->get('facility_profile_id')" class="mt-1" />
+                    </div>
+
                     {{-- Target name --}}
                     <div>
                         <label for="target_name" class="block text-sm font-medium text-slate-700 dark:text-slate-300"
