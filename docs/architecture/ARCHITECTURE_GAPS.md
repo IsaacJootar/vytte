@@ -32,11 +32,12 @@ Current verified local state:
 | ID | Gap | Risk | Recommended next action |
 |---|---|---|---|
 | GAP-01 | Deep dependency-graph and comparison views are not implemented | Platform Admins can inspect/publish content, but advanced impact review is still manual | Add dependency graph and version comparison views after core admin workflows stabilize |
-| GAP-02 | Production clinical content is not curated | Demo data proves architecture only | Create governed source/licence/scoring review workflow for real content |
-| GAP-03 | Facility profile editing after project creation is not exposed | Incorrect profile choice requires manual correction | Add a profile-change flow with clear effect on future assessments only |
-| GAP-04 | Additional response types are declared but unavailable | Publishing unsupported types would break runners | Implement each type only with full contract and tests |
-| GAP-05 | Recommendation/action planning remains inactive | Reports currently summarize scores rather than action workflows | Design only after the assessment/report core is stable |
-| GAP-06 | Generic external API is not implemented | Unapproved API surface can increase security burden | Add only for an approved consumer and versioned contract |
+| GAP-02 | Rich framework editor UI is not implemented | Platform Admins can inspect/publish frameworks, but cannot yet create, edit, or reorder framework sections, indicators, and question placements through polished screens | Build framework editor screens for sections, indicators, placements, ordering, and validation |
+| GAP-03 | Production clinical content is not curated | Demo data proves architecture only | Create governed source/licence/scoring review workflow for real content |
+| GAP-04 | Facility profile editing after project creation is not exposed | Incorrect profile choice requires manual correction | Add a profile-change flow with clear effect on future assessments only |
+| GAP-05 | Additional response types are declared but unavailable | Publishing unsupported types would break runners | Implement each type only with full contract and tests |
+| GAP-06 | Recommendation/action planning remains inactive | Reports currently summarize scores rather than action workflows | Design only after the assessment/report core is stable |
+| GAP-07 | Generic external API is not implemented | Unapproved API surface can increase security burden | Add only for an approved consumer and versioned contract |
 
 ## Rule
 

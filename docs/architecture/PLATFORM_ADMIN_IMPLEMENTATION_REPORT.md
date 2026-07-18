@@ -26,6 +26,15 @@
 - Payment webhooks remain handled by Paystack and Flutterwave webhook controllers.
 - Workspace-level team, invitation, assessment, respondent, report, and share-link workflows remain outside Platform Admin methodology control.
 
+## Explicitly pending
+
+- Full framework editor UI for Platform Admins to create, edit, and reorder framework sections.
+- Full framework editor UI for Platform Admins to create, edit, and reorder indicators.
+- Full framework editor UI for Platform Admins to place, replace, weight, and reorder exact question versions.
+- Version comparison UI for old/new question, framework, and catalogue versions.
+- Dependency graph UI showing which catalogue releases, frameworks, indicators, placements, and assessments depend on each content object.
+- Deeper payment-provider operations dashboard for payment events, failures, subscriptions, and reconciliation.
+
 ## Governance behavior
 
 The UI does not bypass publication services. Question versions, framework versions, and catalogue releases still pass through validation and immutable publication logic before becoming official content.

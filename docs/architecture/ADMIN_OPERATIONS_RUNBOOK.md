@@ -21,6 +21,14 @@ Open `/admin` as a user with `platform_role = PLATFORM_ADMIN`.
 - Publish framework versions through `/admin/framework-versions`.
 - Publish catalogue releases through `/admin/catalogue-releases`.
 
+## Pending Platform Admin operations
+
+- Framework sections are currently inspectable but not yet fully create/edit/reorder-manageable through polished UI.
+- Framework indicators are currently inspectable but not yet fully create/edit/reorder-manageable through polished UI.
+- Framework question placements are currently inspectable but not yet fully place/replace/weight/reorder-manageable through polished UI.
+- Version comparison and dependency graph views are pending.
+- Deeper payment-provider operations dashboards are pending.
+
 ## Safety checks
 
 - Never edit a published immutable object in place.

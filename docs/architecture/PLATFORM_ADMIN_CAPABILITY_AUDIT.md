@@ -35,9 +35,12 @@
 
 ## Remaining future improvements
 
+- Rich framework editor UI for creating, editing, and reordering sections.
+- Rich framework editor UI for creating, editing, and reordering indicators.
+- Rich framework editor UI for placing, replacing, weighting, and reordering exact question versions inside indicators.
 - Version comparison UI.
 - Dependency graph UI.
-- Rich editor UI for framework sections, indicators, placements, and catalogue composition.
+- Rich editor UI for catalogue composition.
 - Advanced payment/provider operations dashboard beyond current webhook and plan-feature controls.
 
 ## Security assessment
