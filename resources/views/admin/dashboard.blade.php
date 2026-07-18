@@ -7,7 +7,8 @@
 
     {{-- Stats --}}
     <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-6 gap-4 mb-6">
-        @foreach ([
+        @php
+            $stats = [
             ['label' => 'Workspaces', 'value' => $workspaceCount],
             ['label' => 'Modules', 'value' => $moduleCount . ' total / ' . $activeModuleCount . ' active'],
             ['label' => 'Completed Assessments', 'value' => $totalAssessments],
@@ -17,10 +18,22 @@
             ['label' => 'Published Frameworks', 'value' => $publishedFrameworks],
             ['label' => 'Published Releases', 'value' => $publishedCatalogueReleases],
             ['label' => '7-day Audit Events', 'value' => $recentAuditCount],
-        ] as $stat)
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-1">{{ $stat['label'] }}</p>
-                <p class="text-lg font-bold text-slate-900 dark:text-white">{{ $stat['value'] }}</p>
+            ];
+
+            $statStyles = [
+                'bg-gradient-to-br from-vytte-700 to-vytte-900',
+                'bg-gradient-to-br from-slate-800 to-slate-950',
+                'bg-gradient-to-br from-slate-600 to-slate-800',
+                'bg-gradient-to-br from-emerald-600 to-emerald-800',
+                'bg-gradient-to-br from-indigo-600 to-indigo-800',
+                'bg-gradient-to-br from-cyan-600 to-cyan-800',
+            ];
+        @endphp
+
+        @foreach ($stats as $stat)
+            <div class="{{ $statStyles[$loop->index % count($statStyles)] }} rounded-2xl p-4 shadow-card text-white">
+                <p class="text-xs text-white/70 font-semibold mb-1">{{ $stat['label'] }}</p>
+                <p class="text-lg font-bold text-white">{{ $stat['value'] }}</p>
             </div>
         @endforeach
     </div>

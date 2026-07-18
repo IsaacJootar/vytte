@@ -38,7 +38,7 @@ class DemoAccountSeeder extends Seeder
             [
                 'name' => 'Platform Admin',
                 'email' => 'admin@vytte.test',
-                'plan' => 'AGENCY',
+                'plan' => 'FREE',
                 'workspace_name' => 'Admin Workspace',
                 'platform_role' => 'PLATFORM_ADMIN',
             ],
@@ -65,12 +65,17 @@ class DemoAccountSeeder extends Seeder
                     'plan' => $account['plan'],
                     'status' => 'ACTIVE',
                 ]);
-
-                WorkspaceMember::updateOrCreate(
-                    ['workspace_id' => $workspace->workspace_id, 'user_id' => $user->user_id],
-                    ['role' => 'OWNER']
-                );
+            } else {
+                $workspace->update([
+                    'plan' => $account['plan'],
+                    'status' => 'ACTIVE',
+                ]);
             }
+
+            WorkspaceMember::updateOrCreate(
+                ['workspace_id' => $workspace->workspace_id, 'user_id' => $user->user_id],
+                ['role' => 'OWNER']
+            );
 
             $user->update(['active_workspace_id' => $workspace->workspace_id]);
         }

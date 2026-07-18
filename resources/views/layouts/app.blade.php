@@ -102,10 +102,18 @@
                 :active="request()->routeIs('billing.*')"
             >Plans &amp; Billing</x-sidebar-nav-item>
 
-            @php $sidebarPlan = auth()->user()->activeWorkspace?->plan ?? 'FREE'; @endphp
+            @php
+                $sidebarPlan = auth()->user()->activeWorkspace?->plan ?? 'FREE';
+                $isPlatformAdmin = auth()->user()->isPlatformAdmin();
+            @endphp
             <div class="mx-1 mt-3 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2">
-                <p class="text-[9px] font-semibold uppercase tracking-wider text-white/35">Current plan</p>
-                <p class="mt-0.5 text-[11px] font-bold text-white/75">{{ ucfirst(strtolower($sidebarPlan)) }}</p>
+                <p class="text-[9px] font-semibold uppercase tracking-wider text-white/35">{{ $isPlatformAdmin ? 'Access level' : 'Current plan' }}</p>
+                <p class="mt-0.5 text-[11px] font-bold text-white/75">{{ $isPlatformAdmin ? 'Vytte Platform Admin' : ucfirst(strtolower($sidebarPlan)) }}</p>
+                @if ($isPlatformAdmin)
+                    <a href="{{ route('admin.dashboard') }}" class="mt-1 inline-flex text-[10px] font-semibold text-vytte-300 hover:text-white">
+                        Open admin center
+                    </a>
+                @endif
             </div>
         </nav>
 

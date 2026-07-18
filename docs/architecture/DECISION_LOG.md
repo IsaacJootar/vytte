@@ -57,3 +57,10 @@
 - **Status:** Accepted and implemented.
 - **Decision:** Use a small labelled demonstration dataset to prove the architecture rather than inventing production clinical methodology.
 - **Boundary:** production content requires governed source, licence, review, scoring, and publication.
+
+### DEC-2026-07-18-009: Platform Admin UI and Demo Account Boundary
+
+- **Status:** Accepted and implemented.
+- **Decision:** Vytte Platform Admin uses the same application shell and visual language as the workspace app, with only a subtle sidebar color distinction to signal elevated platform authority.
+- **Account boundary:** the demo Platform Admin account is not an Agency customer account; workspace plan labels must not be used as the visible authority label for Platform Admins.
+- **UI rule:** Platform Admin users should see `Vytte Platform Admin` as their access label, while ordinary workspace users continue to see their configured paid-plan label.
