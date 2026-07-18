@@ -1,44 +1,51 @@
 # Vytte Lifecycle State Machine
 
-## Assessment execution
-
-The canonical persisted assessment values are:
+## Assessment Execution
 
 | State | Meaning | Allowed next state |
 |---|---|---|
 | `IN_PROGRESS` | The assessment can accept authorized responses. | `COMPLETE` |
 | `COMPLETE` | Required responses were validated, scoring ran, and the immutable final report was captured. | None |
 
-`COMPLETE` is the database value; **Completed** is the human-readable UI label. `COMPLETED` is not a valid assessment value.
+`COMPLETE` is the database value. "Completed" is the UI label.
 
-Completion is terminal. Vytte does not currently support reopening, correction versions, cancellation, or archival. Adding any of those requires an explicit product rule for responses, scoring, audit history, and the final report snapshot.
+Completion is terminal. Reopening, correction versions, cancellation, and archival require a future approved lifecycle design.
 
-## Assessment-area execution
+## Assessment Area Execution
 
 Rows in `assessment_module_scope` use:
 
 | State | Meaning |
 |---|---|
-| `PENDING` | Included area awaiting completion of the parent assessment. |
-| `COMPLETED` | Included area completed with the parent assessment. |
-| `EXCLUDED` | Area intentionally removed from a comprehensive framework with a reason. |
+| `PENDING` | Included department or assessment area awaiting completion of the parent assessment. |
+| `COMPLETED` | Included department or assessment area completed with the parent assessment. |
+| `EXCLUDED` | Department or assessment area intentionally excluded during composition with a reason where required. |
 
-The different persisted words `COMPLETE` and `COMPLETED` are retained because they belong to different existing tables. Application constants prevent them from being interchanged.
-
-## Template publication
-
-Templates and template versions use:
+## Department Framework Publication
 
 | State | Meaning | Allowed next state |
 |---|---|---|
-| `DRAFT` | Mutable curator working content. | `PUBLISHED` |
-| `PUBLISHED` | Governed content available for assessment creation. | None for that version |
+| `DRAFT` | Mutable curator working version. | `PUBLISHED` |
+| `PUBLISHED` | Immutable official department framework version. | None |
 
-A published template version is immutable and cannot be deleted. Corrections require a new version. Retirement and archival are not implemented and must not be simulated by mutating a published version.
+Published department framework versions cannot be edited or deleted.
 
-## Legacy assessment publication fields
+## Facility Profile Publication
 
-`assessments.publish_status`, `published_at`, and `published_by` are legacy/reserved fields. They do not control completion, report sharing, or template publication. Report access is governed by `assessment_share_links`; template availability is governed by template/version status.
+| State | Meaning | Allowed next state |
+|---|---|---|
+| `DRAFT` | Mutable platform profile. | `PUBLISHED` |
+| `PUBLISHED` | Official profile available for catalogue releases and project creation. | None in the current implementation |
 
-No new workflow may depend on the legacy assessment publication fields without a separate migration and compatibility decision.
+## Catalogue Release Publication
 
+| State | Meaning | Allowed next state |
+|---|---|---|
+| `DRAFT` | Mutable catalogue release under curation. | `PUBLISHED` |
+| `PUBLISHED` | Immutable release available for assessment creation. | None |
+
+Published catalogue releases cannot be edited. Corrections require a new release.
+
+## Report Finalization
+
+A completed assessment has one immutable final report snapshot. Report routes, exports, share links, dashboards, and analytics read that same report architecture.

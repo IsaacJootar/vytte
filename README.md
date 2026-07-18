@@ -1,27 +1,42 @@
 # Vytte
 
-Vytte is a health-assessment platform for comprehensive setting assessments and focused health-domain assessments. It uses reusable, governed templates; immutable assessment and report snapshots; versioned scoring; workspace isolation; and one reporting architecture.
+Vytte is a platform-governed health assessment system. It provides comprehensive health facility assessments and focused health assessments from official Vytte catalogue releases, immutable snapshots, versioned scoring, workspace isolation, and one reporting architecture.
 
-## Product model
+## Product Model
 
 Vytte has exactly two creation paths:
 
-1. **Comprehensive Health Assessment** loads a setting-appropriate framework. Users remove assessment areas that do not apply. “Department” is used only where the setting genuinely has departments.
-2. **Focused Health Assessment** opens one health domain, programme, topic, or intervention from one published template. It does not load unrelated modules or a standard battery.
+1. **Comprehensive Health Assessment** composes one full-facility assessment from a published Vytte catalogue release. The release pins exact department framework versions for the selected facility profile. Required and default departments are preloaded; optional departments can be added; removable defaults can be excluded with a reason.
+2. **Focused Health Assessment** opens one approved health domain, programme, topic, or intervention. It does not show unrelated departments or grouped module checklists.
 
-Community surveys, patient-experience surveys, caregiver feedback, and similar use cases are normal assessment templates. Respondent role may differ; the lifecycle and reporting architecture do not.
+Comprehensive Health Assessment is not a giant template. It is a composition orchestrator.
+
+Community surveys, patient-experience surveys, caregiver feedback, and similar use cases are normal assessment content in the same architecture. Respondent role may differ; lifecycle, scoring, reports, permissions, exports, dashboards, and analytics stay unified.
+
+## Platform Authority
+
+Vytte owns official:
+
+- departments;
+- department framework versions;
+- facility profiles;
+- assessment catalogue releases;
+- questions, indicators, evidence requirements, scoring rules, and aggregation policies;
+- publication, versioning, hashes, provenance, and audit.
+
+Workspaces consume approved content. They do not publish official departments, frameworks, scoring methods, or catalogue releases.
+
+Workspace-local custom sections are allowed only as clearly marked local context. They cannot alter official questions, framework versions, catalogue releases, scoring, or reports.
 
 ## Stack
 
 - PHP 8.3+ and Laravel 13
 - Blade, Livewire 4, Alpine.js, Tailwind CSS 4, and Vite
 - PostgreSQL as the production authority
-- SQLite for temporary local desktop development and the fast automated test suite
+- SQLite for temporary local desktop development and automated tests
 - PHPUnit 12
 
-## Local setup
-
-Requirements: PHP 8.3+, Composer, Node.js/npm, and the PHP extensions required by Laravel.
+## Local Setup
 
 ```bash
 composer install
@@ -33,15 +48,13 @@ npm run build
 php artisan serve
 ```
 
-For active frontend development, run `npm run dev` in a second terminal.
-
-The default example configuration uses `database/database.sqlite`. Create the file if it does not exist:
+The default local example uses `database/database.sqlite`. Create it when needed:
 
 ```bash
 php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');"
 ```
 
-## PostgreSQL configuration
+## PostgreSQL Configuration
 
 Production and release-candidate verification must use PostgreSQL:
 
@@ -59,22 +72,21 @@ SQLite passing is not a substitute for PostgreSQL parity on migrations, partial 
 ## Verification
 
 ```bash
-composer test
-npm run build
+php artisan test
+npm.cmd run build
 ```
 
 Before release, also run the full test suite against PostgreSQL.
 
-## Architecture references
+## Architecture References
 
-- `AGENTS.md` — active engineering rules
-- `docs/architecture/CURRENT_ARCHITECTURE.md` — implemented platform
-- `docs/architecture/CURRENT_ASSESSMENT_FLOW.md` — assessment lifecycle
-- `docs/architecture/DATA_MODEL_AUDIT.md` — schema authority and risks
-- `docs/architecture/LIFECYCLE_STATE_MACHINE.md` — canonical states
-- `docs/architecture/DECISION_LOG.md` — approved product and architecture decisions
-- `docs/architecture/IMPLEMENTATION_PROGRESS.md` — remediation commits and verification
+- `docs/architecture/CURRENT_ARCHITECTURE.md` - implemented platform model
+- `docs/architecture/CURRENT_ASSESSMENT_FLOW.md` - assessment lifecycle
+- `docs/architecture/DATA_MODEL_AUDIT.md` - schema authority
+- `docs/architecture/CONTENT_GOVERNANCE.md` - publication and curation rules
+- `docs/architecture/SCORING_CONTRACT.md` - scoring and aggregation rules
+- `docs/architecture/DECISION_LOG.md` - controlling decisions
 
-## Data and content
+## Seed Data
 
-Published template versions and completed report snapshots are immutable. New or corrected content must be published as a new governed version. Seed content is development/reference content and must not be treated as production clinical authority without source, licence, and review metadata.
+The default seed includes a small clearly labelled demonstration dataset so the architecture can be tested end to end. It is not production clinical content and must not be presented as approved clinical methodology.

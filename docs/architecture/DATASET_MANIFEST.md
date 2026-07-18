@@ -2,53 +2,56 @@
 
 ## Authority
 
-Seed counts describe the repository's development dataset; they are not architecture constants, production guarantees, or evidence of clinical approval.
+Seed data exists to make development, tests, and demos reproducible. It is not production clinical authority.
 
 The default seed sequence is:
 
 1. `PlatformSettingsSeeder`
 2. `ReferenceDataSeeder`
 3. `HivawQuestionsSeeder`
-4. `AssessmentTemplateSeeder`
-5. `PlanFeatureSeeder`
-6. `DemoAccountSeeder`
-7. `DemoDataSeeder`
+4. `PlatformGovernedDemoSeeder`
+5. `AssessmentTemplateSeeder`
+6. `PlanFeatureSeeder`
+7. `DemoAccountSeeder`
+8. `DemoDataSeeder`
 
 The default seed is repository-contained. It does not read personal Downloads folders or external documents.
 
-## Reference baseline
+## Governed Demonstration Dataset
 
-The current reference/content baseline is:
+`PlatformGovernedDemoSeeder` creates a clearly labelled demonstration catalogue:
 
-| Dataset | Expected baseline |
-|---|---:|
-| Target types | 10 |
-| Setting types | 10 |
-| Health domains | 12 |
-| Scoring domains | 8 |
-| Assessment tiers | 2 |
-| Question types declared | 10 |
-| Assessment modules | 27 |
-| Sub-indices with curated mappings | 4 |
-| Governed questions in a clean seed | 9 |
-| Topics | 7 |
-| Respondent roles | 8 |
-| Published standard templates | 1 after the complete seed |
+- facility profiles: Clinic, Primary Health Centre, General Hospital;
+- official demo departments: Outpatient, Pharmacy, Laboratory, Mental Health;
+- department framework version 1 for each demo department;
+- one comprehensive Clinic catalogue release;
+- one focused Mental Health catalogue release.
 
-`SINGLE_SELECT`, `LIKERT`, unscored `OPEN_ENDED`, and `NUMERIC` are currently publishable. Scored numeric questions require frozen scoring bands; a declared database type is not automatically supported.
+The demonstration catalogue proves the architecture end to end. It must not be described as production clinical methodology.
 
-## Governed content rule
+## Publication Rule
 
-Seed content is sample/reference content until it has:
+Official production content requires:
 
-- an identified source authority;
+- source authority;
 - licence/provenance metadata;
-- a completed scoring profile for scored questions;
-- a curator review;
-- an immutable published template version.
+- completed scoring profile;
+- supported response types;
+- evidence and critical-failure rules where applicable;
+- curator review;
+- immutable framework version publication;
+- immutable catalogue release publication.
 
-Counts may change only through a reviewed dataset update. Every update should record the changed seeder/artifact, source/version, licensing disposition, expected counts, template versions affected, and scoring/test impact.
+## Response Types
 
-## Removed sample dependencies
+Currently publishable response types:
 
-The former personal-path PHSAI document importer and incomplete school sample seeder were removed. They must not be restored as silent or environment-dependent default seed steps. New frameworks should enter as governed structured content and publish only after validation.
+- scalar option questions;
+- open text when explicitly unscored;
+- numeric questions with valid input configuration.
+
+Scored numeric questions require frozen numeric bands. Declaring a question type in the database does not make it publishable.
+
+## Counts
+
+Counts are dataset metadata, not architecture constants. They may change through governed dataset updates.

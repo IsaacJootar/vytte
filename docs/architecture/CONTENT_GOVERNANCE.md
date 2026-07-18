@@ -1,37 +1,84 @@
 # Content Governance
 
+## Authority
+
+Vytte owns official assessment content.
+
+Workspaces cannot publish official:
+
+- departments;
+- department framework versions;
+- scoring methodologies;
+- aggregation policies;
+- catalogue releases;
+- official questions or indicators.
+
+Workspace users consume published Vytte content and may add local custom sections for local context only.
+
 ## Roles
 
 - **Platform administrator:** manages platform configuration and may perform curator actions.
-- **Curator:** reviews and publishes assessment template versions.
-- **Workspace owner/admin/member:** uses published templates inside authorized workspaces; does not publish global standard content.
+- **Curator:** prepares, validates, and publishes official Vytte framework and catalogue content.
+- **Workspace owner/admin/member:** creates projects, runs assessments, manages workspace users, and consumes approved content.
 
-## Draft to publication
+## Department Framework Publication
 
-1. Create or update mutable catalogue content for a draft.
-2. Declare whether the template is comprehensive or focused.
-3. Declare the setting for a comprehensive template or one health domain for a focused template.
-4. Record source authority, source reference where available, and licence code.
-5. Attach the intended modules and ordering.
-6. Validate supported response types, active questions, scoring mappings, and option weights.
-7. Publish through the curator-protected route.
-8. Store the exact immutable payload and SHA-256 content hash.
+A department framework version must define:
 
-Publication records publisher, time, and an audit event. A published version cannot be edited or deleted. Corrections require a new version.
+- one official department;
+- version number;
+- source authority and licence metadata;
+- provenance where available;
+- active questions with supported response types;
+- answer options for option-based questions;
+- numeric bounds and scoring bands for scored numeric questions;
+- scoring profile mappings for every scored question;
+- evidence and critical-failure metadata where applicable.
 
-## Standard versus customized content
+Publication freezes the exact payload and content hash. Published department framework versions cannot be edited or deleted.
 
-- Standard templates are governed platform content.
-- Comprehensive assessment exclusions create an assessment-owned customized snapshot; they do not mutate the standard version.
-- Future question edits/additions must produce a labeled derivative or new governed version and revalidate comparability.
-- Focused assessments always begin with one matching published scope.
+## Facility Profiles
 
-## Prohibited publication
+Vytte facility profiles define which departments are required, default, optional, or unavailable for a health facility type.
 
-A version cannot publish when it has missing provenance/licence metadata, no active questions, unsupported response types, option questions without choices, invalid numeric bounds, scored numeric questions without frozen bands, scored open text, missing option weights, or scored questions absent from the scoring profile.
+Facility profiles are official platform content. Workspaces select the profile that best matches the assessed facility.
 
-Sample seed content does not bypass these rules. Invalid samples should be removed or curated rather than weakening publication validation.
+## Catalogue Releases
 
-## Audit and review
+A catalogue release maps:
 
-The audit log records template-version publication. Future review/approval stages may extend the draft workflow, but must not make published versions mutable or create another template authority.
+- creation path;
+- facility profile or focused health domain;
+- exact published department framework versions;
+- department applicability and order;
+- aggregation policy;
+- composition rules.
+
+The system never resolves "latest" framework versions automatically. Every assessment resolves through a published catalogue release.
+
+## Comprehensive Health Assessment
+
+Comprehensive Health Assessment is a composition orchestrator. It owns no clinical questions.
+
+It resolves the facility profile, loads the published catalogue release, applies required/default/optional department rules, and freezes one assessment snapshot.
+
+## Focused Health Assessment
+
+Focused assessments reuse official framework content without duplication. The first implemented focused flow resolves one published framework scope from a focused catalogue release.
+
+## Local Custom Sections
+
+Local custom sections:
+
+- belong only to one workspace;
+- cannot modify official content;
+- cannot replace official questions;
+- are visually and semantically local;
+- are excluded from official scoring;
+- may contain local notes, local questions, instructions, observations, and evidence prompts.
+
+## Prohibited Publication
+
+Official content cannot publish when it contains unsupported response types, missing provenance, missing licence metadata, empty question sets, option questions without choices, scored open text, scored numeric questions without bands, scored questions without scoring-profile membership, or scored options without weights.
+
+Demonstration content must remain labelled as demonstration content and must not be promoted as production clinical methodology.

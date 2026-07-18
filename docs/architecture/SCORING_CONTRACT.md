@@ -2,58 +2,79 @@
 
 ## Authority
 
-- Canonical output scale: 0–100.
-- Current frozen-profile algorithm: `vytte-4.0-numeric-bands`; `vytte-3.0-snapshot-profile` remains supported for immutable existing assessments.
-- Completed score rows and final report snapshots are historical records and are never silently recalculated.
+- Canonical output scale: 0-100.
+- Current algorithm: `vytte-4.0-numeric-bands`.
+- The assessment snapshot is the scoring authority.
+- Final score rows and final report snapshots are historical records and are never silently recalculated.
+
+## Official Scoring Boundary
+
+Official scoring uses only:
+
+- selected department framework versions pinned by the catalogue release;
+- frozen snapshot payload;
+- frozen snapshot scoring profile;
+- frozen snapshot aggregation policy;
+- authoritative response set.
+
+Local custom sections are excluded from official scoring.
 
 ## Calculation
 
-1. Read the assessment's included areas.
-2. Use the immutable snapshot scoring profile when present; use the isolated legacy profile only for legacy assessments.
+1. Read the assessment's included departments from `assessment_module_scope`.
+2. Read sub-index membership, question weights, option weights, numeric bands, and domain identity from `assessment_snapshots.payload`.
 3. Read authoritative responses for the scoring unit.
-4. Normalize option scales whose maximum is at or below 1 to 0–100.
+4. Normalize option scales whose maximum is at or below 1 to 0-100.
 5. Calculate each sub-index as a weighted mean of answered scored questions.
 6. Aggregate non-null sub-index results into domains and the overall score.
-7. Assign maturity from the configured range containing the overall score.
-8. Persist algorithm version and calculation time.
+7. Apply the frozen aggregation policy.
+8. Assign maturity from the configured range containing the overall score.
+9. Persist algorithm version and calculation time.
 
 ## Calibration
 
 - `NOT_CALIBRATED`: no valid weighted answers for the unit.
 - `PARTIAL`: at least one result exists but required scored content is incomplete.
-- `CALIBRATED`: all expected scored content for the unit is represented.
+- `CALIBRATED`: expected scored content is represented.
+- `CRITICAL_FAILURE`: a frozen aggregation policy rule forced the final outcome.
 
 Missing or uncalibrated data is `null`, never zero.
 
-## Display bands
+## Display Bands
 
 - Weak: below 45
 - Moderate: 45 to below 70
 - Strong: 70 or above
 
-## Respondent roles
+## Critical Failures
 
-Respondent role is part of the template/scoring profile and reuses this engine. Multi-respondent collection is disabled unless an immutable published template version explicitly enables it and defines:
+Catalogue aggregation policy may enable critical-failure behavior. The initial implemented rule can treat a configured flagged or zero-score option as a critical failure and set the overall score to zero.
 
-- a minimum eligible completed respondent threshold;
-- the approved aggregation method;
-- structured eligibility rules, when applicable;
-- the frozen scoring-profile version.
+Future critical-failure methods require a new governed policy version and tests.
 
-Each submitted durable session is independently scored against the assessment snapshot and retains an immutable response snapshot, response hash, score payload, and score hash. Incomplete, test, revoked, expired, ineligible, unreviewed, missing-score, or integrity-failing sessions are excluded.
+## Multi-Respondent Scoring
 
-`ARITHMETIC_MEAN` is the only initially supported aggregation method. It is the arithmetic mean of non-null results from eligible completed sessions at sub-index, domain, and overall levels. Missing data remains `null`; it is never silently converted to zero. Weighted mean, median, stratification, consensus, role weighting, and indicator-specific methods are future governed versions, not part of the current contract.
+Multi-respondent collection is disabled unless published content explicitly enables it and freezes:
 
-Reaching the threshold does not complete the assessment. An OWNER or ADMIN reviews the provisional calculation and manually finalizes it. Finalization freezes the exact contributing and excluded session reference sets, input/result hashes, finalizer, timestamp, template version, and scoring version into the ordinary immutable Vytte report. Late sessions cannot alter the completed report.
+- minimum eligible completed respondent threshold;
+- approved aggregation method;
+- eligibility rules;
+- scoring profile version.
 
-Shared reports disclose aggregate results, eligible count, and method only. Session references remain in the immutable audit payload for authorized traceability and are not rendered to report recipients. Vytte does not create a separate respondent or community reporting subsystem.
+Each submitted durable session is independently scored against the assessment snapshot and retains immutable response and score snapshots.
 
-## Change policy
+`ARITHMETIC_MEAN` is the only initially supported multi-respondent aggregation method. Future weighted mean, median, stratification, consensus, role weighting, and indicator-specific methods require governed versions.
 
-Any formula, scale, weight interpretation, aggregation, maturity range, or respondent-unit change requires:
+Manual finalization by an authorized workspace user is required. Finalization freezes contributing/excluded session references, hashes, method, scoring version, finalizer, timestamp, and creates the ordinary immutable report.
 
-- a new algorithm/profile version;
-- fixed independently calculated fixtures;
-- comparison/recalculation policy;
-- snapshot and report compatibility review;
+There is no separate respondent or community reporting subsystem.
+
+## Change Policy
+
+Any formula, scale, weight interpretation, aggregation, maturity range, respondent-unit behavior, or critical-failure rule requires:
+
+- new versioned methodology;
+- fixed test fixtures;
+- snapshot compatibility review;
+- report compatibility review;
 - PostgreSQL and SQLite verification.

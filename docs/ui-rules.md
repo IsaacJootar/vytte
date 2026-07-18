@@ -60,7 +60,7 @@ Ocean Blue is the Vytte brand family. Navy is reserved for the app shell/sidebar
 
 ## Product language
 
-- Use plain language understood without PHSAI training
+- Use plain language understood without internal methodology training
 - User-facing product name is Vytte
 - Use **Comprehensive Health Assessment** and **Focused Health Assessment**
 - Use “department” only where the selected setting genuinely has departments

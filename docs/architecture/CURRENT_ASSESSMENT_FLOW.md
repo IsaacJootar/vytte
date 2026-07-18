@@ -2,133 +2,152 @@
 
 ## Scope
 
-This document describes the implemented flow after the approved template, snapshot, scoring, and two-path creation modules. It distinguishes the current authenticated and public response paths and records the remaining gaps that are not yet resolved.
+This document describes the implemented catalogue-composition assessment flow. The repository code is the technical source of truth.
 
-## End-to-end flow
+## End-to-End Flow
 
 ```mermaid
 flowchart TD
-    P[Create project and setting] --> C[Create assessment]
-    C --> K{Assessment path}
-    K -->|Comprehensive| CT[Choose a published framework for the setting]
-    CT --> D[Keep or exclude applicable areas]
-    K -->|Focused| FT[Choose one published health-domain template]
-    D --> A[Create assessment from immutable template version]
-    FT --> A
-    A --> SN[Persist composition and content snapshots]
-    SN --> R{Runner}
-    R -->|Authenticated| AR[All snapshot modules]
-    R -->|Public token| PR[Legacy first-module public flow]
-    AR --> RESP[Validated option or open-text responses]
-    RESP --> SUB[Server-validated completion]
-    SUB --> SCORE[Versioned normalized scoring]
-    SCORE --> OUT[Results, PDF, CSV, shared report, progress]
+    P[Create project] --> T[Create target]
+    T --> FP[Select facility profile when target is a health facility]
+    FP --> C[Create assessment]
+    C --> PATH{Creation path}
+
+    PATH -->|Comprehensive| CR[Choose published catalogue release for facility profile]
+    CR --> DEP[Confirm required/default/optional departments]
+    DEP --> COMP[Compose selected framework versions]
+
+    PATH -->|Focused| FR[Choose published focused catalogue release]
+    FR --> COMP
+
+    COMP --> SN[Freeze assessment snapshot]
+    SN --> RUN[Run assessment from snapshot]
+    RUN --> RESP[Validated responses and optional evidence notes]
+    RESP --> SUB[Server validation and submit]
+    SUB --> SCORE[Versioned scoring]
+    SCORE --> REP[Immutable report snapshot]
+    REP --> OUT[Results, PDF, share links, reports, analytics]
 ```
 
-## 1. Project and setting creation
+## 1. Project and Setting Creation
 
-1. An authenticated user opens `/projects/create`.
-2. The user supplies a project name and one setting's type, category, country, region, and optional sub-region.
-3. The selected category must belong to the selected setting type.
-4. A `CUSTOM` setting can carry a user-defined label and a `uses_departments` flag.
-5. The plan's active-project limit is checked.
-6. A transaction creates a workspace-scoped project, its workspace-owned target/setting, and the project-target attachment.
+1. The user creates one project.
+2. The user selects a setting type and enters the setting name.
+3. If the setting is a health facility, the user selects a Vytte facility profile such as Clinic, Primary Health Centre, or General Hospital.
+4. A transaction creates the workspace-scoped project, target, and project-target attachment.
 
-The UI creates one setting initially, while the underlying schema still permits multiple targets per project.
+The project model currently supports one assessed setting per project.
 
-## 2. Assessment creation
+## 2. Comprehensive Health Assessment
 
-There are exactly two user-facing creation paths.
+Comprehensive Health Assessment is a composition orchestrator.
 
-### Comprehensive Health Assessment
+1. The target's facility profile is resolved.
+2. The controller loads published comprehensive catalogue releases for that profile.
+3. The UI shows services included in the assessment.
+4. Required departments are locked in.
+5. Default departments are preselected and may be removed with a reason when allowed.
+6. Optional departments may be selected by the user.
+7. The submitted department selection is revalidated on the server.
+8. The assessment is created from exact department framework versions pinned by the catalogue release.
 
-1. The controller loads published `COMPREHENSIVE` template versions compatible with the project's setting type.
-2. The user selects one framework.
-3. The framework's default areas are preselected. The user can remove areas that do not apply.
-4. Department language is used only when the selected setting explicitly uses departments; otherwise the UI uses neutral area/module language.
-5. The submitted template version and exclusions are revalidated on the server.
+The orchestrator owns no clinical questions.
 
-### Focused Health Assessment
+## 3. Focused Health Assessment
 
-1. The controller loads published `FOCUSED` template versions.
-2. The user chooses one health programme, topic, or intervention template.
-3. No department, standard-battery, grouped-module, or unrelated-topic picker is shown.
-4. The selected focused template must resolve to exactly one module.
+1. The controller loads published focused catalogue releases.
+2. The user selects one health domain, programme, topic, or intervention.
+3. The selected release resolves to one official framework scope in the current implementation.
+4. No unrelated department checklist or bulk starter set is shown.
 
-### Shared creation service
+## 4. Snapshot Creation
 
-Both paths delegate to `AssessmentCreationService`. It verifies the published immutable template version, setting compatibility, composition rules, and plan limits; creates the assessment and scope rows; and stores immutable composition/content snapshots with provenance and hashes. Runtime content for template-created assessments is loaded from the snapshot rather than mutable catalogue questions.
+`AssessmentCreationService::createFromCatalogue` creates the assessment.
 
-Publishing stores both the SHA-256 hash and the exact hashed payload. New assessments are created from that stored payload, never by rebuilding a published version from the mutable catalogue.
+It freezes:
 
-The old default-battery/module-picker creation path is no longer used. The former PHSAI and school sample seeders are not part of normal database seeding. The repository's valid HIV focused content is seeded and published as a selectable template.
+- catalogue release ID, code, and hash;
+- facility profile ID and code when applicable;
+- exact selected department framework version IDs;
+- framework version numbers and content hashes;
+- excluded departments and exclusion reasons;
+- full rendered question/options/numeric/scoring payload;
+- aggregation policy;
+- scoring profile version;
+- collection configuration.
 
-## 3. Authenticated runner
+This snapshot is the runtime authority. Later edits to master content or future framework versions cannot change an existing assessment.
 
-1. `/assessments/{assessment}/run` verifies project/workspace access.
-2. The Livewire component locks the assessment identifier and independently rechecks authorization during actions.
-3. For template-created assessments, questions, translations, options, and ordering come from the immutable assessment content snapshot.
-4. The runner covers every in-scope module.
-5. Option submissions are accepted only when the question is in scope and the option belongs to that question.
-6. Open-text questions use the text path, numeric questions use bounded decimal input and `value_numeric`, and option questions validate selected option ownership; unsupported response types cannot be published.
-7. Responses autosave. Authenticated responses have `respondent_id IS NULL`.
-8. Submission is rejected on the server until all required scored questions are complete.
-9. An assessor may progressively reveal an optional supporting-evidence note. The note is stored on that exact response, does not count as an answer, and does not create another workflow.
+## 5. Runner
 
-Remaining authenticated-runner work is limited to additional explicitly approved response types and more granular consent policy. Invalid sample content is removed rather than rendered ambiguously.
+The authenticated runner:
 
-## 4. Public respondent runner
+1. Verifies workspace authorization.
+2. Loads questions from `assessment_snapshots.payload`.
+3. Supports option, open-text, and numeric inputs.
+4. Stores optional supporting evidence on the exact response as `responses.evidence_note`.
+5. Autosaves responses.
+6. Rejects writes when the question or option is not in the frozen snapshot.
 
-1. A workspace user creates a token for an in-progress assessment; the token records its creator and supports expiry and revocation.
-2. `/respond/{token}` validates the token and assessment state, then creates or resumes a durable `public_response_sessions` row.
-3. Token usage count and last-use time are updated when a new respondent session begins.
-4. All in-scope modules are loaded. Template-created assessments use the same immutable content snapshot as the authenticated runner.
-5. Language selection is stored on the durable session. Consent is stored for every in-scope module that requires it.
-6. Responses reference the durable session through a foreign key. Staff rows are explicitly distinguished by a null public-session foreign key.
-7. Question, option, and text mutations are revalidated against authoritative in-scope content.
-8. Submit rechecks all required stored responses, freezes an immutable response snapshot, independently scores it with the assessment's frozen profile, and persists the submitted state and immutable respondent score.
-9. If the template defines eligibility rules, the session remains excluded as `PENDING` until an OWNER or ADMIN reviews it. A template with no eligibility rules may classify a valid submitted session as eligible automatically.
-10. The collection review shows eligible count, minimum threshold, provisional arithmetic mean, scoring/template versions, and exclusion reasons.
-11. Reaching the threshold never auto-finalizes. An OWNER or ADMIN manually finalizes the exact session set.
-12. Finalization persists reproducibility hashes and trace references, completes the ordinary assessment lifecycle, and creates the ordinary immutable report. The public runner rejects late submissions after completion.
+Evidence is context support. It is not a separate workflow.
 
-External respondents are a respondent role within the same assessment architecture. Community surveys, patient-experience surveys, citizen feedback, caregiver feedback, and similar uses are normal assessment templates using the standard lifecycle, scoring, reporting, permissions, exports, dashboards, and analytics. Arithmetic mean is the only initial multi-respondent method, not a permanent universal formula.
+## 6. Public Respondent Collection
 
-## 5. Submission and lifecycle
+Multi-respondent collection remains part of the same assessment architecture.
 
-1. Authenticated submission verifies workspace ownership and required-response completeness. It cannot complete a multi-respondent assessment.
-2. The assessment becomes `COMPLETE`, receives `completed_at`, and all in-scope module rows become `COMPLETED`.
-3. Scoring runs synchronously and stores the scoring algorithm/version used.
-4. The same transaction persists an immutable structured report snapshot with schema version and SHA-256 content hash.
-5. OWNER and ADMIN users receive a database notification and optional email.
+Published content must explicitly enable it and freeze:
 
-The assessment content and composition are immutable through snapshots. `IN_PROGRESS -> COMPLETE` is the only assessment transition and completion is terminal. Area rows use `PENDING`, `COMPLETED`, or `EXCLUDED`; template versions use `DRAFT -> PUBLISHED` and become immutable. Reopen, correction-version, retirement, and archive behavior remain intentionally unavailable until their snapshot and audit semantics are approved.
+- minimum completed eligible respondent threshold;
+- aggregation method;
+- eligibility rules;
+- scoring profile version.
 
-## 6. Scoring flow
+Each submitted public session is scored independently and keeps immutable response and score snapshots. Eligible completed sessions can be manually finalized by an authorized workspace user. Finalization creates the ordinary immutable Vytte report.
 
-1. Read all in-scope module IDs and the authoritative response set for one scoring unit. Staff and public-session rows are explicitly separated.
-2. For template-created assessments, read sub-index membership, question weights, option weights, and domain identity from the assessment snapshot. Legacy assessments use the live profile compatibility path.
-3. Normalize option score scales to a canonical 0–100 range.
-4. Calculate weighted sub-index results with explicit calibration states.
-5. Aggregate domain and overall results and map the overall result to a maturity level.
-6. Persist the scoring version with calculated scores so future algorithm changes remain distinguishable.
+There is no separate community or respondent report.
 
-### Remaining scoring risks
+## 7. Completion
 
-- Domain weights and cross-module aggregation policy require an explicit governed formula.
-- Future aggregation methods require explicit versioned methodology and must continue to use the shared scoring/reporting architecture.
-- Numeric, multi-select, ranking, observation, and corroboration models are postponed until their product need and scoring semantics are approved.
+Authenticated completion:
 
-## 7. Results and reports
+1. Rechecks workspace authority.
+2. Rejects completion until required scored questions are answered.
+3. Marks the assessment `COMPLETE`.
+4. Marks included module-scope rows `COMPLETED`.
+5. Calculates versioned scores.
+6. Creates one immutable final report snapshot.
+7. Notifies workspace owners/admins.
 
-- Newly completed results, PDF, shared reports, and history read the immutable final report snapshot rather than mutable catalogue labels or score joins.
-- The structured report snapshot preserves assessment identity, all included areas, setting/project labels, score and maturity, scoring version, domain/sub-index labels and values, completion time, schema version, and content hash.
-- Historical comparisons require matching composition hashes. Legacy assessments without hashes fall back to exact sorted module-ID fingerprints.
-- CSV lists every included module rather than only the first.
-- New shared-report links are persistent records with creator, expiry, revocation, use count, and last-used time. Legacy temporary signed URLs remain readable for backward compatibility.
-- The Reports index lists completed assessments in the active workspace and provides the existing view, PDF, create-link, and revoke-link actions.
-- Template publication, assessment creation/completion, report finalization, and public/report link lifecycle events write immutable audit records.
+Completion is terminal.
 
-## Current implementation boundary
+## 8. Scoring
 
-Template versions and assessment snapshots are now the creation/runtime boundary. Legacy sample data is not a compatibility contract. New work should strengthen this boundary, migrate or reseed valid content into it, and remove obsolete paths rather than weakening template validation to accommodate samples.
+Scoring:
+
+1. Reads included module IDs.
+2. Reads only official snapshot scoring profile data.
+3. Reads the selected response set.
+4. Calculates sub-index, domain, and overall scores.
+5. Applies the frozen aggregation policy.
+6. Persists algorithm version and calibration status.
+
+Local custom sections are intentionally absent from this flow.
+
+## 9. Reporting
+
+Reports, exports, shared links, dashboards, and analytics use the ordinary Vytte report architecture.
+
+The final report snapshot preserves:
+
+- assessment and target identity;
+- catalogue release and composition hash;
+- included departments;
+- score and maturity data;
+- scoring version;
+- domain/sub-index results;
+- completion and report timestamps;
+- reproducibility hash.
+
+## Current Boundary
+
+The default governed dataset is demonstration content. It proves the architecture, not production clinical methodology.

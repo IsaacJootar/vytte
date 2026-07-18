@@ -374,6 +374,6 @@ The Phase 21 audit and Phase 22 baseline were followed by bounded corrective mod
 | Operating baseline | `1f3e559` | Repository authority, setup, schema cleanup, and architecture contracts |
 | Unified multi-respondent scoring | this module | Independent session scores, eligibility exclusions, manual arithmetic-mean finalization, immutable ordinary reports |
 | UI review and migration recovery | this module | Reviewed pending UI, moved billing navigation, corrected assessment labels, and repaired populated SQLite migration |
-| Universal setting creation | this module | Type-and-name creation, optional legacy categories, dashboard logo navigation, and footer plan label |
+| Universal setting creation | this module | Type-and-name creation, dashboard logo navigation, and footer plan label |
 
 Current verified boundary: **376 tests, 925 assertions passing** on SQLite. A clean 43-migration seed, rollback/reapply cycle, and production frontend build also pass. PostgreSQL parity remains a release requirement while local Docker is unavailable.

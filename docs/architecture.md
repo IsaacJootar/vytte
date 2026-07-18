@@ -1,124 +1,76 @@
-# Vytte — Architecture
+# Vytte Architecture
 
-## Multi-tenancy model
+## Current Model
 
-Single-database, workspace-scoped rows. Every query on tenant data must filter by `workspace_id` first.
+Vytte is a workspace-scoped Laravel monolith with platform-governed assessment content.
 
-**No stancl/tenancy.** No subdomain routing. No separate databases per tenant.
+Vytte owns official:
 
-Enforcement layers (all three required):
-1. `BelongsToWorkspace` global Eloquent scope — auto-applied on every tenant model
-2. Laravel Policies — authZ on every create/read/update/delete action
-3. Cross-workspace attack tests — required, not optional
+- departments;
+- department framework versions;
+- facility profiles;
+- assessment catalogue releases;
+- questions, indicators, scoring rules, evidence requirements, and aggregation policies.
+
+Workspaces consume published catalogue releases. They do not publish official content.
+
+## Tenancy
+
+Every tenant-facing query must resolve through the authenticated user's active workspace and membership. Projects and targets carry workspace ownership. Assessments inherit workspace authority through their project.
 
 ## Hierarchy
 
-```
+```text
 Workspace
-  └── Project (v1: exactly one target per project)
-        ├── Target (the health facility being assessed)
-        └── Assessment (a single diagnostic run)
-              ├── AssessmentModule (which modules are in scope)
-              └── Response (one row per answered question)
-                    └── score computed by scoring engine
+  Project
+    Target
+      FacilityProfile
+    Assessment
+      AssessmentSnapshot
+        CompositionManifest
+        Payload
+        AggregationPolicy
+      AssessmentModuleScope
+      Responses
+      Scores
+      AssessmentReportSnapshot
+      LocalCustomSections
 ```
 
-### v1 constraints (hard)
-- One project = one target
-- `project_target_id` FK on projects points to single target
-- `project_targets` (many-to-many junction) = v2 only, do not build in v1
+## Platform Content Hierarchy
 
-### v2 additions (deferred — do not build now)
-- `project_targets` junction table for multi-target projects
-- `project_domain_scores` rollup table
-- `project_scores` rollup table
+```text
+AssessmentModule
+  DepartmentFrameworkVersion
 
-## Workspace auto-creation
+FacilityProfile
+  FacilityProfileDepartment
 
-Every signup automatically creates a workspace and adds the user as OWNER.
-This happens inside a single DB transaction in `RegisteredUserController`.
-There is no "no workspace" state — ever.
-
-```
-User created → Workspace created → WorkspaceMember (OWNER) created → all in one transaction
+AssessmentCatalogueRelease
+  AssessmentCatalogueDepartmentVersion
 ```
 
-## Workspace membership roles
+## Creation Paths
 
-Stored in `workspace_members.role` (enum):
-- `OWNER` — full control, one per workspace
-- `ADMIN` — manage members, settings; cannot delete workspace
-- `MEMBER` — can run assessments, view reports
+1. **Comprehensive Health Assessment** resolves a facility profile and a published catalogue release, preloads required/default/optional departments, composes selected pinned framework versions, and freezes one assessment snapshot.
+2. **Focused Health Assessment** resolves one published focused catalogue release and opens one health domain, programme, topic, or intervention.
 
-## Platform roles
+No unrelated bulk starter set, generic module picker, or giant comprehensive template is part of the current architecture.
 
-Stored in `users.platform_role` (nullable enum):
-- `PLATFORM_ADMIN` — full platform access (backoffice)
-- `CURATOR` — can author/review question weights and questionnaire content
-- `null` — normal workspace user
+## Runtime Boundary
 
-## BelongsToWorkspace trait
+Assessment runners, scoring, reporting, exports, dashboards, and shared reports read the immutable assessment/report snapshots.
 
-Applied via `use BelongsToWorkspace` on every tenant model.
+## Scoring
 
-The trait does two things automatically:
-1. Registers a global Eloquent scope filtering `workspace_id = current_workspace_id()`
-2. Hooks `creating` to set `workspace_id` from session if not already set
+The current scoring algorithm is `vytte-4.0-numeric-bands` with canonical 0-100 output. Null means uncalibrated. Local custom sections are context only and excluded from official scoring.
 
-Models that use BelongsToWorkspace:
-- Project, Target, Assessment, AssessmentModule, Response, Report
-- WorkspaceMember, WorkspaceInvitation
+## Verification
 
-Platform-level models (not tenant-scoped):
-- User, Workspace, Domain (the 7 PHSAI domains), AssessmentTier,
-  TargetType, Topic, QuestionType, StandardsRegistry,
-  AssessmentModuleDefinition, SubIndex, Question, QuestionOption,
-  MaturityLevel, RespondentRole
+Current local verification:
 
-## Request lifecycle
+- `php artisan test`: 395 tests, 972 assertions passing.
+- Disposable SQLite `migrate:fresh --seed`: passing.
+- Production frontend build: passing.
 
-```
-Request → ResolveWorkspace middleware → sets app('current.workspace')
-        → Controller/Livewire component
-        → Model query — BelongsToWorkspace scope auto-applies workspace_id filter
-        → Policy check — verifies user is member of workspace
-```
-
-## Routing
-
-No subdomain multi-tenancy. Workspace is resolved from the authenticated user's active workspace.
-
-Route groups:
-- `/` — public (marketing, login, register)
-- `/dashboard` — authenticated workspace user routes
-- `/admin` — platform admin routes (`platform_role = PLATFORM_ADMIN`)
-- `/curator` — content curation routes (`platform_role IN (PLATFORM_ADMIN, CURATOR)`)
-
-## Database
-
-PostgreSQL (dev via Docker port 5433, production via VPS).
-UUID primary keys everywhere (`HasUuids` trait).
-Non-standard PK names are explicitly declared with `protected $primaryKey`.
-
-See `docs/database.md` for full 42-table schema.
-
-## Email
-
-Resend is the provider. All outbound email is gated by:
-
-```php
-PlatformSetting::get('email.notifications_enabled', false)
-```
-
-This is OFF by default. Auth does not require email verification until the toggle is turned on.
-
-## Scoring engine
-
-7-stage pipeline: Response Normalization → Sub-Index Aggregation → Domain Aggregation →
-Facility Health Score → Root-Cause Ranking → Recommendation Generation → Report Assembly.
-
-Calibration rule: if a sub-index has no questions with non-null `score_weight`, the engine
-returns `null` for that sub-index and flags it `calibration_status = NOT_CALIBRATED`.
-It NEVER returns 0 or a fabricated score.
-
-HIVAW module (9 questions) is the only fully-calibrated module in v1.
+PostgreSQL parity remains required before release.

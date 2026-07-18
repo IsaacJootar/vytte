@@ -1,317 +1,170 @@
-# Vytte — Database Schema
+# Vytte Database Schema
 
-Source: phsai_schema.sql v1.1 (42 tables). Laravel migrations must translate 1:1 — preserve all column names, constraints, CHECKs, and indexes exactly.
+## Authority
 
-## Primary key convention
+Laravel migrations are the database source of truth. PostgreSQL is the production authority. SQLite is used for local development and automated tests.
 
-All tables use UUID primary keys via Laravel's `HasUuids` trait.
-Non-standard PK names must be declared: `protected $primaryKey = 'workspace_id';`
+## Core Table Groups
 
-## Table inventory (42 tables)
+### Platform and Workspace
 
-### Platform / reference tables (no workspace_id)
+- `users`
+- `workspaces`
+- `workspace_members`
+- `workspace_invitations`
+- `platform_settings`
+- `plan_features`
+- `audit_logs`
 
-| Table | Purpose |
-|---|---|
-| `users` | Auth — email, password, platform_role (nullable: PLATFORM_ADMIN, CURATOR) |
-| `workspaces` | Tenant root — name, slug, owner_id, plan, status |
-| `workspace_members` | workspace_id + user_id + role (OWNER/ADMIN/MEMBER) |
-| `workspace_invitations` | Pending email invites |
-| `platform_settings` | Key-value store for platform-wide toggles (e.g. email.notifications_enabled) |
-| `domains` | 7 PHSAI domains — pre-seeded, never per-tenant |
-| `assessment_tiers` | BASIC / ENHANCED / COMPREHENSIVE |
-| `target_types` | HOSPITAL, CLINIC, PHARMACY, etc. |
-| `topics` | Cross-cutting topics (pre-seeded) |
-| `question_types` | Declared response vocabulary; only types in `RESPONSE_TYPE_CONTRACT.md` may publish |
-| `maturity_levels` | 5 levels: CRITICAL → EXEMPLARY |
-| `respondent_roles` | The roles that answer questions (pre-seeded) |
-| `standards_registry` | External standards referenced by questions (pre-seeded) |
+### Taxonomy and Reference
 
-### Assessment framework (platform-level, no workspace_id)
+- `target_types`
+- `setting_types`
+- `target_type_setting_map`
+- `health_domains`
+- `assessment_module_health_domain`
+- `domains`
+- `domain_weights`
+- `maturity_levels`
+- `assessment_tiers`
+- `question_types`
+- `standards_registry`
+- `topics`
+- `respondent_roles`
 
-| Table | Purpose |
-|---|---|
-| `assessment_module_definitions` | 23 named modules (OPD, ANC, HIVAW, etc.) — pre-seeded |
-| `sub_indices` | 120 sub-indices linked to modules — pre-seeded (phsai_seed_sub_indices.sql) |
-| `questions` | 528 questions — pre-seeded, score_weight NULL until calibrated |
-| `question_options` | Answer options for structured questions |
-| `question_standards` | Junction: question ↔ standards_registry |
-| `question_respondent_roles` | Junction: question ↔ respondent_roles |
+### Official Assessment Content
 
-### Workspace tenant data (all have workspace_id FK)
+- `assessment_modules`
+- `module_domains`
+- `sub_indices`
+- `questions`
+- `question_options`
+- `question_numeric_bands`
+- `sub_index_questions`
+- `question_topics`
+- `question_drafts`
+- `question_translations`
+- `question_option_translations`
 
-| Table | Purpose |
-|---|---|
-| `projects` | A diagnostic initiative within a workspace |
-| `targets` | The entity being assessed (a health facility) |
-| `assessments` | A single diagnostic run — belongs to project |
-| `assessment_modules` | Which modules are included in an assessment |
-| `assessment_respondents` | People who will complete parts of the assessment |
-| `responses` | One row per answered question per assessment |
-| `response_flags` | Issues flagged during response review |
-| `sub_index_scores` | Computed sub-index scores (null if NOT_CALIBRATED) |
-| `domain_scores` | Computed domain scores |
-| `facility_health_scores` | Overall facility score per assessment |
-| `root_cause_analyses` | Top issues identified by the scoring engine |
-| `recommendations` | Action items generated from root causes |
-| `reports` | Generated diagnostic reports |
-| `report_sections` | Individual sections of a report |
-| `audit_logs` | Immutable activity log per workspace |
+### Governed Composition
 
-## Key columns by table
+- `department_framework_versions`
+- `facility_profiles`
+- `facility_profile_departments`
+- `assessment_catalogue_releases`
+- `assessment_catalogue_department_versions`
 
-### users
-```sql
-id uuid PK
-name varchar(255)
-email varchar(255) UNIQUE NOT NULL
-email_verified_at timestamp nullable
-password varchar(255)
-platform_role varchar(50) nullable CHECK IN ('PLATFORM_ADMIN','CURATOR')
-active_workspace_id uuid nullable FK workspaces
-remember_token varchar(100)
-created_at, updated_at
-```
+### Project and Assessment Runtime
 
-### workspaces
-```sql
-workspace_id uuid PK
-name varchar(255) NOT NULL
-slug varchar(100) UNIQUE NOT NULL
-owner_id uuid FK users NOT NULL
-plan varchar(50) DEFAULT 'FREE'
-status varchar(50) DEFAULT 'ACTIVE' CHECK IN ('ACTIVE','SUSPENDED','CANCELLED')
-settings jsonb DEFAULT '{}'
-created_at, updated_at
-```
+- `targets`
+- `projects`
+- `project_targets`
+- `assessments`
+- `assessment_module_scope`
+- `assessment_snapshots`
+- `local_custom_sections`
+- `assessment_share_links`
 
-### workspace_members
-```sql
-id uuid PK
-workspace_id uuid FK workspaces CASCADE NOT NULL
-user_id uuid FK users CASCADE NOT NULL
-role varchar(50) NOT NULL CHECK IN ('OWNER','ADMIN','MEMBER')
-created_at, updated_at
-UNIQUE (workspace_id, user_id)
-```
+### Response, Scoring, and Reports
 
-### projects
-```sql
-project_id uuid PK
-workspace_id uuid FK workspaces CASCADE NOT NULL
-name varchar(255) NOT NULL
-description text nullable
-target_id uuid FK targets nullable  -- v1: set after target created
-status varchar(50) DEFAULT 'ACTIVE'
-created_by uuid FK users NOT NULL
-created_at, updated_at
-```
+- `responses`
+- `assessment_respondent_tokens`
+- `public_response_sessions`
+- `respondent_consents`
+- `respondent_score_results`
+- `assessment_aggregation_results`
+- `sub_index_scores`
+- `domain_scores`
+- `assessment_scores`
+- `assessment_report_snapshots`
 
-### targets
-```sql
-target_id uuid PK
-workspace_id uuid FK workspaces CASCADE NOT NULL
-project_id uuid FK projects CASCADE NOT NULL
-name varchar(255) NOT NULL
-type_id uuid FK target_types NOT NULL
-location_state varchar(100) nullable
-location_lga varchar(100) nullable
-location_address text nullable
-ownership varchar(50) nullable CHECK IN ('PUBLIC','PRIVATE','FAITH_BASED','NGO')
-bed_capacity integer nullable
-staff_count integer nullable
-metadata jsonb DEFAULT '{}'
-created_at, updated_at
-```
+## Key Relationships
 
-### assessments
-```sql
-assessment_id uuid PK
-workspace_id uuid FK workspaces CASCADE NOT NULL
-project_id uuid FK projects CASCADE NOT NULL
-target_id uuid FK targets NOT NULL
-tier_id uuid FK assessment_tiers NOT NULL
-name varchar(255) NOT NULL
-description text nullable
-status varchar(50) DEFAULT 'DRAFT' CHECK IN ('DRAFT','IN_PROGRESS','COMPLETED','ARCHIVED')
-started_at timestamp nullable
-completed_at timestamp nullable
-created_by uuid FK users NOT NULL
-created_at, updated_at
-```
+- A workspace owns projects and targets.
+- A project has exactly one assessed target through `project_targets`.
+- A health-facility target may reference one official `facility_profile`.
+- A facility profile defines required/default/optional departments.
+- A department has immutable published framework versions.
+- A catalogue release pins exact framework versions and aggregation policy.
+- An assessment references the selected catalogue release.
+- An assessment snapshot freezes the composed payload, manifest, and policy.
+- Responses are validated against the frozen snapshot.
+- Final reports are immutable structured snapshots.
 
-### assessment_module_definitions (platform-level, pre-seeded)
-```sql
-module_id uuid PK
-domain_id uuid FK domains NOT NULL
-name varchar(255) NOT NULL
-code varchar(50) UNIQUE NOT NULL  -- e.g. 'OPD', 'ANC', 'HIVAW'
-description text nullable
-display_order integer DEFAULT 0
-is_active boolean DEFAULT true
-created_at, updated_at
-```
+## Important Columns
 
-### sub_indices (platform-level, pre-seeded)
-```sql
-sub_index_id uuid PK
-module_id uuid FK assessment_module_definitions NOT NULL
-name varchar(255) NOT NULL
-code varchar(100) UNIQUE NOT NULL
-description text nullable
-display_order integer DEFAULT 0
-created_at, updated_at
-```
+### `department_framework_versions`
 
-### questions (platform-level, pre-seeded, 528 rows)
-```sql
-question_id uuid PK
-sub_index_id uuid FK sub_indices NOT NULL
-module_id uuid FK assessment_module_definitions NOT NULL
-question_code varchar(50) UNIQUE NOT NULL  -- e.g. 'OPD.D1.Q1'
-question_text text NOT NULL
-question_type_id uuid FK question_types NOT NULL
-score_weight decimal(5,4) nullable  -- NULL until calibrated
-score_band varchar(50) nullable
-is_required boolean DEFAULT true
-allows_notes boolean DEFAULT false
-display_order integer DEFAULT 0
-is_active boolean DEFAULT true
-created_at, updated_at
-```
+- `framework_version_id`
+- `module_id`
+- `version_number`
+- `status`
+- `display_name`
+- `source_authority`
+- `license_code`
+- `scoring_version`
+- `content_hash`
+- `published_payload`
+- `published_at`
+- `published_by`
 
-### question_options
-```sql
-option_id uuid PK
-question_id uuid FK questions CASCADE NOT NULL
-option_text varchar(500) NOT NULL
-option_value decimal(5,4) nullable
-display_order integer DEFAULT 0
-is_correct boolean DEFAULT false
-created_at, updated_at
-```
+### `facility_profiles`
 
-### responses
-```sql
-response_id uuid PK
-workspace_id uuid FK workspaces CASCADE NOT NULL
-assessment_id uuid FK assessments CASCADE NOT NULL
-question_id uuid FK questions NOT NULL
-respondent_id uuid FK assessment_respondents nullable
-selected_option_ids uuid[] nullable  -- array of option_ids for multi-select
-response_value text nullable
-notes text nullable
-is_flagged boolean DEFAULT false
-flagged_reason text nullable
-responded_at timestamp nullable
-created_at, updated_at
-UNIQUE (assessment_id, question_id)
-```
+- `facility_profile_id`
+- `profile_code`
+- `profile_name`
+- `setting_type_code`
+- `status`
+- `display_order`
 
-### sub_index_scores
-```sql
-score_id uuid PK
-workspace_id uuid FK workspaces CASCADE NOT NULL
-assessment_id uuid FK assessments CASCADE NOT NULL
-sub_index_id uuid FK sub_indices NOT NULL
-raw_score decimal(8,4) nullable
-normalized_score decimal(5,4) nullable  -- 0.0 to 1.0
-calibration_status varchar(50) DEFAULT 'NOT_CALIBRATED' CHECK IN ('NOT_CALIBRATED','CALIBRATED','PARTIAL')
-response_count integer DEFAULT 0
-weighted_response_count integer DEFAULT 0
-computed_at timestamp nullable
-created_at, updated_at
-UNIQUE (assessment_id, sub_index_id)
-```
+### `assessment_catalogue_releases`
 
-### domain_scores
-```sql
-score_id uuid PK
-workspace_id uuid FK workspaces CASCADE NOT NULL
-assessment_id uuid FK assessments CASCADE NOT NULL
-domain_id uuid FK domains NOT NULL
-score decimal(5,4) nullable
-maturity_level_id uuid FK maturity_levels nullable
-calibration_status varchar(50) DEFAULT 'NOT_CALIBRATED'
-computed_at timestamp nullable
-UNIQUE (assessment_id, domain_id)
-```
+- `catalogue_release_id`
+- `release_code`
+- `release_name`
+- `creation_path`
+- `facility_profile_id`
+- `health_domain_id`
+- `status`
+- `aggregation_policy`
+- `composition_rules`
+- `content_hash`
+- `published_at`
+- `published_by`
 
-### facility_health_scores
-```sql
-score_id uuid PK
-workspace_id uuid FK workspaces CASCADE NOT NULL
-assessment_id uuid FK assessments NOT NULL UNIQUE
-overall_score decimal(5,4) nullable
-maturity_level_id uuid FK maturity_levels nullable
-calibration_status varchar(50) DEFAULT 'NOT_CALIBRATED'
-computed_at timestamp nullable
-```
+### `assessment_snapshots`
 
-### platform_settings
-```sql
-id uuid PK
-key varchar(255) UNIQUE NOT NULL
-value text nullable
-type varchar(50) DEFAULT 'string' CHECK IN ('string','boolean','integer','json')
-description text nullable
-created_at, updated_at
-```
+- `snapshot_id`
+- `assessment_id`
+- `catalogue_release_id`
+- `facility_profile_id`
+- `creation_path`
+- `setting_type_code`
+- `health_domain_id`
+- `content_hash`
+- `composition_manifest`
+- `aggregation_policy`
+- `payload`
+- `collection_config`
 
-## Seeds required
+## Seed Data
 
-On `php artisan db:seed`, must populate:
-1. `domains` — 7 PHSAI domains
-2. `maturity_levels` — 5 levels
-3. `assessment_tiers` — 3 tiers
-4. `target_types` — facility types
-5. `question_types` — 6 types
-6. `respondent_roles` — named roles
-7. `assessment_module_definitions` — 23 modules
-8. `sub_indices` — 120 sub-indices (from phsai_seed_sub_indices.sql, corrected to v1.1 names)
-9. `questions` — 528 questions with NULL score_weight (except HIVAW: 9 questions with real weights)
-10. `question_options` — all options for all structured questions
-11. `platform_settings` — `email.notifications_enabled` = false
+Default seeding creates:
 
-## Migration order (respects FK dependencies)
+- platform settings;
+- reference taxonomy;
+- a small demonstration governed catalogue;
+- plan features;
+- demo users, workspaces, projects, and example assessments.
 
-1. users (modified: add platform_role, active_workspace_id — added after workspaces migration)
-2. workspaces
-3. workspace_members
-4. workspace_invitations
-5. platform_settings
-6. domains
-7. maturity_levels
-8. assessment_tiers
-9. target_types
-10. topics
-11. question_types
-12. respondent_roles
-13. standards_registry
-14. assessment_module_definitions
-15. sub_indices
-16. questions
-17. question_options
-18. question_standards
-19. question_respondent_roles
-20. projects
-21. targets (add project_id FK to projects after targets table)
-22. assessments
-24. assessment_modules
-25. assessment_respondents
-26. responses
-27. response_flags
-28. sub_index_scores
-29. domain_scores
-30. facility_health_scores
-31. root_cause_analyses
-32. recommendations
-33. reports
-34. report_sections
-35. audit_logs
-36. Add active_workspace_id FK to users (separate migration after workspaces created)
+The demonstration catalogue is not production clinical methodology.
 
-## Note on phsai_seed_sub_indices.sql
+## Verification
 
-The seed file uses v1.0 column names: `section_id` and `sections`.
-When writing the sub_indices seeder, correct to v1.1 names: `module_id` and `assessment_module_definitions`.
+Current local checks:
+
+- full PHPUnit suite passes;
+- disposable SQLite `migrate:fresh --seed` passes;
+- production frontend build passes.
+
+Before release, run the same migration and test suite against PostgreSQL.

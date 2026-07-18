@@ -2,158 +2,195 @@
 
 ## Status
 
-This document describes the implemented Laravel monolith after the approved Phase 21/22 remediation through Module 16. Repository migrations, models, services, policies, routes, and tests are the technical source of truth.
+This document describes the implemented Vytte platform-governed composition architecture after commit `44f0186`.
 
-Current verified SQLite boundary: 365 tests and 870 assertions passing. PostgreSQL remains the production authority; parity verification is pending restoration of the local PostgreSQL/Docker environment.
+Verified locally:
 
-## Runtime stack
+- `php artisan test`: 395 tests, 972 assertions passing.
+- Clean disposable SQLite `migrate:fresh --seed`: passing.
+- Production frontend build with `npm.cmd run build`: passing.
+
+PostgreSQL remains the production database authority. SQLite is allowed for desktop development and fast automated tests while local Docker/PostgreSQL is unavailable.
+
+## Runtime Stack
 
 | Layer | Implementation |
 |---|---|
 | Framework | Laravel 13 on PHP 8.3+ |
-| Server UI | Blade layouts, views, and components |
-| Stateful UI | Livewire 4 |
-| Browser behavior | Alpine.js supplied by Livewire plus minimal application JavaScript |
-| Styling/build | Tailwind CSS 4, CSS-first tokens, Vite |
+| UI | Blade, Livewire 4, Alpine.js |
+| Styling/build | Tailwind CSS 4 and Vite |
 | Data access | Eloquent plus bounded query-builder operations |
 | Production database | PostgreSQL |
-| Local/test database | SQLite, including in-memory PHPUnit runs |
+| Local/test database | SQLite |
 | Auth | Laravel Breeze email/password |
-| Email | Resend behind platform settings |
 | PDF | DomPDF |
 | Payments | Paystack and Flutterwave webhooks |
-| Identifiers | Mixed UUID, integer, string, and composite keys |
 
-## Logical topology
+## Core Product Rule
+
+Vytte is the authority for official assessment content. Workspaces consume published Vytte catalogue releases; they do not create official departments, official framework versions, official scoring rules, or official aggregation policy.
+
+There are exactly two assessment creation paths:
+
+- **Comprehensive Health Assessment:** a composition orchestrator for a facility profile.
+- **Focused Health Assessment:** a single health domain, programme, topic, or intervention.
+
+## Logical Topology
 
 ```mermaid
 flowchart TD
-    U[User] --> WM[Workspace membership]
-    WM --> W[Active workspace]
+    U[User] --> W[Workspace]
     W --> P[Project]
-    W --> T[Target / setting]
-    P --> PT[One project_targets row]
-    PT --> T
-    P --> A[Assessment]
-    T --> A
+    P --> T[Target]
+    T --> FP[Facility profile]
 
-    AT[Assessment template] --> ATV[Immutable published version]
-    ATV --> AC[Published content payload]
-    ATV --> A
-    A --> ASNP[Assessment content/scoring snapshot]
+    AM[Official department] --> DFV[Published department framework version]
+    FP --> FPD[Required/default/optional departments]
+    FPD --> AM
 
+    DFV --> CR[Published assessment catalogue release]
+    FP --> CR
+    CR --> A[Assessment]
     A --> AMS[Assessment module scope]
-    AMS --> M[Module catalogue]
-    M --> Q[Questions and options]
-    Q --> SI[Sub-index profile]
-    SI --> D[Scoring domain]
+    A --> ASN[Immutable assessment snapshot]
+    ASN --> PAY[Snapshot payload]
+    ASN --> MAN[Composition manifest]
+    ASN --> AGG[Aggregation policy]
 
     A --> R[Responses]
-    A --> PRS[External respondent sessions]
-    PRS --> R
-    R --> SIS[Versioned sub-index scores]
-    SIS --> DS[Domain scores]
-    DS --> OS[Assessment score]
+    R --> SCORE[Versioned scoring]
+    SCORE --> REP[Immutable report snapshot]
+    REP --> OUT[Results, PDF, reports, sharing, analytics]
 
-    A --> RS[Immutable final report snapshot]
-    RS --> UI[Results / Reports index / PDF / CSV]
-    RS --> SL[Governed share links]
+    A --> LCS[Local custom sections]
+    LCS -.context only.-> REP
 ```
 
-## Tenancy and authorization
+## Platform Content Model
 
-- Registration creates a user, workspace, OWNER membership, and active-workspace assignment transactionally.
-- `ResolveWorkspace` accepts an active workspace only when the authenticated user has membership. It runs before route binding.
-- Projects and targets carry direct workspace ownership and fail-closed global scoping.
-- Project and Assessment policies protect active project, assessment, result, export, progress, sharing, and respondent-link actions.
-- Downstream rows inherit authority through their project/assessment relationship. New tenant-owned routes must combine a workspace-scoped parent query with policy authorization.
-- Platform-admin and curator middleware are separate. Curators may publish validated template versions through the governed publication route.
+Official departments live in `assessment_modules`.
 
-## Project and setting model
+Each official department can have independently published immutable rows in `department_framework_versions`. A published framework version freezes:
 
-- A project belongs to one workspace and one owner.
-- Project creation creates/attaches one target (the assessed setting) in the same transaction.
-- The compatibility `project_targets` junction remains, but a unique database constraint enforces one target per project.
-- Settings include health facilities and user-relevant contexts such as schools, communities, correctional facilities, workplaces, places of worship, NGOs/programmes, government organizations, and custom settings.
-- Setting taxonomy and health-domain taxonomy are separate. A setting does not make Vytte a non-health vertical.
+- department identity;
+- domains, sections, questions, options, numeric configuration, and scoring profile;
+- evidence and critical-failure metadata;
+- provenance and licence metadata;
+- scoring algorithm version;
+- exact published payload;
+- content hash.
 
-## Template and content architecture
+Published department framework versions cannot be edited or deleted. Corrections require a new version.
 
-- Vytte has exactly two creation paths: comprehensive and focused.
-- Comprehensive templates declare a setting and may include multiple assessment areas. Users may exclude non-applicable areas with a reason.
-- Focused templates declare one health domain and one direct assessment scope. They never load unrelated batteries or module checklists.
-- Template publication validates provenance, licence metadata, supported response types, active questions, option weights, and scored-question mappings.
-- A published version stores the exact payload represented by its content hash and is immutable.
-- Assessment creation copies the selected published payload into an assessment-owned immutable snapshot, including presentation, consent applicability, and scoring profile.
-- Master module/question assets remain curator-editable for future drafts; edits cannot change existing published versions or snapshot-based assessments.
+## Facility Profiles
 
-## Assessment runtime
+Official facility profiles live in `facility_profiles`.
 
-- The authenticated runner reads the assessment snapshot when present and falls back to live content only for legacy assessments.
-- The runner supports scalar option inputs and unscored open text under the publishable contract.
-- Required scored answers are validated on the server before completion.
-- Optional evidence is progressively disclosed and stored as `responses.evidence_note` on the exact response. It does not count as an answer or create a repository workflow.
-- External respondent links create durable, resumable sessions with locale, consent, activity, and submission timestamps. Submitted sessions freeze response and independent score snapshots with integrity hashes. Tokens record creator, use, expiry, and revocation.
-- External and authenticated runners load all in-scope modules and revalidate question/option authority on every write.
-- Multi-respondent templates explicitly freeze their threshold, eligibility rules, arithmetic-mean method, and scoring-profile version. Provisional aggregates require OWNER/ADMIN manual finalization into the ordinary immutable report. A separate community or respondent report is prohibited.
+Examples in the demonstration seed:
 
-## Lifecycle
+- Clinic
+- Primary Health Centre
+- General Hospital
 
-- Assessment execution: `IN_PROGRESS -> COMPLETE`, terminal.
-- Included area execution: `PENDING -> COMPLETED`.
-- Excluded comprehensive areas: `EXCLUDED`.
-- Template/version publication: `DRAFT -> PUBLISHED`; published versions are immutable.
-- Reopen, correction-version, cancellation, retirement, and archive workflows are not implemented.
+`facility_profile_departments` defines whether each department is:
 
-See `LIFECYCLE_STATE_MACHINE.md`.
+- `REQUIRED`
+- `DEFAULT`
+- `OPTIONAL`
+- unavailable by omission
+
+Required departments cannot be removed. Default departments are preselected and may be removed with a reason when policy allows. Optional departments are available but not preselected.
+
+## Assessment Catalogue
+
+Published catalogue releases live in `assessment_catalogue_releases`.
+
+A catalogue release pins:
+
+- one creation path;
+- one facility profile for comprehensive assessments, or one health domain for focused assessments;
+- exact published department framework versions;
+- department applicability;
+- display order and labels;
+- aggregation policy;
+- composition rules;
+- content hash and publication audit.
+
+The system never resolves "latest framework version" at assessment creation time. It resolves only through a published catalogue release.
+
+## Assessment Creation
+
+Assessment creation uses `AssessmentCreationService::createFromCatalogue`.
+
+The service:
+
+1. Verifies the catalogue release is published.
+2. Verifies facility-profile compatibility for comprehensive assessments.
+3. Applies required/default/optional department rules.
+4. Rejects invalid departments and duplicate questions.
+5. Builds one composed snapshot payload from the pinned framework versions.
+6. Freezes a composition manifest containing release ID, release hash, facility profile, selected framework version IDs, selected hashes, and exclusions.
+7. Stores one immutable `assessment_snapshots` row.
+8. Stores included/excluded rows in `assessment_module_scope`.
+
+The old template tables remain in the schema because other implemented infrastructure still references them, but active assessment creation uses catalogue releases.
+
+## Runtime
+
+The authenticated runner reads the immutable assessment snapshot. It supports:
+
+- scalar option questions;
+- open-text questions;
+- numeric questions with frozen unit, bounds, and step;
+- optional response-bound evidence notes.
+
+Unsupported response types cannot be published into official framework versions.
+
+External respondent collection remains in the same assessment architecture. It uses durable public response sessions, independent session scoring, threshold review, manual finalization, and the ordinary immutable report.
 
 ## Scoring
 
-- Completion invokes `ScoringService` synchronously inside the completion transaction.
-- Published-template assessments use the frozen scoring profile; legacy assessments use a separated compatibility profile.
-- Option scales with a maximum at or below 1 are normalized to canonical 0–100 output.
-- Sub-index results are weighted means of answered scored questions.
-- Domain and overall results aggregate non-null sub-index results.
-- Calibration is `NOT_CALIBRATED`, `PARTIAL`, or `CALIBRATED`.
-- Display bands are Weak below 45, Moderate from 45 to below 70, and Strong at 70 or above.
-- Every stored score records an algorithm version. Completed assessments are not silently recalculated.
-- The shared scorer calculates either the isolated staff response set or one durable public-session response set. Eligible completed respondent scores use the frozen arithmetic-mean contract; future methods require new governed versions.
+Scoring reads only official snapshot payload. Local custom sections never enter official score calculation.
+
+Current algorithm:
+
+- `vytte-4.0-numeric-bands`
+- canonical output scale: 0-100
+- weighted sub-index means
+- domain and overall means of non-null scored results
+- null means uncalibrated, never zero
+
+The demonstration aggregation method is `MEAN_OF_SCORED_SUB_INDICES`.
+
+Catalogue aggregation policy can enable critical failures. The current implementation supports an initial demo rule where a configured critical failure can force the overall score to zero and mark calibration as `CRITICAL_FAILURE`.
 
 ## Reporting
 
-- Completion persists one immutable structured report snapshot with schema version and SHA-256 content hash.
-- Results, PDF, public shared reports, and progress history read the final snapshot for newly completed assessments.
-- Legacy completed assessments use a clearly separated best-effort builder and are not silently backfilled.
-- The Reports index lists completed assessments in the active workspace and reuses the standard results, PDF, share-link, and revocation actions.
-- Governed report links record creator, expiry, active/revoked state, use count, and last-used time. Legacy temporary signed routes remain readable for compatibility.
-- Progress comparisons require matching composition fingerprints; incompatible assessments are rejected.
-- Findings remain derived presentation text. Root-cause and recommendation tables are dormant and do not represent implemented product behavior.
+Completion creates one immutable `assessment_report_snapshots` payload with a schema version and content hash.
 
-## Governance and audit
+Results, PDF, reports index, shared reports, CSV, and progress views use the same report architecture. There is no separate community, respondent, or custom report subsystem.
 
-- Immutable audit records cover template publication, assessment creation/completion, final-report capture, respondent-link lifecycle, and report-link lifecycle.
-- Plan limits and feature access are centralized in `PlanService` and `plan_features`.
-- Community assessment content is not a separate plan feature.
-- Email is gated by platform settings; database notifications remain available.
-- Paystack and Flutterwave webhook endpoints are CSRF-exempt and retain provider-specific signature/hash validation.
+## Local Custom Sections
 
-## HTTP and UI architecture
+Workspace users may create local custom sections attached to an assessment. These sections:
 
-- The product surface is server-rendered HTML, Livewire requests, payment/email webhooks, invitation links, respondent-token links, and governed report links.
-- There is no generic versioned REST/GraphQL API because no approved consumer requires one.
-- The authenticated shell provides Dashboard, Projects, Assessments, Reports, Modules, Team, and Notifications.
-- Reusable UI includes app/guest/admin layouts, navigation items, buttons and form controls, score arcs/pills, plan gates, modals, skeletons, and the Vytte mark.
-- Ocean Blue tokens in `resources/css/app.css` are authoritative. Interfaces support dark mode and responsive layouts.
+- belong only to the workspace;
+- are visibly local;
+- cannot change official content;
+- cannot replace official questions;
+- are excluded from official scoring;
+- may capture local notes, questions, observations, instructions, and evidence prompts.
 
-## Known bounded gaps
+## Authorization and Audit
 
-- PostgreSQL parity and concurrency checks remain a release gate.
-- Respondent-aware aggregation needs an explicit template-level scoring unit and completion rule inside the shared engine.
-- True multi-select, ranking, observation, time-estimate, and other undeveloped response types remain unavailable for publication; numeric input is supported end to end.
-- Dataset counts require governed version metadata; sample content is not production clinical authority.
-- Dormant recommendation, root-cause, topic-score, project-score, observation, and multi-select structures remain reserved.
-- No assessment reopen/correction/archive workflow exists.
+- Workspace access is enforced through active workspace membership, scoped project/target ownership, and policies.
+- Platform admin and curator authority are separate from workspace roles.
+- Publication, assessment creation, completion, report finalization, respondent-link lifecycle, share-link lifecycle, department-framework publication, and catalogue publication are auditable events.
 
-## Architectural conclusion
+## Current Boundaries
 
-Vytte is a modular, workspace-scoped Laravel monolith with one template, assessment, scoring, and reporting architecture. The safe extension path is additive and contract-driven: publish immutable template content, create assessment snapshots, collect validated responses, calculate versioned scores, and finalize one immutable report. New settings, respondent roles, evidence support, and future response types must reuse that path rather than create parallel products.
+- The seeded governed catalogue is demonstration-only.
+- A full curator UI for framework and catalogue management is not yet implemented.
+- Facility profile selection exists during project creation; profile editing after project creation is not yet exposed.
+- PostgreSQL parity and concurrency verification remain release gates.
+- Additional response types require renderer, storage, validation, completeness, snapshot, and scoring contracts before publication.
