@@ -6,7 +6,7 @@
             ← Modules
         </a>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white">Import Assessment Module</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Upload a JSON file to add a new module with domains and questions.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Upload a JSON file to add a new module with question groups and questions.</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -41,10 +41,10 @@
   "target_type_code": "HEALTH_FACILITY",
   "primary_respondent": "Facility Head",
   "estimated_duration_minutes": 45,
-  "domains": [
+  "question_groups": [
     {
       "domain_number": 1,
-      "domain_label": "Domain Label",
+      "domain_label": "Question Group Label",
       "questions": [
         {
           "question_code": "Q001",

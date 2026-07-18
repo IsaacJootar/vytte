@@ -229,11 +229,19 @@ class MultiRespondentAggregationService
         $domains = $domainIds->map(function ($id) use ($scorePayloads, $sessions) {
             $values = $scorePayloads->map(fn ($payload) => collect($payload['domains'] ?? [])->firstWhere('domain_id', $id)['score'] ?? null)
                 ->filter(fn ($score) => $score !== null);
+            $firstDomain = collect($scorePayloads->first()['domains'] ?? [])->firstWhere('domain_id', $id) ?? [];
 
             return [
                 'domain_id' => (int) $id,
+                'domain_code' => $firstDomain['domain_code'] ?? null,
+                'domain_name' => $firstDomain['domain_name'] ?? null,
+                'domain_taxonomy_version_id' => $firstDomain['domain_taxonomy_version_id'] ?? null,
+                'domain_taxonomy_content_hash' => $firstDomain['domain_taxonomy_content_hash'] ?? null,
                 'score' => $values->isEmpty() ? null : round($values->avg(), 2),
                 'calibration_status' => $values->count() === $sessions->count() ? 'CALIBRATED' : ($values->isEmpty() ? 'NOT_CALIBRATED' : 'PARTIAL'),
+                'questions_expected' => $firstDomain['questions_expected'] ?? null,
+                'questions_answered' => $firstDomain['questions_answered'] ?? null,
+                'contributing_questions' => $firstDomain['contributing_questions'] ?? [],
             ];
         })->values()->all();
 

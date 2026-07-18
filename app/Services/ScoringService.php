@@ -60,6 +60,8 @@ class ScoringService
 
         $subIndices = $this->scoringProfile($assessment, $moduleIds);
         $subIndexResults = [];
+        $domainExpected = [];
+        $domainContributions = [];
 
         foreach ($subIndices as $subIndex) {
             $totalWeight = 0.0;
@@ -75,6 +77,23 @@ class ScoringService
                 $scoredTotal++;
                 $weight = (float) $question['weight'];
                 $response = $responses->get($question['question_id']);
+                $analyticalDomains = collect($question['analytical_domains'] ?? [])
+                    ->filter(fn ($domain) => isset($domain['domain_id']) && ($domain['is_primary'] ?? true));
+
+                foreach ($analyticalDomains as $domain) {
+                    $domainId = (int) $domain['domain_id'];
+                    if (! isset($domainExpected[$domainId])) {
+                        $domainExpected[$domainId] = [
+                            'domain_id' => $domainId,
+                            'domain_code' => $domain['domain_code'] ?? null,
+                            'domain_name' => $domain['domain_name'] ?? null,
+                            'domain_taxonomy_version_id' => $domain['domain_taxonomy_version_id'] ?? null,
+                            'domain_taxonomy_content_hash' => $domain['domain_taxonomy_content_hash'] ?? null,
+                            'expected' => 0,
+                        ];
+                    }
+                    $domainExpected[$domainId]['expected']++;
+                }
 
                 if ($response) {
                     $selectedOption = null;
@@ -123,6 +142,18 @@ class ScoringService
                     $weightedSum += $questionScore * $weight;
                     $totalWeight += $weight;
                     $answeredCount++;
+
+                    foreach ($analyticalDomains as $domain) {
+                        $domainId = (int) $domain['domain_id'];
+                        $domainWeight = $weight * (float) ($domain['contribution_weight'] ?? 1.0);
+                        $domainContributions[$domainId][] = [
+                            'score' => $questionScore,
+                            'weight' => $domainWeight,
+                            'question_id' => $question['question_id'],
+                            'sub_index_id' => (int) $subIndex['sub_index_id'],
+                            'framework_question_placement_id' => $question['framework_question_placement_id'] ?? null,
+                        ];
+                    }
                 }
             }
 
@@ -142,34 +173,65 @@ class ScoringService
             ];
         }
 
-        $domainGroups = [];
-        foreach ($subIndexResults as $data) {
-            $domainGroups[$data['domain_id']][] = $data;
-        }
-
         $domainResults = [];
-        foreach ($domainGroups as $domainId => $items) {
-            $nonNull = array_filter($items, fn ($d) => $d['score'] !== null);
+        if ($domainExpected !== []) {
+            foreach ($domainExpected as $domainId => $meta) {
+                $items = $domainContributions[$domainId] ?? [];
+                $totalDomainWeight = array_sum(array_column($items, 'weight'));
 
-            if (empty($nonNull)) {
-                $domainScore = null;
-                $domainStatus = 'NOT_CALIBRATED';
-            } else {
-                $domainScore = round(
-                    array_sum(array_column($nonNull, 'score')) / count($nonNull),
-                    2
-                );
-                $domainStatus = count($nonNull) === count($items)
-                    && collect($items)->every(fn ($item) => $item['calibration_status'] === 'CALIBRATED')
-                        ? 'CALIBRATED'
-                        : 'PARTIAL';
+                if ($totalDomainWeight <= 0) {
+                    $domainScore = null;
+                    $domainStatus = 'NOT_CALIBRATED';
+                } else {
+                    $domainScore = round(
+                        array_sum(array_map(fn ($item) => $item['score'] * $item['weight'], $items)) / $totalDomainWeight,
+                        2
+                    );
+                    $domainStatus = count($items) === (int) $meta['expected'] ? 'CALIBRATED' : 'PARTIAL';
+                }
+
+                $domainResults[$domainId] = [
+                    'domain_id' => (int) $domainId,
+                    'domain_code' => $meta['domain_code'],
+                    'domain_name' => $meta['domain_name'],
+                    'domain_taxonomy_version_id' => $meta['domain_taxonomy_version_id'],
+                    'domain_taxonomy_content_hash' => $meta['domain_taxonomy_content_hash'],
+                    'score' => $domainScore,
+                    'calibration_status' => $domainStatus,
+                    'questions_expected' => (int) $meta['expected'],
+                    'questions_answered' => count($items),
+                    'contributing_questions' => array_values($items),
+                ];
+            }
+        } else {
+            $domainGroups = [];
+            foreach ($subIndexResults as $data) {
+                $domainGroups[$data['domain_id']][] = $data;
             }
 
-            $domainResults[$domainId] = [
-                'domain_id' => (int) $domainId,
-                'score' => $domainScore,
-                'calibration_status' => $domainStatus,
-            ];
+            foreach ($domainGroups as $domainId => $items) {
+                $nonNull = array_filter($items, fn ($d) => $d['score'] !== null);
+
+                if (empty($nonNull)) {
+                    $domainScore = null;
+                    $domainStatus = 'NOT_CALIBRATED';
+                } else {
+                    $domainScore = round(
+                        array_sum(array_column($nonNull, 'score')) / count($nonNull),
+                        2
+                    );
+                    $domainStatus = count($nonNull) === count($items)
+                        && collect($items)->every(fn ($item) => $item['calibration_status'] === 'CALIBRATED')
+                            ? 'CALIBRATED'
+                            : 'PARTIAL';
+                }
+
+                $domainResults[$domainId] = [
+                    'domain_id' => (int) $domainId,
+                    'score' => $domainScore,
+                    'calibration_status' => $domainStatus,
+                ];
+            }
         }
 
         $nonNullSubs = array_filter($subIndexResults, fn ($d) => $d['score'] !== null);
@@ -226,13 +288,30 @@ class ScoringService
                 [[
                     'assessment_id' => $assessment->assessment_id,
                     'domain_id' => $domain['domain_id'],
+                    'domain_taxonomy_version_id' => $domain['domain_taxonomy_version_id'] ?? null,
+                    'domain_taxonomy_content_hash' => $domain['domain_taxonomy_content_hash'] ?? null,
                     'score' => $domain['score'],
                     'calibration_status' => $domain['calibration_status'],
+                    'questions_expected' => $domain['questions_expected'] ?? null,
+                    'questions_answered' => $domain['questions_answered'] ?? null,
+                    'contributing_question_trace' => isset($domain['contributing_questions'])
+                        ? json_encode($domain['contributing_questions'], JSON_THROW_ON_ERROR)
+                        : null,
                     'scoring_version' => $result['scoring_version'],
                     'calculated_at' => $calculatedAt,
                 ]],
                 ['assessment_id', 'domain_id'],
-                ['score', 'calibration_status', 'scoring_version', 'calculated_at']
+                [
+                    'domain_taxonomy_version_id',
+                    'domain_taxonomy_content_hash',
+                    'score',
+                    'calibration_status',
+                    'questions_expected',
+                    'questions_answered',
+                    'contributing_question_trace',
+                    'scoring_version',
+                    'calculated_at',
+                ]
             );
         }
 
@@ -282,8 +361,10 @@ class ScoringService
 
                         return [
                             'question_id' => $link['question_id'],
+                            'framework_question_placement_id' => $link['framework_question_placement_id'] ?? null,
                             'is_scored' => (bool) ($question['is_scored'] ?? false),
                             'weight' => (float) ($link['weight'] ?? 1.0),
+                            'analytical_domains' => $link['analytical_domains'] ?? $question['analytical_domains'] ?? [],
                             'response_type' => $question['response_type'] ?? null,
                             'options' => $question['options'] ?? [],
                             'numeric_bands' => $question['numeric_bands'] ?? [],

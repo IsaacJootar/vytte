@@ -147,6 +147,16 @@ class AssessmentCreationService
             'catalogue_content_hash' => $release->content_hash,
             'facility_profile_id' => $release->facility_profile_id,
             'facility_profile_code' => $release->facilityProfile?->profile_code,
+            'domain_taxonomy_versions' => collect($payload)
+                ->flatMap(fn ($module) => collect($module['questions'] ?? [])->flatMap(fn ($question) => $question['analytical_domains'] ?? []))
+                ->filter(fn ($domain) => ! empty($domain['domain_taxonomy_version_id']))
+                ->unique('domain_taxonomy_version_id')
+                ->map(fn ($domain) => [
+                    'domain_taxonomy_code' => $domain['domain_taxonomy_code'] ?? null,
+                    'domain_taxonomy_version_id' => $domain['domain_taxonomy_version_id'],
+                    'domain_taxonomy_version_number' => $domain['domain_taxonomy_version_number'] ?? null,
+                    'domain_taxonomy_content_hash' => $domain['domain_taxonomy_content_hash'] ?? null,
+                ])->values()->all(),
             'selected_department_versions' => $manifestDepartments,
             'excluded_department_versions' => $excludedManifest,
         ];

@@ -58,18 +58,18 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-        {{-- Left: domains and questions --}}
+        {{-- Left: question groups and questions --}}
         <div class="lg:col-span-2 space-y-4">
 
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">
-                Domains &amp; Questions
-                <span class="ml-1 text-slate-400 dark:text-slate-500 font-normal">({{ $module->moduleDomains->count() }} {{ Str::plural('domain', $module->moduleDomains->count()) }})</span>
+                Question Groups &amp; Questions
+                <span class="ml-1 text-slate-400 dark:text-slate-500 font-normal">({{ $module->moduleDomains->count() }} {{ Str::plural('group', $module->moduleDomains->count()) }})</span>
             </h2>
 
             @forelse ($module->moduleDomains as $domain)
                 <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
 
-                    {{-- Domain header --}}
+                    {{-- Question group header --}}
                     <div class="px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <span class="w-5 h-5 rounded-full bg-vytte-100 dark:bg-vytte-900/40 text-vytte-700 dark:text-vytte-400 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
@@ -115,7 +115,7 @@
                     </div>
                 </div>
             @empty
-                <p class="text-sm text-slate-400 dark:text-slate-500">No domains defined for this module yet.</p>
+                <p class="text-sm text-slate-400 dark:text-slate-500">No question groups defined for this module yet.</p>
             @endforelse
         </div>
 
@@ -139,7 +139,7 @@
                     @endif
                     @if ($subIndex->domain)
                         <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                            <span class="text-[10px] text-slate-400 dark:text-slate-500">Domain: <span class="font-medium text-slate-500 dark:text-slate-400">{{ $subIndex->domain->domain_name }}</span></span>
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500">Analytical lens: <span class="font-medium text-slate-500 dark:text-slate-400">{{ $subIndex->domain->domain_name }}</span></span>
                         </div>
                     @endif
                 </div>

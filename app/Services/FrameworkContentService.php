@@ -13,8 +13,13 @@ class FrameworkContentService
             'module',
             'sections',
             'indicators.section',
+            'indicators.domainMappings.domainDefinition.taxonomyVersion.taxonomy',
+            'indicators.domainMappings.domainDefinition.domain',
             'questionPlacements.section',
-            'questionPlacements.indicator',
+            'questionPlacements.indicator.domainMappings.domainDefinition.taxonomyVersion.taxonomy',
+            'questionPlacements.indicator.domainMappings.domainDefinition.domain',
+            'questionPlacements.domainOverrides.domainDefinition.taxonomyVersion.taxonomy',
+            'questionPlacements.domainOverrides.domainDefinition.domain',
             'questionPlacements.question',
             'questionPlacements.questionVersion.questionType',
             'questionPlacements.subIndex.domain',
@@ -28,6 +33,7 @@ class FrameworkContentService
             $questionVersion = $placement->questionVersion;
             $responseType = $questionVersion->questionType?->type_code;
             $renderedText = $placement->local_display_text ?: $questionVersion->question_text;
+            $analyticalDomains = $this->analyticalDomainsForPlacement($placement);
 
             return [
                 'framework_question_placement_id' => $placement->framework_question_placement_id,
@@ -48,6 +54,8 @@ class FrameworkContentService
                 'indicator_code' => $placement->indicator?->indicator_code,
                 'indicator_name' => $placement->indicator?->indicator_name,
                 'indicator_display_order' => $placement->indicator?->display_order,
+                'analytical_domains' => $analyticalDomains,
+                'primary_analytical_domain' => collect($analyticalDomains)->firstWhere('is_primary', true),
                 'domain_label' => $placement->section?->section_name,
                 'domain_number' => $placement->section?->display_order,
                 'is_required' => (bool) $placement->is_required,
@@ -86,6 +94,7 @@ class FrameworkContentService
                         'question_id' => $placement->question_id,
                         'question_version_id' => $placement->question_version_id,
                         'framework_question_placement_id' => $placement->framework_question_placement_id,
+                        'analytical_domains' => $this->analyticalDomainsForPlacement($placement),
                         'weight' => (float) $placement->weight,
                     ])->values()->all(),
                 ];
@@ -119,9 +128,48 @@ class FrameworkContentService
                 'indicator_name' => $indicator->indicator_name,
                 'description' => $indicator->description,
                 'display_order' => (int) $indicator->display_order,
+                'analytical_domains' => $indicator->domainMappings
+                    ->sortByDesc('is_primary')
+                    ->map(fn ($mapping) => $this->domainMappingPayload($mapping))
+                    ->values()
+                    ->all(),
             ])->values()->all(),
             'questions' => $questions->all(),
             'scoring_profile' => $scoringProfile->all(),
+        ];
+    }
+
+    private function analyticalDomainsForPlacement($placement): array
+    {
+        $mappings = $placement->domainOverrides->isNotEmpty()
+            ? $placement->domainOverrides
+            : $placement->indicator?->domainMappings ?? collect();
+
+        return collect($mappings)
+            ->sortByDesc('is_primary')
+            ->map(fn ($mapping) => $this->domainMappingPayload($mapping))
+            ->values()
+            ->all();
+    }
+
+    private function domainMappingPayload($mapping): array
+    {
+        $definition = $mapping->domainDefinition;
+        $version = $definition?->taxonomyVersion;
+
+        return [
+            'domain_definition_id' => $definition?->domain_definition_id,
+            'domain_taxonomy_version_id' => $definition?->domain_taxonomy_version_id,
+            'domain_taxonomy_code' => $version?->taxonomy?->taxonomy_code,
+            'domain_taxonomy_version_number' => $version?->version_number !== null ? (int) $version->version_number : null,
+            'domain_taxonomy_content_hash' => $version?->content_hash,
+            'domain_id' => $definition?->domain_id !== null ? (int) $definition->domain_id : null,
+            'domain_code' => $definition?->domain_code,
+            'domain_name' => $definition?->domain_name,
+            'definition' => $definition?->definition,
+            'is_primary' => (bool) $mapping->is_primary,
+            'contribution_weight' => (float) $mapping->contribution_weight,
+            'mapping_source' => method_exists($mapping, 'placement') ? 'PLACEMENT_OVERRIDE' : 'INDICATOR',
         ];
     }
 

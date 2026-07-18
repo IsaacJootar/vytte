@@ -231,18 +231,18 @@ class AdminTest extends TestCase
 
     // ─── Domain management ───────────────────────────────────────
 
-    public function test_admin_can_edit_domain_label(): void
+    public function test_admin_can_edit_question_group_label(): void
     {
         $domain = ModuleDomain::first();
         $this->assertNotNull($domain, 'Reference data must provide domains');
 
         $this->actingAs($this->makeAdmin())
-            ->put(route('admin.domains.update', $domain), ['domain_label' => 'New Domain Label'])
+            ->put(route('admin.question-groups.update', $domain), ['domain_label' => 'New Question Group Label'])
             ->assertRedirect();
 
         $this->assertDatabaseHas('module_domains', [
             'module_domain_id' => $domain->module_domain_id,
-            'domain_label' => 'New Domain Label',
+            'domain_label' => 'New Question Group Label',
         ]);
     }
 
@@ -305,10 +305,10 @@ class AdminTest extends TestCase
             'target_type_code' => 'COMMUNITY',
             'primary_respondent' => 'Community Leader',
             'estimated_duration_minutes' => 20,
-            'domains' => [
+            'question_groups' => [
                 [
                     'domain_number' => 1,
-                    'domain_label' => 'Test Domain',
+                    'domain_label' => 'Test Question Group',
                     'questions' => [
                         [
                             'question_code' => 'TMOD_Q001',
@@ -333,7 +333,7 @@ class AdminTest extends TestCase
             'module_code' => 'TESTMOD',
             'module_name' => 'Test Import Module',
         ]);
-        $this->assertDatabaseHas('module_domains', ['domain_label' => 'Test Domain']);
+        $this->assertDatabaseHas('module_domains', ['domain_label' => 'Test Question Group']);
         $this->assertDatabaseHas('questions', ['question_code' => 'TMOD_Q001']);
         $this->assertDatabaseHas('question_options', ['option_label' => 'Yes']);
     }
@@ -346,7 +346,7 @@ class AdminTest extends TestCase
             'module_code' => $existingModule->module_code,
             'module_name' => 'Duplicate',
             'target_type_code' => $existingModule->target_type_code,
-            'domains' => [],
+            'question_groups' => [],
         ]);
 
         $file = UploadedFile::fake()->createWithContent('module.json', $json);
@@ -362,7 +362,7 @@ class AdminTest extends TestCase
             'module_code' => 'METRICS',
             'module_name' => 'Facility Metrics',
             'target_type_code' => 'HEALTH_FACILITY',
-            'domains' => [[
+            'question_groups' => [[
                 'domain_number' => 1,
                 'domain_label' => 'Utilization',
                 'questions' => [[
@@ -400,7 +400,7 @@ class AdminTest extends TestCase
             'module_code' => 'BROKEN',
             'module_name' => 'Broken Input',
             'target_type_code' => 'COMMUNITY',
-            'domains' => [[
+            'question_groups' => [[
                 'domain_number' => 1,
                 'domain_label' => 'Broken',
                 'questions' => [[
@@ -430,7 +430,7 @@ class AdminTest extends TestCase
 
     public function test_non_admin_cannot_import_module(): void
     {
-        $json = json_encode(['module_code' => 'X', 'module_name' => 'X', 'target_type_code' => 'COMMUNITY', 'domains' => []]);
+        $json = json_encode(['module_code' => 'X', 'module_name' => 'X', 'target_type_code' => 'COMMUNITY', 'question_groups' => []]);
         $file = UploadedFile::fake()->createWithContent('module.json', $json);
 
         $this->actingAs($this->makeUser())

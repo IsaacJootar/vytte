@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\DomainTaxonomyController as AdminDomainTaxonomyController;
 use App\Http\Controllers\Admin\GeographicUsageController as AdminGeographicUsageController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\ModuleDomainController as AdminModuleDomainController;
@@ -112,7 +113,10 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::put('modules/{module}', [AdminModuleController::class, 'update'])->name('modules.update');
     Route::patch('modules/{module}/toggle', [AdminModuleController::class, 'toggleActive'])->name('modules.toggle');
 
-    Route::put('domains/{domain}', [AdminModuleDomainController::class, 'update'])->name('domains.update');
+    Route::get('domain-taxonomies', [AdminDomainTaxonomyController::class, 'index'])->name('domain-taxonomies.index');
+    Route::get('domain-taxonomy-versions/{version}', [AdminDomainTaxonomyController::class, 'show'])->name('domain-taxonomies.show');
+
+    Route::put('question-groups/{domain}', [AdminModuleDomainController::class, 'update'])->name('question-groups.update');
 
     Route::put('questions/{question}', [AdminQuestionController::class, 'update'])->name('questions.update');
     Route::patch('questions/{question}/toggle', [AdminQuestionController::class, 'toggleActive'])->name('questions.toggle');

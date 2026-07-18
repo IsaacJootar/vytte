@@ -11,7 +11,6 @@ class ReferenceDataSeeder extends Seeder
     {
         $this->seedTargetTypes();
         $this->seedDomains();
-        $this->seedDomainWeights();
         $this->seedMaturityLevels();
         $this->seedAssessmentTiers();
         $this->seedQuestionTypes();
@@ -40,27 +39,25 @@ class ReferenceDataSeeder extends Seeder
 
     private function seedDomains(): void
     {
-        DB::table('domains')->insertOrIgnore([
-            ['domain_code' => 'WE', 'domain_name' => 'Workflow Efficiency', 'is_operational' => true, 'display_order' => 1],
-            ['domain_code' => 'DB', 'domain_name' => 'Documentation Burden', 'is_operational' => true, 'display_order' => 2],
-            ['domain_code' => 'RB', 'domain_name' => 'Reporting Burden', 'is_operational' => true, 'display_order' => 3],
-            ['domain_code' => 'DQ', 'domain_name' => 'Data Quality', 'is_operational' => true, 'display_order' => 4],
-            ['domain_code' => 'DR', 'domain_name' => 'Digital Readiness', 'is_operational' => true, 'display_order' => 5],
-            ['domain_code' => 'OP', 'domain_name' => 'Operational Pain', 'is_operational' => true, 'display_order' => 6],
-            ['domain_code' => 'DI', 'domain_name' => 'Decision Intelligence', 'is_operational' => true, 'display_order' => 7],
-            ['domain_code' => 'CQ', 'domain_name' => 'Clinical & Service Quality', 'is_operational' => false, 'display_order' => 8],
-        ]);
-    }
+        $domains = [
+            ['domain_code' => 'GOV', 'domain_name' => 'Governance and Accountability', 'display_order' => 1],
+            ['domain_code' => 'WORK', 'domain_name' => 'Workforce and Capability', 'display_order' => 2],
+            ['domain_code' => 'SERV', 'domain_name' => 'Service Delivery and Access', 'display_order' => 3],
+            ['domain_code' => 'SAFE', 'domain_name' => 'Safety and Quality', 'display_order' => 4],
+            ['domain_code' => 'RES', 'domain_name' => 'Infrastructure, Equipment and Supplies', 'display_order' => 5],
+            ['domain_code' => 'INFO', 'domain_name' => 'Information, Measurement and Learning', 'display_order' => 6],
+            ['domain_code' => 'PCOM', 'domain_name' => 'Person-Centredness and Community Responsiveness', 'display_order' => 7],
+        ];
 
-    private function seedDomainWeights(): void
-    {
-        $operationalDomainIds = DB::table('domains')->where('is_operational', true)->pluck('domain_id');
-        foreach ($operationalDomainIds as $domainId) {
-            DB::table('domain_weights')->insertOrIgnore([
-                'domain_id' => $domainId,
-                'weight' => 0.143,
-                'updated_at' => now(),
-            ]);
+        foreach ($domains as $domain) {
+            DB::table('domains')->updateOrInsert(
+                ['domain_code' => $domain['domain_code']],
+                [
+                    'domain_name' => $domain['domain_name'],
+                    'is_operational' => false,
+                    'display_order' => $domain['display_order'],
+                ]
+            );
         }
     }
 

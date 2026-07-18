@@ -38,8 +38,13 @@ return new class extends Migration
         Schema::create('domain_scores', function (Blueprint $table) {
             $table->uuid('assessment_id');
             $table->unsignedSmallInteger('domain_id');
+            $table->uuid('domain_taxonomy_version_id')->nullable();
+            $table->string('domain_taxonomy_content_hash', 64)->nullable();
             $table->decimal('score', 5, 2)->nullable()->check('score >= 0 AND score <= 100');
             $table->string('calibration_status', 30)->default('NOT_CALIBRATED');
+            $table->unsignedInteger('questions_expected')->nullable();
+            $table->unsignedInteger('questions_answered')->nullable();
+            $table->json('contributing_question_trace')->nullable();
             $table->timestamp('calculated_at')->useCurrent();
             $table->primary(['assessment_id', 'domain_id']);
             $table->foreign('assessment_id')->references('assessment_id')->on('assessments')->cascadeOnDelete();

@@ -28,15 +28,8 @@ return new class extends Migration
             $table->smallIncrements('domain_id');
             $table->string('domain_code', 4)->unique();
             $table->string('domain_name', 100);
-            $table->boolean('is_operational')->default(true);
+            $table->boolean('is_operational')->default(false);
             $table->smallInteger('display_order');
-        });
-
-        Schema::create('domain_weights', function (Blueprint $table) {
-            $table->unsignedSmallInteger('domain_id')->primary();
-            $table->decimal('weight', 4, 3)->default(0.143);
-            $table->timestamp('updated_at')->useCurrent();
-            $table->foreign('domain_id')->references('domain_id')->on('domains');
         });
 
         Schema::create('maturity_levels', function (Blueprint $table) {
@@ -88,7 +81,6 @@ return new class extends Migration
         Schema::dropIfExists('question_types');
         Schema::dropIfExists('assessment_tiers');
         Schema::dropIfExists('maturity_levels');
-        Schema::dropIfExists('domain_weights');
         Schema::dropIfExists('domains');
         Schema::dropIfExists('target_categories');
         Schema::dropIfExists('target_types');

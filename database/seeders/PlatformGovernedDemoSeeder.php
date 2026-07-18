@@ -5,8 +5,12 @@ namespace Database\Seeders;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
 use App\Models\DepartmentFrameworkVersion;
+use App\Models\DomainDefinition;
+use App\Models\DomainTaxonomy;
+use App\Models\DomainTaxonomyVersion;
 use App\Models\FacilityProfile;
 use App\Models\FrameworkIndicator;
+use App\Models\FrameworkIndicatorDomainMapping;
 use App\Models\FrameworkQuestionPlacement;
 use App\Models\FrameworkSection;
 use App\Models\HealthDomain;
@@ -16,6 +20,7 @@ use App\Models\QuestionOption;
 use App\Models\QuestionVersion;
 use App\Services\CataloguePublishingService;
 use App\Services\DepartmentFrameworkPublishingService;
+use App\Services\DomainTaxonomyPublishingService;
 use App\Services\QuestionVersionPublishingService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -25,8 +30,9 @@ class PlatformGovernedDemoSeeder extends Seeder
     public function run(): void
     {
         $modules = $this->seedDemoDepartments();
+        $domainDefinitions = $this->seedDomainTaxonomy();
         $questionVersions = $this->seedQuestionBank($modules);
-        $frameworks = $this->seedFrameworkVersions($modules, $questionVersions);
+        $frameworks = $this->seedFrameworkVersions($modules, $questionVersions, $domainDefinitions);
         $profiles = $this->seedFacilityProfiles($modules);
         $this->seedCatalogueReleases($frameworks, $profiles);
     }
@@ -34,10 +40,10 @@ class PlatformGovernedDemoSeeder extends Seeder
     private function seedDemoDepartments(): array
     {
         $definitions = [
-            'DOPD' => ['Outpatient', 'Patient flow and routine outpatient service readiness.', 'CQ', false],
-            'DPHM' => ['Pharmacy', 'Medicine availability and pharmacy service readiness.', 'CQ', false],
-            'DLAB' => ['Laboratory', 'Essential laboratory readiness and safety.', 'CQ', false],
-            'DMNH' => ['Mental Health', 'Basic mental health service readiness.', 'CQ', true],
+            'DOPD' => ['Outpatient', 'Patient flow and routine outpatient service readiness.', 'SERV', false],
+            'DPHM' => ['Pharmacy', 'Medicine availability and pharmacy service readiness.', 'SERV', false],
+            'DLAB' => ['Laboratory', 'Essential laboratory readiness and safety.', 'SERV', false],
+            'DMNH' => ['Mental Health', 'Basic mental health service readiness.', 'SERV', true],
         ];
 
         $modules = [];
@@ -58,6 +64,92 @@ class PlatformGovernedDemoSeeder extends Seeder
         }
 
         return $modules;
+    }
+
+    private function seedDomainTaxonomy(): array
+    {
+        $taxonomy = DomainTaxonomy::firstOrCreate(
+            ['taxonomy_code' => 'VYTTE_HEALTH_ANALYTICAL_DOMAINS'],
+            [
+                'taxonomy_name' => 'Vytte Health Analytical Domains',
+                'description' => 'Small governed universal analytical lens for official Vytte health assessment interpretation.',
+                'status' => 'ACTIVE',
+            ]
+        );
+
+        $version = DomainTaxonomyVersion::firstOrCreate(
+            ['domain_taxonomy_id' => $taxonomy->domain_taxonomy_id, 'version_number' => 1],
+            [
+                'status' => DomainTaxonomyVersion::STATUS_DRAFT,
+                'methodology_notes' => 'Demonstration-only taxonomy proving cross-cutting report analysis; domains do not generate questions.',
+                'rejected_candidates' => [
+                    'Equity and Inclusion' => 'Merged into governance, service access, and person-centredness until a tested equity methodology is approved.',
+                    'Continuity, Referral and Coordination' => 'Merged into service delivery and access for the first taxonomy.',
+                    'Resilience and Preparedness' => 'Merged into governance and resources until emergency-preparedness methodology requires a separate lens.',
+                ],
+            ]
+        );
+
+        $definitions = [
+            'GOV' => [
+                'Governance and Accountability',
+                'Leadership, policies, oversight, accountability, and management processes that enable reliable service delivery.',
+                'Required because governance weaknesses recur across departments without being owned by one department.',
+            ],
+            'WORK' => [
+                'Workforce and Capability',
+                'Staff availability, skills, role clarity, supervision, and capacity to perform the assessed service.',
+                'Required because workforce constraints cut across clinical, community, and programme-focused assessments.',
+            ],
+            'SERV' => [
+                'Service Delivery and Access',
+                'Availability, reach, flow, continuity, and accessibility of the assessed health service.',
+                'Required because Vytte needs a stable lens for whether services are actually available and usable.',
+            ],
+            'SAFE' => [
+                'Safety and Quality',
+                'Practices that protect clients, staff, and communities while improving reliability and quality of care.',
+                'Required because safety and quality findings need cross-department visibility.',
+            ],
+            'RES' => [
+                'Infrastructure, Equipment and Supplies',
+                'Physical infrastructure, equipment, commodities, medicines, supplies, and utilities needed to deliver services.',
+                'Required because resource readiness is a common bottleneck across departments and focused programmes.',
+            ],
+            'INFO' => [
+                'Information, Measurement and Learning',
+                'Records, indicators, measurement, reporting, feedback loops, and learning practices used for improvement.',
+                'Required because Vytte reports must explain measurement and improvement capability without reviving old data-burden domains.',
+            ],
+            'PCOM' => [
+                'Person-Centredness and Community Responsiveness',
+                'Respectful, understandable, responsive, and community-aware service experience.',
+                'Required because community and patient feedback should be interpreted through the normal assessment engine.',
+            ],
+        ];
+
+        $mapped = [];
+        foreach ($definitions as $order => $row) {
+            $code = is_int($order) ? array_keys($definitions)[$order] : $order;
+            [$name, $definition, $rationale] = $row;
+            $domain = DB::table('domains')->where('domain_code', $code)->first();
+            $mapped[$code] = DomainDefinition::firstOrCreate(
+                ['domain_taxonomy_version_id' => $version->domain_taxonomy_version_id, 'domain_code' => $code],
+                [
+                    'domain_id' => $domain->domain_id,
+                    'domain_name' => $name,
+                    'definition' => $definition,
+                    'rationale' => $rationale,
+                    'display_order' => count($mapped) + 1,
+                ]
+            );
+        }
+
+        if ($version->status !== DomainTaxonomyVersion::STATUS_PUBLISHED) {
+            app(DomainTaxonomyPublishingService::class)->publish($version);
+        }
+
+        return $mapped;
     }
 
     private function ensureDemoScoringProfile(AssessmentModule $module, string $description, string $domainCode): void
@@ -290,7 +382,7 @@ class PlatformGovernedDemoSeeder extends Seeder
         }
     }
 
-    private function seedFrameworkVersions(array $modules, array $questionVersions): array
+    private function seedFrameworkVersions(array $modules, array $questionVersions, array $domainDefinitions): array
     {
         $frameworks = [];
         foreach ($modules as $code => $module) {
@@ -307,7 +399,7 @@ class PlatformGovernedDemoSeeder extends Seeder
                 [$questionVersions["{$code}_SUPPLIES"], null, 2, true, 'SUPPLIES'],
                 [$questionVersions["{$code}_CONTEXT"], null, 3, false, 'CONTEXT'],
                 [$questionVersions["{$code}_VOLUME"], null, 4, false, 'SERVICE_VOLUME'],
-            ]);
+            ], $domainDefinitions);
 
             if ($framework->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED) {
                 $framework = app(DepartmentFrameworkPublishingService::class)->publish($framework);
@@ -327,7 +419,7 @@ class PlatformGovernedDemoSeeder extends Seeder
             [$questionVersions['DMNH_SUPPLIES'], null, 2, true, 'SUPPLIES'],
             [$questionVersions['DMNH_CONTEXT'], null, 3, false, 'CONTEXT'],
             [$questionVersions['DMNH_VOLUME'], null, 4, false, 'SERVICE_VOLUME'],
-        ]);
+        ], $domainDefinitions);
         if ($focused->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED) {
             $focused = app(DepartmentFrameworkPublishingService::class)->publish($focused);
         }
@@ -356,7 +448,7 @@ class PlatformGovernedDemoSeeder extends Seeder
         );
     }
 
-    private function placeQuestions(DepartmentFrameworkVersion $framework, array $placements): void
+    private function placeQuestions(DepartmentFrameworkVersion $framework, array $placements, array $domainDefinitions): void
     {
         $section = FrameworkSection::firstOrCreate(
             ['framework_version_id' => $framework->framework_version_id, 'section_code' => 'DEMO_READINESS'],
@@ -381,6 +473,26 @@ class PlatformGovernedDemoSeeder extends Seeder
                     'indicator_name' => $name,
                     'description' => 'Demonstration-only indicator.',
                     'display_order' => count($indicators) + 1,
+                ]
+            );
+        }
+
+        $indicatorDomainMap = [
+            'SERVICE_PROCESS' => 'GOV',
+            'SUPPLIES' => 'RES',
+            'CONTEXT' => 'PCOM',
+            'SERVICE_VOLUME' => 'INFO',
+        ];
+        foreach ($indicatorDomainMap as $indicatorCode => $domainCode) {
+            FrameworkIndicatorDomainMapping::firstOrCreate(
+                [
+                    'framework_indicator_id' => $indicators[$indicatorCode]->framework_indicator_id,
+                    'domain_definition_id' => $domainDefinitions[$domainCode]->domain_definition_id,
+                ],
+                [
+                    'is_primary' => true,
+                    'contribution_weight' => 1,
+                    'rationale' => 'Demonstration mapping from indicator purpose to the governed analytical taxonomy.',
                 ]
             );
         }

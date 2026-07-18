@@ -26,4 +26,9 @@ class Domain extends Model
     {
         return $this->hasMany(SubIndex::class, 'domain_id', 'domain_id');
     }
+
+    public function definitions(): HasMany
+    {
+        return $this->hasMany(DomainDefinition::class, 'domain_id', 'domain_id');
+    }
 }

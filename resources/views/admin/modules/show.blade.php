@@ -57,18 +57,18 @@
         </div>
     </div>
 
-    {{-- Domains & questions --}}
+    {{-- Question groups & questions --}}
     @forelse ($module->moduleDomains as $domain)
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-4">
 
-            {{-- Domain header --}}
+            {{-- Question group header --}}
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3">
                 <div>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold">Domain {{ $domain->domain_number }}</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold">Question group {{ $domain->domain_number }}</p>
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $domain->domain_label }}</h2>
                 </div>
-                {{-- Inline edit domain label --}}
-                <form method="POST" action="{{ route('admin.domains.update', $domain) }}" class="flex items-center gap-2" x-data="{ editing: false }">
+                {{-- Inline edit question group label --}}
+                <form method="POST" action="{{ route('admin.question-groups.update', $domain) }}" class="flex items-center gap-2" x-data="{ editing: false }">
                     @csrf
                     @method('PUT')
                     <input type="text" name="domain_label" value="{{ $domain->domain_label }}"
@@ -94,7 +94,7 @@
 
             {{-- Questions --}}
             @if ($domain->questions->isEmpty())
-                <p class="px-5 py-4 text-sm text-slate-400 dark:text-slate-500 italic">No questions in this domain.</p>
+                <p class="px-5 py-4 text-sm text-slate-400 dark:text-slate-500 italic">No questions in this group.</p>
             @else
                 <div class="divide-y divide-slate-100 dark:divide-slate-700">
                     @foreach ($domain->questions as $question)
@@ -146,7 +146,7 @@
         </div>
     @empty
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
-            No domains configured for this module.
+            No question groups configured for this module.
         </div>
     @endforelse
 

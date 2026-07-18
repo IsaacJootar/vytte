@@ -37,4 +37,9 @@ class FrameworkIndicator extends Model
         return $this->hasMany(FrameworkQuestionPlacement::class, 'framework_indicator_id', 'framework_indicator_id')
             ->orderBy('display_order');
     }
+
+    public function domainMappings(): HasMany
+    {
+        return $this->hasMany(FrameworkIndicatorDomainMapping::class, 'framework_indicator_id', 'framework_indicator_id');
+    }
 }

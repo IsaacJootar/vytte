@@ -17,7 +17,8 @@ class DepartmentFrameworkPublishingService
             'module',
             'questionPlacements.questionVersion.questionType',
             'questionPlacements.section',
-            'questionPlacements.indicator',
+            'questionPlacements.indicator.domainMappings.domainDefinition.taxonomyVersion',
+            'questionPlacements.domainOverrides.domainDefinition.taxonomyVersion',
             'questionPlacements.subIndex',
         ]);
 
@@ -103,6 +104,28 @@ class DepartmentFrameworkPublishingService
         });
         if ($invalidNumericBands) {
             $errors['scoring'][] = 'Scored numeric placements must define frozen scoring bands.';
+        }
+
+        $domainMappings = $placements->flatMap(function ($placement) {
+            return $placement->domainOverrides->isNotEmpty()
+                ? $placement->domainOverrides
+                : $placement->indicator?->domainMappings ?? collect();
+        });
+        $unpublishedDomainMapping = $domainMappings->first(
+            fn ($mapping) => $mapping->domainDefinition?->taxonomyVersion?->status !== 'PUBLISHED'
+        );
+        if ($unpublishedDomainMapping) {
+            $errors['domains'][] = 'Analytical domain mappings must reference a published domain taxonomy version.';
+        }
+        $multiplePrimaryMappings = $placements->first(function ($placement): bool {
+            $mappings = $placement->domainOverrides->isNotEmpty()
+                ? $placement->domainOverrides
+                : $placement->indicator?->domainMappings ?? collect();
+
+            return $mappings->where('is_primary', true)->count() > 1;
+        });
+        if ($multiplePrimaryMappings) {
+            $errors['domains'][] = 'A placement can have only one primary analytical domain.';
         }
 
         if ($errors !== []) {

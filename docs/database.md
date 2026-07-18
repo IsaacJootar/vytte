@@ -24,7 +24,11 @@ Laravel migrations are the database source of truth. PostgreSQL is the database 
 - `health_domains`
 - `assessment_module_health_domain`
 - `domains`
-- `domain_weights`
+- `domain_taxonomies`
+- `domain_taxonomy_versions`
+- `domain_definitions`
+- `framework_indicator_domain_mappings`
+- `framework_question_placement_domain_overrides`
 - `maturity_levels`
 - `assessment_tiers`
 - `question_types`

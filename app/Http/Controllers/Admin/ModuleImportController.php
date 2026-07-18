@@ -48,7 +48,7 @@ class ModuleImportController extends Controller
 
     private function validateStructure(array $data): void
     {
-        $required = ['module_code', 'module_name', 'target_type_code', 'domains'];
+        $required = ['module_code', 'module_name', 'target_type_code', 'question_groups'];
 
         foreach ($required as $field) {
             if (empty($data[$field])) {
@@ -56,8 +56,8 @@ class ModuleImportController extends Controller
             }
         }
 
-        if (! is_array($data['domains'])) {
-            throw ValidationException::withMessages(['json_file' => 'domains must be an array.']);
+        if (! is_array($data['question_groups'])) {
+            throw ValidationException::withMessages(['json_file' => 'question_groups must be an array.']);
         }
 
         if (AssessmentModule::where('module_code', $data['module_code'])
@@ -66,9 +66,9 @@ class ModuleImportController extends Controller
             throw ValidationException::withMessages(['json_file' => "A module with code \"{$data['module_code']}\" already exists for this target type."]);
         }
 
-        foreach ($data['domains'] as $domainIndex => $domain) {
-            foreach ($domain['questions'] ?? [] as $questionIndex => $question) {
-                $path = 'domains.'.($domainIndex + 1).'.questions.'.($questionIndex + 1);
+        foreach ($data['question_groups'] as $groupIndex => $group) {
+            foreach ($group['questions'] ?? [] as $questionIndex => $question) {
+                $path = 'question_groups.'.($groupIndex + 1).'.questions.'.($questionIndex + 1);
                 $type = strtoupper($question['response_type'] ?? 'SINGLE_SELECT');
                 $isScored = (bool) ($question['is_scored'] ?? true);
                 if (! ResponseInputContract::supports($type)) {
@@ -104,7 +104,7 @@ class ModuleImportController extends Controller
             'is_active' => true,
         ]);
 
-        foreach ($data['domains'] as $domainData) {
+        foreach ($data['question_groups'] as $domainData) {
             $domain = ModuleDomain::create([
                 'module_id' => $module->module_id,
                 'domain_number' => (int) $domainData['domain_number'],

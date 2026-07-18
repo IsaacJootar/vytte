@@ -139,6 +139,7 @@ class ReportSnapshotService
             ->get()->keyBy('domain_id');
 
         $profiles = collect($contentModules)->flatMap(fn ($module) => $module['scoring_profile'] ?? []);
+        $contentDomains = $this->domainMetadataFromContent($contentModules);
         $subIndices = $profiles->map(function ($profile) use ($subScores) {
             $score = $subScores->get($profile['sub_index_id']);
 
@@ -155,19 +156,61 @@ class ReportSnapshotService
             ];
         })->values()->all();
 
-        $domains = $profiles->unique('domain_id')->map(function ($profile) use ($domainScores) {
-            $score = $domainScores->get($profile['domain_id']);
+        if ($contentDomains->isNotEmpty()) {
+            $domains = $contentDomains->map(function ($profile) use ($domainScores) {
+                $score = $domainScores->get($profile['domain_id']);
 
-            return [
-                'domain_id' => (int) $profile['domain_id'],
-                'domain_name' => $profile['domain_name'],
-                'domain_code' => $profile['domain_code'],
-                'score' => $score?->score !== null ? (float) $score->score : null,
-                'calibration_status' => $score?->calibration_status ?? 'NOT_CALIBRATED',
-                'scoring_version' => $score?->scoring_version,
-            ];
-        })->values()->all();
+                return [
+                    'domain_id' => (int) $profile['domain_id'],
+                    'domain_name' => $profile['domain_name'],
+                    'domain_code' => $profile['domain_code'],
+                    'domain_taxonomy_version_id' => $score?->domain_taxonomy_version_id ?? $profile['domain_taxonomy_version_id'],
+                    'domain_taxonomy_content_hash' => $score?->domain_taxonomy_content_hash ?? $profile['domain_taxonomy_content_hash'],
+                    'score' => $score?->score !== null ? (float) $score->score : null,
+                    'calibration_status' => $score?->calibration_status ?? 'NOT_CALIBRATED',
+                    'questions_expected' => $score?->questions_expected !== null ? (int) $score->questions_expected : null,
+                    'questions_answered' => $score?->questions_answered !== null ? (int) $score->questions_answered : null,
+                    'contributing_question_trace' => $this->decodeJson($score?->contributing_question_trace),
+                    'scoring_version' => $score?->scoring_version,
+                ];
+            })->values()->all();
+        } else {
+            $domains = $profiles->unique('domain_id')->map(function ($profile) use ($domainScores) {
+                $score = $domainScores->get($profile['domain_id']);
+
+                return [
+                    'domain_id' => (int) $profile['domain_id'],
+                    'domain_name' => $profile['domain_name'],
+                    'domain_code' => $profile['domain_code'],
+                    'score' => $score?->score !== null ? (float) $score->score : null,
+                    'calibration_status' => $score?->calibration_status ?? 'NOT_CALIBRATED',
+                    'scoring_version' => $score?->scoring_version,
+                ];
+            })->values()->all();
+        }
 
         return [$subIndices, $domains];
+    }
+
+    private function domainMetadataFromContent(array $contentModules)
+    {
+        return collect($contentModules)
+            ->flatMap(fn ($module) => collect($module['questions'] ?? [])->flatMap(fn ($question) => $question['analytical_domains'] ?? []))
+            ->filter(fn ($domain) => isset($domain['domain_id']) && ($domain['is_primary'] ?? true))
+            ->unique('domain_id')
+            ->sortBy('domain_code')
+            ->values();
+    }
+
+    private function decodeJson($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (! is_string($value) || $value === '') {
+            return [];
+        }
+
+        return json_decode($value, true) ?: [];
     }
 }

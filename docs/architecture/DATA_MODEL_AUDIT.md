@@ -12,7 +12,7 @@ The migration set is the schema source of truth. Current active assessment archi
 
 ### Taxonomy and Reference
 
-`target_types`, `setting_types`, `target_type_setting_map`, `health_domains`, `assessment_module_health_domain`, `domains`, `domain_weights`, `maturity_levels`, `assessment_tiers`, `question_types`, `standards_registry`, `topics`, `respondent_roles`.
+`target_types`, `setting_types`, `target_type_setting_map`, `health_domains`, `assessment_module_health_domain`, `domains`, `domain_taxonomies`, `domain_taxonomy_versions`, `domain_definitions`, `framework_indicator_domain_mappings`, `framework_question_placement_domain_overrides`, `maturity_levels`, `assessment_tiers`, `question_types`, `standards_registry`, `topics`, `respondent_roles`.
 
 ### Official Vytte Content
 

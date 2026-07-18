@@ -17,6 +17,6 @@ class ModuleDomainController extends Controller
 
         $domain->update($validated);
 
-        return back()->with('success', 'Domain label updated.');
+        return back()->with('success', 'Question group label updated.');
     }
 }

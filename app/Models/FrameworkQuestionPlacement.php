@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FrameworkQuestionPlacement extends Model
 {
@@ -67,5 +68,10 @@ class FrameworkQuestionPlacement extends Model
     public function subIndex(): BelongsTo
     {
         return $this->belongsTo(SubIndex::class, 'sub_index_id', 'sub_index_id');
+    }
+
+    public function domainOverrides(): HasMany
+    {
+        return $this->hasMany(FrameworkQuestionPlacementDomainOverride::class, 'framework_question_placement_id', 'framework_question_placement_id');
     }
 }

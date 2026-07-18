@@ -113,7 +113,7 @@ class ModuleLibraryTest extends TestCase
             ->assertSee('Health Facility');
     }
 
-    public function test_module_show_displays_domains_and_questions_from_governed_demo_seeder(): void
+    public function test_module_show_displays_question_groups_and_questions_from_governed_demo_seeder(): void
     {
         [$user] = $this->userWithWorkspace();
         $this->seed(ReferenceDataSeeder::class);
@@ -167,7 +167,7 @@ class ModuleLibraryTest extends TestCase
         $this->assertEquals(1, $module->subIndices()->count());
     }
 
-    public function test_module_domains_have_questions_with_options(): void
+    public function test_module_question_groups_have_questions_with_options(): void
     {
         $this->seed(ReferenceDataSeeder::class);
         $this->seed(PlatformGovernedDemoSeeder::class);
@@ -179,7 +179,7 @@ class ModuleLibraryTest extends TestCase
         $this->assertTrue($domain->questions->first()->options->isNotEmpty());
     }
 
-    public function test_sub_index_belongs_to_global_domain(): void
+    public function test_sub_index_uses_service_delivery_as_internal_analytical_lens(): void
     {
         $this->seed(ReferenceDataSeeder::class);
         $this->seed(PlatformGovernedDemoSeeder::class);
@@ -189,6 +189,6 @@ class ModuleLibraryTest extends TestCase
 
         $this->assertNotNull($subIndex);
         $this->assertNotNull($subIndex->domain);
-        $this->assertEquals('CQ', $subIndex->domain->domain_code);
+        $this->assertEquals('SERV', $subIndex->domain->domain_code);
     }
 }
