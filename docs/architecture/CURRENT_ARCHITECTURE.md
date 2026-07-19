@@ -6,7 +6,7 @@ This document describes the implemented Vytte platform-governed composition arch
 
 Verified locally:
 
-- `php artisan test`: 395 tests, 972 assertions passing.
+- `php artisan test`: 401 tests, 1097 assertions passing. Full sequential PostgreSQL run, 2026-07-19, commit `65648e5`.
 - Clean disposable PostgreSQL `migrate:fresh --seed`: passing.
 - Production frontend build with `npm.cmd run build`: passing.
 
