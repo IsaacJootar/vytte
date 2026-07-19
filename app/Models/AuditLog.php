@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
@@ -26,5 +27,13 @@ class AuditLog extends Model
     {
         static::updating(fn () => throw new \LogicException('Audit records are immutable.'));
         static::deleting(fn () => throw new \LogicException('Audit records cannot be deleted through the application.'));
+    }
+
+    /**
+     * The acting user, where one was recorded. System actions have none.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 }
