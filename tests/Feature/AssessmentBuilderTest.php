@@ -4,11 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\AssessmentModule;
 use App\Models\DepartmentFrameworkVersion;
+use App\Models\Domain;
 use App\Models\FrameworkIndicator;
 use App\Models\FrameworkQuestionPlacement;
 use App\Models\FrameworkSection;
 use App\Models\QuestionVersion;
+use App\Models\SubIndex;
 use App\Models\User;
+use App\Services\FrameworkContentService;
 use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -527,6 +530,218 @@ class AssessmentBuilderTest extends TestCase
         ] as $governanceField) {
             $response->assertDontSee($governanceField, false);
         }
+    }
+
+    // ---- Scoring, evidence and approval ----
+
+    /** @return array{0: DepartmentFrameworkVersion, 1: FrameworkQuestionPlacement} */
+    private function assessmentWithOneNewQuestion(string $format = 'yes_no'): array
+    {
+        $assessment = $this->draftAssessment();
+        $this->post(route('admin.assessments.sections.store', $assessment), ['section_name' => 'Settings Section']);
+        $section = FrameworkSection::where('framework_version_id', $assessment->framework_version_id)->firstOrFail();
+        $this->post(route('admin.assessments.questions.store', [$assessment, $section]), [
+            'question_text' => 'Scoring fixture question?',
+            'format' => $format,
+        ]);
+
+        return [$assessment, FrameworkQuestionPlacement::where('framework_version_id', $assessment->framework_version_id)->firstOrFail()];
+    }
+
+    private function scoringGroupFor(DepartmentFrameworkVersion $assessment): SubIndex
+    {
+        return SubIndex::firstOrCreate(
+            ['module_id' => $assessment->module_id, 'acronym' => 'TST'],
+            ['domain_id' => Domain::firstOrFail()->domain_id, 'full_name' => 'Test Readiness Score']
+        );
+    }
+
+    public function test_scoring_can_be_switched_on_with_points_and_a_critical_answer(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        $this->scoringGroupFor($assessment);
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'importance' => 'high',
+            'evidence_mode' => 'none',
+            'points' => [1 => 100, 2 => 0],
+            'critical' => [2 => 1],
+        ])->assertRedirect(route('admin.assessments.build', $assessment))->assertSessionHasNoErrors();
+
+        $placement->refresh();
+        $this->assertTrue((bool) $placement->scoring_contribution);
+        $this->assertEquals(2.0, (float) $placement->weight);
+        $this->assertSame('CRITICAL', $placement->criticality);
+        $this->assertNotNull($placement->sub_index_id);
+
+        $options = collect($placement->questionVersion->fresh()->options)->keyBy('option_label');
+        $this->assertEquals(100.0, $options['Yes']['score_weight']);
+        $this->assertTrue($options['No']['critical_failure']);
+    }
+
+    public function test_a_scored_question_is_auto_assigned_when_only_one_score_exists(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        $group = $this->scoringGroupFor($assessment);
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+            'points' => [1 => 100, 2 => 0],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame((int) $group->sub_index_id, (int) $placement->fresh()->sub_index_id);
+    }
+
+    public function test_scoring_is_refused_when_the_department_has_no_score(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        SubIndex::where('module_id', $assessment->module_id)->delete();
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+            'points' => [1 => 100, 2 => 0],
+        ])->assertSessionHasErrors('scoring');
+
+        $this->assertFalse((bool) $placement->fresh()->scoring_contribution);
+    }
+
+    public function test_a_score_can_be_created_when_the_department_has_none(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        SubIndex::where('module_id', $assessment->module_id)->delete();
+
+        $this->post(route('admin.assessments.scoring-groups.store', $assessment), [
+            'name' => 'Outpatient Readiness',
+            'domain_id' => Domain::firstOrFail()->domain_id,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('sub_indices', [
+            'module_id' => $assessment->module_id,
+            'full_name' => 'Outpatient Readiness',
+        ]);
+    }
+
+    public function test_choosing_between_several_scores_is_required(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        $domainId = Domain::firstOrFail()->domain_id;
+        SubIndex::create(['module_id' => $assessment->module_id, 'domain_id' => $domainId, 'acronym' => 'AAA', 'full_name' => 'Score A']);
+        SubIndex::create(['module_id' => $assessment->module_id, 'domain_id' => $domainId, 'acronym' => 'BBB', 'full_name' => 'Score B']);
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+            'points' => [1 => 100, 2 => 0],
+        ])->assertSessionHasErrors('scoring_group');
+    }
+
+    public function test_written_answers_cannot_be_scored(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion('text');
+        $this->scoringGroupFor($assessment);
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+        ])->assertSessionHasErrors('is_scored');
+    }
+
+    public function test_a_scored_number_question_requires_ranges(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion('number');
+        $this->scoringGroupFor($assessment);
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+            'bands' => [],
+        ])->assertSessionHasErrors('bands');
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+            'bands' => [['min' => 0, 'max' => 49, 'points' => 0], ['min' => 50, 'max' => 100, 'points' => 100]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertCount(2, $placement->fresh()->questionVersion->numeric_bands);
+    }
+
+    public function test_an_evidence_prompt_is_stored_and_reaches_the_respondent_snapshot(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 0,
+            'evidence_mode' => 'note',
+            'evidence_prompt' => 'Name the register you checked.',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('Name the register you checked.', $placement->fresh()->evidence_expectation);
+
+        // The prompt must survive into the frozen framework payload, otherwise the
+        // respondent never sees what the author asked for.
+        $payload = app(FrameworkContentService::class)->frameworkPayload($assessment->fresh());
+        $this->assertSame('Name the register you checked.', $payload['questions'][0]['evidence_expectation']);
+    }
+
+    public function test_a_question_is_only_approved_by_an_explicit_action(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+
+        // Building, scoring and saving never approve anything on their own.
+        $this->scoringGroupFor($assessment);
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+            'points' => [1 => 100, 2 => 0],
+        ]);
+        $this->assertSame(QuestionVersion::STATUS_DRAFT, $placement->fresh()->questionVersion->status);
+
+        $this->patch(route('admin.assessments.questions.approve', [$assessment, $placement]))
+            ->assertSessionHasNoErrors();
+
+        $version = $placement->fresh()->questionVersion;
+        $this->assertSame(QuestionVersion::STATUS_PUBLISHED, $version->status);
+        $this->assertNotNull($version->content_hash);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.question.approved']);
+    }
+
+    public function test_an_approved_question_becomes_immutable(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        $this->patch(route('admin.assessments.questions.approve', [$assessment, $placement]));
+
+        $this->expectException(\LogicException::class);
+        $placement->fresh()->questionVersion->update(['question_text' => 'Changed after approval']);
+    }
+
+    public function test_workspace_user_cannot_change_scoring_or_approve(): void
+    {
+        $admin = $this->platformAdmin();
+        $this->actingAs($admin);
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+
+        $this->actingAs(User::factory()->create())
+            ->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+                'is_scored' => 1, 'evidence_mode' => 'none',
+            ])->assertForbidden();
+
+        $this->actingAs(User::factory()->create())
+            ->patch(route('admin.assessments.questions.approve', [$assessment, $placement]))
+            ->assertForbidden();
     }
 
     public function test_the_draft_is_created_as_a_focused_framework_version_without_the_author_choosing_one(): void

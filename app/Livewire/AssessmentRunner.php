@@ -79,6 +79,8 @@ class AssessmentRunner extends Component
                     'section_label' => $question['section_label'] ?? '',
                     'section_number' => $question['section_number'] ?? 0,
                     'numeric_config' => $question['numeric_config'] ?? null,
+                    // The author's evidence prompt, frozen into the snapshot at creation.
+                    'evidence_expectation' => $question['evidence_expectation'] ?? null,
                     'options' => collect($question['options'])->map(fn ($option) => [
                         'option_id' => $option['option_id'],
                         'option_label' => $option['translations'][$locale] ?? $option['option_label'],

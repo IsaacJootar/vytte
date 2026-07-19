@@ -133,6 +133,10 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::post('assessments/{assessment}/sections/{section}/library', [AdminAssessmentQuestionController::class, 'addFromLibrary'])->name('assessments.questions.add-from-library');
     Route::get('assessments/{assessment}/sections/{section}/questions/create', [AdminAssessmentQuestionController::class, 'create'])->name('assessments.questions.create');
     Route::post('assessments/{assessment}/sections/{section}/questions', [AdminAssessmentQuestionController::class, 'store'])->name('assessments.questions.store');
+    Route::get('assessments/{assessment}/questions/{placement}/settings', [AdminAssessmentQuestionController::class, 'settings'])->name('assessments.questions.settings');
+    Route::put('assessments/{assessment}/questions/{placement}/settings', [AdminAssessmentQuestionController::class, 'saveSettings'])->name('assessments.questions.settings.save');
+    Route::patch('assessments/{assessment}/questions/{placement}/approve', [AdminAssessmentQuestionController::class, 'approve'])->name('assessments.questions.approve');
+    Route::post('assessments/{assessment}/scoring-groups', [AdminAssessmentQuestionController::class, 'storeScoringGroup'])->name('assessments.scoring-groups.store');
     Route::patch('assessments/{assessment}/questions/{placement}/move', [AdminAssessmentQuestionController::class, 'move'])->name('assessments.questions.move');
     Route::delete('assessments/{assessment}/questions/{placement}', [AdminAssessmentQuestionController::class, 'destroy'])->name('assessments.questions.destroy');
 

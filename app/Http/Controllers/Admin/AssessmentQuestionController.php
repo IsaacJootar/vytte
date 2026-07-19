@@ -144,6 +144,109 @@ class AssessmentQuestionController extends Controller
             ->with('success', 'Question added to '.$section->section_name.'.');
     }
 
+    /**
+     * Scoring and evidence for one question.
+     */
+    public function settings(DepartmentFrameworkVersion $assessment, FrameworkQuestionPlacement $placement): View
+    {
+        $this->assertPlacementBelongs($assessment, $placement);
+        $placement->load(['questionVersion.questionType', 'section']);
+
+        return view('admin.assessment-builder.question-settings', [
+            'assessment' => $assessment,
+            'placement' => $placement,
+            'version' => $placement->questionVersion,
+            'typeCode' => $placement->questionVersion?->questionType?->type_code,
+            'scoringGroups' => $this->builder->scoringGroupsFor($assessment),
+            'domains' => Domain::orderBy('display_order')->get(['domain_id', 'domain_name']),
+            'isEditable' => $assessment->status === DepartmentFrameworkVersion::STATUS_DRAFT,
+            'answerIsLocked' => $placement->questionVersion?->status === QuestionVersion::STATUS_PUBLISHED,
+        ]);
+    }
+
+    public function saveSettings(Request $request, DepartmentFrameworkVersion $assessment, FrameworkQuestionPlacement $placement, AuditService $audit): RedirectResponse
+    {
+        $this->assertPlacementBelongs($assessment, $placement);
+
+        $validated = $request->validate([
+            'is_scored' => ['required', 'boolean'],
+            'scoring_group_id' => ['nullable', 'integer'],
+            'importance' => ['nullable', 'in:normal,high'],
+            'evidence_mode' => ['required', 'in:none,note'],
+            'evidence_prompt' => ['nullable', 'string', 'max:500'],
+            'points' => ['array'],
+            'critical' => ['array'],
+            'bands' => ['array'],
+        ]);
+
+        try {
+            $this->builder->applyScoringAndEvidence($placement, [
+                'is_scored' => (bool) $validated['is_scored'],
+                'scoring_group_id' => $validated['scoring_group_id'] ?? null,
+                'importance' => $validated['importance'] ?? 'normal',
+                'evidence_mode' => $validated['evidence_mode'],
+                'evidence_prompt' => $validated['evidence_prompt'] ?? null,
+                'points' => $validated['points'] ?? [],
+                'critical' => $validated['critical'] ?? [],
+                'bands' => $validated['bands'] ?? [],
+            ]);
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors())->withInput();
+        }
+
+        $audit->record('assessment.question.settings_updated', $assessment, newValues: [
+            'framework_question_placement_id' => $placement->framework_question_placement_id,
+            'scoring_contribution' => (bool) $validated['is_scored'],
+        ]);
+
+        return redirect()->route('admin.assessments.build', $assessment)
+            ->with('success', 'Question settings saved.');
+    }
+
+    public function storeScoringGroup(Request $request, DepartmentFrameworkVersion $assessment, AuditService $audit): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'domain_id' => ['required', 'integer', Rule::exists('domains', 'domain_id')],
+        ], [], ['name' => 'score name']);
+
+        try {
+            $group = $this->builder->createScoringGroup($assessment, $validated['name'], $validated['domain_id']);
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors())->withInput();
+        }
+
+        $audit->record('assessment.scoring_group.created', $assessment, newValues: [
+            'sub_index_id' => $group->sub_index_id,
+            'full_name' => $group->full_name,
+        ]);
+
+        return back()->with('success', 'Score group created.');
+    }
+
+    /**
+     * Explicitly approves and freezes a question. Never happens automatically.
+     */
+    public function approve(DepartmentFrameworkVersion $assessment, FrameworkQuestionPlacement $placement, AuditService $audit): RedirectResponse
+    {
+        $this->assertPlacementBelongs($assessment, $placement);
+
+        try {
+            $version = $this->builder->approveQuestion($placement->questionVersion, auth()->id());
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors());
+        } catch (\Throwable $exception) {
+            return back()->withErrors(['question' => $exception->getMessage()]);
+        }
+
+        $audit->record('assessment.question.approved', $assessment, newValues: [
+            'question_version_id' => $version->question_version_id,
+            'approved_by' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Question approved and locked.');
+    }
+
     public function move(Request $request, DepartmentFrameworkVersion $assessment, FrameworkQuestionPlacement $placement): RedirectResponse
     {
         $this->assertPlacementBelongs($assessment, $placement);

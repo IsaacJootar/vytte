@@ -81,14 +81,39 @@
                                     <span class="rounded-full bg-slate-100 px-2 py-0.5 font-semibold dark:bg-slate-700">
                                         {{ \App\Support\AnswerFormat::labelForTypeCode($placement->questionVersion?->questionType?->type_code, $placement->questionVersion?->options ?? []) }}
                                     </span>
+                                    @if ($placement->scoring_contribution)
+                                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">Scored</span>
+                                        @if ((float) $placement->weight >= 2)
+                                            <span class="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-700">Counts double</span>
+                                        @endif
+                                    @else
+                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 dark:bg-slate-700">Not scored</span>
+                                    @endif
+                                    @if ($placement->criticality === 'CRITICAL')
+                                        <span class="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-800 dark:bg-red-900/40 dark:text-red-200">Critical</span>
+                                    @endif
+                                    @if ($placement->evidence_expectation)
+                                        <span class="rounded-full bg-sky-100 px-2 py-0.5 font-semibold text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">Asks for a note</span>
+                                    @endif
                                     @if ($placement->questionVersion?->status !== \App\Models\QuestionVersion::STATUS_PUBLISHED)
-                                        <span class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Not yet approved</span>
+                                        <span class="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Needs approval</span>
                                     @endif
                                 </p>
                             </div>
 
                             @if ($isEditable)
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <a href="{{ route('admin.assessments.questions.settings', [$assessment, $placement]) }}"
+                                       class="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200">
+                                        Scoring &amp; evidence
+                                    </a>
+                                    @if ($placement->questionVersion?->status !== \App\Models\QuestionVersion::STATUS_PUBLISHED)
+                                        <form method="POST" action="{{ route('admin.assessments.questions.approve', [$assessment, $placement]) }}"
+                                              onsubmit="return confirm('Approve this question? Its wording and answers are locked permanently once approved.')">
+                                            @csrf @method('PATCH')
+                                            <button class="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Approve</button>
+                                        </form>
+                                    @endif
                                     @if (! $loop->first)
                                         <form method="POST" action="{{ route('admin.assessments.questions.move', [$assessment, $placement]) }}">
                                             @csrf @method('PATCH')

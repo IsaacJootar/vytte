@@ -167,11 +167,12 @@
 
             <details class="mt-4 border-t border-slate-100 dark:border-slate-700 pt-3">
                 <summary class="cursor-pointer text-xs font-semibold text-vytte-700 dark:text-vytte-400">
-                    Add optional supporting evidence
+                    {{ filled($q['evidence_expectation'] ?? null) ? 'Add the supporting note for this question' : 'Add optional supporting evidence' }}
                 </summary>
                 <div class="mt-3">
                     <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1.5">
-                        Add a brief note about the document, observation, or source that supports this answer.
+                        {{-- The author's prompt when one was set, otherwise the general instruction. --}}
+                        {{ $q['evidence_expectation'] ?? 'Add a brief note about the document, observation, or source that supports this answer.' }}
                     </label>
                     <textarea
                         rows="3"

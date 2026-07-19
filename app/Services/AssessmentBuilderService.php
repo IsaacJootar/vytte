@@ -10,7 +10,9 @@ use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\QuestionType;
 use App\Models\QuestionVersion;
+use App\Models\SubIndex;
 use App\Support\AnswerFormat;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -228,6 +230,237 @@ class AssessmentBuilderService
                 'criticality' => 'STANDARD',
             ]);
         });
+    }
+
+    /**
+     * Scoring groups available to an assessment. A scored placement must belong to one:
+     * DepartmentFrameworkPublishingService rejects publication otherwise.
+     *
+     * @return Collection<int, SubIndex>
+     */
+    public function scoringGroupsFor(DepartmentFrameworkVersion $assessment)
+    {
+        return SubIndex::where('module_id', $assessment->module_id)->orderBy('full_name')->get();
+    }
+
+    /**
+     * Resolves the scoring group for a placement being switched on.
+     *
+     * Exactly one available group is selected automatically. Several require an explicit
+     * choice. None is a real blocker and is reported as one rather than papered over with
+     * an invalid value.
+     */
+    public function resolveScoringGroup(DepartmentFrameworkVersion $assessment, ?int $chosen): int
+    {
+        $groups = $this->scoringGroupsFor($assessment);
+
+        if ($groups->isEmpty()) {
+            throw ValidationException::withMessages([
+                'scoring' => 'This department has no score group yet, so questions here cannot affect a score. Create one first.',
+            ]);
+        }
+
+        if ($chosen !== null) {
+            $match = $groups->firstWhere('sub_index_id', $chosen);
+            if (! $match) {
+                throw ValidationException::withMessages(['scoring_group' => 'Choose a score group from this department.']);
+            }
+
+            return (int) $match->sub_index_id;
+        }
+
+        if ($groups->count() === 1) {
+            return (int) $groups->first()->sub_index_id;
+        }
+
+        throw ValidationException::withMessages([
+            'scoring_group' => 'Choose which score this question should contribute to.',
+        ]);
+    }
+
+    public function createScoringGroup(DepartmentFrameworkVersion $assessment, string $name, int $domainId): SubIndex
+    {
+        $this->assertDraft($assessment);
+
+        $acronym = Str::of($name)->substr(0, 3)->upper()->append((string) ($this->scoringGroupsFor($assessment)->count() + 1))->value();
+
+        return SubIndex::create([
+            'module_id' => $assessment->module_id,
+            'domain_id' => $domainId,
+            'acronym' => $acronym,
+            'full_name' => $name,
+            'description' => 'Created in the Vytte assessment builder.',
+        ]);
+    }
+
+    /**
+     * Applies the scoring and evidence settings an author chose.
+     *
+     * Placement settings apply to this assessment only and stay editable while it is a
+     * draft. Answer points and critical-failure marks belong to the question version, so
+     * they can only be changed while that version is still a draft: a published library
+     * question carries the official values and is left untouched.
+     *
+     * @param  array{is_scored: bool, scoring_group_id?: int|null, importance?: string, evidence_mode?: string, evidence_prompt?: string|null, points?: array<int, mixed>, critical?: array<int, mixed>, bands?: array<int, array<string, mixed>>}  $input
+     */
+    public function applyScoringAndEvidence(FrameworkQuestionPlacement $placement, array $input): void
+    {
+        $assessment = $placement->frameworkVersion;
+        $this->assertDraft($assessment);
+
+        $version = $placement->questionVersion;
+        $typeCode = $version?->questionType?->type_code;
+        $isScored = (bool) $input['is_scored'];
+
+        if ($isScored && $typeCode === 'OPEN_ENDED') {
+            throw ValidationException::withMessages([
+                'is_scored' => 'Written answers cannot be scored. They are kept as supporting context.',
+            ]);
+        }
+
+        DB::transaction(function () use ($placement, $assessment, $version, $typeCode, $isScored, $input): void {
+            $subIndexId = $isScored
+                ? $this->resolveScoringGroup($assessment, $input['scoring_group_id'] ?? null)
+                : null;
+
+            $criticalMarked = false;
+
+            if ($isScored && $version?->status === QuestionVersion::STATUS_DRAFT) {
+                if (in_array($typeCode, ['SINGLE_SELECT', 'LIKERT'], true)) {
+                    $criticalMarked = $this->applyOptionPoints($version, $input['points'] ?? [], $input['critical'] ?? []);
+                }
+
+                if ($typeCode === 'NUMERIC') {
+                    $this->applyNumericBands($version, $input['bands'] ?? []);
+                }
+            }
+
+            if ($isScored && $version?->status === QuestionVersion::STATUS_PUBLISHED) {
+                $criticalMarked = collect($version->options ?? [])->contains(fn ($option) => (bool) ($option['critical_failure'] ?? false));
+            }
+
+            $placement->update([
+                'scoring_contribution' => $isScored,
+                'sub_index_id' => $subIndexId,
+                'weight' => ($input['importance'] ?? 'normal') === 'high' ? 2.0 : 1.0,
+                'criticality' => $criticalMarked ? 'CRITICAL' : 'STANDARD',
+                'evidence_expectation' => ($input['evidence_mode'] ?? 'none') === 'note'
+                    ? (trim((string) ($input['evidence_prompt'] ?? '')) ?: 'Add a brief note describing what supports this answer.')
+                    : null,
+            ]);
+        });
+    }
+
+    /**
+     * @return bool whether any answer is marked as a critical failure
+     */
+    private function applyOptionPoints(QuestionVersion $version, array $points, array $critical): bool
+    {
+        $options = collect($version->options ?? []);
+
+        if ($options->isEmpty()) {
+            return false;
+        }
+
+        $updated = $options->map(function (array $option) use ($points, $critical): array {
+            $order = (int) $option['option_order'];
+            $score = $points[$order] ?? null;
+
+            if ($score === null || $score === '') {
+                throw ValidationException::withMessages([
+                    'points' => 'Give every answer a number of points.',
+                ]);
+            }
+
+            if (! is_numeric($score) || (float) $score < 0 || (float) $score > 100) {
+                throw ValidationException::withMessages([
+                    'points' => 'Points must be between 0 and 100.',
+                ]);
+            }
+
+            $option['score_weight'] = (float) $score;
+            $option['critical_failure'] = filter_var($critical[$order] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            return $option;
+        })->all();
+
+        $version->update([
+            'options' => app(QuestionOptionSyncService::class)->sync($version->question, $updated),
+        ]);
+
+        return collect($updated)->contains(fn ($option) => (bool) $option['critical_failure']);
+    }
+
+    /**
+     * Scored numeric questions cannot be published without frozen bands, so they are
+     * required as soon as scoring is switched on.
+     */
+    private function applyNumericBands(QuestionVersion $version, array $bands): void
+    {
+        $normalised = collect($bands)
+            ->filter(fn ($band) => filled($band['min'] ?? null) || filled($band['max'] ?? null) || filled($band['points'] ?? null))
+            ->values()
+            ->map(function (array $band, int $index): array {
+                foreach (['min', 'max', 'points'] as $field) {
+                    if (! isset($band[$field]) || $band[$field] === '' || ! is_numeric($band[$field])) {
+                        throw ValidationException::withMessages([
+                            'bands' => 'Give every scoring range a smallest value, a largest value and a number of points.',
+                        ]);
+                    }
+                }
+
+                if ((float) $band['min'] > (float) $band['max']) {
+                    throw ValidationException::withMessages([
+                        'bands' => 'A scoring range cannot start above where it ends.',
+                    ]);
+                }
+
+                return [
+                    'label' => trim((string) ($band['label'] ?? '')) ?: (($band['min']).' to '.($band['max'])),
+                    'min_value' => (float) $band['min'],
+                    'max_value' => (float) $band['max'],
+                    'score_weight' => (float) $band['points'],
+                    'display_order' => $index + 1,
+                ];
+            })
+            ->all();
+
+        if ($normalised === []) {
+            throw ValidationException::withMessages([
+                'bands' => 'Add at least one scoring range so this number can be scored.',
+            ]);
+        }
+
+        $version->update(['numeric_bands' => $normalised]);
+    }
+
+    /**
+     * Approves and freezes a question so the assessment can eventually be published.
+     *
+     * This is always an explicit act. Nothing here approves a question automatically, and
+     * the underlying publishing service still applies every content check.
+     */
+    public function approveQuestion(QuestionVersion $version, ?string $approverId): QuestionVersion
+    {
+        if ($version->status === QuestionVersion::STATUS_PUBLISHED) {
+            return $version;
+        }
+
+        if (! in_array($version->status, [QuestionVersion::STATUS_DRAFT, QuestionVersion::STATUS_INTERNAL_REVIEW, QuestionVersion::STATUS_APPROVED], true)) {
+            throw ValidationException::withMessages([
+                'question' => 'This question is closed and cannot be approved.',
+            ]);
+        }
+
+        if ($version->status !== QuestionVersion::STATUS_APPROVED) {
+            $version->update([
+                'status' => QuestionVersion::STATUS_APPROVED,
+                'approved_by' => $approverId,
+                'review_notes' => $version->review_notes ?: 'Reviewed and approved in the assessment builder.',
+            ]);
+        }
+
+        return app(QuestionVersionPublishingService::class)->publish($version->fresh(), $approverId);
     }
 
     public function removeQuestion(FrameworkQuestionPlacement $placement): void
