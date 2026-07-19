@@ -20,6 +20,7 @@ use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\FrameworkContentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class AssessmentBuilderTest extends TestCase
@@ -982,6 +983,214 @@ class AssessmentBuilderTest extends TestCase
             ])->assertForbidden();
 
         $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $assessment->fresh()->status);
+    }
+
+    // ---- Versioning and preview ----
+
+    private function publishedAssessment(): DepartmentFrameworkVersion
+    {
+        $assessment = $this->publishableAssessment();
+        $this->post(route('admin.assessments.publish', $assessment), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+            'confirm' => 1,
+        ])->assertSessionHasNoErrors();
+
+        return $assessment->fresh();
+    }
+
+    public function test_a_new_version_copies_the_content_and_leaves_the_published_one_in_service(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $published = $this->publishedAssessment();
+        $originalHash = $published->content_hash;
+
+        $this->post(route('admin.assessments.versions.store', $published))->assertRedirect();
+
+        $successor = DepartmentFrameworkVersion::where('parent_version_id', $published->framework_version_id)->firstOrFail();
+
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $successor->status);
+        $this->assertSame($published->version_number + 1, $successor->version_number);
+        $this->assertSame($published->display_name, $successor->display_name);
+        $this->assertSame(
+            FrameworkSection::where('framework_version_id', $published->framework_version_id)->count(),
+            FrameworkSection::where('framework_version_id', $successor->framework_version_id)->count()
+        );
+        $this->assertSame(
+            FrameworkQuestionPlacement::where('framework_version_id', $published->framework_version_id)->count(),
+            FrameworkQuestionPlacement::where('framework_version_id', $successor->framework_version_id)->count()
+        );
+
+        // The predecessor keeps working while the successor is written.
+        $published->refresh();
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_PUBLISHED, $published->status);
+        $this->assertSame($originalHash, $published->content_hash);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.version.started']);
+    }
+
+    public function test_a_new_version_can_be_edited_while_the_published_one_cannot(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $published = $this->publishedAssessment();
+        $this->post(route('admin.assessments.versions.store', $published));
+        $successor = DepartmentFrameworkVersion::where('parent_version_id', $published->framework_version_id)->firstOrFail();
+
+        $this->post(route('admin.assessments.sections.store', $successor), ['section_name' => 'Added in version two'])
+            ->assertSessionHasNoErrors();
+        $this->post(route('admin.assessments.sections.store', $published), ['section_name' => 'Rejected'])
+            ->assertSessionHasErrors('status');
+
+        $this->assertDatabaseHas('framework_sections', [
+            'framework_version_id' => $successor->framework_version_id,
+            'section_name' => 'Added in version two',
+        ]);
+    }
+
+    public function test_only_one_open_draft_version_is_allowed(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $published = $this->publishedAssessment();
+
+        $this->post(route('admin.assessments.versions.store', $published))->assertSessionHasNoErrors();
+        $this->post(route('admin.assessments.versions.store', $published))->assertSessionHasErrors('version');
+
+        $this->assertSame(1, DepartmentFrameworkVersion::where('parent_version_id', $published->framework_version_id)->count());
+    }
+
+    public function test_a_draft_assessment_cannot_be_given_a_new_version(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment] = $this->assessmentWithOneNewQuestion();
+
+        $this->post(route('admin.assessments.versions.store', $assessment))->assertSessionHasErrors('version');
+    }
+
+    public function test_publishing_a_new_version_retires_the_previous_version_and_its_release(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $published = $this->publishedAssessment();
+        $oldRelease = AssessmentCatalogueRelease::whereHas(
+            'departmentFrameworkVersions',
+            fn ($q) => $q->where('department_framework_versions.framework_version_id', $published->framework_version_id)
+        )->firstOrFail();
+
+        $this->post(route('admin.assessments.versions.store', $published));
+        $successor = DepartmentFrameworkVersion::where('parent_version_id', $published->framework_version_id)->firstOrFail();
+
+        $this->post(route('admin.assessments.publish', $successor), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+            'confirm' => 1,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_PUBLISHED, $successor->fresh()->status);
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_SUPERSEDED, $published->fresh()->status);
+        $this->assertSame(AssessmentCatalogueRelease::STATUS_SUPERSEDED, $oldRelease->fresh()->status);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.version.superseded']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.release.superseded']);
+    }
+
+    public function test_a_superseded_version_keeps_its_frozen_content_and_cannot_start_new_assessments(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $published = $this->publishedAssessment();
+        $frozenPayload = $published->published_payload;
+        $oldRelease = AssessmentCatalogueRelease::whereHas(
+            'departmentFrameworkVersions',
+            fn ($q) => $q->where('department_framework_versions.framework_version_id', $published->framework_version_id)
+        )->firstOrFail();
+
+        $this->post(route('admin.assessments.versions.store', $published));
+        $successor = DepartmentFrameworkVersion::where('parent_version_id', $published->framework_version_id)->firstOrFail();
+        $this->post(route('admin.assessments.publish', $successor), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+            'confirm' => 1,
+        ]);
+
+        // History survives supersession untouched.
+        $this->assertEquals($frozenPayload, $published->fresh()->published_payload);
+        $this->assertNotNull($published->fresh()->content_hash);
+
+        // But it can no longer be used to start new work.
+        $user = User::factory()->create();
+        $workspace = Workspace::factory()->create();
+        WorkspaceMember::create(['workspace_id' => $workspace->workspace_id, 'user_id' => $user->user_id, 'role' => 'OWNER']);
+        $user->update(['active_workspace_id' => $workspace->workspace_id]);
+        app()->instance('current.workspace', $workspace);
+        $project = Project::create(['name' => 'Superseded Release Project', 'owner_user_id' => $user->user_id]);
+        $target = Target::create([
+            'target_type_code' => 'COMMUNITY',
+            'name' => 'Superseded Release Target',
+            'owner_workspace_id' => $workspace->workspace_id,
+        ]);
+        $project->targets()->attach($target->target_id, ['added_at' => now()]);
+
+        $this->expectException(ValidationException::class);
+        app(AssessmentCreationService::class)->createFromCatalogue($project, $oldRelease->fresh(), creatorId: $user->user_id);
+    }
+
+    public function test_respondent_preview_shows_the_questions_without_any_way_to_answer(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment] = $this->assessmentWithOneNewQuestion();
+
+        $response = $this->get(route('admin.assessments.preview', $assessment))->assertOk();
+
+        $response->assertSee('Respondent preview');
+        $response->assertSee('Scoring fixture question?');
+        $response->assertSee('Yes');
+        $response->assertSee('No');
+        $response->assertSee('Nothing here can be answered or changed');
+
+        // Every input is disabled, and the preview offers no save or submit action.
+        $html = $response->getContent();
+        $this->assertSame(
+            substr_count($html, '<input type="radio"'),
+            substr_count($html, '<input type="radio" disabled'),
+            'A preview input was left enabled.'
+        );
+        $response->assertDontSee('wire:click');
+    }
+
+    public function test_respondent_preview_of_a_published_assessment_uses_the_frozen_payload(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $published = $this->publishedAssessment();
+
+        $this->get(route('admin.assessments.preview', $published))
+            ->assertOk()
+            ->assertSee('exact frozen content that was published')
+            ->assertSee('Scoring fixture question?');
+    }
+
+    public function test_preview_does_not_expose_scoring_or_governance_detail_to_respondent_view(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        $this->scoringGroupFor($assessment);
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+            'points' => [1 => 100, 2 => 0],
+        ]);
+
+        // Respondents never see points, weights or governance vocabulary.
+        $this->get(route('admin.assessments.preview', $assessment))
+            ->assertOk()
+            ->assertDontSee('100 points')
+            ->assertDontSee('Counts double')
+            ->assertDontSee('sub_index_id')
+            ->assertDontSee('question_version_id');
+    }
+
+    public function test_workspace_user_cannot_create_a_version_or_open_the_preview(): void
+    {
+        $admin = $this->platformAdmin();
+        $this->actingAs($admin);
+        $published = $this->publishedAssessment();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('admin.assessments.versions.store', $published))->assertForbidden();
+        $this->actingAs(User::factory()->create())
+            ->get(route('admin.assessments.preview', $published))->assertForbidden();
     }
 
     public function test_the_draft_is_created_as_a_focused_framework_version_without_the_author_choosing_one(): void

@@ -73,6 +73,15 @@
 - **Implementation rule:** Do not hardcode free access; use `subscription_plans`, `plan_features`, and `PlanService`.
 - **Known drift:** `PlatformSettingController` still renders and persists `plan.free_projects`, `plan.free_assessments_per_project`, and `plan.pro_projects`. `PlanService` no longer reads them, so those controls have no effect. Resolving this requires a decision on whether to remove the controls; it is recorded here rather than silently corrected.
 
+### DEC-2026-07-19-015: The Builder Retires A Version At Publication, Not At Clone Time
+
+- **Status:** Accepted and implemented.
+- **Context:** Advanced Tools supersedes a published framework version the moment its successor draft is created. In the builder that would pull a working assessment out of service as soon as an author began a correction, leaving nothing publishable until the new version was finished.
+- **Decision:** "Create new version" clones the content into a draft and leaves the predecessor `PUBLISHED` and selectable. The predecessor, and the catalogue release pinning it, are moved to `SUPERSEDED` only when the successor is published.
+- **Constraint:** only one open draft version per published assessment. A second attempt is refused so lineage stays a single line.
+- **Preserved:** the predecessor keeps its frozen `published_payload` and `content_hash`. Assessments and reports already created are unaffected because their content lives in immutable snapshots. A superseded release can no longer start new assessments, which `AssessmentCreationService` already enforces.
+- **Boundary:** Advanced Tools keeps its immediate-supersede behaviour for expert use. Both paths share one clone implementation in `AssessmentVersionService`; only the retirement timing differs.
+
 ### DEC-2026-07-19-013: Author Self-Approval Is A Temporary Beta Limitation
 
 - **Status:** Accepted for beta. Requires a governance decision before production.

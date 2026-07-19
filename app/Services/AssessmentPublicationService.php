@@ -26,6 +26,7 @@ class AssessmentPublicationService
     public function __construct(
         private readonly DepartmentFrameworkPublishingService $frameworks,
         private readonly CataloguePublishingService $catalogues,
+        private readonly AssessmentVersionService $versions,
         private readonly AuditService $audit,
     ) {}
 
@@ -68,6 +69,10 @@ class AssessmentPublicationService
 
             // Authoritative release checks, including that the framework it pins is published.
             $published = $this->catalogues->publish($release->fresh(), $publisherId);
+
+            // A predecessor stays in service while its successor is being written. Now that
+            // the successor is live, retire it so workspaces select the new version.
+            $this->versions->retirePredecessorOf($assessment->fresh(), $publisherId);
 
             $this->audit->record('assessment.published', $assessment->fresh(), newValues: [
                 'framework_version_id' => $assessment->framework_version_id,

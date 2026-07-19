@@ -34,6 +34,24 @@
                 Published {{ $publishedRelease->published_at?->format('j F Y') }}. Workspaces can now select it.
                 Its content is locked so that reports stay reproducible; to change anything, create a new version.
             </p>
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+                <a href="{{ route('admin.assessments.preview', $assessment) }}"
+                   class="rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-slate-800 dark:text-emerald-200">
+                    Preview what respondents see
+                </a>
+                @if ($openDraftVersion)
+                    <a href="{{ route('admin.assessments.build', $openDraftVersion) }}"
+                       class="rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-slate-800 dark:text-emerald-200">
+                        Continue version {{ $openDraftVersion->version_number }}
+                    </a>
+                @else
+                    <form method="POST" action="{{ route('admin.assessments.versions.store', $assessment) }}"
+                          onsubmit="return confirm('Create a new version? This one stays published and in use until the new version is published.')">
+                        @csrf
+                        <button class="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Create new version</button>
+                    </form>
+                @endif
+            </div>
         </div>
     @endif
 
@@ -122,6 +140,15 @@
         </div>
 
         <div class="space-y-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Preview</h2>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">See exactly what the person answering will see.</p>
+                <a href="{{ route('admin.assessments.preview', $assessment) }}"
+                   class="mt-3 inline-block rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200">
+                    Open respondent preview
+                </a>
+            </div>
+
             <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Summary</h2>
                 <dl class="mt-3 space-y-2 text-sm">

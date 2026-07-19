@@ -10,6 +10,7 @@ use App\Models\FrameworkQuestionPlacement;
 use App\Models\FrameworkSection;
 use App\Models\QuestionVersion;
 use App\Models\SubIndex;
+use App\Services\AssessmentVersionService;
 use App\Services\AuditService;
 use App\Services\DepartmentFrameworkPublishingService;
 use App\Services\GovernanceDependencyService;
@@ -260,7 +261,7 @@ class FrameworkVersionController extends Controller
         return back()->with('success', 'Framework version published and frozen.');
     }
 
-    public function supersede(DepartmentFrameworkVersion $framework, AuditService $audit, GovernanceDependencyService $dependencies): RedirectResponse
+    public function supersede(DepartmentFrameworkVersion $framework, AuditService $audit, GovernanceDependencyService $dependencies, AssessmentVersionService $versions): RedirectResponse
     {
         if ($framework->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED) {
             return back()->withErrors(['status' => 'Only published framework versions can be superseded.']);
@@ -268,72 +269,9 @@ class FrameworkVersionController extends Controller
 
         $dependencySummary = $dependencies->frameworkVersion($framework);
 
-        $successor = DB::transaction(function () use ($framework, $audit, $dependencySummary): DepartmentFrameworkVersion {
-            $framework->load(['sections.indicators', 'questionPlacements']);
-            $nextVersion = ((int) DepartmentFrameworkVersion::where('module_id', $framework->module_id)->max('version_number')) + 1;
-
-            $successor = DepartmentFrameworkVersion::create([
-                'module_id' => $framework->module_id,
-                'framework_type' => $framework->framework_type,
-                'version_number' => $nextVersion,
-                'status' => DepartmentFrameworkVersion::STATUS_DRAFT,
-                'display_name' => $framework->display_name,
-                'description' => $framework->description,
-                'purpose' => $framework->purpose,
-                'source_authority' => $framework->source_authority,
-                'source_url' => $framework->source_url,
-                'license_code' => $framework->license_code,
-                'methodology_notes' => $framework->methodology_notes,
-                'source_summary' => $framework->source_summary,
-                'review_notes' => 'Successor draft created from v'.$framework->version_number.'.',
-                'parent_version_id' => $framework->framework_version_id,
-            ]);
-
-            $sectionMap = [];
-            foreach ($framework->sections as $section) {
-                $newSection = FrameworkSection::create([
-                    'framework_version_id' => $successor->framework_version_id,
-                    'section_code' => $section->section_code,
-                    'section_name' => $section->section_name,
-                    'purpose' => $section->purpose,
-                    'display_order' => $section->display_order,
-                ]);
-                $sectionMap[$section->framework_section_id] = $newSection->framework_section_id;
-            }
-
-            $indicatorMap = [];
-            foreach ($framework->sections->flatMap->indicators as $indicator) {
-                $newIndicator = FrameworkIndicator::create([
-                    'framework_version_id' => $successor->framework_version_id,
-                    'framework_section_id' => $sectionMap[$indicator->framework_section_id],
-                    'indicator_code' => $indicator->indicator_code,
-                    'indicator_name' => $indicator->indicator_name,
-                    'description' => $indicator->description,
-                    'display_order' => $indicator->display_order,
-                ]);
-                $indicatorMap[$indicator->framework_indicator_id] = $newIndicator->framework_indicator_id;
-            }
-
-            foreach ($framework->questionPlacements as $placement) {
-                FrameworkQuestionPlacement::create([
-                    'framework_version_id' => $successor->framework_version_id,
-                    'framework_section_id' => $sectionMap[$placement->framework_section_id],
-                    'framework_indicator_id' => $indicatorMap[$placement->framework_indicator_id],
-                    'question_id' => $placement->question_id,
-                    'question_version_id' => $placement->question_version_id,
-                    'sub_index_id' => $placement->sub_index_id,
-                    'display_order' => $placement->display_order,
-                    'is_required' => $placement->is_required,
-                    'applicability' => $placement->applicability,
-                    'evidence_expectation' => $placement->evidence_expectation,
-                    'weight' => $placement->weight,
-                    'scoring_contribution' => $placement->scoring_contribution,
-                    'criticality' => $placement->criticality,
-                    'help_text' => $placement->help_text,
-                    'local_display_text' => $placement->local_display_text,
-                    'metadata' => $placement->metadata,
-                ]);
-            }
+        $successor = DB::transaction(function () use ($framework, $audit, $dependencySummary, $versions): DepartmentFrameworkVersion {
+            // Shared with the assessment builder so the clone lives in one place.
+            $successor = $versions->cloneToDraft($framework);
 
             $old = ['status' => $framework->status];
             $framework->update(['status' => DepartmentFrameworkVersion::STATUS_SUPERSEDED]);

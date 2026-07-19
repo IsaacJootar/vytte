@@ -9,7 +9,9 @@ use App\Models\DepartmentFrameworkVersion;
 use App\Models\HealthDomain;
 use App\Services\AssessmentPublicationService;
 use App\Services\AssessmentReadinessService;
+use App\Services\AssessmentVersionService;
 use App\Services\AuditService;
+use App\Services\FrameworkContentService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -139,7 +141,7 @@ class AssessmentBuilderController extends Controller
     /**
      * The Review step: everything the author built, plus anything blocking publication.
      */
-    public function review(DepartmentFrameworkVersion $assessment, AssessmentReadinessService $readiness): View
+    public function review(DepartmentFrameworkVersion $assessment, AssessmentReadinessService $readiness, AssessmentVersionService $versions): View
     {
         $assessment->load([
             'module.healthDomains',
@@ -159,6 +161,7 @@ class AssessmentBuilderController extends Controller
                 'departmentFrameworkVersions',
                 fn ($query) => $query->where('department_framework_versions.framework_version_id', $assessment->framework_version_id)
             )->where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)->first(),
+            'openDraftVersion' => $versions->openDraftFor($assessment),
         ]);
     }
 
@@ -208,6 +211,43 @@ class AssessmentBuilderController extends Controller
 
         return redirect()->route('admin.assessments.review', $assessment)
             ->with('success', 'Assessment published. It is now available to workspaces and is locked.');
+    }
+
+    /**
+     * Starts a new version of a published assessment. The published one is untouched.
+     */
+    public function createVersion(DepartmentFrameworkVersion $assessment, AssessmentVersionService $versions): RedirectResponse
+    {
+        try {
+            $successor = $versions->startNewVersion($assessment, auth()->id());
+        } catch (ValidationException $exception) {
+            return back()->withErrors($exception->errors());
+        }
+
+        return redirect()->route('admin.assessments.build', $successor)
+            ->with('success', 'Version '.$successor->version_number.' created as a draft. The published version stays available until this one is published.');
+    }
+
+    /**
+     * Read-only preview of what a respondent sees. Renders the frozen published payload
+     * for a published assessment, and the current draft content otherwise.
+     */
+    public function preview(DepartmentFrameworkVersion $assessment, FrameworkContentService $content): View
+    {
+        $payload = $assessment->status === DepartmentFrameworkVersion::STATUS_DRAFT
+            ? $content->frameworkPayload($assessment)
+            : ($assessment->published_payload ?? $content->frameworkPayload($assessment));
+
+        $questions = collect($payload['questions'] ?? [])->sortBy('display_order')->values();
+
+        return view('admin.assessment-builder.preview', [
+            'assessment' => $assessment,
+            'steps' => self::STEPS,
+            'currentStep' => 'review',
+            'sections' => collect($payload['sections'] ?? [])->sortBy('display_order')->values(),
+            'questionsBySection' => $questions->groupBy('section_id'),
+            'isFrozen' => $assessment->status !== DepartmentFrameworkVersion::STATUS_DRAFT,
+        ]);
     }
 
     public function edit(DepartmentFrameworkVersion $assessment): View
