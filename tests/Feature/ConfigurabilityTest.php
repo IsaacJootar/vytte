@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\PlatformSetting;
+use App\Models\SubscriptionPlan;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -113,34 +114,55 @@ class ConfigurabilityTest extends TestCase
 
     // ---- Plan limits ----
 
-    public function test_free_plan_project_limit_is_configurable(): void
+    private function configurePlanLimits(string $planCode, array $limits): void
     {
-        PlatformSetting::set('plan.free_projects', 3, 'integer');
-
-        $workspace = Workspace::factory()->create(['plan' => 'FREE']);
-        $limit = PlanService::projectLimit($workspace);
-
-        $this->assertEquals(3, $limit);
+        SubscriptionPlan::updateOrCreate(
+            ['plan_code' => $planCode],
+            [
+                'plan_name' => $planCode,
+                'public_label' => $planCode,
+                'display_order' => 1,
+                'is_active' => true,
+                'is_beta_unlocked' => true,
+                'limits' => $limits,
+            ]
+        );
     }
 
-    public function test_free_plan_assessment_limit_is_configurable(): void
+    public function test_starter_plan_project_limit_is_configurable(): void
     {
-        PlatformSetting::set('plan.free_assessments_per_project', 5, 'integer');
+        $this->configurePlanLimits('STARTER', ['projects' => 3]);
 
-        $workspace = Workspace::factory()->create(['plan' => 'FREE']);
-        $limit = PlanService::assessmentLimit($workspace);
+        $workspace = Workspace::factory()->create(['plan' => 'STARTER']);
 
-        $this->assertEquals(5, $limit);
+        $this->assertEquals(3, PlanService::projectLimit($workspace));
     }
 
-    public function test_pro_plan_project_limit_is_configurable(): void
+    public function test_starter_plan_assessment_limit_is_configurable(): void
     {
-        PlatformSetting::set('plan.pro_projects', 20, 'integer');
+        $this->configurePlanLimits('STARTER', ['assessments_per_project' => 5]);
 
-        $workspace = Workspace::factory()->create(['plan' => 'PRO']);
-        $limit = PlanService::projectLimit($workspace);
+        $workspace = Workspace::factory()->create(['plan' => 'STARTER']);
 
-        $this->assertEquals(20, $limit);
+        $this->assertEquals(5, PlanService::assessmentLimit($workspace));
+    }
+
+    public function test_professional_plan_project_limit_is_configurable(): void
+    {
+        $this->configurePlanLimits('PROFESSIONAL', ['projects' => 20]);
+
+        $workspace = Workspace::factory()->create(['plan' => 'PROFESSIONAL']);
+
+        $this->assertEquals(20, PlanService::projectLimit($workspace));
+    }
+
+    public function test_legacy_plan_codes_resolve_to_current_plan_limits(): void
+    {
+        $this->configurePlanLimits('STARTER', ['projects' => 3]);
+        $this->configurePlanLimits('PROFESSIONAL', ['projects' => 20]);
+
+        $this->assertEquals(3, PlanService::projectLimit(Workspace::factory()->create(['plan' => 'FREE'])));
+        $this->assertEquals(20, PlanService::projectLimit(Workspace::factory()->create(['plan' => 'PRO'])));
     }
 
     public function test_agency_plan_has_no_project_limit(): void
