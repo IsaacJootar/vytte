@@ -8,9 +8,9 @@ use App\Models\DepartmentFrameworkVersion;
 use App\Models\FacilityProfile;
 use App\Models\HealthDomain;
 use App\Services\AuditService;
-use App\Services\ScoringService;
 use App\Services\CataloguePublishingService;
 use App\Services\GovernanceDependencyService;
+use App\Services\ScoringService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,11 +19,24 @@ use Illuminate\Validation\Rule;
 
 class CatalogueReleaseController extends Controller
 {
+    /**
+     * Publishing: what workspaces can currently select, and what has been replaced.
+     *
+     * A catalogue release is what makes an assessment usable, so this page is framed as the
+     * published state of assessments rather than as a list of release records.
+     */
     public function index(Request $request): View
     {
         $query = AssessmentCatalogueRelease::with(['facilityProfile', 'healthDomain'])
             ->withCount('departmentFrameworkVersions')
             ->latest();
+
+        if ($request->filled('search')) {
+            $search = '%'.$request->string('search')->lower().'%';
+            $query->where(fn ($inner) => $inner
+                ->whereRaw('LOWER(release_name) LIKE ?', [$search])
+                ->orWhereRaw('LOWER(release_code) LIKE ?', [$search]));
+        }
 
         if ($request->filled('creation_path')) {
             $query->where('creation_path', $request->string('creation_path'));
@@ -34,7 +47,13 @@ class CatalogueReleaseController extends Controller
         }
 
         return view('admin.catalogue-releases.index', [
-            'releases' => $query->paginate(25)->withQueryString(),
+            'releases' => $query->paginate(20)->withQueryString(),
+            'counts' => [
+                'live' => AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)->count(),
+                'draft' => AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_DRAFT)->count(),
+                'replaced' => AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_SUPERSEDED)->count(),
+                'archived' => AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_ARCHIVED)->count(),
+            ],
         ]);
     }
 

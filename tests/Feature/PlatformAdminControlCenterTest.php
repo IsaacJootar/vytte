@@ -71,7 +71,8 @@ class PlatformAdminControlCenterTest extends TestCase
             route('admin.question-identities.index') => 'Question Library',
             route('admin.question-versions.index') => 'Question Versions',
             route('admin.framework-versions.index') => 'Framework Versions',
-            route('admin.catalogue-releases.index') => 'Catalogue Releases',
+            // Framed as what workspaces can select rather than as release records.
+            route('admin.catalogue-releases.index') => 'Publishing',
             route('admin.facility-profiles.index') => 'Facility Profiles',
             route('admin.scoring-policies.index') => 'Scoring and Aggregation Policies',
             route('admin.platform-users.index') => 'Platform Users and Roles',
