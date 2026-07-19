@@ -16,9 +16,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -50,7 +48,6 @@ class AssessmentTest extends TestCase
 
     private function createProjectWithTarget(Workspace $workspace, User $user): array
     {
-        $this->seed(ReferenceDataSeeder::class);
 
         $project = Project::create([
             'name' => 'Test Project',
@@ -70,8 +67,6 @@ class AssessmentTest extends TestCase
 
     private function createHealthFacilityProject(Workspace $workspace, User $user): array
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $project = Project::create([
             'name' => 'Clinic Test Project',
@@ -103,7 +98,6 @@ class AssessmentTest extends TestCase
     public function test_assessment_create_requires_auth(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
-        $this->seed(ReferenceDataSeeder::class);
         $project = Project::create(['name' => 'Test', 'owner_user_id' => $user->user_id]);
 
         // Request without actingAs — unauthenticated
@@ -114,7 +108,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         // Request without actingAs — unauthenticated
@@ -204,7 +197,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $this->actingAs($user)
@@ -217,7 +209,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
         $question = Question::where('question_code', 'DMNH.DEMO.Q4')->firstOrFail();
 
@@ -239,7 +230,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
         $question = Question::where('question_code', 'DMNH.DEMO.Q4')->firstOrFail();
 
@@ -261,7 +251,6 @@ class AssessmentTest extends TestCase
     {
         [$userA, $workspaceA] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspaceA, $userA);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $userB = User::factory()->create();
@@ -283,7 +272,6 @@ class AssessmentTest extends TestCase
     {
         [$owner, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $owner);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
         $outsider = User::factory()->create(['active_workspace_id' => $workspace->workspace_id]);
 
@@ -298,7 +286,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         Livewire::actingAs($user)
@@ -311,7 +298,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -336,7 +322,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -365,7 +350,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -389,7 +373,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -414,7 +397,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -432,7 +414,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $component = Livewire::actingAs($user)
@@ -451,7 +432,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         Livewire::actingAs($user)
@@ -466,7 +446,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $this->expectException(\LogicException::class);
@@ -477,7 +456,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
         $assessment->update(['status' => Assessment::STATUS_COMPLETE, 'completed_at' => now()]);
 
@@ -489,7 +467,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         $this->actingAs($user)
@@ -504,7 +481,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
 
         Question::where('is_active', true)
@@ -543,7 +519,6 @@ class AssessmentTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $assessment = $this->createAssessment($project, $target);
         $assessment->update(['status' => 'COMPLETE', 'completed_at' => now()]);
 

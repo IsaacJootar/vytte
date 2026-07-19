@@ -14,8 +14,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -41,8 +39,6 @@ class ConsentCaptureTest extends TestCase
 
     private function createConsentAssessment(Workspace $workspace, User $user): Assessment
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $project = Project::create(['name' => 'Consent Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
@@ -58,8 +54,6 @@ class ConsentCaptureTest extends TestCase
 
     private function createInternalModuleAssessment(Workspace $workspace, User $user): Assessment
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $project = Project::create(['name' => 'Internal Test Project', 'owner_user_id' => $user->user_id]);
         $profile = FacilityProfile::where('profile_code', 'CLINIC')->firstOrFail();
         $target = Target::create([
@@ -79,8 +73,6 @@ class ConsentCaptureTest extends TestCase
 
     public function test_mental_health_module_requires_consent(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
 
         $this->assertTrue($module->requires_consent);
@@ -88,8 +80,6 @@ class ConsentCaptureTest extends TestCase
 
     public function test_outpatient_module_does_not_require_consent(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $module = AssessmentModule::where('module_code', 'DOPD')->first();
 
         $this->assertFalse($module->requires_consent);

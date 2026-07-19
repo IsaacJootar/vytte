@@ -19,9 +19,7 @@ use App\Services\AssessmentCreationService;
 use App\Services\CataloguePublishingService;
 use App\Services\MultiRespondentAggregationService;
 use App\Services\RespondentSubmissionService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -34,8 +32,6 @@ class MultiRespondentScoringTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $this->seed(PlanFeatureSeeder::class);
     }
 

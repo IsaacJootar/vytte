@@ -18,8 +18,6 @@ use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
 use Database\Seeders\PlanFeatureSeeder;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -52,8 +50,6 @@ class PublicRespondentRunnerTest extends TestCase
 
     private function createPublicAssessment(Workspace $workspace, User $user): Assessment
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $project = Project::create(['name' => 'Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',

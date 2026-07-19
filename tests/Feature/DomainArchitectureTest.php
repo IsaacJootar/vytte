@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
 use App\Models\DepartmentFrameworkVersion;
@@ -14,10 +15,9 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\DomainTaxonomyPublishingService;
+use App\Services\FrameworkContentService;
 use Database\Seeders\DemoAccountSeeder;
 use Database\Seeders\DemoDataSeeder;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -25,13 +25,6 @@ use Tests\TestCase;
 class DomainArchitectureTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
-    }
 
     public function test_demo_taxonomy_is_published_without_old_phsai_domain_names(): void
     {
@@ -109,7 +102,7 @@ class DomainArchitectureTest extends TestCase
             'rationale' => 'Test override.',
         ]);
 
-        $payload = app(\App\Services\FrameworkContentService::class)->frameworkPayload($placement->frameworkVersion);
+        $payload = app(FrameworkContentService::class)->frameworkPayload($placement->frameworkVersion);
         $question = collect($payload['questions'])->firstWhere('framework_question_placement_id', $placement->framework_question_placement_id);
 
         $this->assertSame('SAFE', $question['primary_analytical_domain']['domain_code']);
@@ -162,7 +155,7 @@ class DomainArchitectureTest extends TestCase
         $this->seed(DemoAccountSeeder::class);
         $this->seed(DemoDataSeeder::class);
 
-        $assessment = \App\Models\Assessment::where('status', \App\Models\Assessment::STATUS_COMPLETE)->with('snapshot', 'reportSnapshot')->firstOrFail();
+        $assessment = Assessment::where('status', Assessment::STATUS_COMPLETE)->with('snapshot', 'reportSnapshot')->firstOrFail();
 
         $this->assertNotEmpty($assessment->snapshot->composition_manifest['domain_taxonomy_versions']);
         $this->assertNotEmpty($assessment->reportSnapshot->payload['domain_scores']);

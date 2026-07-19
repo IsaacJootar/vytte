@@ -9,9 +9,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Tests\TestCase;
@@ -157,8 +155,6 @@ class LocalizationTest extends TestCase
         [$user, $workspace] = $this->userWithWorkspace();
 
         // Seed just enough to have an assessment to run
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $project = Project::create(['name' => 'Locale Test', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',

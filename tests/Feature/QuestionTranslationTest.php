@@ -15,8 +15,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Livewire\Livewire;
@@ -60,8 +58,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_translation_edit_page_requires_platform_admin(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user] = $this->userWithWorkspace();
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
@@ -73,8 +69,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_translation_edit_page_renders_for_platform_admin(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $admin = $this->platformAdmin();
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
@@ -88,8 +82,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_translation_edit_page_shows_english_question_text(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $admin = $this->platformAdmin();
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
@@ -105,8 +97,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_saving_question_translation_creates_record(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $admin = $this->platformAdmin();
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
@@ -127,8 +117,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_saving_option_translation_creates_record(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $admin = $this->platformAdmin();
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
@@ -150,8 +138,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_blank_translation_deletes_existing_record(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $admin = $this->platformAdmin();
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
@@ -177,8 +163,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_saving_translation_twice_updates_not_duplicates(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $admin = $this->platformAdmin();
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
@@ -203,8 +187,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_runner_shows_translated_question_text_when_locale_is_fr(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $user->update(['locale' => 'fr']);
@@ -244,8 +226,6 @@ class QuestionTranslationTest extends TestCase
 
     public function test_runner_falls_back_to_english_when_no_translation_exists(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $user->update(['locale' => 'fr']);

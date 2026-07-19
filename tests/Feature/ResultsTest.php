@@ -12,10 +12,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ResultsTest extends TestCase
@@ -93,8 +90,6 @@ class ResultsTest extends TestCase
 
     public function test_results_page_requires_auth(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user);
@@ -107,8 +102,6 @@ class ResultsTest extends TestCase
 
     public function test_results_redirects_to_runner_if_not_complete(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->createGovernedAssessment($workspace, $user);
@@ -122,8 +115,6 @@ class ResultsTest extends TestCase
 
     public function test_results_page_renders_for_calibrated_assessment(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user, withAnswers: true);
@@ -138,8 +129,6 @@ class ResultsTest extends TestCase
 
     public function test_results_page_shows_module_name(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user);
@@ -152,8 +141,6 @@ class ResultsTest extends TestCase
 
     public function test_results_page_shows_score_for_calibrated_assessment(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user, withAnswers: true);
@@ -169,8 +156,6 @@ class ResultsTest extends TestCase
 
     public function test_results_page_flags_uncalibrated_when_no_answers(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user, withAnswers: false);
@@ -186,8 +171,6 @@ class ResultsTest extends TestCase
 
     public function test_results_page_shows_uncalibrated_sub_index_flag(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user, withAnswers: false);
@@ -202,8 +185,6 @@ class ResultsTest extends TestCase
 
     public function test_findings_shown_for_weak_sub_index_scores(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
 
@@ -220,8 +201,6 @@ class ResultsTest extends TestCase
 
     public function test_score_history_hidden_for_single_run(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user);
@@ -236,8 +215,6 @@ class ResultsTest extends TestCase
 
     public function test_workspace_b_cannot_view_workspace_a_results(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$userA, $workspaceA] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspaceA, $userA);
@@ -261,8 +238,6 @@ class ResultsTest extends TestCase
 
     public function test_domain_breakdown_shown_for_calibrated_assessment(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user, withAnswers: true);
@@ -277,8 +252,6 @@ class ResultsTest extends TestCase
 
     public function test_print_button_present_on_results_page(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupCompleteAssessment($workspace, $user);

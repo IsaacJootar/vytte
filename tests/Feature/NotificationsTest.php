@@ -11,11 +11,9 @@ use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\Services\AssessmentCreationService;
 use App\Notifications\AssessmentCompletedNotification;
 use App\Notifications\MemberJoinedNotification;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
+use App\Services\AssessmentCreationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -41,8 +39,6 @@ class NotificationsTest extends TestCase
 
     private function createCompletedAssessment(Workspace $workspace, User $user): Assessment
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $project = Project::create(['name' => 'Notif Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',

@@ -3,14 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\AssessmentModule;
-use App\Models\QuestionGroup;
 use App\Models\PlatformSetting;
 use App\Models\Question;
+use App\Models\QuestionGroup;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -19,13 +17,6 @@ use Tests\TestCase;
 class AdminTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
-    }
 
     private function makeAdmin(): User
     {

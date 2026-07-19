@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use Database\Seeders\PlanFeatureSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Database\Seeders\SubscriptionPlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +19,6 @@ class BetaReadinessTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
         $this->seed(SubscriptionPlanSeeder::class);
         $this->seed(PlanFeatureSeeder::class);
     }

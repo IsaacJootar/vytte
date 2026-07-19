@@ -2,14 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\Project;
 use App\Models\FacilityProfile;
+use App\Models\Project;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -33,10 +31,7 @@ class ProjectTest extends TestCase
         return [$user, $workspace];
     }
 
-    private function seedReferenceData(): void
-    {
-        $this->seed(ReferenceDataSeeder::class);
-    }
+    private function seedReferenceData(): void {}
 
     // ---- Index ----
 
@@ -86,7 +81,6 @@ class ProjectTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
         $this->seedReferenceData();
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $profile = FacilityProfile::where('profile_code', 'PRIMARY_HEALTH_CENTRE')->firstOrFail();
 
         $this->actingAs($user)->post(route('projects.store'), [

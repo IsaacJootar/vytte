@@ -14,8 +14,6 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -109,8 +107,6 @@ class ScoringTest extends TestCase
 
     public function test_numeric_response_uses_frozen_numeric_scoring_band(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
         $payload = $assessment->snapshot->payload;
@@ -160,8 +156,6 @@ class ScoringTest extends TestCase
 
     public function test_no_answers_produces_not_calibrated_score(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -189,8 +183,6 @@ class ScoringTest extends TestCase
 
     public function test_all_best_answers_produces_perfect_score(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -209,8 +201,6 @@ class ScoringTest extends TestCase
 
     public function test_zero_to_one_question_scales_are_normalized_to_zero_to_one_hundred(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -230,8 +220,6 @@ class ScoringTest extends TestCase
 
     public function test_scoring_uses_the_frozen_snapshot_not_live_scope_changes(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -249,8 +237,6 @@ class ScoringTest extends TestCase
 
     public function test_partial_answers_produce_partial_calibration_status(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -281,8 +267,6 @@ class ScoringTest extends TestCase
 
     public function test_known_weight_produces_correct_sub_index_score(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -316,8 +300,6 @@ class ScoringTest extends TestCase
 
     public function test_submit_route_triggers_scoring(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -338,8 +320,6 @@ class ScoringTest extends TestCase
 
     public function test_maturity_level_assigned_on_calibrated_score(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -356,8 +336,6 @@ class ScoringTest extends TestCase
 
     public function test_scoring_is_idempotent(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->setupAssessment($workspace, $user);
@@ -375,8 +353,6 @@ class ScoringTest extends TestCase
 
     public function test_scoring_does_not_bleed_across_workspaces(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         // Workspace A — complete and score an assessment
         [$userA, $workspaceA] = $this->userWithWorkspace();

@@ -12,8 +12,6 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -38,8 +36,6 @@ class DashboardTest extends TestCase
 
     private function createScoredAssessment(Workspace $workspace, User $user, bool $bestAnswers = true): Assessment
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $project = Project::create(['name' => 'Dashboard Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'COMMUNITY',
@@ -102,8 +98,6 @@ class DashboardTest extends TestCase
     public function test_dashboard_shows_correct_active_project_count(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
-
-        $this->seed(ReferenceDataSeeder::class);
 
         Project::create(['name' => 'Project A', 'owner_user_id' => $user->user_id]);
         Project::create(['name' => 'Project B', 'owner_user_id' => $user->user_id]);
@@ -171,7 +165,6 @@ class DashboardTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
 
-        $this->seed(ReferenceDataSeeder::class);
         Project::create(['name' => 'Alpha Project', 'owner_user_id' => $user->user_id]);
 
         $this->actingAs($user)
@@ -196,7 +189,6 @@ class DashboardTest extends TestCase
     {
         [$user, $workspace] = $this->userWithWorkspace();
 
-        $this->seed(ReferenceDataSeeder::class);
         foreach (range(1, 7) as $i) {
             Project::create(['name' => "Project $i", 'owner_user_id' => $user->user_id]);
         }

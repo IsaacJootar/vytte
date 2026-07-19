@@ -12,22 +12,12 @@ use App\Models\QuestionVersion;
 use App\Models\SubIndex;
 use App\Models\User;
 use App\Services\FrameworkContentService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AssessmentBuilderTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
-    }
 
     private function platformAdmin(): User
     {

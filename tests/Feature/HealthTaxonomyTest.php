@@ -7,7 +7,6 @@ use App\Models\HealthDomain;
 use App\Models\SettingType;
 use App\Models\Target;
 use App\Models\Workspace;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -15,12 +14,6 @@ use Tests\TestCase;
 class HealthTaxonomyTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     public function test_setting_taxonomy_covers_standard_and_custom_contexts(): void
     {

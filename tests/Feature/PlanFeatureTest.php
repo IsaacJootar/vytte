@@ -8,7 +8,6 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\PlanService;
 use Database\Seeders\PlanFeatureSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Database\Seeders\SubscriptionPlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -20,7 +19,6 @@ class PlanFeatureTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
         $this->seed(SubscriptionPlanSeeder::class);
         $this->seed(PlanFeatureSeeder::class);
     }

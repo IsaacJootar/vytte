@@ -24,8 +24,6 @@ use App\Services\DepartmentFrameworkPublishingService;
 use App\Services\QuestionVersionPublishingService;
 use App\Services\ScoringService;
 use App\Services\WorkspaceCustomAssessmentService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -33,14 +31,6 @@ use Tests\TestCase;
 class QuestionBankArchitectureTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
-    }
 
     private function workspaceOwner(): array
     {

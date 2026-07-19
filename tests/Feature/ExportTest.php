@@ -14,9 +14,7 @@ use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\ReportSnapshotService;
 use App\Services\ScoringService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -28,8 +26,6 @@ class ExportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         $this->seed(PlanFeatureSeeder::class);
     }
 

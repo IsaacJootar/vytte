@@ -9,19 +9,12 @@ use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class GeographicUsageTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-    }
 
     private function makeAdmin(): User
     {

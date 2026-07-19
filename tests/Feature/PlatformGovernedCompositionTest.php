@@ -18,8 +18,6 @@ use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\GovernanceDependencyService;
 use App\Services\ScoringService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -36,8 +34,6 @@ class PlatformGovernedCompositionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
         [$this->user, $this->workspace] = $this->workspaceContext();
     }
 
@@ -291,7 +287,6 @@ class PlatformGovernedCompositionTest extends TestCase
 
     public function test_platform_governed_demo_seeder_is_idempotent(): void
     {
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $this->assertDatabaseHas('assessment_catalogue_releases', [
             'release_code' => 'DEMO_CLINIC_COMPREHENSIVE_V1',

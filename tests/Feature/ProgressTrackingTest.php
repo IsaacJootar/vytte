@@ -12,11 +12,8 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProgressTrackingTest extends TestCase
@@ -86,8 +83,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_progress_page_requires_auth(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -100,8 +95,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_progress_page_shows_empty_state_with_no_complete_assessments(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -116,8 +109,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_progress_page_renders_with_one_complete_assessment(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -131,8 +122,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_progress_page_shows_maturity_level_for_scored_assessment(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -148,8 +137,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_progress_page_shows_view_link_for_each_run(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -165,8 +152,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_compare_two_runs_shown_when_two_or_more_complete_assessments(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -181,8 +166,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_domain_matrix_not_shown_for_single_run(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -198,8 +181,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_compare_form_shown_when_two_or_more_complete_assessments(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -214,8 +195,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_compare_form_not_shown_for_single_run(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -231,8 +210,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_compare_page_requires_auth(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -245,8 +222,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_compare_page_renders_with_two_assessments(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -262,8 +237,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_compare_page_shows_both_assessment_scores(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -279,8 +252,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_compare_rejects_different_composition_hashes(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $project = $this->makeProjectWithTarget($user, $workspace);
@@ -297,8 +268,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_compare_page_404s_when_assessment_belongs_to_different_project(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$user, $workspace] = $this->userWithWorkspace();
         $projectA = $this->makeProjectWithTarget($user, $workspace);
@@ -317,8 +286,6 @@ class ProgressTrackingTest extends TestCase
 
     public function test_workspace_b_cannot_view_workspace_a_progress_page(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         [$userA, $workspaceA] = $this->userWithWorkspace();
         $projectA = $this->makeProjectWithTarget($userA, $workspaceA);

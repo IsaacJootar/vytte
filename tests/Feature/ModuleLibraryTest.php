@@ -7,8 +7,6 @@ use App\Models\QuestionGroup;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use Database\Seeders\PlatformGovernedDemoSeeder;
-use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -40,7 +38,6 @@ class ModuleLibraryTest extends TestCase
 
     public function test_module_show_requires_auth(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
         $module = AssessmentModule::first();
 
         $this->get(route('modules.show', $module))->assertRedirect(route('login'));
@@ -51,8 +48,6 @@ class ModuleLibraryTest extends TestCase
     public function test_module_library_index_renders(): void
     {
         [$user] = $this->userWithWorkspace();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $this->actingAs($user)
             ->get(route('modules.index'))
@@ -63,8 +58,6 @@ class ModuleLibraryTest extends TestCase
     public function test_module_library_index_shows_modules_by_target_type(): void
     {
         [$user] = $this->userWithWorkspace();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $this->actingAs($user)
             ->get(route('modules.index'))
@@ -77,7 +70,6 @@ class ModuleLibraryTest extends TestCase
     public function test_community_voice_is_not_a_separate_module_subsystem(): void
     {
         [$user] = $this->userWithWorkspace();
-        $this->seed(ReferenceDataSeeder::class);
 
         $this->actingAs($user)
             ->get(route('modules.index'))
@@ -88,11 +80,16 @@ class ModuleLibraryTest extends TestCase
     public function test_module_library_index_shows_empty_state_when_no_modules(): void
     {
         [$user] = $this->userWithWorkspace();
+        $this->actingAs($user);
 
-        $this->actingAs($user)
-            ->get(route('modules.index'))
-            ->assertOk()
-            ->assertSee('No modules available');
+        // The empty state appears when no target types exist. This test previously relied
+        // on the database happening to be unseeded, which stopped being true once the
+        // baseline catalogue was seeded once per process. Target types cannot simply be
+        // deleted because assessment_modules references them, so the view is rendered
+        // directly against the empty collection it is designed to handle.
+        $this->view('modules.index', ['targetTypes' => collect()])
+            ->assertSee('No modules available')
+            ->assertSee('Assessment modules are added by the Vytte team.');
     }
 
     // ---- Show ----
@@ -100,8 +97,6 @@ class ModuleLibraryTest extends TestCase
     public function test_module_show_renders_for_seeded_module(): void
     {
         [$user] = $this->userWithWorkspace();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $module = AssessmentModule::where('module_code', 'DOPD')->first();
 
@@ -116,8 +111,6 @@ class ModuleLibraryTest extends TestCase
     public function test_module_show_displays_question_groups_and_questions_from_governed_demo_seeder(): void
     {
         [$user] = $this->userWithWorkspace();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
 
@@ -132,8 +125,6 @@ class ModuleLibraryTest extends TestCase
     public function test_module_show_displays_sub_indices(): void
     {
         [$user] = $this->userWithWorkspace();
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
 
@@ -157,8 +148,6 @@ class ModuleLibraryTest extends TestCase
 
     public function test_assessment_module_has_correct_question_count_after_seeding(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
 
@@ -169,8 +158,6 @@ class ModuleLibraryTest extends TestCase
 
     public function test_module_question_groups_have_questions_with_options(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $group = QuestionGroup::where('group_label', 'DEMONSTRATION READINESS')->first();
 
@@ -181,8 +168,6 @@ class ModuleLibraryTest extends TestCase
 
     public function test_sub_index_uses_service_delivery_as_internal_analytical_lens(): void
     {
-        $this->seed(ReferenceDataSeeder::class);
-        $this->seed(PlatformGovernedDemoSeeder::class);
 
         $module = AssessmentModule::where('module_code', 'DMNH')->first();
         $subIndex = $module->subIndices()->with('domain')->where('acronym', 'DMNHR')->first();
