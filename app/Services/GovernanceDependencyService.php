@@ -9,6 +9,7 @@ use App\Models\AssessmentSnapshot;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\FrameworkQuestionPlacement;
 use App\Models\QuestionVersion;
+use Illuminate\Database\Eloquent\Builder;
 
 class GovernanceDependencyService
 {
@@ -36,8 +37,9 @@ class GovernanceDependencyService
     {
         return [
             'assessments' => Assessment::where('catalogue_release_id', $release->catalogue_release_id)->count(),
-            'assessment_snapshots' => AssessmentSnapshot::where('catalogue_release_id', $release->catalogue_release_id)->count()
-                + $this->assessmentSnapshotReferences($release->catalogue_release_id),
+            'assessment_snapshots' => $this->snapshotReferenceQuery($release->catalogue_release_id)
+                ->orWhere('catalogue_release_id', $release->catalogue_release_id)
+                ->count(),
             'report_snapshots' => $this->reportSnapshotReferences($release->catalogue_release_id),
             'successor_releases' => AssessmentCatalogueRelease::where('parent_release_id', $release->catalogue_release_id)->count(),
         ];
@@ -53,26 +55,32 @@ class GovernanceDependencyService
         return (int) collect($summary)->sum();
     }
 
+    /**
+     * Frozen snapshot documents embed governed identifiers rather than referencing
+     * them with foreign keys, so a reference check is a search inside the JSON.
+     * The match runs in the database: loading every snapshot into PHP to search it
+     * grew unbounded with assessment volume on routine admin pages.
+     */
+    private function snapshotReferenceQuery(string $needle): Builder
+    {
+        $columns = ['payload', 'composition_manifest', 'aggregation_policy', 'collection_config'];
+
+        return AssessmentSnapshot::query()->where(function (Builder $query) use ($columns, $needle): void {
+            foreach ($columns as $column) {
+                $query->orWhereRaw("CAST({$column} AS TEXT) LIKE ?", ['%'.$needle.'%']);
+            }
+        });
+    }
+
     private function assessmentSnapshotReferences(string $needle): int
     {
-        return AssessmentSnapshot::query()
-            ->select(['snapshot_id', 'payload', 'composition_manifest', 'aggregation_policy', 'collection_config'])
-            ->get()
-            ->filter(fn (AssessmentSnapshot $snapshot) => str_contains(json_encode([
-                $snapshot->payload,
-                $snapshot->composition_manifest,
-                $snapshot->aggregation_policy,
-                $snapshot->collection_config,
-            ], JSON_THROW_ON_ERROR), $needle))
-            ->count();
+        return $this->snapshotReferenceQuery($needle)->count();
     }
 
     private function reportSnapshotReferences(string $needle): int
     {
         return AssessmentReportSnapshot::query()
-            ->select(['report_snapshot_id', 'payload'])
-            ->get()
-            ->filter(fn (AssessmentReportSnapshot $snapshot) => str_contains(json_encode($snapshot->payload, JSON_THROW_ON_ERROR), $needle))
+            ->whereRaw('CAST(payload AS TEXT) LIKE ?', ['%'.$needle.'%'])
             ->count();
     }
 }

@@ -9,12 +9,14 @@ use App\Models\FacilityProfile;
 use App\Models\LocalCustomSection;
 use App\Models\Project;
 use App\Models\Question;
+use App\Models\QuestionVersion;
 use App\Models\Response;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
+use App\Services\GovernanceDependencyService;
 use App\Services\ScoringService;
 use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\ReferenceDataSeeder;
@@ -177,6 +179,36 @@ class PlatformGovernedCompositionTest extends TestCase
         ]);
 
         $this->assertSame($originalText, $assessment->snapshot->fresh()->payload[0]['questions'][0]['question_text']);
+    }
+
+    public function test_catalogue_release_dependency_count_does_not_double_count_snapshots(): void
+    {
+        $project = $this->clinicProject();
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+        app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $this->user->user_id);
+
+        $summary = app(GovernanceDependencyService::class)->catalogueRelease($release->fresh());
+
+        // One assessment produces exactly one snapshot. The snapshot both carries the
+        // catalogue_release_id column and embeds the release id in its composition
+        // manifest, which previously counted the same row twice.
+        $this->assertSame(1, $summary['assessments']);
+        $this->assertSame(1, $summary['assessment_snapshots']);
+    }
+
+    public function test_dependency_summary_detects_question_version_frozen_into_snapshot(): void
+    {
+        $project = $this->clinicProject();
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+        $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $this->user->user_id);
+        $questionVersionId = $assessment->snapshot->payload[0]['questions'][0]['question_version_id'];
+        $version = QuestionVersion::findOrFail($questionVersionId);
+
+        $summary = app(GovernanceDependencyService::class)->questionVersion($version);
+
+        $this->assertSame(1, $summary['assessment_snapshots']);
+        $this->assertGreaterThan(0, $summary['framework_placements']);
+        $this->assertTrue(app(GovernanceDependencyService::class)->hasBlockingArchiveDependencies($summary));
     }
 
     public function test_assessment_snapshots_are_immutable_once_created(): void
