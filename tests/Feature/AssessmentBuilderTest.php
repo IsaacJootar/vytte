@@ -36,7 +36,9 @@ class AssessmentBuilderTest extends TestCase
 
     private function activeModule(): AssessmentModule
     {
-        return AssessmentModule::where('is_active', true)->firstOrFail();
+        // Ordered explicitly: without it PostgreSQL may return a different module per run,
+        // and the seeded score groups differ between departments.
+        return AssessmentModule::where('is_active', true)->orderBy('module_id')->firstOrFail();
     }
 
     // ---- Authorization ----
@@ -548,12 +550,20 @@ class AssessmentBuilderTest extends TestCase
         return [$assessment, FrameworkQuestionPlacement::where('framework_version_id', $assessment->framework_version_id)->firstOrFail()];
     }
 
+    /**
+     * Leaves the department with exactly one score, so tests covering the unambiguous
+     * case are not affected by whichever scores the seed happened to create.
+     */
     private function scoringGroupFor(DepartmentFrameworkVersion $assessment): SubIndex
     {
-        return SubIndex::firstOrCreate(
-            ['module_id' => $assessment->module_id, 'acronym' => 'TST'],
-            ['domain_id' => Domain::firstOrFail()->domain_id, 'full_name' => 'Test Readiness Score']
-        );
+        SubIndex::where('module_id', $assessment->module_id)->delete();
+
+        return SubIndex::create([
+            'module_id' => $assessment->module_id,
+            'domain_id' => Domain::orderBy('domain_id')->firstOrFail()->domain_id,
+            'acronym' => 'TST',
+            'full_name' => 'Test Readiness Score',
+        ]);
     }
 
     public function test_scoring_can_be_switched_on_with_points_and_a_critical_answer(): void
