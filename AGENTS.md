@@ -32,11 +32,14 @@ Read, in order, for architecture or assessment work:
 
 1. `docs/architecture/CURRENT_ARCHITECTURE.md`
 2. `docs/architecture/CURRENT_ASSESSMENT_FLOW.md`
-3. `docs/architecture/DATA_MODEL_AUDIT.md`
-4. `docs/architecture/LIFECYCLE_STATE_MACHINE.md`
-5. `docs/architecture/PRESERVATION_REGISTER.md`
-6. `docs/architecture/ARCHITECTURE_GAPS.md`
-7. `docs/architecture/DECISION_LOG.md`
+3. `docs/architecture/QUESTION_BANK_ARCHITECTURE.md`
+4. `docs/architecture/DATA_MODEL_AUDIT.md`
+5. `docs/architecture/LIFECYCLE_STATE_MACHINE.md`
+6. `docs/architecture/PRESERVATION_REGISTER.md`
+7. `docs/architecture/ARCHITECTURE_GAPS.md`
+8. `docs/architecture/DECISION_LOG.md`
+
+Historical records are in `docs/architecture/archive/`. They describe past states and are not current.
 
 ## Stack
 
@@ -46,7 +49,7 @@ Read, in order, for architecture or assessment work:
 | UI | Blade, Livewire 4, Alpine.js |
 | CSS/build | Tailwind CSS 4 CSS-first configuration and Vite |
 | Production database | PostgreSQL |
-| Local/test database | SQLite is temporarily supported; PostgreSQL parity remains required before release |
+| Local/test database | PostgreSQL. See DEC-2026-07-18-002 |
 | Authentication | Laravel Breeze |
 | Email | Resend, gated by platform settings |
 | Icons | blade-ui-kit/blade-heroicons |
@@ -63,10 +66,10 @@ Read, in order, for architecture or assessment work:
 8. Do not create parallel scoring or reporting systems for respondent roles.
 9. Make mobile-first, accessible interfaces that work at 375px.
 10. Handle external-service failures in plain language without exposing raw exceptions.
-11. Work in bounded modules; run focused tests and the full suite.
+11. Work in bounded modules; run focused tests during work and the full sequential suite before finalizing. Batched runs have hidden real failures and do not evidence a passing suite.
 12. Commit and push each completed module separately.
 13. Preserve unrelated worktree changes and never stage them accidentally.
-14. PostgreSQL parity is a release gate even when SQLite is used locally.
+14. PostgreSQL is the database for local development, tests, and production.
 15. A response type may be published only when authenticated and public renderers, authoritative validation, storage, completeness, snapshot, and scoring or explicit unscored behavior are all implemented. Current types are `SINGLE_SELECT`, `LIKERT`, unscored `OPEN_ENDED`, and `NUMERIC`; scored numeric questions require frozen bands.
 
 ## Scoring

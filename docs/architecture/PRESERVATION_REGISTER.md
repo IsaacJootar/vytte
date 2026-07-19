@@ -17,7 +17,8 @@ This register identifies current contracts that future work must preserve unless
 | Catalogue release | Published release pins exact framework versions and policy | Publish a new release for corrections |
 | Comprehensive assessment | Composition orchestrator, not a question-owning template | Add facility profiles and catalogue releases |
 | Focused assessment | One health domain/programme/topic/intervention | Add approved focused releases without unrelated checklists |
-| Assessment snapshot | Payload, manifest, policy, and collection config are frozen | Add versioned fields compatibly |
+| Assessment snapshot | Payload, manifest, policy, collection config, and content hash are frozen. Enforced by a model guard that rejects updates. See DEC-2026-07-19-012 | Add versioned fields compatibly |
+| Response key | Responses are keyed by question identity, so one identity appears at most once per assessment. See DEC-2026-07-19-011 | Re-keying to placements requires an explicit decision and a migration of responses, runners, scorers, and reports |
 | Assessment lifecycle | `IN_PROGRESS -> COMPLETE`, terminal | Reopen/correction/archive requires explicit rules |
 | Assessment module scope | Included/excluded rows remain historical | Do not rewrite completed composition |
 | Runner | Reads immutable snapshot, validates every write | Add response types only with full contracts |
@@ -36,7 +37,6 @@ This register identifies current contracts that future work must preserve unless
 
 These tables are not current product authority:
 
-- earlier template tables
 - `assessment_topic_scope`
 - `response_options`
 - `observation_records`
@@ -46,6 +46,8 @@ These tables are not current product authority:
 - `root_causes`
 - `recommendation_rules`
 - `recommendations`
+
+The earlier assessment template tables are no longer present. They were dropped with the legacy template architecture and no code references them.
 
 Do not build new product behavior on reserved structures without a fresh design decision.
 

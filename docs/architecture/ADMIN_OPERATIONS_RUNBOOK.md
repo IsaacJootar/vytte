@@ -35,4 +35,4 @@ Open `/admin` as a user with `platform_role = PLATFORM_ADMIN`.
 - Use a new version for methodology changes.
 - Keep Platform Admin and Workspace Admin boundaries separate.
 - Verify audit logs after consequential administrative actions.
-- Run sequential test batches when PostgreSQL schema refreshes are slow.
+- Run the full sequential test suite before finalizing work. Batched runs are acceptable for fast feedback during work, but they have hidden real failures and do not evidence a passing suite.

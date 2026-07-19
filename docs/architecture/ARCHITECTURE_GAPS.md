@@ -9,7 +9,6 @@ Current verified local state:
 - `php artisan test`: 401 tests, 1097 assertions passing. Full sequential PostgreSQL run, 2026-07-19, commit `65648e5`.
 - Disposable PostgreSQL `migrate:fresh --seed`: passing.
 - Production frontend build: passing.
-- Commit `44f0186` implements the governed composition model.
 
 ## Resolved Architecture Decisions
 

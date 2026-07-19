@@ -2,6 +2,14 @@
 
 Date: 2026-07-18
 
+## Implementation status
+
+**Design artifacts only. There is no execution path.**
+
+A workspace can create, list, view, and change the status of a custom assessment design. A design cannot be run: there is no runner, no scoring, and no report. The scoring behavior described below is a boundary specification for future work, not implemented behavior.
+
+Do not present workspace custom assessments as a usable assessment capability until an execution path exists and this section is updated. See `GO_LIVE_CHECKLIST.md`, which lists deciding this as required before beta.
+
 ## Purpose
 
 Workspace Custom Assessment exists for customer scopes that Vytte does not yet officially support.
@@ -48,6 +56,8 @@ Workspace custom assessments must be labelled:
 Customer custom content cannot be published into the official Vytte catalogue.
 
 ## Scoring boundary
+
+This section specifies boundaries for future work. None of it is implemented.
 
 Workspace custom assessments may support local:
 
