@@ -133,7 +133,7 @@ The service:
 7. Stores one immutable `assessment_snapshots` row.
 8. Stores included/excluded rows in `assessment_module_scope`.
 
-The old template tables remain in the schema because other implemented infrastructure still references them, but active assessment creation uses catalogue releases.
+The legacy assessment template tables were removed with the legacy template architecture. Assessment creation resolves only through published catalogue releases.
 
 ## Runtime
 

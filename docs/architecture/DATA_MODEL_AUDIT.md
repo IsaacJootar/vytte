@@ -32,7 +32,9 @@ The migration set is the schema source of truth. Current active assessment archi
 
 ### Reserved Tables
 
-Earlier template tables, respondent records, topic scope, multi-option response storage, observation records, topic/project score rollups, root-cause rows, recommendation rules, and recommendation rows are present but not current product authority.
+Respondent records, topic scope, multi-option response storage, observation records, topic/project score rollups, root-cause rows, recommendation rules, and recommendation rows are present but not current product authority.
+
+The earlier assessment template tables are no longer present. They were dropped with the legacy template architecture and no code references them.
 
 Reserved means present in the schema but not the authority for current assessment creation.
 
