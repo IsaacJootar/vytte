@@ -84,6 +84,22 @@
                 </div>
             @endunless
 
+            @if ($isEditable)
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">Discard this draft</h2>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Removes this draft and everything in it. Published assessments are never removed.
+                    </p>
+                    <form method="POST" action="{{ route('admin.assessments.destroy', $assessment) }}" class="mt-3"
+                          onsubmit="return confirm('Discard the draft “{{ $assessment->display_name }}”? This cannot be undone.')">
+                        @csrf @method('DELETE')
+                        <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950">
+                            Discard draft
+                        </button>
+                    </form>
+                </div>
+            @endif
+
             <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Advanced Tools</h2>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">

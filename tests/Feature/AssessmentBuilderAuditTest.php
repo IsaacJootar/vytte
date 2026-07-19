@@ -317,6 +317,69 @@ class AssessmentBuilderAuditTest extends TestCase
         $this->assertNull($placement->fresh()->sub_index_id);
     }
 
+    // ---- Stale drafts have a disposal path ----
+
+    public function test_a_draft_can_be_discarded_and_takes_its_content_with_it(): void
+    {
+        $this->actingAs($this->admin());
+        [$assessment, $section, $placement] = $this->draftWithQuestion();
+
+        $this->delete(route('admin.assessments.destroy', $assessment))
+            ->assertRedirect(route('admin.assessments.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('department_framework_versions', ['framework_version_id' => $assessment->framework_version_id]);
+        $this->assertDatabaseMissing('framework_sections', ['framework_section_id' => $section->framework_section_id]);
+        $this->assertDatabaseMissing('framework_question_placements', [
+            'framework_question_placement_id' => $placement->framework_question_placement_id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.draft.discarded']);
+
+        // The question identity is reusable library content and must survive.
+        $this->assertDatabaseHas('questions', ['question_id' => $placement->question_id]);
+    }
+
+    public function test_a_published_assessment_cannot_be_discarded(): void
+    {
+        $this->actingAs($this->admin());
+        [$assessment] = $this->publishedWithParts();
+
+        $this->delete(route('admin.assessments.destroy', $assessment))->assertSessionHasErrors('status');
+
+        $this->assertDatabaseHas('department_framework_versions', ['framework_version_id' => $assessment->framework_version_id]);
+    }
+
+    public function test_discarding_a_mistaken_version_draft_unblocks_versioning(): void
+    {
+        $this->actingAs($this->admin());
+        [$assessment] = $this->publishedWithParts();
+
+        $this->post(route('admin.assessments.versions.store', $assessment))->assertSessionHasNoErrors();
+        $draft = DepartmentFrameworkVersion::where('parent_version_id', $assessment->framework_version_id)->firstOrFail();
+
+        // Only one open draft version is allowed, so without a disposal path a mistaken
+        // version would block every future version permanently.
+        $this->post(route('admin.assessments.versions.store', $assessment))->assertSessionHasErrors('version');
+        session()->forget('errors');
+
+        $this->delete(route('admin.assessments.destroy', $draft))->assertSessionHasNoErrors();
+        $this->post(route('admin.assessments.versions.store', $assessment))->assertSessionHasNoErrors();
+
+        $this->assertSame(1, DepartmentFrameworkVersion::where('parent_version_id', $assessment->framework_version_id)->count());
+    }
+
+    public function test_a_workspace_user_cannot_discard_a_draft(): void
+    {
+        $this->actingAs($this->admin());
+        [$assessment] = $this->draftWithQuestion();
+
+        $this->actingAs(User::factory()->create())
+            ->delete(route('admin.assessments.destroy', $assessment))
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('department_framework_versions', ['framework_version_id' => $assessment->framework_version_id]);
+    }
+
     public function test_publishing_rejects_a_health_area_that_does_not_exist(): void
     {
         $this->actingAs($this->admin());

@@ -122,6 +122,7 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::get('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'show'])->name('assessments.show');
     Route::get('assessments/{assessment}/edit', [AdminAssessmentBuilderController::class, 'edit'])->name('assessments.edit');
     Route::put('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'update'])->name('assessments.update');
+    Route::delete('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'destroy'])->name('assessments.destroy');
     Route::get('assessments/{assessment}/build', [AdminAssessmentBuilderController::class, 'build'])->name('assessments.build');
     Route::get('assessments/{assessment}/review', [AdminAssessmentBuilderController::class, 'review'])->name('assessments.review');
     Route::put('assessments/{assessment}/provenance', [AdminAssessmentBuilderController::class, 'saveProvenance'])->name('assessments.provenance');

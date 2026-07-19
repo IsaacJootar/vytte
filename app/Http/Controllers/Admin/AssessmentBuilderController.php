@@ -12,6 +12,7 @@ use App\Services\AssessmentReadinessService;
 use App\Services\AssessmentVersionService;
 use App\Services\AuditService;
 use App\Services\FrameworkContentService;
+use App\Services\GovernanceDependencyService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -226,6 +227,49 @@ class AssessmentBuilderController extends Controller
 
         return redirect()->route('admin.assessments.build', $successor)
             ->with('success', 'Version '.$successor->version_number.' created as a draft. The published version stays available until this one is published.');
+    }
+
+    /**
+     * Discards a draft assessment.
+     *
+     * Without this a draft created by mistake stays in the list forever, and a mistaken
+     * new version is worse than untidy: only one open draft version is allowed per
+     * published assessment, so it blocks any further version permanently.
+     *
+     * Only a draft can be discarded. Published, superseded and archived versions are
+     * immutable historical records and are refused by the model guard as well.
+     */
+    public function destroy(DepartmentFrameworkVersion $assessment, AuditService $audit, GovernanceDependencyService $dependencies): RedirectResponse
+    {
+        if (! $this->isEditable($assessment)) {
+            return back()->withErrors([
+                'status' => 'Only a draft can be discarded. Published assessments are kept so that reports stay reproducible.',
+            ]);
+        }
+
+        $summary = $dependencies->frameworkVersion($assessment);
+        if ($dependencies->hasBlockingArchiveDependencies($summary)) {
+            return back()->withErrors([
+                'status' => 'This draft is already referenced by other content and cannot be discarded.',
+            ]);
+        }
+
+        $name = $assessment->display_name;
+        $predecessor = $assessment->parent_version_id;
+
+        $audit->record('assessment.draft.discarded', $assessment, ['display_name' => $name], [
+            'framework_version_id' => $assessment->framework_version_id,
+            'version_number' => $assessment->version_number,
+            'previous_framework_version_id' => $predecessor,
+        ]);
+
+        // Sections, indicators and placements are removed by their cascading foreign keys.
+        // Question identities and versions are deliberately left: they are reusable library
+        // content and may be placed in other assessments.
+        $assessment->delete();
+
+        return redirect()->route('admin.assessments.index')
+            ->with('success', 'Draft "'.$name.'" discarded.');
     }
 
     /**
