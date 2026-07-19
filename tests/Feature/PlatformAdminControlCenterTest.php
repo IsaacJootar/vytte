@@ -4,9 +4,14 @@ namespace Tests\Feature;
 
 use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
+use App\Models\AssessmentModule;
 use App\Models\AssessmentShareLink;
 use App\Models\AssessmentTier;
 use App\Models\DepartmentFrameworkVersion;
+use App\Models\FacilityProfile;
+use App\Models\FrameworkIndicator;
+use App\Models\FrameworkQuestionPlacement;
+use App\Models\FrameworkSection;
 use App\Models\Project;
 use App\Models\Question;
 use App\Models\QuestionGroup;
@@ -16,6 +21,7 @@ use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\AssessmentCreationService;
 use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -87,7 +93,7 @@ class PlatformAdminControlCenterTest extends TestCase
     public function test_platform_admin_can_create_and_archive_question_group(): void
     {
         $admin = $this->platformAdmin();
-        $module = \App\Models\AssessmentModule::firstOrFail();
+        $module = AssessmentModule::firstOrFail();
         $number = ((int) QuestionGroup::where('module_id', $module->module_id)->max('group_number')) + 1;
 
         $this->actingAs($admin)->post(route('admin.question-groups.store'), [
@@ -111,7 +117,7 @@ class PlatformAdminControlCenterTest extends TestCase
     {
         $admin = $this->platformAdmin();
         $group = QuestionGroup::with('module')->firstOrFail();
-        $typeId = \App\Models\QuestionType::where('type_code', 'OPEN_ENDED')->value('type_id');
+        $typeId = QuestionType::where('type_code', 'OPEN_ENDED')->value('type_id');
 
         $this->actingAs($admin)->post(route('admin.question-identities.store'), [
             'module_id' => $group->module_id,
@@ -180,6 +186,42 @@ class PlatformAdminControlCenterTest extends TestCase
         $this->assertSame('Yes', $version->options[0]['option_label']);
         $this->assertEquals(100.0, $version->options[0]['score_weight']);
         $this->assertDatabaseHas('audit_logs', ['event' => 'question.version.configured']);
+    }
+
+    public function test_editing_a_draft_preserves_the_critical_failure_flag_on_options(): void
+    {
+        $admin = $this->platformAdmin();
+        $question = Question::firstOrFail();
+        $typeId = QuestionType::where('type_code', 'SINGLE_SELECT')->value('type_id');
+        $version = QuestionVersion::create([
+            'question_id' => $question->question_id,
+            'version_number' => ((int) $question->versions()->max('version_number')) + 1,
+            'status' => QuestionVersion::STATUS_DRAFT,
+            'question_text' => 'Draft with a critical failure option.',
+            'type_id' => $typeId,
+            'options' => [
+                ['option_id' => 1, 'option_key' => 'OPT1', 'option_label' => 'No', 'option_order' => 1, 'score_weight' => 0, 'critical_failure' => true],
+                ['option_id' => 2, 'option_key' => 'OPT2', 'option_label' => 'Yes', 'option_order' => 2, 'score_weight' => 100, 'critical_failure' => false],
+            ],
+        ]);
+
+        // A routine wording edit from the admin screen, which posts no
+        // critical_failure or option_key fields.
+        $this->actingAs($admin)->put(route('admin.question-versions.update', $version), [
+            'question_text' => 'Reworded but still a critical failure option.',
+            'type_id' => $typeId,
+            'options' => [
+                ['option_id' => 1, 'option_label' => 'No', 'option_order' => 1, 'score_weight' => 0],
+                ['option_id' => 2, 'option_label' => 'Yes', 'option_order' => 2, 'score_weight' => 100],
+            ],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $options = collect($version->fresh()->options)->keyBy('option_id');
+
+        $this->assertTrue($options[1]['critical_failure'], 'Editing wording must not clear a critical failure flag.');
+        $this->assertFalse($options[2]['critical_failure']);
+        $this->assertSame('OPT1', $options[1]['option_key']);
+        $this->assertSame('Reworded but still a critical failure option.', $version->fresh()->question_text);
     }
 
     public function test_option_question_version_validation_requires_working_options_and_scores(): void
@@ -262,7 +304,7 @@ class PlatformAdminControlCenterTest extends TestCase
     public function test_referenced_question_version_archive_is_blocked(): void
     {
         $admin = $this->platformAdmin();
-        $placement = \App\Models\FrameworkQuestionPlacement::firstOrFail();
+        $placement = FrameworkQuestionPlacement::firstOrFail();
         $version = QuestionVersion::findOrFail($placement->question_version_id);
 
         $this->actingAs($admin)
@@ -276,7 +318,7 @@ class PlatformAdminControlCenterTest extends TestCase
     public function test_platform_admin_can_create_framework_section_indicator_and_placement(): void
     {
         $admin = $this->platformAdmin();
-        $module = \App\Models\AssessmentModule::firstOrFail();
+        $module = AssessmentModule::firstOrFail();
         $publishedQuestionVersion = QuestionVersion::where('status', QuestionVersion::STATUS_PUBLISHED)->firstOrFail();
 
         $this->actingAs($admin)->post(route('admin.framework-versions.store'), [
@@ -287,14 +329,14 @@ class PlatformAdminControlCenterTest extends TestCase
             'license_code' => 'INTERNAL-BETA',
         ])->assertRedirect();
 
-        $framework = \App\Models\DepartmentFrameworkVersion::where('display_name', 'Beta editable framework')->firstOrFail();
+        $framework = DepartmentFrameworkVersion::where('display_name', 'Beta editable framework')->firstOrFail();
 
         $this->actingAs($admin)->post(route('admin.framework-versions.sections.store', $framework), [
             'section_code' => 'BETA_SECTION',
             'section_name' => 'Beta Section',
             'display_order' => 1,
         ])->assertRedirect();
-        $section = \App\Models\FrameworkSection::where('framework_version_id', $framework->framework_version_id)->firstOrFail();
+        $section = FrameworkSection::where('framework_version_id', $framework->framework_version_id)->firstOrFail();
 
         $this->actingAs($admin)->post(route('admin.framework-versions.indicators.store', $framework), [
             'framework_section_id' => $section->framework_section_id,
@@ -302,7 +344,7 @@ class PlatformAdminControlCenterTest extends TestCase
             'indicator_name' => 'Beta Indicator',
             'display_order' => 1,
         ])->assertRedirect();
-        $indicator = \App\Models\FrameworkIndicator::where('framework_version_id', $framework->framework_version_id)->firstOrFail();
+        $indicator = FrameworkIndicator::where('framework_version_id', $framework->framework_version_id)->firstOrFail();
 
         $this->actingAs($admin)->post(route('admin.framework-versions.placements.store', $framework), [
             'framework_section_id' => $section->framework_section_id,
@@ -322,8 +364,8 @@ class PlatformAdminControlCenterTest extends TestCase
     public function test_platform_admin_can_create_catalogue_release_and_pin_framework(): void
     {
         $admin = $this->platformAdmin();
-        $profile = \App\Models\FacilityProfile::where('status', \App\Models\FacilityProfile::STATUS_PUBLISHED)->firstOrFail();
-        $framework = \App\Models\DepartmentFrameworkVersion::where('status', \App\Models\DepartmentFrameworkVersion::STATUS_PUBLISHED)->firstOrFail();
+        $profile = FacilityProfile::where('status', FacilityProfile::STATUS_PUBLISHED)->firstOrFail();
+        $framework = DepartmentFrameworkVersion::where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)->firstOrFail();
 
         $this->actingAs($admin)->post(route('admin.catalogue-releases.store'), [
             'release_code' => 'BETA_RELEASE_TEST',
@@ -332,7 +374,7 @@ class PlatformAdminControlCenterTest extends TestCase
             'facility_profile_id' => $profile->facility_profile_id,
         ])->assertRedirect();
 
-        $release = \App\Models\AssessmentCatalogueRelease::where('release_code', 'BETA_RELEASE_TEST')->firstOrFail();
+        $release = AssessmentCatalogueRelease::where('release_code', 'BETA_RELEASE_TEST')->firstOrFail();
 
         $this->actingAs($admin)->post(route('admin.catalogue-releases.frameworks.attach', $release), [
             'framework_version_id' => $framework->framework_version_id,
@@ -392,7 +434,7 @@ class PlatformAdminControlCenterTest extends TestCase
             'uses_departments' => true,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
-        app(\App\Services\AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $owner->user_id);
+        app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $owner->user_id);
         $pinnedCount = $release->departmentFrameworkVersions()->count();
 
         $this->actingAs($admin)

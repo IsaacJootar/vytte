@@ -88,7 +88,7 @@ class QuestionVersionController extends Controller
         $errors = [];
 
         if (in_array($typeCode, ResponseInputContract::OPTION_TYPES, true)) {
-            $options = $this->normaliseOptions($request->input('options', []), $errors);
+            $options = $this->normaliseOptions($request->input('options', []), $errors, $version->options ?? []);
         }
 
         if (in_array($typeCode, ResponseInputContract::NUMERIC_TYPES, true)) {
@@ -227,16 +227,25 @@ class QuestionVersionController extends Controller
         return back()->with('success', 'Question version archived.');
     }
 
-    private function normaliseOptions(array $rows, array &$errors): array
+    /**
+     * @param  array<int, array<string, mixed>>  $existingOptions  options already stored on the draft
+     */
+    private function normaliseOptions(array $rows, array &$errors, array $existingOptions = []): array
     {
+        $existingById = collect($existingOptions)
+            ->filter(fn ($option) => is_array($option) && isset($option['option_id']))
+            ->keyBy(fn ($option) => (int) $option['option_id']);
+
         $options = collect($rows)
             ->map(fn ($row) => is_array($row) ? $row : [])
             ->filter(fn ($row) => filled(Arr::get($row, 'option_label')) || filled(Arr::get($row, 'score_weight')))
             ->values()
-            ->map(function (array $row, int $index) use (&$errors): array {
+            ->map(function (array $row, int $index) use (&$errors, $existingById): array {
                 $label = trim((string) Arr::get($row, 'option_label', ''));
                 $score = Arr::get($row, 'score_weight');
                 $order = (int) (Arr::get($row, 'option_order') ?: $index + 1);
+                $optionId = (int) (Arr::get($row, 'option_id') ?: $order);
+                $existing = $existingById->get($optionId, []);
 
                 if ($label === '') {
                     $errors["options.{$index}.option_label"][] = 'Each option needs a label.';
@@ -247,12 +256,28 @@ class QuestionVersionController extends Controller
                     $errors["options.{$index}.score_weight"][] = 'Option scores must be between 0 and 100.';
                 }
 
-                return [
-                    'option_id' => (int) (Arr::get($row, 'option_id') ?: $order),
+                $normalised = [
+                    'option_id' => $optionId,
                     'option_label' => $label,
                     'option_order' => max(1, $order),
                     'score_weight' => $score === null || $score === '' ? null : (float) $score,
                 ];
+
+                // option_key and critical_failure are part of the published option
+                // contract. critical_failure is read by ScoringService when a
+                // catalogue aggregation policy enables critical failures. Neither is
+                // editable on this screen, so carry the stored value forward rather
+                // than dropping it, and honour an explicit submitted value if one
+                // is ever posted.
+                if (array_key_exists('option_key', $existing)) {
+                    $normalised['option_key'] = $existing['option_key'];
+                }
+
+                $normalised['critical_failure'] = Arr::has($row, 'critical_failure')
+                    ? filter_var(Arr::get($row, 'critical_failure'), FILTER_VALIDATE_BOOLEAN)
+                    : (bool) ($existing['critical_failure'] ?? false);
+
+                return $normalised;
             })
             ->sortBy('option_order')
             ->values()
