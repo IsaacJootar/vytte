@@ -31,4 +31,10 @@ class FrameworkSection extends Model
         return $this->hasMany(FrameworkIndicator::class, 'framework_section_id', 'framework_section_id')
             ->orderBy('display_order');
     }
+
+    public function questionPlacements(): HasMany
+    {
+        return $this->hasMany(FrameworkQuestionPlacement::class, 'framework_section_id', 'framework_section_id')
+            ->orderBy('display_order');
+    }
 }

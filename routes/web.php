@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\AssessmentBuilderController as AdminAssessmentBuilderController;
 use App\Http\Controllers\Admin\AssessmentOversightController as AdminAssessmentOversightController;
+use App\Http\Controllers\Admin\AssessmentQuestionController as AdminAssessmentQuestionController;
+use App\Http\Controllers\Admin\AssessmentSectionController as AdminAssessmentSectionController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\CatalogueReleaseController as AdminCatalogueReleaseController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -120,6 +122,19 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::get('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'show'])->name('assessments.show');
     Route::get('assessments/{assessment}/edit', [AdminAssessmentBuilderController::class, 'edit'])->name('assessments.edit');
     Route::put('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'update'])->name('assessments.update');
+    Route::get('assessments/{assessment}/build', [AdminAssessmentBuilderController::class, 'build'])->name('assessments.build');
+
+    Route::post('assessments/{assessment}/sections', [AdminAssessmentSectionController::class, 'store'])->name('assessments.sections.store');
+    Route::put('assessments/{assessment}/sections/{section}', [AdminAssessmentSectionController::class, 'update'])->name('assessments.sections.update');
+    Route::patch('assessments/{assessment}/sections/{section}/move', [AdminAssessmentSectionController::class, 'move'])->name('assessments.sections.move');
+    Route::delete('assessments/{assessment}/sections/{section}', [AdminAssessmentSectionController::class, 'destroy'])->name('assessments.sections.destroy');
+
+    Route::get('assessments/{assessment}/sections/{section}/library', [AdminAssessmentQuestionController::class, 'library'])->name('assessments.questions.library');
+    Route::post('assessments/{assessment}/sections/{section}/library', [AdminAssessmentQuestionController::class, 'addFromLibrary'])->name('assessments.questions.add-from-library');
+    Route::get('assessments/{assessment}/sections/{section}/questions/create', [AdminAssessmentQuestionController::class, 'create'])->name('assessments.questions.create');
+    Route::post('assessments/{assessment}/sections/{section}/questions', [AdminAssessmentQuestionController::class, 'store'])->name('assessments.questions.store');
+    Route::patch('assessments/{assessment}/questions/{placement}/move', [AdminAssessmentQuestionController::class, 'move'])->name('assessments.questions.move');
+    Route::delete('assessments/{assessment}/questions/{placement}', [AdminAssessmentQuestionController::class, 'destroy'])->name('assessments.questions.destroy');
 
     Route::get('official-content', [AdminOfficialContentController::class, 'index'])->name('official-content.index');
 

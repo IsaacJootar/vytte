@@ -43,17 +43,15 @@
                 </dl>
             </div>
 
-            <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 dark:border-slate-600 dark:bg-slate-800/50">
-                <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">Build Assessment</h2>
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Build Assessment</h2>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Adding sections and questions arrives in the next release of the builder.
+                    Add sections and the questions people will answer.
                 </p>
-                @if ($isEditable)
-                    <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                        In the meantime you can add sections and questions to this draft through
-                        <a href="{{ route('admin.framework-versions.show', $assessment) }}" class="font-semibold text-vytte-700 hover:underline dark:text-vytte-300">Advanced Tools</a>.
-                    </p>
-                @endif
+                <a href="{{ route('admin.assessments.build', $assessment) }}"
+                   class="mt-3 inline-block rounded-xl bg-vytte-600 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-700">
+                    {{ $isEditable ? 'Add sections and questions' : 'View sections and questions' }}
+                </a>
             </div>
         </div>
 

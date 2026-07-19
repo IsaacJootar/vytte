@@ -33,7 +33,7 @@ class AssessmentBuilderController extends Controller
      */
     public const STEPS = [
         ['key' => 'basics', 'label' => 'Basic Information', 'available' => true],
-        ['key' => 'build', 'label' => 'Build Assessment', 'available' => false],
+        ['key' => 'build', 'label' => 'Build Assessment', 'available' => true],
         ['key' => 'review', 'label' => 'Review', 'available' => false],
         ['key' => 'publish', 'label' => 'Publish', 'available' => false],
     ];
@@ -108,6 +108,26 @@ class AssessmentBuilderController extends Controller
             'steps' => self::STEPS,
             'currentStep' => 'basics',
             'isEditable' => $this->isEditable($assessment),
+        ]);
+    }
+
+    /**
+     * The Build Assessment step: sections with their questions, in author language.
+     */
+    public function build(DepartmentFrameworkVersion $assessment): View
+    {
+        $assessment->load([
+            'module',
+            'sections.questionPlacements.questionVersion.questionType',
+            'sections.questionPlacements.question',
+        ]);
+
+        return view('admin.assessment-builder.build', [
+            'assessment' => $assessment,
+            'steps' => self::STEPS,
+            'currentStep' => 'build',
+            'isEditable' => $this->isEditable($assessment),
+            'questionCount' => $assessment->sections->sum(fn ($section) => $section->questionPlacements->count()),
         ]);
     }
 
