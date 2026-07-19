@@ -123,6 +123,50 @@ class QuestionBankArchitectureTest extends TestCase
         $this->assertTrue($placements->pluck('frameworkVersion.framework_type')->contains(DepartmentFrameworkVersion::TYPE_FOCUSED));
     }
 
+    public function test_draft_placements_can_be_reordered_without_a_unique_display_order_conflict(): void
+    {
+        $module = DepartmentFrameworkVersion::where('framework_type', DepartmentFrameworkVersion::TYPE_DEPARTMENT)
+            ->firstOrFail()
+            ->module;
+        $framework = DepartmentFrameworkVersion::create([
+            'module_id' => $module->module_id,
+            'version_number' => 900,
+            'display_name' => 'Reorder draft framework',
+            'source_authority' => 'Vytte test',
+            'license_code' => 'TEST',
+        ]);
+        $section = FrameworkSection::create([
+            'framework_version_id' => $framework->framework_version_id,
+            'section_code' => 'ORDER',
+            'section_name' => 'Order',
+        ]);
+        $indicator = FrameworkIndicator::create([
+            'framework_version_id' => $framework->framework_version_id,
+            'framework_section_id' => $section->framework_section_id,
+            'indicator_code' => 'ORDER',
+            'indicator_name' => 'Order',
+        ]);
+
+        $versions = QuestionVersion::where('status', QuestionVersion::STATUS_PUBLISHED)->take(2)->get();
+        $placements = $versions->map(fn ($version, $index) => FrameworkQuestionPlacement::create([
+            'framework_version_id' => $framework->framework_version_id,
+            'framework_section_id' => $section->framework_section_id,
+            'framework_indicator_id' => $indicator->framework_indicator_id,
+            'question_id' => $version->question_id,
+            'question_version_id' => $version->question_version_id,
+            'display_order' => $index + 1,
+            'scoring_contribution' => false,
+        ]));
+
+        // A straight swap passes through a state where both rows share display_order 2.
+        // The former unique constraint made this impossible without renumbering tricks.
+        $placements[0]->update(['display_order' => 2]);
+        $placements[1]->update(['display_order' => 1]);
+
+        $this->assertSame(2, (int) $placements[0]->fresh()->display_order);
+        $this->assertSame(1, (int) $placements[1]->fresh()->display_order);
+    }
+
     public function test_framework_publication_requires_exact_published_question_versions(): void
     {
         $module = DepartmentFrameworkVersion::where('framework_type', DepartmentFrameworkVersion::TYPE_DEPARTMENT)
