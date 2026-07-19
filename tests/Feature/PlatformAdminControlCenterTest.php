@@ -188,6 +188,40 @@ class PlatformAdminControlCenterTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['event' => 'question.version.configured']);
     }
 
+    public function test_options_authored_in_advanced_tools_can_actually_be_answered(): void
+    {
+        $admin = $this->platformAdmin();
+        $question = Question::firstOrFail();
+        $typeId = QuestionType::where('type_code', 'SINGLE_SELECT')->value('type_id');
+        $version = QuestionVersion::create([
+            'question_id' => $question->question_id,
+            'version_number' => ((int) $question->versions()->max('version_number')) + 1,
+            'status' => QuestionVersion::STATUS_DRAFT,
+            'question_text' => 'Answerable option question.',
+            'type_id' => $typeId,
+            'options' => [],
+        ]);
+
+        $this->actingAs($admin)->put(route('admin.question-versions.update', $version), [
+            'question_text' => 'Answerable option question.',
+            'type_id' => $typeId,
+            'options' => [
+                ['option_label' => 'Yes', 'option_order' => 1, 'score_weight' => 100],
+                ['option_label' => 'No', 'option_order' => 2, 'score_weight' => 0],
+            ],
+        ])->assertSessionHasNoErrors();
+
+        // responses.value_option_id is a foreign key to question_options. Every option id
+        // written into the version payload must therefore resolve to a real row, or a
+        // respondent answering this question hits a foreign key violation at run time.
+        foreach ($version->fresh()->options as $option) {
+            $this->assertDatabaseHas('question_options', [
+                'option_id' => $option['option_id'],
+                'question_id' => $question->question_id,
+            ]);
+        }
+    }
+
     public function test_editing_a_draft_preserves_the_critical_failure_flag_on_options(): void
     {
         $admin = $this->platformAdmin();
@@ -216,11 +250,13 @@ class PlatformAdminControlCenterTest extends TestCase
             ],
         ])->assertRedirect()->assertSessionHasNoErrors();
 
-        $options = collect($version->fresh()->options)->keyBy('option_id');
+        // Keyed by label rather than option_id: ids are now assigned from real
+        // question_options rows, so the fixture cannot predict them.
+        $options = collect($version->fresh()->options)->keyBy('option_label');
 
-        $this->assertTrue($options[1]['critical_failure'], 'Editing wording must not clear a critical failure flag.');
-        $this->assertFalse($options[2]['critical_failure']);
-        $this->assertSame('OPT1', $options[1]['option_key']);
+        $this->assertTrue($options['No']['critical_failure'], 'Editing wording must not clear a critical failure flag.');
+        $this->assertFalse($options['Yes']['critical_failure']);
+        $this->assertSame('OPT1', $options['No']['option_key']);
         $this->assertSame('Reworded but still a critical failure option.', $version->fresh()->question_text);
     }
 

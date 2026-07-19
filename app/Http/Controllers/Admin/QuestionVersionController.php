@@ -7,6 +7,7 @@ use App\Models\QuestionType;
 use App\Models\QuestionVersion;
 use App\Services\AuditService;
 use App\Services\GovernanceDependencyService;
+use App\Services\QuestionOptionSyncService;
 use App\Services\QuestionVersionPublishingService;
 use App\Support\ResponseInputContract;
 use Illuminate\Contracts\View\View;
@@ -88,7 +89,7 @@ class QuestionVersionController extends Controller
         $errors = [];
 
         if (in_array($typeCode, ResponseInputContract::OPTION_TYPES, true)) {
-            $options = $this->normaliseOptions($request->input('options', []), $errors, $version->options ?? []);
+            $options = $this->normaliseOptions($request->input('options', []), $errors, $version);
         }
 
         if (in_array($typeCode, ResponseInputContract::NUMERIC_TYPES, true)) {
@@ -230,9 +231,9 @@ class QuestionVersionController extends Controller
     /**
      * @param  array<int, array<string, mixed>>  $existingOptions  options already stored on the draft
      */
-    private function normaliseOptions(array $rows, array &$errors, array $existingOptions = []): array
+    private function normaliseOptions(array $rows, array &$errors, QuestionVersion $version): array
     {
-        $existingById = collect($existingOptions)
+        $existingById = collect($version->options ?? [])
             ->filter(fn ($option) => is_array($option) && isset($option['option_id']))
             ->keyBy(fn ($option) => (int) $option['option_id']);
 
@@ -244,7 +245,7 @@ class QuestionVersionController extends Controller
                 $label = trim((string) Arr::get($row, 'option_label', ''));
                 $score = Arr::get($row, 'score_weight');
                 $order = (int) (Arr::get($row, 'option_order') ?: $index + 1);
-                $optionId = (int) (Arr::get($row, 'option_id') ?: $order);
+                $optionId = (int) (Arr::get($row, 'option_id') ?: 0);
                 $existing = $existingById->get($optionId, []);
 
                 if ($label === '') {
@@ -257,7 +258,6 @@ class QuestionVersionController extends Controller
                 }
 
                 $normalised = [
-                    'option_id' => $optionId,
                     'option_label' => $label,
                     'option_order' => max(1, $order),
                     'score_weight' => $score === null || $score === '' ? null : (float) $score,
@@ -285,9 +285,15 @@ class QuestionVersionController extends Controller
 
         if ($options === []) {
             $errors['options'][] = 'Option-based questions need at least one answer option.';
+
+            return $options;
         }
 
-        return $options;
+        // Answer options must exist as question_options rows: responses.value_option_id is
+        // a foreign key to that table, so an option that lives only in version JSON cannot
+        // be answered. This screen previously derived option_id from the row order, which
+        // produced ids that did not resolve.
+        return app(QuestionOptionSyncService::class)->sync($version->question, $options);
     }
 
     private function normaliseNumeric(Request $request, array &$errors): array
