@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-19.** Historical record. Accurate when written; describes a past state of the repository. Do not treat as current and do not rewrite. See `README.md` in this folder.
+
 # Implementation Progress
 
 ## Current Implemented Architecture

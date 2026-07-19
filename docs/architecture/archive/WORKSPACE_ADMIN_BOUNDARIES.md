@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-19.** Historical record. Accurate when written; describes a past state of the repository. Do not treat as current and do not rewrite. See `README.md` in this folder.
+
 # Workspace Admin Boundaries
 
 Workspace admins can operate their own workspace and cannot mutate official Vytte methodology.

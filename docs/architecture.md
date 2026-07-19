@@ -1,74 +1,54 @@
-# Vytte Architecture
+# Vytte Architecture — Index
 
-## Current Model
+This file is an index. The authoritative architecture documents live in `docs/architecture/`.
 
-Vytte is a workspace-scoped Laravel monolith with platform-governed assessment content.
+It previously duplicated a summary of the current architecture, which meant two documents competed
+to describe the same system and drifted apart. Content now has one home.
 
-Vytte owns official:
+## Start here
 
-- departments;
-- department framework versions;
-- facility profiles;
-- assessment catalogue releases;
-- questions, indicators, scoring rules, evidence requirements, and aggregation policies.
+| Question | Document |
+|---|---|
+| What is the implemented architecture? | `docs/architecture/CURRENT_ARCHITECTURE.md` |
+| How does an assessment run end to end? | `docs/architecture/CURRENT_ASSESSMENT_FLOW.md` |
+| How is official question content structured? | `docs/architecture/QUESTION_BANK_ARCHITECTURE.md` |
+| What is the schema? | `docs/database.md`, and the migrations, which are authoritative |
+| What states exist and what transitions are legal? | `docs/architecture/LIFECYCLE_STATE_MACHINE.md` |
+| How is scoring defined? | `docs/architecture/SCORING_CONTRACT.md` |
+| What governs publication of official content? | `docs/architecture/CONTENT_GOVERNANCE.md` |
+| Which decisions control the design? | `docs/architecture/DECISION_LOG.md` |
+| What must future work preserve? | `docs/architecture/PRESERVATION_REGISTER.md` |
+| What is known to be missing? | `docs/architecture/ARCHITECTURE_GAPS.md` |
 
-Workspaces consume published catalogue releases. They do not publish official content.
+## Governance and administration
 
-## Tenancy
+- `docs/architecture/PLATFORM_ADMIN_ARCHITECTURE.md`
+- `docs/architecture/WORKSPACE_ADMIN_ARCHITECTURE.md`
+- `docs/architecture/ADMIN_ROLE_AND_PERMISSION_MATRIX.md`
+- `docs/architecture/ADMIN_PUBLICATION_WORKFLOWS.md`
+- `docs/architecture/ADMIN_SECURITY_AND_GOVERNANCE.md`
+- `docs/architecture/ADMIN_OPERATIONS_RUNBOOK.md`
 
-Every tenant-facing query must resolve through the authenticated user's active workspace and membership. Projects and targets carry workspace ownership. Assessments inherit workspace authority through their project.
+## Content and domains
 
-## Hierarchy
+- `docs/architecture/DOMAIN_ARCHITECTURE.md`
+- `docs/architecture/DOMAIN_TAXONOMY_LIFECYCLE.md`
+- `docs/architecture/DOMAIN_SCORING_AND_REPORTING.md`
+- `docs/architecture/OFFICIAL_ASSESSMENT_CONTENT_LIFECYCLE.md`
+- `docs/architecture/RESPONSE_TYPE_CONTRACT.md`
+- `docs/architecture/DATASET_MANIFEST.md`
 
-```text
-Workspace
-  Project
-    Target
-      FacilityProfile
-    Assessment
-      AssessmentSnapshot
-        CompositionManifest
-        Payload
-        AggregationPolicy
-      AssessmentModuleScope
-      Responses
-      Scores
-      AssessmentReportSnapshot
-      LocalCustomSections
-```
+## Readiness and operations
 
-## Platform Content Hierarchy
+- `docs/architecture/GO_LIVE_CHECKLIST.md`
+- `docs/architecture/OPERATIONS_READINESS.md`
+- `docs/architecture/SECURITY_REVIEW.md`
+- `docs/architecture/TECHNICAL_DEBT_REPORT.md`
+- `docs/architecture/TEST_COVERAGE_REVIEW.md`
+- `docs/architecture/VYTTE_BETA_READINESS_REPORT.md`
 
-```text
-AssessmentModule
-  DepartmentFrameworkVersion
+## Historical records
 
-FacilityProfile
-  FacilityProfileDepartment
-
-AssessmentCatalogueRelease
-  AssessmentCatalogueDepartmentVersion
-```
-
-## Creation Paths
-
-1. **Comprehensive Health Assessment** resolves a facility profile and a published catalogue release, preloads required/default/optional departments, composes selected pinned framework versions, and freezes one assessment snapshot.
-2. **Focused Health Assessment** resolves one published focused catalogue release and opens one health domain, programme, topic, or intervention.
-
-No unrelated bulk starter set, generic module picker, or giant comprehensive template is part of the current architecture.
-
-## Runtime Boundary
-
-Assessment runners, scoring, reporting, exports, dashboards, and shared reports read the immutable assessment/report snapshots.
-
-## Scoring
-
-The current scoring algorithm is `vytte-4.0-numeric-bands` with canonical 0-100 output. Null means uncalibrated. Local custom sections are context only and excluded from official scoring.
-
-## Verification
-
-Current local verification:
-
-- `php artisan test`: 401 tests, 1097 assertions passing. Full sequential PostgreSQL run, 2026-07-19, commit `65648e5`.
-- Disposable PostgreSQL `migrate:fresh --seed`: passing.
-- Production frontend build: passing.
+`docs/architecture/archive/` holds point-in-time records: verification runs, cleanup reports, and
+completed-phase audits. They were accurate when written and describe past states. Do not treat them
+as current, and do not rewrite them.

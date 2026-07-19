@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-19.** Historical record. Accurate when written; describes a past state of the repository. Do not treat as current and do not rewrite. See `README.md` in this folder.
+
 # Vytte — Build Phases
 
 > Every module must be fully built, tested, committed, and pushed before Isaac approves the next one.
