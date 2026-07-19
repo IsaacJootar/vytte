@@ -1,22 +1,23 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\AssessmentBuilderController as AdminAssessmentBuilderController;
 use App\Http\Controllers\Admin\AssessmentOversightController as AdminAssessmentOversightController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\CatalogueReleaseController as AdminCatalogueReleaseController;
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DomainTaxonomyController as AdminDomainTaxonomyController;
 use App\Http\Controllers\Admin\FacilityProfileController as AdminFacilityProfileController;
 use App\Http\Controllers\Admin\FrameworkVersionController as AdminFrameworkVersionController;
 use App\Http\Controllers\Admin\GeographicUsageController as AdminGeographicUsageController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
-use App\Http\Controllers\Admin\OfficialContentController as AdminOfficialContentController;
-use App\Http\Controllers\Admin\QuestionGroupController as AdminQuestionGroupController;
 use App\Http\Controllers\Admin\ModuleImportController;
 use App\Http\Controllers\Admin\ModuleTranslationController;
+use App\Http\Controllers\Admin\OfficialContentController as AdminOfficialContentController;
 use App\Http\Controllers\Admin\PlanFeatureController;
-use App\Http\Controllers\Admin\PlatformUserController as AdminPlatformUserController;
 use App\Http\Controllers\Admin\PlatformSettingController;
+use App\Http\Controllers\Admin\PlatformUserController as AdminPlatformUserController;
 use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
+use App\Http\Controllers\Admin\QuestionGroupController as AdminQuestionGroupController;
 use App\Http\Controllers\Admin\QuestionIdentityController as AdminQuestionIdentityController;
 use App\Http\Controllers\Admin\QuestionVersionController as AdminQuestionVersionController;
 use App\Http\Controllers\Admin\ReportShareController as AdminReportShareController;
@@ -111,6 +112,14 @@ Route::middleware('auth')->group(function () {
 // Platform admin routes
 Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    // Assessment Builder - the simple authoring surface over governed framework versions.
+    Route::get('assessments', [AdminAssessmentBuilderController::class, 'index'])->name('assessments.index');
+    Route::get('assessments/create', [AdminAssessmentBuilderController::class, 'create'])->name('assessments.create');
+    Route::post('assessments', [AdminAssessmentBuilderController::class, 'store'])->name('assessments.store');
+    Route::get('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'show'])->name('assessments.show');
+    Route::get('assessments/{assessment}/edit', [AdminAssessmentBuilderController::class, 'edit'])->name('assessments.edit');
+    Route::put('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'update'])->name('assessments.update');
 
     Route::get('official-content', [AdminOfficialContentController::class, 'index'])->name('official-content.index');
 

@@ -13,26 +13,46 @@
 <body class="bg-[#F8FAFC] dark:bg-slate-900 font-sans antialiased">
 
 @php
-    $adminNav = [
-        ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'active' => 'admin.dashboard'],
-        ['route' => 'admin.official-content.index', 'label' => 'Official Content', 'active' => 'admin.official-content.*'],
-        ['route' => 'admin.question-groups.index', 'label' => 'Question Groups', 'active' => 'admin.question-groups.*'],
-        ['route' => 'admin.question-identities.index', 'label' => 'Questions', 'active' => 'admin.question-identities.*'],
-        ['route' => 'admin.question-versions.index', 'label' => 'Question Versions', 'active' => 'admin.question-versions.*'],
-        ['route' => 'admin.framework-versions.index', 'label' => 'Frameworks', 'active' => 'admin.framework-versions.*'],
-        ['route' => 'admin.catalogue-releases.index', 'label' => 'Catalogue Releases', 'active' => 'admin.catalogue-releases.*'],
-        ['route' => 'admin.facility-profiles.index', 'label' => 'Facility Profiles', 'active' => 'admin.facility-profiles.*'],
-        ['route' => 'admin.scoring-policies.index', 'label' => 'Scoring Policies', 'active' => 'admin.scoring-policies.*'],
-        ['route' => 'admin.workspaces.index', 'label' => 'Workspaces', 'active' => 'admin.workspaces.*'],
-        ['route' => 'admin.platform-users.index', 'label' => 'Platform Users', 'active' => 'admin.platform-users.*'],
-        ['route' => 'admin.assessment-oversight.index', 'label' => 'Assessment Oversight', 'active' => 'admin.assessment-oversight.*'],
-        ['route' => 'admin.report-shares.index', 'label' => 'Report Shares', 'active' => 'admin.report-shares.*'],
-        ['route' => 'admin.audit-logs.index', 'label' => 'Audit Logs', 'active' => 'admin.audit-logs.*'],
-        ['route' => 'admin.modules.index', 'label' => 'Modules', 'active' => 'admin.modules.*'],
-        ['route' => 'admin.domain-taxonomies.index', 'label' => 'Domain Taxonomies', 'active' => 'admin.domain-taxonomies.*'],
-        ['route' => 'admin.geographic-usage.index', 'label' => 'Geographic Usage', 'active' => 'admin.geographic-usage.*'],
-        ['route' => 'admin.plan-features.index', 'label' => 'Plan Features', 'active' => 'admin.plan-features.*'],
-        ['route' => 'admin.settings.index', 'label' => 'Settings', 'active' => 'admin.settings.*'],
+    // Primary navigation uses product language. Governance objects - frameworks,
+    // placements, question versions, catalogue releases - remain fully available under
+    // Advanced Tools. Nothing is removed; the ordinary path simply leads with the work
+    // people actually do.
+    $adminNavGroups = [
+        [
+            'label' => null,
+            'items' => [
+                ['route' => 'admin.dashboard', 'label' => 'Dashboard', 'active' => 'admin.dashboard'],
+                ['route' => 'admin.assessments.index', 'label' => 'Assessments', 'active' => 'admin.assessments.*'],
+                ['route' => 'admin.question-identities.index', 'label' => 'Question Library', 'active' => 'admin.question-identities.*'],
+                ['route' => 'admin.assessment-oversight.index', 'label' => 'Reports', 'active' => 'admin.assessment-oversight.*'],
+                ['route' => 'admin.catalogue-releases.index', 'label' => 'Publishing', 'active' => 'admin.catalogue-releases.*'],
+            ],
+        ],
+        [
+            'label' => 'Administration',
+            'items' => [
+                ['route' => 'admin.workspaces.index', 'label' => 'Workspaces', 'active' => 'admin.workspaces.*'],
+                ['route' => 'admin.platform-users.index', 'label' => 'Platform Users', 'active' => 'admin.platform-users.*'],
+                ['route' => 'admin.report-shares.index', 'label' => 'Report Shares', 'active' => 'admin.report-shares.*'],
+                ['route' => 'admin.plan-features.index', 'label' => 'Plans', 'active' => 'admin.plan-features.*'],
+                ['route' => 'admin.geographic-usage.index', 'label' => 'Geographic Usage', 'active' => 'admin.geographic-usage.*'],
+                ['route' => 'admin.settings.index', 'label' => 'Settings', 'active' => 'admin.settings.*'],
+            ],
+        ],
+        [
+            'label' => 'Advanced Tools',
+            'items' => [
+                ['route' => 'admin.official-content.index', 'label' => 'Official Content', 'active' => 'admin.official-content.*'],
+                ['route' => 'admin.framework-versions.index', 'label' => 'Frameworks', 'active' => 'admin.framework-versions.*'],
+                ['route' => 'admin.question-versions.index', 'label' => 'Question Versions', 'active' => 'admin.question-versions.*'],
+                ['route' => 'admin.question-groups.index', 'label' => 'Question Groups', 'active' => 'admin.question-groups.*'],
+                ['route' => 'admin.modules.index', 'label' => 'Departments', 'active' => 'admin.modules.*'],
+                ['route' => 'admin.facility-profiles.index', 'label' => 'Facility Profiles', 'active' => 'admin.facility-profiles.*'],
+                ['route' => 'admin.domain-taxonomies.index', 'label' => 'Domain Taxonomies', 'active' => 'admin.domain-taxonomies.*'],
+                ['route' => 'admin.scoring-policies.index', 'label' => 'Scoring Policies', 'active' => 'admin.scoring-policies.*'],
+                ['route' => 'admin.audit-logs.index', 'label' => 'Audit Logs', 'active' => 'admin.audit-logs.*'],
+            ],
+        ],
     ];
 @endphp
 
@@ -52,15 +72,20 @@
         </a>
 
         <nav class="flex-1 px-2 py-2 flex flex-col gap-px overflow-y-auto">
-            @foreach ($adminNav as $item)
-                <a href="{{ route($item['route']) }}"
-                   class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100
-                   {{ request()->routeIs($item['active'])
-                       ? 'bg-white/[0.12] text-white'
-                       : 'text-white/60 hover:bg-white/[0.07] hover:text-white' }}">
-                    <span class="h-1.5 w-1.5 rounded-full {{ request()->routeIs($item['active']) ? 'bg-vytte-400' : 'bg-white/20 group-hover:bg-white/45' }}"></span>
-                    <span class="truncate">{{ $item['label'] }}</span>
-                </a>
+            @foreach ($adminNavGroups as $group)
+                @if ($group['label'])
+                    <p class="mt-3 px-2.5 pb-1 text-[9px] font-semibold uppercase tracking-wider text-white/35">{{ $group['label'] }}</p>
+                @endif
+                @foreach ($group['items'] as $item)
+                    <a href="{{ route($item['route']) }}"
+                       class="group flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors duration-100
+                       {{ request()->routeIs($item['active'])
+                           ? 'bg-white/[0.12] text-white'
+                           : 'text-white/60 hover:bg-white/[0.07] hover:text-white' }}">
+                        <span class="h-1.5 w-1.5 rounded-full {{ request()->routeIs($item['active']) ? 'bg-vytte-400' : 'bg-white/20 group-hover:bg-white/45' }}"></span>
+                        <span class="truncate">{{ $item['label'] }}</span>
+                    </a>
+                @endforeach
             @endforeach
 
             <div class="mx-1 mt-3 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2">
