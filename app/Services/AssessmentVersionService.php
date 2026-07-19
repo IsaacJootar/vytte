@@ -110,27 +110,35 @@ class AssessmentVersionService
      */
     public function startNewVersion(DepartmentFrameworkVersion $assessment, ?string $userId): DepartmentFrameworkVersion
     {
-        if ($assessment->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED) {
-            throw ValidationException::withMessages([
-                'version' => 'Only a published assessment can be given a new version.',
-            ]);
-        }
+        return DB::transaction(function () use ($assessment, $userId): DepartmentFrameworkVersion {
+            // Locked and re-read inside the transaction so two concurrent requests cannot
+            // both find no open draft and each create one.
+            $assessment = DepartmentFrameworkVersion::whereKey($assessment->framework_version_id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($this->openDraftFor($assessment)) {
-            throw ValidationException::withMessages([
-                'version' => 'A newer draft of this assessment already exists. Finish or remove it before starting another.',
-            ]);
-        }
+            if ($assessment->status !== DepartmentFrameworkVersion::STATUS_PUBLISHED) {
+                throw ValidationException::withMessages([
+                    'version' => 'Only a published assessment can be given a new version.',
+                ]);
+            }
 
-        $successor = $this->cloneToDraft($assessment);
+            if ($this->openDraftFor($assessment)) {
+                throw ValidationException::withMessages([
+                    'version' => 'A newer draft of this assessment already exists. Finish or remove it before starting another.',
+                ]);
+            }
 
-        $this->audit->record('assessment.version.started', $successor, newValues: [
-            'previous_framework_version_id' => $assessment->framework_version_id,
-            'previous_version_number' => $assessment->version_number,
-            'new_version_number' => $successor->version_number,
-        ], userId: $userId);
+            $successor = $this->cloneToDraft($assessment);
 
-        return $successor;
+            $this->audit->record('assessment.version.started', $successor, newValues: [
+                'previous_framework_version_id' => $assessment->framework_version_id,
+                'previous_version_number' => $assessment->version_number,
+                'new_version_number' => $successor->version_number,
+            ], userId: $userId);
+
+            return $successor;
+        });
     }
 
     /**

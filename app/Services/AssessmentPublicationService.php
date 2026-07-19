@@ -27,18 +27,36 @@ class AssessmentPublicationService
         private readonly DepartmentFrameworkPublishingService $frameworks,
         private readonly CataloguePublishingService $catalogues,
         private readonly AssessmentVersionService $versions,
+        private readonly AssessmentReadinessService $readiness,
         private readonly AuditService $audit,
     ) {}
 
     public function publish(DepartmentFrameworkVersion $assessment, int $healthDomainId, ?string $publisherId): AssessmentCatalogueRelease
     {
-        if ($assessment->status !== DepartmentFrameworkVersion::STATUS_DRAFT) {
-            throw ValidationException::withMessages([
-                'publish' => 'This assessment has already been published.',
-            ]);
-        }
-
         return DB::transaction(function () use ($assessment, $healthDomainId, $publisherId): AssessmentCatalogueRelease {
+            // Locked and re-read inside the transaction so two concurrent publish requests
+            // cannot both pass the status check and produce two releases.
+            $assessment = DepartmentFrameworkVersion::whereKey($assessment->framework_version_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($assessment->status !== DepartmentFrameworkVersion::STATUS_DRAFT) {
+                throw ValidationException::withMessages([
+                    'publish' => 'This assessment has already been published.',
+                ]);
+            }
+
+            // The readiness rules are enforced here, not only drawn on the review screen.
+            // A disabled button is not a control: some rules, such as a section holding no
+            // questions, are not covered by the publishing services and would otherwise
+            // pass when the endpoint is called directly.
+            $readiness = $this->readiness->evaluate($assessment);
+            if (! $readiness['ready']) {
+                throw ValidationException::withMessages([
+                    'publish' => array_map(fn (array $blocker) => $blocker['message'], $readiness['blockers']),
+                ]);
+            }
+
             // Authoritative content checks. Anything wrong stops publication here.
             $this->frameworks->publish($assessment, $publisherId);
 
