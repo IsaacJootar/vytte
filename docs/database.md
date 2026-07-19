@@ -42,6 +42,7 @@ Laravel migrations are the database source of truth. PostgreSQL is the database 
 - `question_groups`
 - `sub_indices`
 - `questions`
+- `question_versions`
 - `question_options`
 - `question_numeric_bands`
 - `sub_index_questions`
@@ -50,13 +51,26 @@ Laravel migrations are the database source of truth. PostgreSQL is the database 
 - `question_translations`
 - `question_option_translations`
 
+`questions` holds the reusable question identity. `question_versions` holds the immutable published wording, response type, options, numeric configuration, numeric bands, methodology metadata, and content hash. A framework references an exact `question_version_id`, never the identity alone.
+
 ### Governed Composition
 
 - `department_framework_versions`
+- `framework_sections`
+- `framework_indicators`
+- `framework_question_placements`
 - `facility_profiles`
 - `facility_profile_departments`
 - `assessment_catalogue_releases`
 - `assessment_catalogue_department_versions`
+
+`framework_question_placements` binds one exact published question version into a framework section and indicator, carrying display order, required state, evidence expectation, weight, scoring contribution, criticality, and framework-specific display wording.
+
+### Plans and Workspace Content
+
+- `subscription_plans`
+- `plan_features`
+- `workspace_custom_assessment_designs`
 
 ### Project and Assessment Runtime
 
@@ -82,6 +96,25 @@ Laravel migrations are the database source of truth. PostgreSQL is the database 
 - `assessment_scores`
 - `assessment_report_snapshots`
 
+### Reserved Tables
+
+Present in the schema but not current product authority. Do not build new behavior on them without a fresh design decision. `DATA_MODEL_AUDIT.md` and `PRESERVATION_REGISTER.md` carry the same list.
+
+- `assessment_topic_scope`
+- `respondents`
+- `response_options`
+- `observation_records`
+- `topic_scores`
+- `project_domain_scores`
+- `project_scores`
+- `root_causes`
+- `recommendation_rules`
+- `recommendations`
+
+### Framework Tables
+
+Standard Laravel infrastructure, listed for completeness: `migrations`, `sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs`, `notifications`, `password_reset_tokens`.
+
 ## Key Relationships
 
 - A workspace owns projects and targets.
@@ -89,6 +122,8 @@ Laravel migrations are the database source of truth. PostgreSQL is the database 
 - A health-facility target may reference one official `facility_profile`.
 - A facility profile defines required/default/optional departments.
 - A department has immutable published framework versions.
+- A framework version owns sections and indicators, and places exact published question versions through `framework_question_placements`.
+- A question identity in `questions` may have many immutable rows in `question_versions`, linked in sequence by `parent_version_id`.
 - A catalogue release pins exact framework versions and aggregation policy.
 - An assessment references the selected catalogue release.
 - An assessment snapshot freezes the composed payload, manifest, and policy.
