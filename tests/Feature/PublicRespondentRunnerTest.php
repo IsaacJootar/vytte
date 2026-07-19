@@ -6,6 +6,7 @@ use App\Livewire\PublicRespondentRunner;
 use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentRespondentToken;
+use App\Models\AssessmentSnapshot;
 use App\Models\Project;
 use App\Models\PublicResponseSession;
 use App\Models\Question;
@@ -16,8 +17,8 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
-use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\PlanFeatureSeeder;
+use Database\Seeders\PlatformGovernedDemoSeeder;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -63,7 +64,8 @@ class PublicRespondentRunnerTest extends TestCase
 
         $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
         $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
-        $assessment->snapshot->update([
+
+        return $this->replaceSnapshot($assessment, [
             'collection_config' => [
                 'allows_multi_respondent' => true,
                 'minimum_completed_respondents' => 1,
@@ -72,6 +74,24 @@ class PublicRespondentRunnerTest extends TestCase
                 'scoring_profile_version' => ScoringService::ALGORITHM_VERSION,
             ],
         ]);
+    }
+
+    /**
+     * Assessment snapshots are immutable, so a fixture that needs different frozen
+     * content replaces the snapshot rather than mutating it.
+     */
+    private function replaceSnapshot(Assessment $assessment, array $changes): Assessment
+    {
+        $snapshot = $assessment->snapshot;
+        // toArray() so cast JSON columns come back as arrays; getAttributes() would
+        // return raw JSON strings that the casts then double-encode on create.
+        $attributes = collect($snapshot->toArray())
+            ->except('snapshot_id')
+            ->merge($changes)
+            ->all();
+
+        $snapshot->delete();
+        AssessmentSnapshot::create($attributes);
 
         return $assessment->fresh(['snapshot']);
     }
@@ -80,7 +100,7 @@ class PublicRespondentRunnerTest extends TestCase
     {
         $payload = $assessment->snapshot->payload;
         $payload[0]['questions'][0]['translations']['fr'] = 'Question en français';
-        $assessment->snapshot->update(['payload' => $payload]);
+        $this->replaceSnapshot($assessment, ['payload' => $payload]);
     }
 
     private function createToken(Assessment $assessment): string

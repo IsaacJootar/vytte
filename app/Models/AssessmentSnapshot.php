@@ -31,6 +31,15 @@ class AssessmentSnapshot extends Model
         'created_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::updating(function (): void {
+            throw new \LogicException(
+                'Assessment snapshots are immutable. The composed content, manifest, aggregation policy and collection config are frozen at creation and must never change.'
+            );
+        });
+    }
+
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(Assessment::class, 'assessment_id', 'assessment_id');

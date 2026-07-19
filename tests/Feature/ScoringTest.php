@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentScore;
+use App\Models\AssessmentSnapshot;
 use App\Models\Project;
 use App\Models\Response;
 use App\Models\Target;
@@ -58,6 +59,26 @@ class ScoringTest extends TestCase
         return app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
     }
 
+    /**
+     * Assessment snapshots are immutable, so a fixture that needs different frozen
+     * content replaces the snapshot rather than mutating it.
+     */
+    private function replaceSnapshot(Assessment $assessment, array $changes): Assessment
+    {
+        $snapshot = $assessment->snapshot;
+        // toArray() so cast JSON columns come back as arrays; getAttributes() would
+        // return raw JSON strings that the casts then double-encode on create.
+        $attributes = collect($snapshot->toArray())
+            ->except('snapshot_id')
+            ->merge($changes)
+            ->all();
+
+        $snapshot->delete();
+        AssessmentSnapshot::create($attributes);
+
+        return $assessment->fresh(['snapshot']);
+    }
+
     private function answerAllScoredQuestionsWithBestOption(Assessment $assessment): void
     {
         $questions = collect($assessment->snapshot->payload)
@@ -101,7 +122,7 @@ class ScoringTest extends TestCase
             ['min_value' => 50, 'max_value' => 80, 'score_weight' => 50],
             ['min_value' => 80, 'max_value' => 100, 'score_weight' => 100],
         ];
-        $assessment->snapshot->update(['payload' => $payload]);
+        $assessment = $this->replaceSnapshot($assessment, ['payload' => $payload]);
         $response = Response::create([
             'assessment_id' => $assessment->assessment_id,
             'question_id' => $question['question_id'],

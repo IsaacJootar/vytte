@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\AssessmentRunner;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
+use App\Models\AssessmentSnapshot;
 use App\Models\Project;
 use App\Models\Question;
 use App\Models\QuestionOption;
@@ -220,7 +221,15 @@ class QuestionTranslationTest extends TestCase
         $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
         $payload = $assessment->snapshot->payload;
         $payload[0]['questions'][0]['translations']['fr'] = 'Question traduite en franÃ§ais';
-        $assessment->snapshot->update(['payload' => $payload]);
+
+        // Assessment snapshots are immutable: replace rather than mutate.
+        $snapshotAttributes = collect($assessment->snapshot->toArray())
+            ->except('snapshot_id')
+            ->merge(['payload' => $payload])
+            ->all();
+        $assessment->snapshot->delete();
+        AssessmentSnapshot::create($snapshotAttributes);
+        $assessment = $assessment->fresh(['snapshot']);
 
         $component = Livewire::actingAs($user)
             ->test(AssessmentRunner::class, ['assessment' => $assessment]);

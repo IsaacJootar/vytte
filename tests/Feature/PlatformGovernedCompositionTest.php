@@ -179,6 +179,37 @@ class PlatformGovernedCompositionTest extends TestCase
         $this->assertSame($originalText, $assessment->snapshot->fresh()->payload[0]['questions'][0]['question_text']);
     }
 
+    public function test_assessment_snapshots_are_immutable_once_created(): void
+    {
+        $project = $this->clinicProject();
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+        $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $this->user->user_id);
+        $snapshot = $assessment->snapshot;
+
+        $this->expectException(\LogicException::class);
+        $snapshot->update(['payload' => [['module_code' => 'TAMPERED']]]);
+    }
+
+    public function test_assessment_snapshot_manifest_and_policy_cannot_be_rewritten(): void
+    {
+        $project = $this->clinicProject();
+        $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
+        $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $this->user->user_id);
+        $snapshot = $assessment->snapshot;
+        $originalHash = $snapshot->content_hash;
+
+        foreach (['composition_manifest', 'aggregation_policy', 'collection_config', 'content_hash'] as $frozenAttribute) {
+            try {
+                $snapshot->update([$frozenAttribute => $frozenAttribute === 'content_hash' ? 'tampered' : ['tampered' => true]]);
+                $this->fail("Expected {$frozenAttribute} to be immutable.");
+            } catch (\LogicException) {
+                // Expected: the snapshot guard rejects every frozen attribute.
+            }
+        }
+
+        $this->assertSame($originalHash, $assessment->snapshot()->first()->content_hash);
+    }
+
     public function test_local_custom_sections_never_affect_official_scoring(): void
     {
         $project = $this->clinicProject();
