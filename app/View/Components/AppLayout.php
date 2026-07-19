@@ -2,6 +2,7 @@
 
 namespace App\View\Components;
 
+use App\Support\RoleNavigation;
 use Illuminate\View\Component;
 use Illuminate\View\View;
 
@@ -11,6 +12,6 @@ class AppLayout extends Component
 
     public function render(): View
     {
-        return view('layouts.app');
+        return view('layouts.app', ['nav' => RoleNavigation::workspace()]);
     }
 }
