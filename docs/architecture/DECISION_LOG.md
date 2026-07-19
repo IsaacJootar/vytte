@@ -73,6 +73,24 @@
 - **Implementation rule:** Do not hardcode free access; use `subscription_plans`, `plan_features`, and `PlanService`.
 - **Known drift:** `PlatformSettingController` still renders and persists `plan.free_projects`, `plan.free_assessments_per_project`, and `plan.pro_projects`. `PlanService` no longer reads them, so those controls have no effect. Resolving this requires a decision on whether to remove the controls; it is recorded here rather than silently corrected.
 
+### DEC-2026-07-19-013: Author Self-Approval Is A Temporary Beta Limitation
+
+- **Status:** Accepted for beta. Requires a governance decision before production.
+- **Context:** `CONTENT_GOVERNANCE.md` and the Phase A.5 review call for a review chain with distinct author, reviewer and approver. The assessment builder implements explicit, audited approval, but the same Platform Admin may author a question and approve it.
+- **What is in place:** approval is never implicit. A question stays a draft through building, scoring and saving; a separate action approves it, routes through `QuestionVersionPublishingService` so every content check applies, freezes the version, and records `assessment.question.approved` with the acting user. Publication records `assessment.published`.
+- **What is missing:** separation of duties. Nothing prevents one person performing both roles, and no reviewer identity distinct from the author is captured.
+- **Why deferred:** a multi-person approval workflow is a governance design, not a UI change. Inventing one under beta time pressure risks a model that has to be replaced.
+- **Boundary:** the audit trail already records who approved what, so a future policy can be applied without losing history. Do not describe current approval as independent review.
+
+### DEC-2026-07-19-014: One Authored Assessment Publishes As One Focused Catalogue Release
+
+- **Status:** Accepted and implemented.
+- **Context:** what an author calls "an assessment" maps to two governed artifacts: a department framework version holding the content, and a catalogue release making it selectable. Publishing only the framework leaves nothing usable.
+- **Decision:** the builder's Publish action publishes the framework and then creates and publishes one `FOCUSED` catalogue release pinning exactly that framework version, inside a single transaction. If either service refuses, the whole publication rolls back.
+- **Rationale:** a focused release pins exactly one framework version and requires one health domain, which matches the author's mental model of one assessment.
+- **Boundary:** comprehensive multi-department composition, facility profiles and multi-framework pinning remain Advanced Tools work and are unchanged.
+- **Authority:** `DepartmentFrameworkPublishingService` and `CataloguePublishingService` remain the only authorities on whether publication may proceed. `AssessmentPublicationService` orchestrates and validates nothing itself.
+
 ### DEC-2026-07-19-011: Responses Are Keyed By Question Identity
 
 - **Status:** Accepted as a description of existing behavior.

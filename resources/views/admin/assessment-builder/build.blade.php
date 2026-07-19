@@ -162,6 +162,13 @@
         @endforelse
     </div>
 
+    <div class="mt-4 flex justify-end">
+        <a href="{{ route('admin.assessments.review', $assessment) }}"
+           class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">
+            Review and publish →
+        </a>
+    </div>
+
     @if ($isEditable)
         <form method="POST" action="{{ route('admin.assessments.sections.store', $assessment) }}"
               class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">

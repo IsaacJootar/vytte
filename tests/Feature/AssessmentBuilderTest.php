@@ -2,15 +2,22 @@
 
 namespace Tests\Feature;
 
+use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\Domain;
 use App\Models\FrameworkIndicator;
 use App\Models\FrameworkQuestionPlacement;
 use App\Models\FrameworkSection;
+use App\Models\HealthDomain;
+use App\Models\Project;
 use App\Models\QuestionVersion;
 use App\Models\SubIndex;
+use App\Models\Target;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
+use App\Services\AssessmentCreationService;
 use App\Services\FrameworkContentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -197,8 +204,10 @@ class AssessmentBuilderTest extends TestCase
 
     // ---- Wizard shape ----
 
-    public function test_the_wizard_shows_progress_and_marks_unavailable_steps_as_coming_next(): void
+    public function test_the_wizard_shows_every_step_and_none_are_marked_unavailable(): void
     {
+        // All four steps are implemented as of B4, so the "Coming next" marker that
+        // previously covered Review and Publish must no longer appear anywhere.
         $this->actingAs($this->platformAdmin())
             ->get(route('admin.assessments.create'))
             ->assertOk()
@@ -206,7 +215,7 @@ class AssessmentBuilderTest extends TestCase
             ->assertSee('Build Assessment')
             ->assertSee('Review')
             ->assertSee('Publish')
-            ->assertSee('Coming next');
+            ->assertDontSee('Coming next');
     }
 
     public function test_the_builder_form_does_not_ask_for_governance_internals(): void
@@ -742,6 +751,237 @@ class AssessmentBuilderTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->patch(route('admin.assessments.questions.approve', [$assessment, $placement]))
             ->assertForbidden();
+    }
+
+    // ---- Review and publish ----
+
+    /**
+     * Builds a draft that satisfies every publication rule except the ones a test varies.
+     */
+    private function publishableAssessment(): DepartmentFrameworkVersion
+    {
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        $this->scoringGroupFor($assessment);
+
+        $this->put(route('admin.assessments.questions.settings.save', [$assessment, $placement]), [
+            'is_scored' => 1,
+            'evidence_mode' => 'none',
+            'points' => [1 => 100, 2 => 0],
+        ]);
+        $this->patch(route('admin.assessments.questions.approve', [$assessment, $placement]));
+        $this->put(route('admin.assessments.provenance', $assessment), [
+            'source_authority' => 'Vytte test authority',
+            'license_code' => 'TEST-1.0',
+        ]);
+
+        return $assessment->fresh();
+    }
+
+    public function test_review_lists_blockers_in_plain_language(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment] = $this->assessmentWithOneNewQuestion();
+
+        $response = $this->get(route('admin.assessments.review', $assessment))->assertOk();
+
+        $response->assertSee('waiting for approval', false);
+        $response->assertSee('Record where this assessment comes from');
+        // Publication vocabulary must not leak into the blocker list.
+        $response->assertDontSee('question_version_id');
+        $response->assertDontSee('sub_index_id');
+    }
+
+    public function test_publishing_is_blocked_while_a_question_is_unapproved(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment] = $this->assessmentWithOneNewQuestion();
+        $this->put(route('admin.assessments.provenance', $assessment), [
+            'source_authority' => 'Vytte test authority',
+            'license_code' => 'TEST-1.0',
+        ]);
+
+        $this->post(route('admin.assessments.publish', $assessment), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+            'confirm' => 1,
+        ])->assertSessionHasErrors();
+
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $assessment->fresh()->status);
+    }
+
+    public function test_publishing_is_blocked_without_source_and_usage_details(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        $this->patch(route('admin.assessments.questions.approve', [$assessment, $placement]));
+
+        $this->post(route('admin.assessments.publish', $assessment), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+            'confirm' => 1,
+        ])->assertSessionHasErrors();
+
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $assessment->fresh()->status);
+    }
+
+    public function test_publishing_requires_explicit_confirmation(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->publishableAssessment();
+
+        $this->post(route('admin.assessments.publish', $assessment), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+        ])->assertSessionHasErrors('confirm');
+
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $assessment->fresh()->status);
+    }
+
+    public function test_publishing_creates_a_published_framework_and_catalogue_release(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->publishableAssessment();
+        $healthDomainId = HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id;
+
+        $this->post(route('admin.assessments.publish', $assessment), [
+            'health_domain_id' => $healthDomainId,
+            'confirm' => 1,
+        ])->assertRedirect(route('admin.assessments.review', $assessment))->assertSessionHasNoErrors();
+
+        $assessment->refresh();
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_PUBLISHED, $assessment->status);
+        $this->assertNotNull($assessment->content_hash);
+        $this->assertNotNull($assessment->published_payload);
+
+        // Publishing the framework alone leaves nothing usable, so a focused catalogue
+        // release must be published alongside it.
+        $release = AssessmentCatalogueRelease::whereHas(
+            'departmentFrameworkVersions',
+            fn ($q) => $q->where('department_framework_versions.framework_version_id', $assessment->framework_version_id)
+        )->firstOrFail();
+
+        $this->assertSame(AssessmentCatalogueRelease::STATUS_PUBLISHED, $release->status);
+        $this->assertSame('FOCUSED', $release->creation_path);
+        $this->assertSame($healthDomainId, $release->health_domain_id);
+        $this->assertNotNull($release->content_hash);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.published']);
+    }
+
+    public function test_a_published_assessment_is_locked_against_further_change(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->publishableAssessment();
+        $this->post(route('admin.assessments.publish', $assessment), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+            'confirm' => 1,
+        ]);
+
+        $assessment->refresh();
+        $section = FrameworkSection::where('framework_version_id', $assessment->framework_version_id)->firstOrFail();
+
+        $this->post(route('admin.assessments.sections.store', $assessment), ['section_name' => 'After publication'])
+            ->assertSessionHasErrors('status');
+        $this->put(route('admin.assessments.update', $assessment), [
+            'display_name' => 'Renamed after publication',
+            'module_id' => $assessment->module_id,
+        ])->assertSessionHasErrors('status');
+        $this->post(route('admin.assessments.questions.store', [$assessment, $section]), [
+            'question_text' => 'Added after publication',
+            'format' => 'yes_no',
+        ])->assertSessionHasErrors('status');
+
+        $this->expectException(\LogicException::class);
+        $assessment->update(['display_name' => 'Mutated directly']);
+    }
+
+    public function test_publishing_twice_is_refused(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->publishableAssessment();
+        $healthDomainId = HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id;
+        $payload = ['health_domain_id' => $healthDomainId, 'confirm' => 1];
+
+        $this->post(route('admin.assessments.publish', $assessment), $payload);
+        $this->post(route('admin.assessments.publish', $assessment->fresh()), $payload)->assertSessionHasErrors();
+
+        $this->assertSame(1, AssessmentCatalogueRelease::whereHas(
+            'departmentFrameworkVersions',
+            fn ($q) => $q->where('department_framework_versions.framework_version_id', $assessment->framework_version_id)
+        )->count());
+    }
+
+    public function test_a_failed_publication_leaves_nothing_behind(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $placement] = $this->assessmentWithOneNewQuestion();
+        $this->put(route('admin.assessments.provenance', $assessment), [
+            'source_authority' => 'Vytte test authority',
+            'license_code' => 'TEST-1.0',
+        ]);
+
+        $releasesBefore = AssessmentCatalogueRelease::count();
+
+        // The question is still unapproved, so the framework publisher refuses.
+        $this->post(route('admin.assessments.publish', $assessment), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+            'confirm' => 1,
+        ])->assertSessionHasErrors();
+
+        $this->assertSame($releasesBefore, AssessmentCatalogueRelease::count(), 'A half-published release was left behind.');
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $assessment->fresh()->status);
+    }
+
+    public function test_a_published_assessment_can_be_used_to_create_a_workspace_assessment(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->publishableAssessment();
+        $this->post(route('admin.assessments.publish', $assessment), [
+            'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+            'confirm' => 1,
+        ])->assertSessionHasNoErrors();
+
+        $release = AssessmentCatalogueRelease::whereHas(
+            'departmentFrameworkVersions',
+            fn ($q) => $q->where('department_framework_versions.framework_version_id', $assessment->fresh()->framework_version_id)
+        )->firstOrFail();
+
+        // The point of publishing: a workspace can compose a real assessment from it.
+        $user = User::factory()->create();
+        $workspace = Workspace::factory()->create();
+        WorkspaceMember::create([
+            'workspace_id' => $workspace->workspace_id,
+            'user_id' => $user->user_id,
+            'role' => 'OWNER',
+        ]);
+        $user->update(['active_workspace_id' => $workspace->workspace_id]);
+        app()->instance('current.workspace', $workspace);
+
+        $project = Project::create(['name' => 'Published Content Project', 'owner_user_id' => $user->user_id]);
+        $target = Target::create([
+            'target_type_code' => 'COMMUNITY',
+            'name' => 'Published Content Target',
+            'owner_workspace_id' => $workspace->workspace_id,
+        ]);
+        $project->targets()->attach($target->target_id, ['added_at' => now()]);
+
+        $created = app(AssessmentCreationService::class)
+            ->createFromCatalogue($project, $release, creatorId: $user->user_id);
+
+        $this->assertNotNull($created->snapshot);
+        $this->assertNotEmpty($created->snapshot->payload);
+        $this->assertSame('Scoring fixture question?', $created->snapshot->payload[0]['questions'][0]['question_text']);
+    }
+
+    public function test_workspace_user_cannot_publish(): void
+    {
+        $admin = $this->platformAdmin();
+        $this->actingAs($admin);
+        $assessment = $this->publishableAssessment();
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('admin.assessments.publish', $assessment), [
+                'health_domain_id' => HealthDomain::orderBy('health_domain_id')->firstOrFail()->health_domain_id,
+                'confirm' => 1,
+            ])->assertForbidden();
+
+        $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $assessment->fresh()->status);
     }
 
     public function test_the_draft_is_created_as_a_focused_framework_version_without_the_author_choosing_one(): void

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssessmentModule extends Model
@@ -48,6 +49,20 @@ class AssessmentModule extends Model
     {
         return $this->hasMany(Question::class, 'module_id', 'module_id')
             ->orderBy('display_order');
+    }
+
+    /**
+     * Health areas this department covers, used to suggest the health area when an
+     * assessment is published as a focused catalogue release.
+     */
+    public function healthDomains(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            HealthDomain::class,
+            'assessment_module_health_domain',
+            'module_id',
+            'health_domain_id'
+        );
     }
 
     public function frameworkVersions(): HasMany
