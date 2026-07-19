@@ -66,7 +66,9 @@ class PlatformAdminControlCenterTest extends TestCase
             route('admin.dashboard') => 'Vytte Platform Admin Control Center',
             route('admin.official-content.index') => 'Official Vytte Content Control Center',
             route('admin.question-groups.index') => 'Question Groups',
-            route('admin.question-identities.index') => 'Reusable Question Identities',
+            // Renamed under the approved plain-language mapping: an administrator looks
+            // for a library of questions, not for "question identities".
+            route('admin.question-identities.index') => 'Question Library',
             route('admin.question-versions.index') => 'Question Versions',
             route('admin.framework-versions.index') => 'Framework Versions',
             route('admin.catalogue-releases.index') => 'Catalogue Releases',

@@ -4,11 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentModule;
+use App\Models\FrameworkQuestionPlacement;
 use App\Models\Question;
 use App\Models\QuestionGroup;
 use App\Models\QuestionType;
 use App\Models\QuestionVersion;
 use App\Services\AuditService;
+use App\Support\AnswerFormat;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,9 +18,16 @@ use Illuminate\Validation\Rule;
 
 class QuestionIdentityController extends Controller
 {
+    /**
+     * The official Question Library.
+     *
+     * An author choosing a question needs its wording, how people answer it, whether it is
+     * approved, and whether anything already uses it. Those are the columns; version
+     * numbers and status codes stay in Advanced Tools.
+     */
     public function index(Request $request): View
     {
-        $query = Question::with(['module', 'questionGroup', 'questionType'])
+        $query = Question::with(['module', 'questionGroup', 'questionType', 'versions'])
             ->withCount('versions')
             ->orderBy('question_code');
 
@@ -34,14 +43,35 @@ class QuestionIdentityController extends Controller
             $query->where('module_id', $request->integer('module_id'));
         }
 
-        if ($request->filled('status')) {
-            $query->where('question_status', $request->string('status'));
+        // "Ready to use" means a published version exists; "needs approval" means none does.
+        if ($request->filled('readiness')) {
+            $publishedQuestionIds = QuestionVersion::where('status', QuestionVersion::STATUS_PUBLISHED)
+                ->select('question_id');
+
+            $request->string('readiness')->value() === 'ready'
+                ? $query->whereIn('question_id', $publishedQuestionIds)
+                : $query->whereNotIn('question_id', $publishedQuestionIds);
         }
 
-        $questions = $query->paginate(30)->withQueryString();
-        $modules = AssessmentModule::orderBy('module_name')->get();
+        if ($request->filled('format')) {
+            $query->whereHas('questionType', fn ($inner) => $inner->where('type_code', $request->string('format')));
+        }
 
-        return view('admin.question-identities.index', compact('questions', 'modules'));
+        $questions = $query->paginate(20)->withQueryString();
+
+        // How many assessments already place each question, so reuse is visible.
+        $usage = FrameworkQuestionPlacement::query()
+            ->selectRaw('question_id, count(distinct framework_version_id) as total')
+            ->whereIn('question_id', $questions->pluck('question_id'))
+            ->groupBy('question_id')
+            ->pluck('total', 'question_id');
+
+        return view('admin.question-identities.index', [
+            'questions' => $questions,
+            'modules' => AssessmentModule::orderBy('module_name')->get(),
+            'usage' => $usage,
+            'formats' => AnswerFormat::all(),
+        ]);
     }
 
     public function create(): View
