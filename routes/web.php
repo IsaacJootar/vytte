@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\QuestionGroupController as AdminQuestionGroupCont
 use App\Http\Controllers\Admin\QuestionIdentityController as AdminQuestionIdentityController;
 use App\Http\Controllers\Admin\QuestionVersionController as AdminQuestionVersionController;
 use App\Http\Controllers\Admin\ReportShareController as AdminReportShareController;
+use App\Http\Controllers\Admin\ScoreController as AdminScoreController;
 use App\Http\Controllers\Admin\ScoringPolicyController as AdminScoringPolicyController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
@@ -231,6 +232,11 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::get('facility-profiles', [AdminFacilityProfileController::class, 'index'])->name('facility-profiles.index');
     Route::get('facility-profiles/{profile}', [AdminFacilityProfileController::class, 'show'])->name('facility-profiles.show');
     Route::put('facility-profiles/{profile}', [AdminFacilityProfileController::class, 'update'])->name('facility-profiles.update');
+
+    Route::get('scores', [AdminScoreController::class, 'index'])->name('scores.index');
+    Route::post('scores', [AdminScoreController::class, 'store'])->name('scores.store');
+    Route::put('scores/{score}', [AdminScoreController::class, 'update'])->name('scores.update');
+    Route::delete('scores/{score}', [AdminScoreController::class, 'destroy'])->name('scores.destroy');
 
     Route::get('scoring-policies', [AdminScoringPolicyController::class, 'index'])->name('scoring-policies.index');
 

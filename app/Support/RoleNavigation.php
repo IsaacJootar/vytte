@@ -48,7 +48,7 @@ final class RoleNavigation
                     'items' => [
                         self::item('admin.modules.index', 'Departments', 'squares-2x2', 'admin.modules.*'),
                         self::item('admin.facility-profiles.index', 'Facility Types', 'building-office', 'admin.facility-profiles.*'),
-                        self::item('admin.scoring-policies.index', 'Scores', 'chart-bar', 'admin.scoring-policies.*'),
+                        self::item('admin.scores.index', 'Scores', 'chart-bar', 'admin.scores.*'),
                     ],
                 ],
                 [
@@ -126,6 +126,16 @@ final class RoleNavigation
                         self::item('custom-assessments.index', 'Custom Assessments', 'document-text', 'custom-assessments.*'),
                     ],
                 ],
+                // A platform administrator holds both a workspace and platform authority,
+                // and logging in lands them in the workspace. The way across used to be a
+                // ten-pixel link in the footer card, which was effectively hidden.
+                ...($user?->isPlatformAdmin() ? [[
+                    'label' => 'Platform',
+                    'collapsible' => false,
+                    'items' => [
+                        self::item('admin.dashboard', 'Platform Admin', 'shield-check', 'admin.*'),
+                    ],
+                ]] : []),
                 [
                     'label' => 'Workspace',
                     'collapsible' => false,
@@ -148,9 +158,8 @@ final class RoleNavigation
                 'label' => 'Current plan',
                 'value' => PlanService::planLabel($plan),
                 'accent' => false,
-                'link' => $user?->isPlatformAdmin()
-                    ? ['route' => 'admin.dashboard', 'label' => 'Open admin center']
-                    : null,
+                // The crossing to Platform Admin is a navigation item now, not a footnote.
+                'link' => null,
             ],
         ];
     }

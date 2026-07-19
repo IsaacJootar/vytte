@@ -107,7 +107,7 @@ class DashboardController extends Controller
                 'title' => $departmentsWithoutScore.' '.str('department')->plural($departmentsWithoutScore).' cannot score questions yet',
                 'detail' => 'A department needs a score before its questions can affect results.',
                 'action' => 'Set up',
-                'href' => route('admin.scoring-policies.index'),
+                'href' => route('admin.scores.index'),
             ];
         }
 
