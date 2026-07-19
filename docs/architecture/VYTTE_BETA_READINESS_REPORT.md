@@ -58,6 +58,22 @@ This sprint moved Vytte closer to public beta by converting paid plans into conf
 7. Is Vytte ready for public beta?
    - Not yet. The largest remaining blockers are complete question-version editing, content supersession/archive flows, dependency checks, full sequential test verification, and final operations setup.
 
+## Update after the foundation integrity sprint
+
+The conclusion is unchanged. These specific blockers moved:
+
+- Dependency checking before archive and supersession exists and is correct.
+- The full sequential test suite runs and passes. It had never been run end to end; the first run found five failures, all since fixed. The verification claims in this report were batched runs and did not evidence a passing suite.
+- Assessment snapshot immutability is enforced in code.
+- The demo dataset now seeds. It had silently produced nothing since the plan rename, so several capabilities recorded as verified here were being demonstrated against an empty database.
+
+Still blocking, and now the substance of the remaining work:
+
+- Framework and catalogue authoring interfaces.
+- An official content library.
+- Production operations: backup with a tested restore, monitoring, and incident response.
+- Plan-to-content entitlement, if beta offers differentiated plans.
+
 ## Conclusion
 
 NOT READY FOR PUBLIC BETA

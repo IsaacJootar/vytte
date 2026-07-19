@@ -1,3 +1,5 @@
+> **ARCHIVED 2026-07-19.** Historical record. Accurate when written; describes a past state of the repository. Do not treat as current and do not rewrite. See `README.md` in this folder.
+
 # Implementation Progress
 
 ## Current Implemented Architecture
@@ -25,7 +27,7 @@ Implemented:
 - New governed-composition suite: 9 tests, 22 assertions, passing.
 - Project suite: 17 tests, 60 assertions, passing.
 - Existing assessment suite: 24 tests, 68 assertions, passing.
-- Full suite: 395 tests, 972 assertions, passing.
+- Full suite: 401 tests, 1097 assertions, passing. Full sequential PostgreSQL run, 2026-07-19, commit `65648e5`.
 - Disposable PostgreSQL clean `migrate:fresh --seed`: passing.
 - Production frontend build with `npm.cmd run build`: passing.
 

@@ -168,15 +168,31 @@ Claude should read these first.
 - `docs/architecture/PLATFORM_ADMIN_ARCHITECTURE.md`
 - `docs/architecture/WORKSPACE_ADMIN_ARCHITECTURE.md`
 - `docs/architecture/PLAN_ARCHITECTURE.md`
-- `docs/architecture/FINAL_PRODUCTION_READINESS_AUDIT.md`
+- `docs/architecture/DECISION_LOG.md`
+- `docs/architecture/GO_LIVE_CHECKLIST.md`
+
+Historical records are in `docs/architecture/archive/`. They describe past states and must not be treated as current.
 
 ## Remaining Work
 
-Claude's next priorities are:
+Priorities are:
 
 1. Complete production operations hardening.
-2. Run and fix the complete sequential test suite.
-3. Execute the Beta Content Expansion & Seed Data Sprint.
-4. Recover and adapt the previous approximately 500 questions.
-5. Research and build the official global/local/Vytte content library.
-6. Final beta verification.
+2. Complete Platform Admin content authoring for framework sections, indicators, placements, and catalogue composition.
+3. Research and author the official Vytte content library under a governed review chain.
+4. Implement plan-to-content entitlement.
+5. Final beta verification.
+
+### Completed since this handover was written
+
+- The complete sequential test suite runs and passes. It had never been run end to end; the first run found five failures, all since fixed. Earlier green claims came from batched runs.
+- Assessment snapshot immutability is enforced in code.
+- Governance dependency counting is correct and bounded.
+
+### Correction: the previous question bank
+
+An earlier version of this handover listed "recover and adapt the previous approximately 500 questions" as a priority. That item is withdrawn as written.
+
+It traced to the former `CLAUDE.md`, which described 528 questionnaire questions awaiting calibration and an HIVAW reference module. `archive/CURRENT_QUESTION_BANK_STATE_AUDIT.md` established that the PHSAI question bank was not migrated, copied, adapted, or reused, and neither `PHSAI` nor `HIVAW` appears anywhere in `app/` or `database/`.
+
+Unless source material exists outside this repository, building the official library is **authoring, not recovery**. Treat any recovered material as a draft input that must pass the full review chain, and never inherit an unexplained score weight. Confirming whether such source material exists is a prerequisite to sizing the content work.

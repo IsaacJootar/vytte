@@ -37,9 +37,28 @@ Workspace-local custom sections are allowed only as clearly marked local context
 
 ## Local Setup
 
+### 1. Start PostgreSQL
+
+The repository ships a PostgreSQL service. It publishes port **5433** on the host to avoid
+clashing with an existing local PostgreSQL on 5432.
+
+```bash
+docker compose up -d
+```
+
+### 2. Create the test database
+
+The test suite runs against a separate `vytte_test` database. Create it once:
+
+```bash
+docker exec vytte_postgres createdb -U vytte vytte_test
+```
+
+### 3. Install and boot the application
+
 ```bash
 composer install
-copy .env.example .env
+cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
 npm install
@@ -49,25 +68,49 @@ php artisan serve
 
 ## PostgreSQL Configuration
 
-Local development, automated tests, production, and release-candidate verification use PostgreSQL:
+Local development, automated tests, production, and release-candidate verification use PostgreSQL.
+`.env.example` matches the shipped `docker-compose.yml`:
 
 ```dotenv
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=5432
+DB_PORT=5433
 DB_DATABASE=vytte
 DB_USERNAME=vytte
-DB_PASSWORD=change-me
+DB_PASSWORD=secret
 ```
+
+If you run your own PostgreSQL instead of the shipped service, set the port and password to match
+it, and keep `phpunit.xml` in step.
+
+## Demo Accounts
+
+`php artisan migrate --seed` creates demo accounts, all with the password `password`:
+
+- `starter@vytte.test`
+- `professional@vytte.test`
+- `organization@vytte.test`
+- `admin@vytte.test` (Vytte Platform Admin)
+
+The seed also creates a labelled demonstration catalogue and demo assessments, scores, and reports.
 
 ## Verification
 
 ```bash
 php artisan test
-npm.cmd run build
+npm run build
+php artisan vytte:preflight
 ```
 
-The full test suite is expected to run against PostgreSQL.
+The full test suite runs against PostgreSQL and is expected to pass as one sequential run, not as
+separate batches. Batched runs have previously hidden failures that only a full sequential run
+surfaces.
+
+## Deployment
+
+Production deployment procedures, backup and restore, monitoring, queue supervision, and incident
+response are not yet codified. See `docs/architecture/OPERATIONS_READINESS.md` for the current
+status and outstanding requirements. Do not deploy to production against this README alone.
 
 ## Architecture References
 

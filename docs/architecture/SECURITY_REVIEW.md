@@ -15,6 +15,12 @@ Security foundations are good, but production hardening remains incomplete.
 | MEDIUM | Evidence-file security lifecycle is absent. | Evidence is currently response-bound text only. | Do not claim evidence uploads until storage, access, virus scanning, retention, and privacy rules exist. |
 | LOW | Platform Admin share-link emergency revoke exists but can be improved. | `admin.report-shares.*` exists. | Add bulk revoke/search by workspace/report later. |
 
+## Changes since this review
+
+- Assessment snapshots are now immutable through a model guard, closing the one governed artifact that relied on convention. Snapshot deletion remains unguarded; see TECHNICAL_DEBT_REPORT.
+- The full sequential test suite runs and passes, so security-relevant regressions are now detectable by a suite run rather than by batched runs that previously hid failures.
+- Production environment hardening remains unverified. Plan-to-content entitlement remains unimplemented. Both HIGH findings stand.
+
 ## Strengths verified
 
 - Platform Admin routes require `EnsurePlatformAdmin`.

@@ -11,8 +11,11 @@ class ScoringService
 {
     public const ALGORITHM_VERSION = 'vytte-4.0-numeric-bands';
 
+    /**
+     * Scoring versions this implementation can honour when frozen into a snapshot.
+     * A version may only be listed here while code exists that reproduces it.
+     */
     public const SUPPORTED_ALGORITHM_VERSIONS = [
-        'vytte-3.0-snapshot-profile',
         self::ALGORITHM_VERSION,
     ];
 

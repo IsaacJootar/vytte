@@ -71,3 +71,23 @@
 - **Decision:** Public beta uses configurable Starter, Professional, and Organization plan records with all features unlocked through plan configuration.
 - **Boundary:** Payment processing, billing, subscriptions, invoices, provider webhooks, refunds, taxes, coupons, and ledgers are deferred until after beta.
 - **Implementation rule:** Do not hardcode free access; use `subscription_plans`, `plan_features`, and `PlanService`.
+- **Known drift:** `PlatformSettingController` still renders and persists `plan.free_projects`, `plan.free_assessments_per_project`, and `plan.pro_projects`. `PlanService` no longer reads them, so those controls have no effect. Resolving this requires a decision on whether to remove the controls; it is recorded here rather than silently corrected.
+
+### DEC-2026-07-19-011: Responses Are Keyed By Question Identity
+
+- **Status:** Accepted as a description of existing behavior.
+- **Context:** This record documents an existing implementation constraint that was previously undocumented. It introduces no new policy.
+- **Behavior:** `responses` rows are keyed by `question_id`, the question identity, not by `framework_question_placement_id`. Scoring resolves each response by question identity against the frozen snapshot.
+- **Consequence:** One question identity can appear at most once in a single assessment. `AssessmentCreationService::createFromCatalogue` rejects a composition containing duplicate question identities across the selected framework versions.
+- **Boundary:** A question version may still be placed in multiple *frameworks* with different wording, weight, and analytical meaning. The constraint applies only within one composed assessment.
+- **Trade-off:** A question cannot be answered separately per department within one comprehensive assessment. Distinct identities are required for that today.
+- **Open question:** Whether to re-key responses to placements is not decided. Changing it would affect responses, both runners, both scorers, public session snapshots, and every existing report, and would be materially cheaper before a large content library exists than after.
+
+### DEC-2026-07-19-012: Assessment Snapshot Immutability Is Enforced
+
+- **Status:** Accepted and implemented.
+- **Context:** This record documents an existing contract that is now enforced in code. It introduces no new policy.
+- **Decision:** `AssessmentSnapshot` rejects updates through a model guard, matching `QuestionVersion`, `DepartmentFrameworkVersion`, `AssessmentCatalogueRelease`, and `AssessmentReportSnapshot`. Payload, composition manifest, aggregation policy, collection config, and content hash cannot be rewritten after creation.
+- **Rationale:** The snapshot is the reproducibility authority. Silent mutation would falsify every downstream hash with no record of the original content and no way to detect or recover it.
+- **Scope boundary:** Deletion is not guarded. The only real deletion path is the foreign-key cascade from `assessments`, which does not fire Eloquent events, and a missing snapshot already fails loudly in `ReportSnapshotService`. A delete guard remains a proposed follow-up.
+- **Test contract:** Fixtures requiring different frozen content replace the snapshot instead of mutating it.

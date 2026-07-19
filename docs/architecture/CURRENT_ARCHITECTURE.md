@@ -2,11 +2,11 @@
 
 ## Status
 
-This document describes the implemented Vytte platform-governed composition architecture after commit `44f0186`.
+This document describes the implemented Vytte platform-governed composition architecture, including the reusable question-bank layer added after the original composition work.
 
 Verified locally:
 
-- `php artisan test`: 395 tests, 972 assertions passing.
+- `php artisan test`: 401 tests, 1097 assertions passing. Full sequential PostgreSQL run, 2026-07-19, commit `65648e5`.
 - Clean disposable PostgreSQL `migrate:fresh --seed`: passing.
 - Production frontend build with `npm.cmd run build`: passing.
 
@@ -44,11 +44,26 @@ flowchart TD
     P --> T[Target]
     T --> FP[Facility profile]
 
-    AM[Official department] --> DFV[Published department framework version]
+    QG[Question group] --> QI[Question identity]
+    QI --> QV[Published immutable question version]
+    AM[Official department] --> DFV[Department framework version]
+    DFV --> SEC[Framework section]
+    SEC --> IND[Framework indicator]
+    IND --> PL[Framework question placement]
+    QV --> PL
+    IND --> DM[Indicator domain mapping]
+    PL -.optional override.-> DO[Placement domain override]
+    DTV[Published domain taxonomy version] --> DD[Domain definition]
+    DD --> DM
+    DD --> DO
+
+    PL --> PUB[Published framework payload and content hash]
+    DFV --> PUB
+
     FP --> FPD[Required/default/optional departments]
     FPD --> AM
 
-    DFV --> CR[Published assessment catalogue release]
+    PUB --> CR[Published assessment catalogue release]
     FP --> CR
     CR --> A[Assessment]
     A --> AMS[Assessment module scope]
@@ -70,10 +85,33 @@ flowchart TD
 
 Official departments live in `assessment_modules`.
 
-Each official department can have independently published immutable rows in `department_framework_versions`. A published framework version freezes:
+### Question Bank
+
+Official question content is separated into identity, immutable version, and framework-specific placement. Questions are never generated from domains; domains remain downstream analysis. `QUESTION_BANK_ARCHITECTURE.md` is the detailed reference.
+
+| Concept | Table | Role |
+|---|---|---|
+| Question group | `question_groups` | Organizes reusable question identities inside a department or focused scope. Replaced the removed `module_domains`. |
+| Question identity | `questions` | Stable reusable question concept and stable code. Not the assessment payload by itself. |
+| Question version | `question_versions` | Immutable wording, response type, options, numeric config, numeric bands, methodology metadata, and content hash. |
+| Framework section | `framework_sections` | Ordered grouping inside one framework version. |
+| Framework indicator | `framework_indicators` | Measurement objective inside a section. Carries analytical-domain mappings. |
+| Framework placement | `framework_question_placements` | Binds one exact published question version into a section and indicator with order, required state, evidence expectation, weight, scoring contribution, criticality, and framework-specific display wording. |
+
+A question version may be placed in more than one framework, with different wording, weight, and analytical meaning per placement.
+
+Question versions move through `DRAFT`, `INTERNAL_REVIEW`, `APPROVED`, `PUBLISHED`, and then `SUPERSEDED` or `ARCHIVED`. Published, superseded, and archived versions are immutable and cannot be deleted. Supersession clones the content into a successor draft linked by `parent_version_id` and leaves the predecessor reproducible.
+
+### Framework Versions
+
+Each official department can have independently published immutable rows in `department_framework_versions`. Publication validates that every placed question version is published, that response types are supported, that open text is never scored, that scored numeric placements have frozen bands, that scored options carry weights, that every scored placement belongs to the scoring profile, and that analytical-domain mappings reference a published taxonomy version.
+
+A published framework version freezes:
 
 - department identity;
-- domains, sections, questions, options, numeric configuration, and scoring profile;
+- sections, indicators, and exact question-version placements;
+- rendered question text, options, numeric configuration, and numeric bands;
+- analytical-domain routing and the scoring profile;
 - evidence and critical-failure metadata;
 - provenance and licence metadata;
 - scoring algorithm version;
@@ -81,6 +119,10 @@ Each official department can have independently published immutable rows in `dep
 - content hash.
 
 Published department framework versions cannot be edited or deleted. Corrections require a new version.
+
+### Analytical Domains
+
+Analytical domains are governed through `domain_taxonomies`, `domain_taxonomy_versions`, and `domain_definitions`. Routing attaches at the indicator through `framework_indicator_domain_mappings`, and a placement may override it through `framework_question_placement_domain_overrides`. A placement may have only one primary domain. The platform must never reintroduce `module_domains`.
 
 ## Facility Profiles
 
@@ -133,7 +175,11 @@ The service:
 7. Stores one immutable `assessment_snapshots` row.
 8. Stores included/excluded rows in `assessment_module_scope`.
 
-The old template tables remain in the schema because other implemented infrastructure still references them, but active assessment creation uses catalogue releases.
+Duplicate question identities are rejected at composition because responses are keyed by question identity rather than by placement. See `DECISION_LOG.md` DEC-2026-07-19-011.
+
+The assessment snapshot is immutable once created, enforced by a model guard. Its payload, composition manifest, aggregation policy, collection config, and content hash cannot be rewritten. See `DECISION_LOG.md` DEC-2026-07-19-012.
+
+The legacy assessment template tables were removed with the legacy template architecture. Assessment creation resolves only through published catalogue releases.
 
 ## Runtime
 

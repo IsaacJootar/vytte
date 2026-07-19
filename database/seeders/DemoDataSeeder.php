@@ -28,16 +28,34 @@ class DemoDataSeeder extends Seeder
         $this->clinicRelease = AssessmentCatalogueRelease::where('release_code', 'DEMO_CLINIC_COMPREHENSIVE_V1')->firstOrFail();
         $this->clinicProfile = FacilityProfile::where('profile_code', 'CLINIC')->firstOrFail();
 
-        $this->seedProWorkspace();
-        $this->seedFreeWorkspace();
-        $this->seedAgencyWorkspace();
+        $this->seedProfessionalWorkspace();
+        $this->seedStarterWorkspace();
+        $this->seedOrganizationWorkspace();
     }
 
-    private function seedProWorkspace(): void
+    /**
+     * Demo assessment data depends on the demo accounts created by DemoAccountSeeder.
+     * A missing account is skipped rather than fatal, but it must never be silent:
+     * a rename on either side previously disabled the whole demo dataset unnoticed.
+     */
+    private function demoAccountIsAvailable(?Workspace $workspace, ?User $user, string $workspaceName): bool
     {
-        $workspace = Workspace::where('name', 'Pro Demo Workspace')->first();
-        $user = User::where('email', 'pro@vytte.test')->first();
-        if (! $workspace || ! $user) {
+        if ($workspace && $user) {
+            return true;
+        }
+
+        $this->command?->warn(
+            "DemoDataSeeder skipped \"{$workspaceName}\": run DemoAccountSeeder first, or the demo accounts have been renamed."
+        );
+
+        return false;
+    }
+
+    private function seedProfessionalWorkspace(): void
+    {
+        $workspace = Workspace::where('name', 'Professional Demo Workspace')->first();
+        $user = User::where('email', 'professional@vytte.test')->first();
+        if (! $this->demoAccountIsAvailable($workspace, $user, 'Professional Demo Workspace')) {
             return;
         }
 
@@ -61,11 +79,11 @@ class DemoDataSeeder extends Seeder
         $this->makeGovernedAssessment($workspace, $project3, $user, 'IN_PROGRESS', null, 'middle');
     }
 
-    private function seedFreeWorkspace(): void
+    private function seedStarterWorkspace(): void
     {
-        $workspace = Workspace::where('name', 'Free Demo Workspace')->first();
-        $user = User::where('email', 'free@vytte.test')->first();
-        if (! $workspace || ! $user) {
+        $workspace = Workspace::where('name', 'Starter Demo Workspace')->first();
+        $user = User::where('email', 'starter@vytte.test')->first();
+        if (! $this->demoAccountIsAvailable($workspace, $user, 'Starter Demo Workspace')) {
             return;
         }
 
@@ -76,11 +94,11 @@ class DemoDataSeeder extends Seeder
         $this->makeGovernedAssessment($workspace, $project, $user, 'COMPLETE', now()->subWeeks(2), 'low');
     }
 
-    private function seedAgencyWorkspace(): void
+    private function seedOrganizationWorkspace(): void
     {
-        $workspace = Workspace::where('name', 'Agency Demo Workspace')->first();
-        $user = User::where('email', 'agency@vytte.test')->first();
-        if (! $workspace || ! $user) {
+        $workspace = Workspace::where('name', 'Organization Demo Workspace')->first();
+        $user = User::where('email', 'organization@vytte.test')->first();
+        if (! $this->demoAccountIsAvailable($workspace, $user, 'Organization Demo Workspace')) {
             return;
         }
 
