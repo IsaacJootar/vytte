@@ -64,7 +64,10 @@ class BillingTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSeeInOrder(['Settings', 'Plans', 'Current plan'], false)
-            ->assertSee('aria-label="Go to dashboard"', false);
+            // The logo link is labelled for screen readers. The label now names the role's
+            // home rather than always saying "dashboard", so Platform Admin announces its
+            // own destination.
+            ->assertSee('aria-label="Go to ', false);
     }
 
     public function test_beta_plan_has_no_project_limit_when_configured_unlimited(): void
