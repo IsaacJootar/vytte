@@ -31,7 +31,7 @@
 
     <div class="mb-5 grid gap-4 md:grid-cols-4">
         @foreach ($dependencySummary as $label => $count)
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ str($label)->replace('_', ' ') }}</p>
                 <p class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ $count }}</p>
             </div>
@@ -39,7 +39,7 @@
     </div>
 
     @if ($release->status === 'DRAFT')
-        <form method="POST" action="{{ route('admin.catalogue-releases.update', $release) }}" class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <form method="POST" action="{{ route('admin.catalogue-releases.update', $release) }}" class="mb-5 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             @csrf
             @method('PUT')
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Release settings</h2>
@@ -67,7 +67,7 @@
     @endif
 
     <div class="grid gap-4 xl:grid-cols-3">
-        <div class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="xl:col-span-2 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Pinned framework versions</h2>
             <div class="mt-3 space-y-3">
                 @forelse ($release->departmentFrameworkVersions as $framework)
@@ -114,11 +114,11 @@
             @endif
         </div>
         <div class="space-y-4">
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Aggregation policy</h2>
                 <pre class="mt-3 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">{{ json_encode($release->aggregation_policy, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Collection config</h2>
                 <pre class="mt-3 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">{{ json_encode($release->collection_config, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
             </div>

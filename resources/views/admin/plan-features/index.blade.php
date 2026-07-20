@@ -13,7 +13,7 @@
 
         <div class="mb-5 grid gap-4 lg:grid-cols-3">
             @foreach ($plans as $plan)
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $plan->plan_name }}</h2>
                     <input name="plans[{{ $plan->plan_code }}][public_label]" value="{{ $plan->public_label }}" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
                     <textarea name="plans[{{ $plan->plan_code }}][description]" rows="2" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ $plan->description }}</textarea>
@@ -25,7 +25,7 @@
             @endforeach
         </div>
 
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="section-card">
             <div class="px-5 py-3 border-b border-slate-200 dark:border-slate-700 grid gap-4" style="grid-template-columns: 1fr repeat({{ $plans->count() }}, 120px);">
                 <span class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Feature</span>
                 @foreach ($plans as $plan)

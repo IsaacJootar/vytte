@@ -93,7 +93,7 @@
 
             {{-- Content --}}
             @foreach ($assessment->sections as $section)
-                <div class="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+                <div class="section-card">
                     <div class="border-b border-slate-100 p-5 dark:border-slate-700">
                         <h2 class="text-base font-bold text-slate-900 dark:text-white">{{ $section->section_name }}</h2>
                         @if ($section->purpose)
@@ -140,7 +140,7 @@
         </div>
 
         <div class="space-y-4">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Preview</h2>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">See exactly what the person answering will see.</p>
                 <a href="{{ route('admin.assessments.preview', $assessment) }}"
@@ -149,7 +149,7 @@
                 </a>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Summary</h2>
                 <dl class="mt-3 space-y-2 text-sm">
                     @foreach ([
@@ -175,7 +175,7 @@
 
             @if ($isEditable)
                 <form method="POST" action="{{ route('admin.assessments.provenance', $assessment) }}"
-                      class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+                      class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                     @csrf @method('PUT')
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Source and usage</h2>
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Required before publishing, so anyone reading a report can see where this came from.</p>
@@ -194,7 +194,7 @@
                 </form>
 
                 <form method="POST" action="{{ route('admin.assessments.publish', $assessment) }}"
-                      class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+                      class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                     @csrf
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Publish</h2>
 

@@ -35,7 +35,7 @@
     </div>
 
     {{-- Module meta --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="section-card p-5 mb-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div>
             <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-0.5">Status</p>
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
@@ -59,7 +59,7 @@
 
     {{-- Question groups & questions --}}
     @forelse ($module->questionGroups as $group)
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-4">
+        <div class="section-card mb-4">
 
             {{-- Question group header --}}
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between gap-3">
@@ -145,7 +145,7 @@
             @endif
         </div>
     @empty
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
+        <div class="section-card px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
             No question groups configured for this module.
         </div>
     @endforelse

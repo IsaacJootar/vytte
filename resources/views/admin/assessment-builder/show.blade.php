@@ -20,7 +20,7 @@
 
     <div class="grid gap-4 lg:grid-cols-3">
         <div class="space-y-4 lg:col-span-2">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                 <div class="flex items-start justify-between gap-3">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Basic Information</h2>
                     @if ($isEditable)
@@ -43,7 +43,7 @@
                 </dl>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Build Assessment</h2>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Add sections and the questions people will answer.
@@ -56,7 +56,7 @@
         </div>
 
         <div class="space-y-4">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Contents</h2>
                 <dl class="mt-3 space-y-2 text-sm">
                     <div class="flex items-center justify-between">
@@ -85,7 +85,7 @@
             @endunless
 
             @if ($isEditable)
-                <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+                <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Discard this draft</h2>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         Removes this draft and everything in it. Published assessments are never removed.
@@ -100,7 +100,7 @@
                 </div>
             @endif
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Advanced Tools</h2>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Full governance detail for this assessment, including version history and structure.

@@ -34,7 +34,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {{-- Members --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="section-card">
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Members ({{ $workspace->members->count() }})</h2>
             </div>
@@ -59,7 +59,7 @@
         </div>
 
         {{-- Projects --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="section-card">
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Projects ({{ $workspace->projects->count() }})</h2>
             </div>

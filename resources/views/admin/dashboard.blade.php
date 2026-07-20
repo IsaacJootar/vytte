@@ -18,12 +18,12 @@
                 @foreach ($attention as $item)
                     @php
                         $tone = match ($item['tone']) {
-                            'warning' => 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950',
-                            'success' => 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950',
-                            default => 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800',
+                            'warning' => 'rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950',
+                            'success' => 'rounded-2xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950',
+                            default => 'section-card',
                         };
                     @endphp
-                    <div class="flex flex-col rounded-2xl border p-5 {{ $tone }}">
+                    <div class="flex min-w-0 flex-col p-5 {{ $tone }}">
                         <p class="text-sm font-bold text-slate-900 dark:text-white">{{ $item['title'] }}</p>
                         <p class="mt-1 flex-1 text-sm text-slate-600 dark:text-slate-300">{{ $item['detail'] }}</p>
                         <a href="{{ $item['href'] }}" class="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-vytte-700 hover:underline dark:text-vytte-300">
@@ -46,7 +46,7 @@
     <div class="grid gap-4 lg:grid-cols-3">
         {{-- ===== YOUR WORK ===== --}}
         <section class="lg:col-span-2" aria-labelledby="work-heading">
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card">
                 <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-700">
                     <h2 id="work-heading" class="text-sm font-bold text-slate-900 dark:text-white">Your work</h2>
                     <a href="{{ route('admin.assessments.index') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-vytte-700 hover:underline dark:text-vytte-300">
@@ -89,7 +89,7 @@
 
         <div class="space-y-4">
             {{-- ===== PUBLISHED CATALOGUE ===== --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800" aria-labelledby="catalogue-heading">
+            <section class="section-card p-5 dark:border-slate-700 dark:bg-slate-800" aria-labelledby="catalogue-heading">
                 <h2 id="catalogue-heading" class="text-sm font-bold text-slate-900 dark:text-white">Published catalogue</h2>
                 <dl class="mt-3 space-y-2 text-sm">
                     @foreach ([
@@ -110,7 +110,7 @@
             </section>
 
             {{-- ===== PLATFORM HEALTH ===== --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800" aria-labelledby="health-heading">
+            <section class="section-card p-5 dark:border-slate-700 dark:bg-slate-800" aria-labelledby="health-heading">
                 <h2 id="health-heading" class="text-sm font-bold text-slate-900 dark:text-white">Platform health</h2>
                 <ul class="mt-3 space-y-2 text-sm">
                     @foreach ($health as $check)
@@ -126,7 +126,7 @@
             </section>
 
             {{-- ===== RECENT ACTIVITY ===== --}}
-            <section class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800" aria-labelledby="activity-heading">
+            <section class="section-card p-5 dark:border-slate-700 dark:bg-slate-800" aria-labelledby="activity-heading">
                 <h2 id="activity-heading" class="text-sm font-bold text-slate-900 dark:text-white">Recent activity</h2>
                 <ul class="mt-3 space-y-2.5">
                     @forelse ($recentActivity as $entry)

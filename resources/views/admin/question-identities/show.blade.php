@@ -6,7 +6,7 @@
     </div>
 
     <div class="grid gap-4 xl:grid-cols-3">
-        <div class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="xl:col-span-2 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Current identity</h2>
             <p class="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">{{ $question->question_text }}</p>
             <div class="mt-4 grid grid-cols-2 gap-3 text-xs text-slate-500 md:grid-cols-4">
@@ -16,7 +16,7 @@
                 <p><span class="font-bold text-slate-700 dark:text-slate-200">Alignment:</span> {{ $question->standard_alignment_status ?? '—' }}</p>
             </div>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Administrative actions</h2>
             <form method="POST" action="{{ route('admin.questions.toggle', $question) }}" class="mt-3">
                 @csrf
@@ -33,7 +33,7 @@
         </div>
     </div>
 
-    <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+    <div class="mt-4 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
         <h2 class="text-sm font-bold text-slate-900 dark:text-white">Versions</h2>
         <div class="mt-3 space-y-3">
             @foreach ($question->versions as $version)

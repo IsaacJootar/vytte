@@ -18,7 +18,7 @@
         <div class="space-y-5 max-w-2xl">
 
             {{-- Email --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="section-card p-5">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Email</h2>
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -37,7 +37,7 @@
             </div>
 
             {{-- Sharing --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="section-card p-5">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Shared Reports</h2>
                 <div class="flex items-center gap-4">
                     <div class="flex-1">
@@ -50,7 +50,7 @@
             </div>
 
             {{-- Payments --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="section-card p-5">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Payment Gateways</h2>
                 <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Enable or disable which gateways workspace owners can pay with.</p>
                 <div class="space-y-4">
@@ -82,7 +82,7 @@
             </div>
 
             {{-- Plan Limits --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="section-card p-5">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Plan Limits</h2>
                 <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Change limits without a code deploy. Agency plan is always unlimited.</p>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+    <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
         <h2 class="text-sm font-bold text-slate-900 dark:text-white">Questions in this group</h2>
         <div class="mt-3 space-y-3">
             @forelse ($group->questions as $question)

@@ -16,7 +16,7 @@
         </div>
     @endunless
 
-    <form method="POST" action="{{ route('admin.assessments.update', $assessment) }}" class="max-w-2xl space-y-5 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+    <form method="POST" action="{{ route('admin.assessments.update', $assessment) }}" class="max-w-2xl space-y-5 section-card p-6 dark:border-slate-700 dark:bg-slate-800">
         @csrf
         @method('PUT')
 

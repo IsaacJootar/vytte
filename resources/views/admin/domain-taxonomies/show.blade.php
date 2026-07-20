@@ -19,7 +19,7 @@
 
     <div class="grid gap-4">
         @foreach ($version->definitions as $definition)
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="section-card p-5">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400">{{ $definition->domain_code }}</p>

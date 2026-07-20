@@ -50,7 +50,7 @@
 
     <div class="mb-5 grid gap-4 md:grid-cols-4">
         @foreach ($dependencySummary as $label => $count)
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
                 <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ str($label)->replace('_', ' ') }}</p>
                 <p class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ $count }}</p>
             </div>
@@ -63,7 +63,7 @@
             @method('PUT')
 
             <div class="xl:col-span-2 space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Draft question configuration</h2>
                     <label class="mt-4 block text-xs font-bold text-slate-500">Question wording</label>
                     <textarea name="question_text" rows="4" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>{{ old('question_text', $version->question_text) }}</textarea>
@@ -98,7 +98,7 @@
                 </div>
 
                 @if ($isOptionType)
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                    <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                         <h2 class="text-sm font-bold text-slate-900 dark:text-white">Response options</h2>
                         <p class="mt-1 text-xs text-slate-500">Blank rows are ignored. Scores must be 0–100.</p>
                         <div class="mt-4 space-y-2">
@@ -115,7 +115,7 @@
                 @endif
 
                 @if ($isNumericType)
-                    <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                    <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                         <h2 class="text-sm font-bold text-slate-900 dark:text-white">Numeric validation and bands</h2>
                         <div class="mt-4 grid gap-3 md:grid-cols-4">
                             <input name="numeric_min" type="number" step="0.0001" value="{{ old('numeric_min', $numericConfig['min_value'] ?? '') }}" placeholder="Minimum" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
@@ -145,7 +145,7 @@
             </div>
 
             <aside class="space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Preview</h2>
                     <p class="mt-3 text-sm font-semibold text-slate-900 dark:text-white">{{ old('question_text', $version->question_text) }}</p>
                     @if ($isOptionType)
@@ -168,7 +168,7 @@
                         <textarea disabled rows="3" placeholder="Open-ended answer" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
                     @endif
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Governance rule</h2>
                     <p class="mt-2 text-sm text-slate-500">Only this draft can be edited. Once published, the exact options, numeric rules, and scoring bands are frozen into framework and assessment snapshots.</p>
                 </div>
@@ -176,7 +176,7 @@
         </form>
     @else
         <div class="grid gap-4 xl:grid-cols-3">
-            <div class="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <div class="xl:col-span-2 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Immutable content</h2>
                 <p class="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">{{ $version->question_text }}</p>
                 <dl class="mt-5 grid gap-3 text-xs text-slate-500 md:grid-cols-2">
@@ -187,11 +187,11 @@
                 </dl>
             </div>
             <div class="space-y-4">
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Methodology</h2>
                     <p class="mt-2 text-sm text-slate-500">{{ $version->methodology_notes ?? 'No methodology notes provided.' }}</p>
                 </div>
-                <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Source summary</h2>
                     <p class="mt-2 text-sm text-slate-500">{{ $version->source_summary ?? 'No source summary provided.' }}</p>
                 </div>
@@ -199,11 +199,11 @@
         </div>
 
         <div class="mt-4 grid gap-4 md:grid-cols-2">
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Options</h2>
                 <pre class="mt-3 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">{{ json_encode($version->options, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) ?: 'None' }}</pre>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Numeric scoring</h2>
                 <pre class="mt-3 overflow-auto rounded-xl bg-slate-950 p-4 text-xs text-slate-100">{{ json_encode(['config' => $version->numeric_config, 'bands' => $version->numeric_bands], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
             </div>

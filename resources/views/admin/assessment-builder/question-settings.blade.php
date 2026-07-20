@@ -42,7 +42,7 @@
 
     <form method="POST" action="{{ route('admin.assessments.questions.settings.save', [$assessment, $placement]) }}"
           x-data="{ scored: {{ old('is_scored', $placement->scoring_contribution) ? 'true' : 'false' }}, evidence: '{{ old('evidence_mode', $placement->evidence_expectation ? 'note' : 'none') }}' }"
-          class="max-w-2xl space-y-6 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+          class="max-w-2xl space-y-6 section-card p-6 dark:border-slate-700 dark:bg-slate-800">
         @csrf
         @method('PUT')
 

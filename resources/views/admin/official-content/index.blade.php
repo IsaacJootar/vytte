@@ -9,7 +9,7 @@
 
     <div class="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-6">
         @foreach ($stats as $label => $value)
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $label }}</p>
                 <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ $value }}</p>
             </div>
@@ -27,7 +27,7 @@
             ['title' => 'Scoring Policies', 'body' => 'View frozen scoring versions, aggregation policies, and multi-respondent settings.', 'route' => 'admin.scoring-policies.index'],
             ['title' => 'Analytical Domains', 'body' => 'Inspect platform governed taxonomies and mappings for dashboards and reports.', 'route' => 'admin.domain-taxonomies.index'],
         ] as $item)
-            <a href="{{ route($item['route']) }}" class="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-vytte-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <a href="{{ route($item['route']) }}" class="section-card p-5 transition hover:border-vytte-300 hover:shadow-sm dark:border-slate-700 dark:bg-slate-800">
                 <p class="text-sm font-bold text-slate-900 dark:text-white">{{ $item['title'] }} →</p>
                 <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ $item['body'] }}</p>
             </a>
@@ -35,7 +35,7 @@
     </div>
 
     <div class="mt-6 grid gap-4 xl:grid-cols-3">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Latest question versions</h2>
             <div class="mt-3 space-y-3">
                 @forelse ($latestQuestionVersions as $version)
@@ -49,7 +49,7 @@
                 @endforelse
             </div>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Latest frameworks</h2>
             <div class="mt-3 space-y-3">
                 @forelse ($latestFrameworks as $framework)
@@ -63,7 +63,7 @@
                 @endforelse
             </div>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Latest catalogue releases</h2>
             <div class="mt-3 space-y-3">
                 @forelse ($latestReleases as $release)

@@ -14,7 +14,7 @@
         </a>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <div class="section-card">
         @if ($modules->isEmpty())
             <div class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">No modules in the library yet.</div>
         @else

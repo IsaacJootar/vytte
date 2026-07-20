@@ -8,7 +8,7 @@
         <h1 class="text-xl font-bold text-slate-900 dark:text-white">Edit Module</h1>
     </div>
 
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 max-w-xl">
+    <div class="section-card p-5 max-w-xl">
         <form method="POST" action="{{ route('admin.modules.update', $module) }}">
             @csrf
             @method('PUT')

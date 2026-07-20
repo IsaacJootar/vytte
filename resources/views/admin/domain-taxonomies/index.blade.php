@@ -9,7 +9,7 @@
 
     <div class="space-y-4">
         @forelse ($taxonomies as $taxonomy)
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="section-card p-5">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400">{{ $taxonomy->taxonomy_code }}</p>
@@ -47,7 +47,7 @@
                 </div>
             </div>
         @empty
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 text-sm text-slate-500">
+            <div class="section-card p-6 text-sm text-slate-500">
                 No governed domain taxonomy has been created yet.
             </div>
         @endforelse

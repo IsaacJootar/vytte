@@ -12,7 +12,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {{-- Upload form --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+        <div class="section-card p-5">
             <form method="POST" action="{{ route('admin.modules.import.store') }}" enctype="multipart/form-data">
                 @csrf
 

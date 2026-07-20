@@ -3,7 +3,7 @@
         <a href="{{ route('admin.question-groups.show', $group) }}" class="text-xs font-semibold text-vytte-700 dark:text-vytte-300">← Back</a>
         <h1 class="mt-1 text-xl font-bold text-slate-900 dark:text-white">Edit Question Group</h1>
     </div>
-    <form method="POST" action="{{ route('admin.question-groups.update', $group) }}" class="max-w-2xl rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+    <form method="POST" action="{{ route('admin.question-groups.update', $group) }}" class="max-w-2xl section-card p-5 dark:border-slate-700 dark:bg-slate-800">
         @csrf
         @method('PUT')
         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Department / scope</label>

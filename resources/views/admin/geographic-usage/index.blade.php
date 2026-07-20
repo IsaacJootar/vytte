@@ -9,11 +9,11 @@
 
     {{-- Summary stats --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+        <div class="section-card p-4">
             <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-1">Assessments Mapped</p>
             <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ number_format($totalAssessments) }}</p>
         </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+        <div class="section-card p-4">
             <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-1">Countries</p>
             <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ $countryCount }}</p>
         </div>
@@ -24,12 +24,12 @@
     </div>
 
     @if (empty($countries))
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-6 py-12 text-center">
+        <div class="section-card px-6 py-12 text-center">
             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">No location data yet</p>
             <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Assessments will appear here once targets have a country set.</p>
         </div>
     @else
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="section-card">
 
             {{-- Table header --}}
             <div class="px-5 py-3 border-b border-slate-100 dark:border-slate-700 grid grid-cols-[1fr_auto_auto] gap-4 items-center">

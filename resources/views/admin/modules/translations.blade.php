@@ -29,7 +29,7 @@
     @endif
 
     @if ($questions->isEmpty())
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
+        <div class="section-card px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
             No active questions in this module.
         </div>
     @else
@@ -38,7 +38,7 @@
 
             <div class="space-y-4">
                 @foreach ($questions as $question)
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div class="section-card">
 
                         {{-- Question header --}}
                         <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50">

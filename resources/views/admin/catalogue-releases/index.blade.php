@@ -29,7 +29,7 @@
             'Replaced' => ['value' => $counts['replaced'], 'hint' => 'A newer version exists'],
             'Archived' => ['value' => $counts['archived'], 'hint' => 'Withdrawn from use'],
         ] as $label => $stat)
-            <div class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $label }}</p>
                 <p class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{{ $stat['value'] }}</p>
                 <p class="mt-0.5 text-xs text-slate-400">{{ $stat['hint'] }}</p>

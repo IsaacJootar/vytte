@@ -86,17 +86,35 @@
 .metric-none   { background: linear-gradient(135deg, #64748B 0%, #334155 100%); box-shadow: 0 4px 14px rgba(51,65,85,0.25); }
 
 /* ── Section cards ── */
+/* Cards are faintly tinted rather than plain white, so a surface reads as a surface
+   against the page behind it. The tint is a soft top-to-bottom wash in the brand's
+   direction; strong enough to see, light enough to keep text contrast.
+   `overflow-wrap` keeps long unbroken content, such as identifiers or URLs, inside the
+   card instead of pushing past its edge. */
 .section-card {
-    background: #ffffff;
-    border: 1px solid #E2E8F0;
+    background: linear-gradient(180deg, #FFFFFF 0%, #F6FAFD 100%);
+    border: 1px solid #DDE7F0;
     border-radius: 14px;
     overflow: hidden;
+    overflow-wrap: break-word;
     box-shadow: 0 1px 4px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
 }
 .dark .section-card {
-    background: #1E293B;
+    background: linear-gradient(180deg, #1E293B 0%, #1B2637 100%);
     border-color: #334155;
     box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+/* Nothing may spill out of a card: long words wrap, wide media shrinks,
+   and grid/flex children are allowed to shrink below their content width. */
+.section-card :where(p, h1, h2, h3, h4, dd, dt, li, td, th, a, span) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.section-card :where(img, svg, video, iframe, pre) {
+    max-width: 100%;
+}
+.section-card :where(pre) {
+    overflow-x: auto;
 }
 .section-card-header {
     padding: 0.875rem 1.25rem;

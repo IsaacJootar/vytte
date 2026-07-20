@@ -4,7 +4,7 @@
         <h1 class="mt-1 text-xl font-bold text-slate-900 dark:text-white">Create catalogue release</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">Create a draft entry point, then pin published framework versions into it.</p>
     </div>
-    <form method="POST" action="{{ route('admin.catalogue-releases.store') }}" class="max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+    <form method="POST" action="{{ route('admin.catalogue-releases.store') }}" class="max-w-3xl section-card p-5 dark:border-slate-700 dark:bg-slate-800">
         @csrf
         <div class="grid gap-4 md:grid-cols-2">
             <input name="release_code" placeholder="Release code" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>

@@ -37,7 +37,7 @@
 
     <div class="space-y-4">
         @forelse ($assessment->sections as $section)
-            <div class="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card">
                 <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 p-5 dark:border-slate-700">
                     <div class="min-w-0">
                         <h2 class="text-base font-bold text-slate-900 dark:text-white">{{ $section->section_name }}</h2>
@@ -155,7 +155,7 @@
                 @endif
             </div>
         @empty
-            <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-10 text-center dark:border-slate-700 dark:bg-slate-800">
                 <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No sections yet</p>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Sections group related questions, for example Leadership or Infection Control.</p>
             </div>
@@ -171,7 +171,7 @@
 
     @if ($isEditable)
         <form method="POST" action="{{ route('admin.assessments.sections.store', $assessment) }}"
-              class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+              class="mt-4 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             @csrf
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Add a section</h2>
             <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">

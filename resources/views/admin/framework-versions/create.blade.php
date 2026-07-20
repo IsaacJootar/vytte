@@ -5,7 +5,7 @@
         <p class="text-sm text-slate-500 dark:text-slate-400">Create a draft department or focused framework, then add sections, indicators, and placements.</p>
     </div>
 
-    <form method="POST" action="{{ route('admin.framework-versions.store') }}" class="max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+    <form method="POST" action="{{ route('admin.framework-versions.store') }}" class="max-w-3xl section-card p-5 dark:border-slate-700 dark:bg-slate-800">
         @csrf
         <div class="grid gap-4 md:grid-cols-2">
             <label class="text-sm font-semibold text-slate-700 dark:text-slate-200">Department / scope

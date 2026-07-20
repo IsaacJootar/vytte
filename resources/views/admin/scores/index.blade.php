@@ -89,7 +89,7 @@
         </div>
 
         <form method="POST" action="{{ route('admin.scores.store') }}"
-              class="h-fit space-y-5 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+              class="h-fit space-y-5 section-card p-6 dark:border-slate-700 dark:bg-slate-800">
             @csrf
             <div>
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Add a score</h2>

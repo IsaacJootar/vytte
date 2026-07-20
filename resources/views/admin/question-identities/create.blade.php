@@ -3,7 +3,7 @@
         <h1 class="text-xl font-bold text-slate-900 dark:text-white">Create Reusable Question</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">This creates the stable identity plus its first draft version.</p>
     </div>
-    <form method="POST" action="{{ route('admin.question-identities.store') }}" class="max-w-3xl rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+    <form method="POST" action="{{ route('admin.question-identities.store') }}" class="max-w-3xl section-card p-5 dark:border-slate-700 dark:bg-slate-800">
         @csrf
         <div class="grid gap-4 md:grid-cols-2">
             <div>

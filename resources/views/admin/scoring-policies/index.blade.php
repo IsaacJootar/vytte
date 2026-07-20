@@ -7,7 +7,7 @@
         Current scoring engine version: <span class="font-bold">{{ $currentScoringVersion }}</span>. Arithmetic mean is the only initially supported multi-respondent aggregation method.
     </div>
     <div class="grid gap-4 xl:grid-cols-2">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Framework scoring profiles</h2>
             <div class="mt-3 space-y-3">
                 @foreach ($frameworks as $framework)
@@ -21,7 +21,7 @@
                 @endforeach
             </div>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Catalogue aggregation policies</h2>
             <div class="mt-3 space-y-3">
                 @foreach ($catalogues as $release)

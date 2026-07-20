@@ -36,7 +36,7 @@
     </form>
 
     {{-- Table --}}
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-5">
+    <div class="section-card mb-5">
         @if ($workspaces->isEmpty())
             <div class="px-5 py-10 text-center text-sm text-slate-400 dark:text-slate-500">No workspaces found.</div>
         @else

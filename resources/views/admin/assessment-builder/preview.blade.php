@@ -20,7 +20,7 @@
 
     <div class="max-w-3xl space-y-5">
         @forelse ($sections as $section)
-            <div class="rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card">
                 <div class="border-b border-slate-100 p-5 dark:border-slate-700">
                     <h2 class="text-base font-bold text-slate-900 dark:text-white">{{ $section['section_name'] }}</h2>
                     @if (! empty($section['purpose']))
@@ -85,7 +85,7 @@
                 </ol>
             </div>
         @empty
-            <div class="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-800">
+            <div class="section-card p-10 text-center dark:border-slate-700 dark:bg-slate-800">
                 <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Nothing to preview yet</p>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Add sections and questions first.</p>
             </div>
