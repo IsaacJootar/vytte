@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
+use App\Notifications\AccountReactivatedNotification;
+use App\Notifications\AccountSuspendedNotification;
 use App\Services\AuditService;
 use App\Services\SessionRevocationService;
 use Illuminate\Contracts\View\View;
@@ -122,6 +124,9 @@ class PlatformUserController extends Controller
         // keep working until it expired.
         $this->sessions->forUser($user);
 
+        // Tell them, rather than leaving them to discover it by failing to sign in.
+        $user->notify(new AccountSuspendedNotification($user->suspension_reason));
+
         $audit->record('platform.user.suspended', $user, ['suspended_at' => null], [
             'suspended_at' => $user->suspended_at?->toIso8601String(),
             'suspension_reason' => $user->suspension_reason,
@@ -142,6 +147,7 @@ class PlatformUserController extends Controller
         ];
 
         $user->update(['suspended_at' => null, 'suspension_reason' => null]);
+        $user->notify(new AccountReactivatedNotification);
         $audit->record('platform.user.reactivated', $user, $old, ['suspended_at' => null]);
 
         return back()->with('success', $user->name.' can sign in again.');

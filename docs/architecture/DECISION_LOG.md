@@ -118,3 +118,65 @@
 - **Rationale:** The snapshot is the reproducibility authority. Silent mutation would falsify every downstream hash with no record of the original content and no way to detect or recover it.
 - **Scope boundary:** Deletion is not guarded. The only real deletion path is the foreign-key cascade from `assessments`, which does not fire Eloquent events, and a missing snapshot already fails loudly in `ReportSnapshotService`. A delete guard remains a proposed follow-up.
 - **Test contract:** Fixtures requiring different frozen content replace the snapshot instead of mutating it.
+
+### DEC-2026-07-19-016: Platform Admin Is Not A Customer Account
+
+- **Status:** Accepted and implemented.
+- **Context:** DEC-009 already stated that a platform administrator governs the platform rather than using it. The implementation did not follow: signing in landed a platform admin on the workspace dashboard, in front of projects and assessments that were not theirs to create, and the way across to platform work was a small link in a footer card.
+- **Decision:** A platform administrator signing in lands on `/admin`. The workspace footer "access level" card is removed. Where a platform admin does hold a workspace, the crossing is a first-class sidebar group rather than a footer link.
+- **Rationale:** The role boundary is meaningless if the product opens onto the wrong side of it.
+- **Boundary:** Platform role and workspace role remain separate columns. This changes where a person lands, not what they may do.
+
+### DEC-2026-07-19-017: One Application Shell For Every Role
+
+- **Status:** Accepted and implemented.
+- **Decision:** All roles render through `layouts/app.blade.php`. Only `App\Support\RoleNavigation` differs between them. `AppLayout` and `AdminLayout` are the same view with a different navigation array.
+- **Rationale:** Platform Admin had drifted from the workspace design — notably it was not mobile-first while every other role was. Two shells guarantee that drift returns. One shell means spacing, mobile behaviour, theme handling and focus states are defined once and cannot diverge.
+- **Consequence:** A change to navigation structure is a change to one configuration file, not to several templates.
+
+### DEC-2026-07-19-018: Screens Are Named For What They Answer
+
+- **Status:** Accepted and implemented.
+- **Context:** Several Platform Admin screens were named after the tables behind them, and two different screens were both called "assessments".
+- **Decision:** Screens carry the name of the question an administrator is asking. `Platform Users and Roles` became `People`; `Report Share-Link Control` became `Shared Reports`; `Audit Logs` became `Activity`; `Assessment Oversight` became `Assessments in Use`. The primary `Assessments` screen keeps its name and holds the templates Vytte authors; `Assessments in Use` holds the filled-in ones customers are running.
+- **Rationale:** Two links both reading "assessment" gave the reader no way to tell a blank template from a live one.
+- **Boundary:** Route names, table names and stored values are unchanged. This is presentation only.
+
+### DEC-2026-07-19-019: Storage Vocabulary Never Reaches The Reader
+
+- **Status:** Accepted and enforced by test.
+- **Context:** The oversight screen printed raw identifiers, `IN_PROGRESS`, `COMPREHENSIVE`, and an "Immutable artifacts" column reading `Snapshot: Yes · Report: No`.
+- **Decision:** Governance and storage vocabulary is never displayed as text. Codes may still appear as form control values where a query needs them to filter.
+- **Test contract:** `assertDontSeeText` for the codes, not `assertDontSee`, because a `value=` attribute is a form wire rather than something a person reads.
+
+### DEC-2026-07-19-020: A Control That Records A Decision Must Enforce It
+
+- **Status:** Accepted and implemented.
+- **Context:** Platform Admin could set a workspace to `SUSPENDED`. Nothing anywhere acted on that value, so members of a suspended workspace kept full access. The control wrote an audit record and changed nothing.
+- **Decision:** `EnsureWorkspaceIsActive` blocks use of a suspended or closed workspace. `LoginRequest` blocks a suspended account from signing in, checked after credentials pass so a wrong password never reveals that an account is suspended. `SessionRevocationService` ends sessions that already exist, because blocking future sign-in would otherwise leave someone working until their session happened to expire.
+- **Rationale:** A safeguard that reads as protection while providing none is worse than no safeguard.
+- **Boundary:** Platform administrators are exempt from the workspace block, otherwise suspension would hide the workspace they need to review. Nothing is deleted in any of these states.
+- **Known limit:** Session revocation requires server-side sessions. `SessionRevocationService::canRevoke()` returns false on any other driver and the service reports doing nothing rather than pretending. Changing `SESSION_DRIVER` away from `database` silently removes this protection.
+
+### DEC-2026-07-19-021: Suspension Is Additive And Carries Its Reason
+
+- **Status:** Accepted and implemented.
+- **Decision:** Suspending a person sets `users.suspended_at` and a required `users.suspension_reason`. No row is removed; memberships, authored content and history are untouched. The reason is shown to the person at sign-in and in their notification.
+- **Rationale:** An account locked out with no stated reason is unexplainable to the person affected and to whoever reviews the decision later.
+- **Guards:** An administrator cannot suspend their own account, and the last active platform administrator cannot be suspended or demoted, otherwise the platform locks itself out of its own governance controls.
+
+### DEC-2026-07-19-022: Shared Links Are Durable, Not Flashed
+
+- **Status:** Accepted and implemented.
+- **Context:** Workspace invitations, respondent links and report share links were each flashed once after creation and lost on the next page load. Respondent links were never listed anywhere, so an administrator creating several could only ever see the last one, once.
+- **Decision:** Every link of these three kinds is listed persistently on its own screen through `x-share-link`, which shows the URL and offers copy and WhatsApp.
+- **Rationale:** Email is switched off for beta. A link that cannot be retrieved is an invitation that cannot be delivered, which made the feature unusable rather than merely rough.
+- **WhatsApp:** A `wa.me` link with the message encoded server-side. Deliberately not the Business API: no account, no approval, no per-message cost, and it works on phone and desktop. Revisit only if Vytte needs delivery receipts or templated outbound messaging.
+- **Revocation:** Issuing a new link for an invitation replaces the token rather than extending the expiry, so a link shared with the wrong person stops working.
+
+### DEC-2026-07-19-023: Notifications Are In-App First, Email Behind A Switch
+
+- **Status:** Accepted and implemented.
+- **Decision:** Every notification returns `['database']` from `via()` and appends `'mail'` only when the platform setting `email.notifications_enabled` is true. Account suspension and reactivation follow the same rule as the existing notifications.
+- **Rationale:** In-app notification does not depend on a third-party service being configured, so it keeps working during beta while email is off.
+- **Honesty requirement:** The toggle can be switched on while no mail service can actually send. Platform Health reports a configured Resend transport with no `RESEND_API_KEY` as a warning, and the Settings screen states this before the switch is flipped rather than allowing the belief that it worked.

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PlatformSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -142,10 +143,11 @@ class PlatformHealthService
     private function email(): array
     {
         $mailer = config('mail.default');
+        $switchedOn = (bool) PlatformSetting::get('email.notifications_enabled', false);
 
         if ($mailer === 'log') {
             return $this->check('email', 'Email delivery', 'warn', 'Not actually sending',
-                'Email is being written to the log file instead of delivered. Customers are not receiving anything.',
+                'Email is being written to the log file instead of delivered. Nobody is receiving anything.',
                 'Set a real mail service before going live.');
         }
 
@@ -154,8 +156,36 @@ class PlatformHealthService
                 'Email sending is switched off in this environment.', null);
         }
 
-        return $this->check('email', 'Email delivery', 'ok', 'Configured',
-            'Email is being sent through '.$mailer.'.', null);
+        // A configured transport with no credentials fails at send time, long after
+        // anyone would think to look. Say so here instead.
+        if ($mailer === 'resend' && blank(config('services.resend.key'))) {
+            return $this->check('email', 'Email delivery', 'warn', 'Missing its key',
+                'Vytte is set up to send through Resend but has no API key, so every email will fail.',
+                'Add RESEND_API_KEY to the environment.');
+        }
+
+        if (! $switchedOn) {
+            return $this->check('email', 'Email delivery', 'ok', 'Ready, switched off',
+                'Email is configured and would work, but notification emails are switched off in Settings. '
+                .'People still see their notifications inside Vytte.', null);
+        }
+
+        return $this->check('email', 'Email delivery', 'ok', 'Sending',
+            'Notification emails are switched on and going out through '.$mailer.'.', null);
+    }
+
+    /**
+     * Whether an email switched on right now would actually reach anybody.
+     */
+    public function canActuallySendEmail(): bool
+    {
+        $mailer = config('mail.default');
+
+        if (in_array($mailer, ['log', 'array', 'null'], true)) {
+            return false;
+        }
+
+        return ! ($mailer === 'resend' && blank(config('services.resend.key')));
     }
 
     /**

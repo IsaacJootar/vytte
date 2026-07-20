@@ -3,12 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\AuditLog;
+use App\Models\PlatformSetting;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Notifications\AccountReactivatedNotification;
+use App\Notifications\AccountSuspendedNotification;
 use App\Services\PlatformHealthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 /**
@@ -358,6 +362,94 @@ class PlatformOperationsTest extends TestCase
             ->patch(route('admin.workspaces.status', $workspace), ['status' => 'ACTIVE']);
 
         $this->assertDatabaseHas('sessions', ['id' => 'kept-session']);
+    }
+
+    // ─── Telling people, with email behind a switch ──────────────
+
+    public function test_a_suspended_person_is_notified_in_app_even_when_email_is_off(): void
+    {
+        PlatformSetting::set('email.notifications_enabled', false, 'boolean');
+        Notification::fake();
+
+        $person = User::factory()->create();
+
+        $this->actingAs($this->makeAdmin())
+            ->patch(route('admin.platform-users.suspend', $person), [
+                'suspension_reason' => 'Payment dispute under review',
+            ]);
+
+        Notification::assertSentTo($person, AccountSuspendedNotification::class,
+            function (AccountSuspendedNotification $notification) use ($person) {
+                // In-app only while email is switched off. The person still finds out.
+                return $notification->via($person) === ['database']
+                    && $notification->reason === 'Payment dispute under review';
+            });
+    }
+
+    public function test_email_is_added_only_when_the_platform_switch_is_on(): void
+    {
+        PlatformSetting::set('email.notifications_enabled', true, 'boolean');
+        Notification::fake();
+
+        $person = User::factory()->create();
+
+        $this->actingAs($this->makeAdmin())
+            ->patch(route('admin.platform-users.suspend', $person), [
+                'suspension_reason' => 'Payment dispute under review',
+            ]);
+
+        Notification::assertSentTo($person, AccountSuspendedNotification::class,
+            fn (AccountSuspendedNotification $notification) => $notification->via($person) === ['database', 'mail']);
+    }
+
+    public function test_the_suspension_reason_reaches_the_person(): void
+    {
+        $person = User::factory()->create(['name' => 'Amina Bello']);
+        $notification = new AccountSuspendedNotification('Payment dispute under review');
+
+        $mail = $notification->toMail($person);
+
+        $this->assertSame('Your Vytte account has been suspended', $mail->subject);
+        $this->assertContains('Reason given: Payment dispute under review', $mail->introLines);
+    }
+
+    public function test_a_reactivated_person_is_told_their_access_is_back(): void
+    {
+        Notification::fake();
+
+        $person = User::factory()->create([
+            'suspended_at' => now(),
+            'suspension_reason' => 'Temporary hold',
+        ]);
+
+        $this->actingAs($this->makeAdmin())
+            ->patch(route('admin.platform-users.reactivate', $person));
+
+        Notification::assertSentTo($person, AccountReactivatedNotification::class);
+    }
+
+    public function test_platform_health_warns_when_email_is_configured_without_a_key(): void
+    {
+        config(['mail.default' => 'resend', 'services.resend.key' => null]);
+
+        $email = collect(app(PlatformHealthService::class)->checks())->firstWhere('key', 'email');
+
+        // A transport with no credentials fails at send time, long after anyone looks.
+        $this->assertSame('warn', $email['status']);
+        $this->assertStringContainsString('no API key', $email['detail']);
+        $this->assertFalse(app(PlatformHealthService::class)->canActuallySendEmail());
+    }
+
+    public function test_platform_health_reports_email_as_ready_but_switched_off(): void
+    {
+        config(['mail.default' => 'resend', 'services.resend.key' => 'test-key']);
+        PlatformSetting::set('email.notifications_enabled', false, 'boolean');
+
+        $email = collect(app(PlatformHealthService::class)->checks())->firstWhere('key', 'email');
+
+        $this->assertSame('ok', $email['status']);
+        $this->assertStringContainsString('switched off', $email['headline']);
+        $this->assertTrue(app(PlatformHealthService::class)->canActuallySendEmail());
     }
 
     // ─── Plans ───────────────────────────────────────────────────

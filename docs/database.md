@@ -186,6 +186,36 @@ Standard Laravel infrastructure, listed for completeness: `migrations`, `session
 - `payload`
 - `collection_config`
 
+### `users`
+
+Columns relevant to platform governance:
+
+- `user_id`
+- `name`
+- `email`
+- `account_type`
+- `platform_role` — `PLATFORM_ADMIN` or null. Separate from workspace role.
+- `suspended_at` — null when active. Set, sign-in is blocked and existing sessions are ended.
+- `suspension_reason` — required whenever `suspended_at` is set. Shown to the person at sign-in.
+- `active_workspace_id`
+- `theme`, `locale`
+
+Suspension is additive: no row is removed and no membership, authored content, or history is affected. See DEC-2026-07-19-021.
+
+### `workspaces`
+
+- `workspace_id`
+- `name`
+- `workspace_type`
+- `slug`
+- `plan`
+- `status` — `ACTIVE`, `SUSPENDED` (on hold), or `ARCHIVED` (closed). Enforced by `EnsureWorkspaceIsActive`, not merely recorded.
+- `settings`
+
+### `sessions`
+
+Server-side session storage. Required for `SessionRevocationService` to end sessions when access is removed; the service is inert on any other session driver.
+
 ## Seed Data
 
 Default seeding creates:

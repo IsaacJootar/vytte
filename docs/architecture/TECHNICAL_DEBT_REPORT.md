@@ -8,12 +8,11 @@ The codebase is organized and the core architecture is coherent, but production 
 
 | Severity | Debt | Recommendation |
 | --- | --- | --- |
-| CRITICAL | Official framework editing is not fully self-service. | Build Platform Admin editor UI for sections, indicators, placements, ordering, weighting, and validation. |
 | CRITICAL | Paid-plan content entitlement is missing. | Add plan/module/template/catalogue binding tables, UI, and enforcement. |
 | HIGH | Catalogue composition is not fully self-service. | Add release composition UI and tests. |
 | HIGH | Workspace custom assessments are backend-supported but not fully user-facing. | Complete UI/lifecycle or remove production claim. |
 | HIGH | Inactive/reserved tables remain in schema. | Remove or justify non-authoritative tables before production. |
-| HIGH | Production operations are not codified. | Add backup, monitoring, queue, mail, logging, incident, and release runbooks. |
+| MEDIUM | Backup and incident runbooks are still absent. Monitoring, queue and mail are now visible in Platform Health, but there is no documented recovery procedure. | Write backup, restore and incident runbooks before production. |
 | MEDIUM | Payment architecture is partial. | Add billing ledger, idempotency, subscriptions, invoices, and reconciliation before paid production. |
 | MEDIUM | Public route throttles need explicit policies. | Add route-specific throttles. |
 | MEDIUM | Evidence remains text-only. | Keep as text support or implement secure file lifecycle. |
@@ -29,6 +28,16 @@ The codebase is organized and the core architecture is coherent, but production 
 | `SUPPORTED_ALGORITHM_VERSIONS` advertised a scoring version with no implementation. | Removed. |
 | The demo dataset silently seeded nothing after the plan rename, so a fresh install had no demo assessments, scores, or reports. | Seeder identifiers aligned; a missing demo account now warns instead of failing silently. |
 | The full sequential test suite had never been run. | It runs and passes. Earlier green claims came from batched runs. |
+| Official framework editing was not self-service. | The Assessment Builder (B1–B6) covers sections, questions, scoring, evidence, review, publication and versioning through governed flows. Advanced Tools retains the raw governance views. |
+| Workspace `SUSPENDED` was recorded but never enforced. Members of a suspended workspace kept full access. | `EnsureWorkspaceIsActive` blocks use; `SessionRevocationService` ends existing sessions. See DEC-2026-07-19-020. |
+| Platform Admin landed in a workspace on sign-in, contradicting DEC-009. | Sign-in routes to `/admin`; the workspace footer access-level card is removed. See DEC-2026-07-19-016. |
+| Platform Admin had drifted from the workspace design and was not mobile-first. | One shell for every role; only the navigation array differs. See DEC-2026-07-19-017. |
+| Flash messages were hand-rendered per page, so pages that omitted them reported nothing after an action. | Rendered once in the layout; 25 duplicated per-page banners removed. `limit_error`, `info` and `warning` were being flashed but never displayed anywhere; they now surface. |
+| Form inputs had no visible borders because `@tailwindcss/forms` is not installed and preflight sets `border-width: 0`. | Corrected at the base layer. |
+| Invitations, respondent links and report share links were flashed once and lost on the next page load. Respondent links were never listed at all. | All three are listed persistently with copy and WhatsApp. See DEC-2026-07-19-022. |
+| A suspended person learned of it only by failing to sign in. | Notified in-app immediately, and by email when platform email is enabled. See DEC-2026-07-19-023. |
+| The plans screen set limits but showed no usage against them. | Per-plan allocation, limits in force, and a panel flagging any workspace at or past 80% of a limit. |
+| The assessment oversight screen exposed raw identifiers, lifecycle codes and snapshot presence. | Rebuilt in plain language and pinned by test. See DEC-2026-07-19-019. |
 
 ## Outstanding, added since the original report
 
@@ -39,6 +48,10 @@ The codebase is organized and the core architecture is coherent, but production 
 | MEDIUM | Nothing prevents re-scoring a `COMPLETE` assessment, though the scoring contract states results are never silently recalculated. | Enforce the contract or amend it. |
 | MEDIUM | Multi-respondent aggregation copies domain metadata, including `questions_answered`, from the first contributing session. | Fix before any content enables multi-respondent collection. |
 | LOW | Assessment snapshot deletion is not guarded, unlike report snapshots. | Proposed follow-up; requires updating shared test fixtures. |
+| MEDIUM | Session revocation depends on `SESSION_DRIVER=database`. Changing the driver silently removes the protection that suspension takes effect immediately. | The service reports doing nothing rather than pretending, and the limit is documented in `ADMIN_SECURITY_AND_GOVERNANCE.md`. Revisit if the driver ever changes. |
+| MEDIUM | Workspace invitations can be created, cancelled and re-issued, but there is no way to change an invited person's role without cancelling and re-inviting. | Add role editing on a pending invite, or accept as a beta limitation. |
+| LOW | `.env.example` ships `MAIL_MAILER=log`, so a fresh deployment writes emails to a log file rather than sending them. Platform Health flags it. | Set real values at deploy time. |
+| LOW | The public assessment runner has no evidence-capture support, so a published assessment requiring evidence cannot collect it through the public path. | Pinned by a test asserting builder publications are single-respondent. Resolve before evidence-bearing content is published publicly. |
 
 ## Codebase scan notes
 

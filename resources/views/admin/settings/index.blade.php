@@ -18,8 +18,16 @@
                     <div>
                         <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Email Notifications</p>
                         <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5 max-w-sm">
-                            When ON, emails are sent for assessment completions and member invitations. Default is OFF for development.
+                            When ON, Vytte also emails people about assessment completions, new team members,
+                            and account suspensions. When OFF, those notifications still appear inside Vytte —
+                            only the emails stop. Default is OFF.
                         </p>
+                        @unless ($mailReady)
+                            <p class="mt-2 max-w-sm rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                                Turning this on will not send anything yet — Vytte has no working email service
+                                configured. See Platform Health for what is missing.
+                            </p>
+                        @endunless
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
                         <input type="checkbox" name="email_notifications_enabled" value="1"

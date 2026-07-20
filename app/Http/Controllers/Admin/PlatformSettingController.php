@@ -4,16 +4,20 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PlatformSetting;
+use App\Services\PlatformHealthService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class PlatformSettingController extends Controller
 {
-    public function index(): View
+    public function index(PlatformHealthService $health): View
     {
         return view('admin.settings.index', [
             'emailEnabled' => PlatformSetting::get('email.notifications_enabled', false),
+            // Switching the toggle on while no mail service is configured would send
+            // nothing and say nothing. The screen states that rather than implying it worked.
+            'mailReady' => $health->canActuallySendEmail(),
             'linkExpiryDays' => (int) PlatformSetting::get('sharing.link_expiry_days', 30),
             'paystackEnabled' => PlatformSetting::get('payment.paystack_enabled', true),
             'flutterwaveEnabled' => PlatformSetting::get('payment.flutterwave_enabled', false),

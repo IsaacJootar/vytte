@@ -23,3 +23,16 @@
 | Plan-feature definitions | Manage | No |
 | Workspace settings | Oversight | Manage within workspace |
 | Audit logs | Inspect | Limited through workspace activity where exposed |
+| Workspace status (active / on hold / closed) | Manage | No |
+| Account suspension and reactivation | Manage | No |
+| Platform health and operational monitoring | View | No |
+| Plan allocation and limit usage | View/manage | No |
+| Workspace invitations | View through People | Manage own workspace |
+
+## Guards on platform access
+
+- An administrator cannot suspend their own account.
+- The last active platform administrator cannot be suspended or demoted. Both guards exist so the platform cannot lock itself out of its own governance controls.
+- Platform administrators are exempt from `EnsureWorkspaceIsActive`, so a suspended workspace remains reviewable.
+
+See DEC-2026-07-19-021.
