@@ -65,8 +65,14 @@ The codebase is organized and the core architecture is coherent, but production 
 
 | Severity | Debt | Recommendation |
 | --- | --- | --- |
-| MEDIUM | The methodology catalogue is curated from established international practice but has not been reviewed against source documents by a health methodologist. It is broad and defensible, not authoritative. | Review before it becomes the official master seed. |
+| MEDIUM | The methodology catalogue is curated from established international practice but has not been reviewed against source documents by a health methodologist. It is broad and defensible, not authoritative. Now covers 36 health domains, 147 areas, 29 objectives, 20 lenses, 21 insight categories and 40 templates. | Review before it becomes the official master seed. |
 | MEDIUM | Methodology administration is browse, search and publish only. There is no per-entry create or edit. | Acceptable while the catalogue is seeded as a set. Build authoring if it starts being maintained entry by entry. |
 | MEDIUM | The Trend and Benchmarking analysis lenses have preconditions — two completed assessments, and a peer set — that nothing yet enforces. A lens with unmet preconditions must say so rather than render empty. | Enforce when lens-driven reporting is built. |
-| LOW | `GENERAL_HEALTH_SYSTEMS` carries 14 health areas because it absorbs clinical services with no dedicated health domain, including Malaria and NCDs. | Promote either to a health domain if it becomes a frequent focus. A methodology version change, not a schema change. |
 | LOW | Objective recommendations reference health domains, measurement domains and evidence types by code without validation at publication, because those entities have their own lifecycle. A renamed measurement domain would leave a dangling recommendation. | Add a cross-lifecycle check if those taxonomies start changing. |
+
+## Added while resolving the P4 review findings
+
+| Severity | Debt | Recommendation |
+| --- | --- | --- |
+| MEDIUM | `FIN` (Financing and Resource Management) exists in the `domains` master list but is inert: no published domain taxonomy version contains it, so nothing maps to or scores it. Platform Admin has no publish control for domain taxonomies, only browse, so a draft version could not be published through the UI. | Add a taxonomy version publish action, then create and publish a version containing all eight measurement domains. Until then the WHO building blocks remain incomplete in scoring. |
+| LOW | Objective presets reference health domains and templates by code with no foreign key, matching `objective_recommendations`. A renamed domain code would leave a preset pointing at nothing. | Publication validation checks lens, template and area references but not health domain codes, since those live outside the methodology version. Add a cross-lifecycle check if domain codes start changing. |

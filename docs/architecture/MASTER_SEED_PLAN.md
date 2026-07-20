@@ -16,13 +16,13 @@ The methodology depends on reference taxonomy, and content depends on methodolog
 
 | Entity | Count |
 | --- | --- |
-| Assessment objectives | 30 |
-| Health areas | 61, across 12 existing health domains |
-| Analysis lenses | 17 |
-| Insight categories | 15 |
-| Assessment templates | 22 — 6 enterprise, 16 focused |
-| Objective recommendations | 74 |
-| Objective presets | 15 |
+| Assessment objectives | 29 |
+| Health areas | 147, across 36 health domains |
+| Analysis lenses | 20 |
+| Insight categories | 21 |
+| Assessment templates | 40 |
+| Objective recommendations | ~110 |
+| Objective presets | 40 |
 
 ## Properties
 
@@ -41,7 +41,7 @@ Deliberately generic where national standards differ. Vytte supplies structure a
 
 - This catalogue is **curated from established practice, not verified against source documents in this phase.** Before it becomes the official master seed, a health methodologist should review it. It is broad and defensible, not authoritative.
 - Coverage is aimed at the common beta cases. The claim is that most beta users can start from an existing objective, not that the catalogue is exhaustive.
-- Health areas are uneven by design: `GENERAL_HEALTH_SYSTEMS` carries 14 because it absorbs clinical services that have no dedicated health domain yet. Malaria and NCDs currently sit there. If either becomes a frequent focus, promoting it to a health domain is a methodology version change, not a schema change.
+- Health areas are uneven by design, because subjects genuinely differ in how much detail they need. `GENERAL_HEALTH_SYSTEMS` is deliberately small at four areas; everything routinely assessed on its own has been promoted to a health domain. A test fails if it grows past six.
 
 ## After approval
 
@@ -62,3 +62,45 @@ These should be resolved **before** the master seed, because after it the offici
 | — | Consider Health Financing as an eighth measurement domain. It is a WHO building block with no dimension for findings to roll up into. Touches `domain_scores`; a genuine architectural change rather than catalogue content. | Decision needed |
 | D2 | No link between a baseline assessment and its endline. Trend infers sequence by date, which is right for monitoring and wrong for a study. | Non-blocking |
 | D3 | No agreed-actions entity for the Progress Tracking lens. Supportive supervision has nothing to track progress against. | Non-blocking |
+
+## Review findings — resolved 2026-07-20
+
+All blocking findings from the architecture review are closed.
+
+| Finding | Resolution |
+| --- | --- |
+| D1 — Malaria, NCDs and NTDs were not health domains | Health domains expanded from 12 to 36. Malaria, Non-Communicable Diseases, Neglected Tropical Diseases, Laboratory, Pharmacy, Emergency and Critical Care, Surgical Care, Blood Services, Diagnostic Imaging, Rehabilitation, Palliative Care, Oral Health, Eye Health, Sexual and Reproductive Health, Adolescent Health, Older People, Disability and Inclusion, Community Health, Health Information Systems, Health Promotion, Environmental Health, Occupational Health, Antimicrobial Resistance and Outbreak Response are all first class. The `MALARIA_BASELINE` preset now points at Malaria rather than General Health Systems. |
+| General Health Systems absorbing subjects | Reduced from 15 areas to 4. A test fails if it grows past 6, because a swelling catch-all is the signal that something inside deserves to be a domain. |
+| Data Gaps insight category | Added, with Insufficient Evidence, No Change, Deterioration, Systemic Issues and Good Practice to Share. Data Gaps and Insufficient Evidence are marked diagnostic. |
+| Data Quality Assessment objective | Added, with Training and Capacity Needs, Results-Based Financing Verification, Outbreak Response Review, Service Expansion Readiness, Efficiency and Value, Sustainability Review and Patient Satisfaction. |
+| Analysis lenses | Efficiency and Value, Sustainability and Data Confidence added. |
+
+### Also found and fixed during the expansion
+
+Promoting subjects to health domains exposed a collision the original catalogue already
+had: nine objectives named a subject or a measurement dimension rather than a purpose —
+Health Workforce, Leadership and Governance, Health Financing, Health Information,
+Infrastructure, Supply Chain, Community Engagement, Digital Health and Health Promotion.
+Health Promotion had become an exact code collision with the new health domain.
+
+These were removed from the objective catalogue and replaced with objective presets, so
+a user still starts from the familiar name while the model behind it stays a purpose
+narrowed by a subject or dimension. Two tests now enforce this in both directions, one
+checking against the whole health domain table so a future promotion cannot silently
+reintroduce a collision.
+
+The seeder also gained pruning. It previously could only add, so an entry removed from
+the catalogue lingered in the database and was still shown to administrators. It now
+reconciles, and a test proves a dropped entry is removed.
+
+### Financing measurement domain — partially actioned
+
+`FIN` (Financing and Resource Management) is added to the master `domains` list,
+completing the WHO building blocks. It is currently **inert**: nothing maps to it and
+nothing scores it, because a measurement domain only takes effect once a published
+domain taxonomy version contains it.
+
+Adopting it needs a new taxonomy version to be created and published, and Platform Admin
+has no publish control for domain taxonomies — only browse. Rather than leave a draft
+version nobody can publish, the domain is staged and the gap is recorded as debt.
+Nothing currently scored changes.

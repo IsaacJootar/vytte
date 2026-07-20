@@ -220,3 +220,35 @@
 - **Rationale:** A recommendation that cannot cite its finding is generic advice. In a health assessment report that is worse than none, because it borrows the authority of the assessment without its evidence.
 - **Consequence:** The dormant `recommendations`, `recommendation_rules` and `root_causes` tables were retired. Their single-threshold shape could not express objective, lens, evidence or history as inputs, and extending them would have carried that assumption into the new framework. All three were empty and unreferenced.
 - **Deliberately undecided:** Whether generation is rule-based or AI-assisted, where generated recommendations are stored, and whether they are frozen into the report snapshot. Recorded as open rather than guessed.
+
+### DEC-2026-07-20-029: A Subject Earns A Health Domain By Being Assessed On Its Own
+
+- **Status:** Accepted and implemented.
+- **Context:** The first catalogue had 12 health domains and pushed everything else into areas under `GENERAL_HEALTH_SYSTEMS`, which grew to 15. Malaria — the highest disease burden in the primary market — was an area, so the seeded Malaria preset mis-filed every malaria assessment.
+- **Decision:** A subject becomes a health domain when it is routinely assessed on its own somewhere in the world. Health domains expanded from 12 to 36; `GENERAL_HEALTH_SYSTEMS` reduced to 4 areas.
+- **Guard:** A test fails if `GENERAL_HEALTH_SYSTEMS` exceeds 6 areas, because a swelling catch-all is the signal that something inside deserves to be first class.
+- **Timing:** Done before the master seed. Afterwards the official question library would already be mapped to the wrong domain, and correcting it would mean a methodology version plus a content migration.
+
+### DEC-2026-07-20-030: Subjects And Measurement Dimensions Are Not Objectives
+
+- **Status:** Accepted and implemented.
+- **Context:** Promoting subjects to health domains exposed a collision the original catalogue already carried. Nine objectives named a subject or a measurement dimension rather than a purpose: Health Workforce, Leadership and Governance, Health Financing, Health Information, Infrastructure, Supply Chain, Community Engagement, Digital Health and Health Promotion. Health Promotion had become an exact code collision with the new health domain.
+- **Decision:** Removed from the objective catalogue. Each is reached through a purpose narrowed by a health domain or measurement domain, with an objective preset preserving the familiar entry point.
+- **Rationale:** This is DEC-025 applied consistently. Excluding Malaria while admitting Health Workforce would have been the same mistake with a different label.
+- **Test contract:** Two tests, in both directions. The health-domain check runs against the whole table rather than a fixed list, so a future promotion cannot silently reintroduce a collision.
+
+### DEC-2026-07-20-031: The Catalogue Seeder Reconciles Rather Than Only Adds
+
+- **Status:** Accepted and implemented.
+- **Context:** The seeder used `updateOrCreate` throughout, so it could only add or amend. Moving areas out of `GENERAL_HEALTH_SYSTEMS` left the old rows behind, and the database silently stopped matching the catalogue file.
+- **Decision:** After seeding, entries absent from the catalogue are deleted from the draft version.
+- **Safety:** Pruning only ever runs against a draft. A published methodology is immutable and the seeder returns before reaching this point.
+- **Test contract:** A test inserts a stray entry, re-seeds, and asserts it is gone.
+
+### DEC-2026-07-20-032: Financing Is Staged, Not Yet In Force
+
+- **Status:** Partially implemented; adoption deferred.
+- **Context:** Financing is a WHO health system building block with no measurement domain, so a financing weakness cannot roll up and be compared across programmes the way a workforce weakness can.
+- **Decision:** `FIN` is added to the `domains` master list. It is inert — nothing maps to it and nothing scores it — because a measurement domain only takes effect once a published domain taxonomy version contains it.
+- **Why not further:** Adopting it needs a new taxonomy version to be created and published, and Platform Admin has no publish control for domain taxonomies, only browse. Creating a draft version nobody could publish would have been worse than staging the domain and recording the gap.
+- **Consequence:** The WHO building blocks remain incomplete in scoring until a taxonomy publish action exists. Recorded as debt.

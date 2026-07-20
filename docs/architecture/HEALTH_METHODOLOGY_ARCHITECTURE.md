@@ -81,3 +81,23 @@ Two lenses have preconditions and must say so rather than render empty: **Trend*
 ## Retired
 
 `recommendations`, `recommendation_rules` and `root_causes` were removed in P4. They encoded a single-threshold model — one sub-index, one score cut-off, one templated sentence — which cannot express the combination the recommendation framework requires. All three were empty and unreferenced. See `RECOMMENDATION_FRAMEWORK.md` and the preservation register.
+
+## What qualifies as a health domain
+
+A subject earns a health domain when it is **routinely assessed on its own somewhere in the world**. That is the test. Malaria, laboratory services and pharmacy all pass it; outpatient services does not, so it stays an area beneath General Health Systems.
+
+The catalogue holds 36 domains and 147 areas. General Health Systems is deliberately small — four areas — because a swelling catch-all is the signal that subjects deserving to be first class are hidden inside it. A test fails if it grows past six.
+
+## What is deliberately not an objective
+
+Nine concepts are absent from the objective catalogue on purpose: Health Workforce, Leadership and Governance, Health Financing, Health Information, Infrastructure, Supply Chain, Community Engagement, Digital Health and Health Promotion.
+
+Each names a **subject** or a **measurement dimension** rather than a purpose, and each already exists as a health domain or a measurement domain. Carrying them as objectives too would recreate exactly the collision that keeping Malaria out avoids — one concept in two places, with nothing telling a user which to pick.
+
+"Assess our workforce" is reached through a purpose — Situation Analysis or Gap Analysis — narrowed by the Workforce measurement domain. The familiar entry point survives as an objective preset, so nothing is lost from the user's point of view.
+
+Two tests enforce this in both directions. One checks objective codes against the whole `health_domains` table rather than a fixed list, so promoting a new subject to a domain cannot silently reintroduce a collision.
+
+## The catalogue seeder is authoritative
+
+`MethodologyCatalogueSeeder` reconciles rather than only adding. An entry removed from the catalogue is deleted from the draft version, so the database always matches the file. Pruning only ever runs against a draft; a published methodology is immutable and the seeder exits before reaching it.

@@ -56,7 +56,40 @@ class MethodologyCatalogueSeeder extends Seeder
             $this->seedTemplates($version);
             $this->seedObjectiveRecommendations($version);
             $this->seedPresets($version);
+            $this->pruneRemovedEntries($version);
         });
+    }
+
+    /**
+     * Removes entries that are no longer in the catalogue.
+     *
+     * Without this the seeder can only ever add. An entry removed from the catalogue, or
+     * moved from one health domain to another under a new code, would linger in the
+     * database forever and still appear to administrators — so the seeded methodology
+     * would silently stop matching this file.
+     *
+     * Only ever runs against a draft version. A published methodology is immutable, and
+     * the guard in run() has already returned by this point if it is published.
+     */
+    private function pruneRemovedEntries(MethodologyVersion $version): void
+    {
+        $versionId = $version->methodology_version_id;
+
+        $expectedAreas = collect(self::healthAreas())->flatten(1)->pluck('code');
+        HealthArea::where('methodology_version_id', $versionId)
+            ->whereNotIn('area_code', $expectedAreas)->delete();
+
+        AssessmentObjective::where('methodology_version_id', $versionId)
+            ->whereNotIn('objective_code', collect(self::objectives())->pluck('code'))->delete();
+
+        AnalysisLens::where('methodology_version_id', $versionId)
+            ->whereNotIn('lens_code', collect(self::analysisLenses())->pluck('code'))->delete();
+
+        InsightCategory::where('methodology_version_id', $versionId)
+            ->whereNotIn('category_code', collect(self::insightCategories())->pluck('code'))->delete();
+
+        AssessmentTemplate::where('methodology_version_id', $versionId)
+            ->whereNotIn('template_code', collect(self::templates())->pluck('code'))->delete();
     }
 
     // ── Part 1: objectives are purposes, never subjects ──────────────────────
@@ -94,16 +127,31 @@ class MethodologyCatalogueSeeder extends Seeder
             ['code' => 'OPERATIONAL_READINESS', 'name' => 'Operational Readiness', 'group' => 'SYSTEM', 'question' => 'Can we deliver services today?', 'description' => 'Whether the staff, supplies, equipment, infrastructure and systems needed to deliver services are actually in place and working.'],
             ['code' => 'SERVICE_AVAILABILITY', 'name' => 'Service Availability', 'group' => 'SYSTEM', 'question' => 'What services do we actually offer?', 'description' => 'Which services are offered, when, and to whom, as distinct from whether they are ready to deliver.'],
             ['code' => 'EMERGENCY_PREPAREDNESS', 'name' => 'Emergency Preparedness', 'group' => 'SYSTEM', 'question' => 'Could we cope with a surge or an outbreak?', 'description' => 'Readiness to respond to emergencies, outbreaks and sudden increases in demand.'],
-            ['code' => 'HEALTH_WORKFORCE', 'name' => 'Health Workforce', 'group' => 'SYSTEM', 'question' => 'Do we have the right people?', 'description' => 'Staffing numbers, skill mix, training, supervision, retention and distribution.'],
-            ['code' => 'LEADERSHIP_GOVERNANCE', 'name' => 'Leadership and Governance', 'group' => 'SYSTEM', 'question' => 'Is this place well run?', 'description' => 'Decision-making, accountability, planning, policies and oversight arrangements.'],
-            ['code' => 'HEALTH_FINANCING', 'name' => 'Health Financing', 'group' => 'SYSTEM', 'question' => 'Is the money working?', 'description' => 'Funding flows, budgeting, cost of care, financial protection for patients and financial management.'],
-            ['code' => 'HEALTH_INFORMATION', 'name' => 'Health Information Systems', 'group' => 'SYSTEM', 'question' => 'Can we trust our data?', 'description' => 'Recording, reporting, data quality, and whether information is actually used in decisions.'],
-            ['code' => 'DIGITAL_HEALTH', 'name' => 'Digital Health Readiness', 'group' => 'SYSTEM', 'question' => 'Are we ready to work digitally?', 'description' => 'Connectivity, devices, systems, digital skills and governance of digital tools.'],
-            ['code' => 'SUPPLY_CHAIN', 'name' => 'Supply Chain and Commodities', 'group' => 'SYSTEM', 'question' => 'Do we have what we need, when we need it?', 'description' => 'Availability, storage, stock management and distribution of medicines, consumables and equipment.'],
-            ['code' => 'INFRASTRUCTURE', 'name' => 'Infrastructure and Environment', 'group' => 'SYSTEM', 'question' => 'Is the physical environment fit for care?', 'description' => 'Buildings, utilities, water, power, waste and the physical conditions in which care happens.'],
-            ['code' => 'COMMUNITY_ENGAGEMENT', 'name' => 'Community Engagement', 'group' => 'SYSTEM', 'question' => 'Are we connected to the people we serve?', 'description' => 'Outreach, community structures, feedback and the relationship between the facility and its population.'],
-            ['code' => 'HEALTH_PROMOTION', 'name' => 'Health Promotion', 'group' => 'SYSTEM', 'question' => 'Are we helping people stay well?', 'description' => 'Prevention, education and promotion activity, as distinct from treatment.'],
             ['code' => 'EQUITY_ACCESS', 'name' => 'Equity and Access', 'group' => 'SYSTEM', 'question' => 'Who is being left out?', 'description' => 'Whether services reach all groups, including those furthest from care.'],
+
+            // Deliberately absent: Health Workforce, Leadership and Governance, Health
+            // Financing, Health Information, Infrastructure, Supply Chain, Community
+            // Engagement, Digital Health and Health Promotion.
+            //
+            // Each names a subject or a measurement dimension rather than a purpose, and
+            // each already exists as a health domain or a measurement domain. Carrying
+            // them here too would recreate exactly the collision that keeping Malaria out
+            // of this list avoids: a user facing the same concept in two places with no
+            // way to tell which one to pick.
+            //
+            // "Assess our workforce" is reached instead through a purpose — Situation
+            // Analysis or Gap Analysis — narrowed by the Workforce measurement domain,
+            // and the familiar entry point is preserved as an objective preset.
+
+            // Assessment types performed routinely worldwide that the first catalogue missed.
+            ['code' => 'DATA_QUALITY', 'name' => 'Data Quality Assessment', 'group' => 'ASSURANCE', 'question' => 'Can we believe the numbers we report?', 'description' => 'Verify that reported data matches source records and is complete, accurate and timely. Distinct from Health Information Systems, which asks whether systems exist rather than whether the data they produce is true.'],
+            ['code' => 'TRAINING_NEEDS', 'name' => 'Training and Capacity Needs', 'group' => 'IMPROVEMENT', 'question' => 'What do our people need to learn?', 'description' => 'Identify skill and knowledge gaps to direct training, mentorship and supervision.'],
+            ['code' => 'RBF_VERIFICATION', 'name' => 'Results-Based Financing Verification', 'group' => 'ASSURANCE', 'question' => 'Did the reported results actually happen?', 'description' => 'Independent verification of reported performance where payment depends on results.'],
+            ['code' => 'OUTBREAK_RESPONSE_REVIEW', 'name' => 'Outbreak Response Review', 'group' => 'LIFECYCLE', 'question' => 'How well did we respond?', 'description' => 'Review detection, response and containment during or after an outbreak.'],
+            ['code' => 'SERVICE_EXPANSION', 'name' => 'Service Expansion Readiness', 'group' => 'SYSTEM', 'question' => 'Can we take on a new service?', 'description' => 'Whether a facility is ready to introduce or scale up a service it does not currently provide.'],
+            ['code' => 'EFFICIENCY_REVIEW', 'name' => 'Efficiency and Value Review', 'group' => 'IMPROVEMENT', 'question' => 'Are we getting value for what we spend?', 'description' => 'Relate what is achieved to what it costs, in money, staff time or supplies.'],
+            ['code' => 'SUSTAINABILITY_REVIEW', 'name' => 'Sustainability Review', 'group' => 'LIFECYCLE', 'question' => 'Would this continue without external support?', 'description' => 'Whether a programme could be maintained if current funding, staffing or partner support ended.'],
+            ['code' => 'PATIENT_SATISFACTION', 'name' => 'Patient Satisfaction Survey', 'group' => 'PURPOSE', 'question' => 'What do patients think of us?', 'description' => 'Collect experience and satisfaction directly from patients, usually with many respondents.'],
         ];
     }
 
@@ -186,21 +234,162 @@ class MethodologyCatalogueSeeder extends Seeder
                 ['code' => 'PATIENT_FEEDBACK', 'name' => 'Patient Feedback and Complaints'],
                 ['code' => 'PATIENT_RIGHTS', 'name' => 'Patient Rights and Consent'],
             ],
+            // Kept deliberately small. Everything that is routinely assessed on its own
+            // has been promoted to a health domain, so this no longer absorbs subjects
+            // that deserve to be first class.
             'GENERAL_HEALTH_SYSTEMS' => [
                 ['code' => 'OPD', 'name' => 'Outpatient Services'],
                 ['code' => 'IPD', 'name' => 'Inpatient Services'],
-                ['code' => 'EMERGENCY_CARE', 'name' => 'Emergency and Trauma Care'],
-                ['code' => 'LABORATORY', 'name' => 'Laboratory Services'],
-                ['code' => 'PHARMACY', 'name' => 'Pharmacy and Medicines'],
-                ['code' => 'IMAGING', 'name' => 'Diagnostic Imaging'],
-                ['code' => 'SURGERY', 'name' => 'Surgical Services'],
-                ['code' => 'BLOOD_SERVICES', 'name' => 'Blood and Transfusion Services'],
                 ['code' => 'REFERRAL', 'name' => 'Referral and Transport'],
-                ['code' => 'NCD', 'name' => 'Non-Communicable Diseases'],
-                ['code' => 'MALARIA_SERVICES', 'name' => 'Malaria Diagnosis and Treatment'],
-                ['code' => 'NTD', 'name' => 'Neglected Tropical Diseases'],
-                ['code' => 'COMMUNITY_HEALTH', 'name' => 'Community Health Services'],
-                ['code' => 'RECORDS', 'name' => 'Records and Health Information'],
+                ['code' => 'PATIENT_RECORDS', 'name' => 'Patient Records'],
+            ],
+
+            'MALARIA' => [
+                ['code' => 'MALARIA_DIAGNOSIS', 'name' => 'Malaria Testing and Diagnosis'],
+                ['code' => 'MALARIA_TREATMENT', 'name' => 'Malaria Case Management'],
+                ['code' => 'MALARIA_PREVENTION', 'name' => 'Prevention, Nets and Spraying'],
+                ['code' => 'MALARIA_IN_PREGNANCY', 'name' => 'Malaria in Pregnancy'],
+                ['code' => 'SEVERE_MALARIA', 'name' => 'Severe Malaria Management'],
+                ['code' => 'MALARIA_COMMODITIES', 'name' => 'Malaria Commodities and Stock'],
+            ],
+            'NON_COMMUNICABLE_DISEASES' => [
+                ['code' => 'HYPERTENSION', 'name' => 'Hypertension and Cardiovascular Care'],
+                ['code' => 'DIABETES', 'name' => 'Diabetes Care'],
+                ['code' => 'CANCER', 'name' => 'Cancer Screening and Care'],
+                ['code' => 'RESPIRATORY_NCD', 'name' => 'Chronic Respiratory Disease'],
+                ['code' => 'NCD_SCREENING', 'name' => 'NCD Screening and Risk Assessment'],
+                ['code' => 'NCD_MEDICINES', 'name' => 'NCD Medicines and Continuity'],
+            ],
+            'NEGLECTED_TROPICAL_DISEASES' => [
+                ['code' => 'NTD_CASE_MANAGEMENT', 'name' => 'NTD Case Management'],
+                ['code' => 'MASS_DRUG_ADMINISTRATION', 'name' => 'Mass Drug Administration'],
+                ['code' => 'NTD_SURVEILLANCE', 'name' => 'NTD Surveillance and Mapping'],
+            ],
+            'ANTIMICROBIAL_RESISTANCE' => [
+                ['code' => 'ANTIBIOTIC_STEWARDSHIP', 'name' => 'Antimicrobial Stewardship'],
+                ['code' => 'AMR_SURVEILLANCE', 'name' => 'Resistance Surveillance'],
+                ['code' => 'PRESCRIBING_PRACTICE', 'name' => 'Prescribing Practice'],
+            ],
+            'OUTBREAK_RESPONSE' => [
+                ['code' => 'OUTBREAK_DETECTION', 'name' => 'Detection and Early Warning'],
+                ['code' => 'OUTBREAK_PREPAREDNESS', 'name' => 'Preparedness and Planning'],
+                ['code' => 'CASE_ISOLATION', 'name' => 'Isolation and Case Management'],
+                ['code' => 'CONTACT_TRACING', 'name' => 'Contact Tracing'],
+                ['code' => 'RISK_COMMUNICATION', 'name' => 'Risk Communication'],
+            ],
+
+            'LABORATORY' => [
+                ['code' => 'LAB_TESTING_CAPACITY', 'name' => 'Testing Capacity and Menu'],
+                ['code' => 'LAB_QUALITY_ASSURANCE', 'name' => 'Quality Assurance and Controls'],
+                ['code' => 'LAB_BIOSAFETY', 'name' => 'Biosafety and Specimen Handling'],
+                ['code' => 'LAB_EQUIPMENT', 'name' => 'Equipment and Maintenance'],
+                ['code' => 'LAB_TURNAROUND', 'name' => 'Turnaround and Result Reporting'],
+                ['code' => 'SAMPLE_TRANSPORT', 'name' => 'Sample Referral and Transport'],
+            ],
+            'PHARMACY' => [
+                ['code' => 'MEDICINE_AVAILABILITY', 'name' => 'Essential Medicine Availability'],
+                ['code' => 'MEDICINE_STORAGE', 'name' => 'Storage Conditions'],
+                ['code' => 'STOCK_MANAGEMENT', 'name' => 'Stock Management and Forecasting'],
+                ['code' => 'DISPENSING_PRACTICE', 'name' => 'Dispensing Practice'],
+                ['code' => 'PHARMACOVIGILANCE', 'name' => 'Pharmacovigilance'],
+                ['code' => 'SUPPLY_CHAIN', 'name' => 'Supply Chain and Distribution'],
+            ],
+            'EMERGENCY_CARE' => [
+                ['code' => 'TRIAGE', 'name' => 'Triage'],
+                ['code' => 'RESUSCITATION', 'name' => 'Resuscitation Capability'],
+                ['code' => 'TRAUMA_CARE', 'name' => 'Trauma Care'],
+                ['code' => 'CRITICAL_CARE', 'name' => 'Critical and Intensive Care'],
+                ['code' => 'OXYGEN_SUPPLY', 'name' => 'Oxygen Supply'],
+                ['code' => 'AMBULANCE', 'name' => 'Ambulance and Pre-hospital Care'],
+            ],
+            'SURGICAL_CARE' => [
+                ['code' => 'SURGICAL_CAPACITY', 'name' => 'Surgical Capacity and Theatre'],
+                ['code' => 'ANAESTHESIA', 'name' => 'Anaesthesia Services'],
+                ['code' => 'SURGICAL_SAFETY', 'name' => 'Surgical Safety Checklist'],
+                ['code' => 'POST_OPERATIVE', 'name' => 'Post-operative Care'],
+                ['code' => 'STERILE_PROCESSING', 'name' => 'Sterile Processing'],
+            ],
+            'BLOOD_SERVICES' => [
+                ['code' => 'BLOOD_AVAILABILITY', 'name' => 'Blood Availability'],
+                ['code' => 'BLOOD_SCREENING', 'name' => 'Donor Screening and Testing'],
+                ['code' => 'TRANSFUSION_SAFETY', 'name' => 'Transfusion Safety'],
+                ['code' => 'BLOOD_COLD_CHAIN', 'name' => 'Blood Storage and Cold Chain'],
+            ],
+            'DIAGNOSTIC_IMAGING' => [
+                ['code' => 'IMAGING_CAPACITY', 'name' => 'Imaging Capacity'],
+                ['code' => 'RADIATION_SAFETY', 'name' => 'Radiation Safety'],
+                ['code' => 'IMAGING_REPORTING', 'name' => 'Reporting and Interpretation'],
+            ],
+            'REHABILITATION' => [
+                ['code' => 'PHYSIOTHERAPY', 'name' => 'Physiotherapy'],
+                ['code' => 'ASSISTIVE_DEVICES', 'name' => 'Assistive Products and Devices'],
+                ['code' => 'REHAB_REFERRAL', 'name' => 'Rehabilitation Referral'],
+            ],
+            'PALLIATIVE_CARE' => [
+                ['code' => 'PAIN_MANAGEMENT', 'name' => 'Pain Management'],
+                ['code' => 'END_OF_LIFE', 'name' => 'End-of-Life Care'],
+                ['code' => 'PALLIATIVE_MEDICINES', 'name' => 'Access to Palliative Medicines'],
+            ],
+            'ORAL_HEALTH' => [
+                ['code' => 'DENTAL_SERVICES', 'name' => 'Dental Services'],
+                ['code' => 'ORAL_PREVENTION', 'name' => 'Oral Health Prevention'],
+            ],
+            'EYE_HEALTH' => [
+                ['code' => 'EYE_SCREENING', 'name' => 'Vision Screening'],
+                ['code' => 'CATARACT_SERVICES', 'name' => 'Cataract and Surgical Eye Care'],
+                ['code' => 'REFRACTIVE_SERVICES', 'name' => 'Refractive Services and Spectacles'],
+            ],
+
+            'SEXUAL_REPRODUCTIVE_HEALTH' => [
+                ['code' => 'STI_SERVICES', 'name' => 'Sexually Transmitted Infection Services'],
+                ['code' => 'CERVICAL_SCREENING', 'name' => 'Cervical Cancer Screening'],
+                ['code' => 'GBV_SERVICES', 'name' => 'Gender-Based Violence Services'],
+                ['code' => 'SAFE_ABORTION_CARE', 'name' => 'Post-Abortion and Safe Care'],
+            ],
+            'ADOLESCENT_HEALTH' => [
+                ['code' => 'ADOLESCENT_FRIENDLY', 'name' => 'Adolescent-Friendly Services'],
+                ['code' => 'ADOLESCENT_SRH', 'name' => 'Adolescent Sexual and Reproductive Health'],
+                ['code' => 'ADOLESCENT_MENTAL_HEALTH', 'name' => 'Adolescent Mental Health'],
+            ],
+            'OLDER_PEOPLE_HEALTH' => [
+                ['code' => 'GERIATRIC_ASSESSMENT', 'name' => 'Geriatric Assessment'],
+                ['code' => 'CHRONIC_CARE_ELDERLY', 'name' => 'Chronic Care for Older People'],
+                ['code' => 'FALLS_PREVENTION', 'name' => 'Falls Prevention'],
+            ],
+            'DISABILITY_INCLUSION' => [
+                ['code' => 'PHYSICAL_ACCESSIBILITY', 'name' => 'Physical Accessibility'],
+                ['code' => 'COMMUNICATION_ACCESS', 'name' => 'Communication Accessibility'],
+                ['code' => 'INCLUSIVE_SERVICE_DESIGN', 'name' => 'Inclusive Service Design'],
+            ],
+
+            'COMMUNITY_HEALTH' => [
+                ['code' => 'CHW_PROGRAMME', 'name' => 'Community Health Worker Programme'],
+                ['code' => 'OUTREACH_SERVICES', 'name' => 'Outreach Services'],
+                ['code' => 'COMMUNITY_REFERRAL', 'name' => 'Community Referral Links'],
+                ['code' => 'COMMUNITY_STRUCTURES', 'name' => 'Community Governance Structures'],
+            ],
+            'HEALTH_INFORMATION_SYSTEMS' => [
+                ['code' => 'DATA_RECORDING', 'name' => 'Recording and Registers'],
+                ['code' => 'DATA_REPORTING', 'name' => 'Reporting and Timeliness'],
+                ['code' => 'DATA_QUALITY', 'name' => 'Data Quality and Verification'],
+                ['code' => 'DATA_USE', 'name' => 'Data Use for Decisions'],
+                ['code' => 'DIGITAL_SYSTEMS', 'name' => 'Digital Systems and Connectivity'],
+            ],
+            'HEALTH_PROMOTION' => [
+                ['code' => 'HEALTH_EDUCATION', 'name' => 'Health Education'],
+                ['code' => 'BEHAVIOUR_CHANGE', 'name' => 'Behaviour Change Communication'],
+                ['code' => 'SCREENING_PROMOTION', 'name' => 'Screening Promotion and Uptake'],
+            ],
+            'ENVIRONMENTAL_HEALTH' => [
+                ['code' => 'CLIMATE_RESILIENCE', 'name' => 'Climate Resilience'],
+                ['code' => 'ENERGY_SUPPLY', 'name' => 'Energy and Power Supply'],
+                ['code' => 'AIR_QUALITY', 'name' => 'Air Quality and Ventilation'],
+                ['code' => 'VECTOR_CONTROL', 'name' => 'Vector Control'],
+            ],
+            'OCCUPATIONAL_HEALTH' => [
+                ['code' => 'STAFF_SAFETY', 'name' => 'Staff Safety and Injury Prevention'],
+                ['code' => 'STAFF_IMMUNIZATION', 'name' => 'Staff Immunization'],
+                ['code' => 'STAFF_WELLBEING', 'name' => 'Staff Wellbeing and Mental Health'],
             ],
         ];
     }
@@ -230,6 +419,9 @@ class MethodologyCatalogueSeeder extends Seeder
             ['code' => 'ROOT_CAUSE', 'name' => 'Root Cause', 'question' => 'Why is this happening?', 'description' => 'Groups related weaknesses to point at an underlying cause rather than listing symptoms separately.'],
             ['code' => 'PRIORITY_ACTION', 'name' => 'Priority Actions', 'question' => 'What should we do first?', 'description' => 'Orders findings by a combination of severity and feasibility to produce a short, actionable list.'],
             ['code' => 'EXECUTIVE', 'name' => 'Executive Summary', 'question' => 'What does leadership need to know?', 'description' => 'The shortest defensible account for someone who will not read the detail.'],
+            ['code' => 'EFFICIENCY', 'name' => 'Efficiency and Value', 'question' => 'Are we getting value for what we spend?', 'description' => 'Relates what is achieved to what it costs in money, staff time or supplies. A different question from performance: a high score bought expensively is not the same as a high score.'],
+            ['code' => 'SUSTAINABILITY', 'name' => 'Sustainability', 'question' => 'Would this survive without external support?', 'description' => 'Reads results for dependence on funding, partners or individuals who may not remain. Standard in programme evaluation.'],
+            ['code' => 'DATA_CONFIDENCE', 'name' => 'Data Confidence', 'question' => 'How much of this can we actually rely on?', 'description' => 'Reads the assessment for how well evidenced it is, using calibration state and missing evidence. Answers a question about the assessment itself rather than about the facility.'],
         ];
     }
 
@@ -256,6 +448,17 @@ class MethodologyCatalogueSeeder extends Seeder
             ['code' => 'OPPORTUNITY', 'name' => 'Opportunities', 'polarity' => 'NEUTRAL', 'diagnostic' => false, 'description' => 'Something that could be improved with reasonable effort, without being a failure today.'],
             ['code' => 'QUICK_WIN', 'name' => 'Quick Wins', 'polarity' => 'NEUTRAL', 'diagnostic' => false, 'description' => 'Improvements achievable quickly with low effort or cost.'],
             ['code' => 'STRATEGIC_PRIORITY', 'name' => 'Strategic Priorities', 'polarity' => 'NEUTRAL', 'diagnostic' => false, 'description' => 'Substantial changes that need planning, budget or time, and will not be resolved in one cycle.'],
+
+            // The honesty categories. Every other category describes what the data says;
+            // these say when the data cannot support a conclusion. Without them an
+            // assessment that is largely unanswered still produces a confident-looking
+            // report, which quietly undermines the credibility of everything else in it.
+            ['code' => 'DATA_GAP', 'name' => 'Data Gaps', 'polarity' => 'NEUTRAL', 'diagnostic' => true, 'description' => 'Areas where too little was answered to draw a conclusion. The platform already records this as a calibration state on every score; this surfaces it as a finding so a thin section is never mistaken for a good one.'],
+            ['code' => 'INSUFFICIENT_EVIDENCE', 'name' => 'Insufficient Evidence', 'polarity' => 'NEUTRAL', 'diagnostic' => true, 'description' => 'A claim was made in an answer but the evidence expected to support it was not provided. The finding stands, but it rests on assertion alone.'],
+            ['code' => 'NO_CHANGE', 'name' => 'No Change', 'polarity' => 'NEUTRAL', 'diagnostic' => false, 'description' => 'An area that has neither improved nor declined since the previous assessment. Worth stating explicitly, because silence reads as progress.'],
+            ['code' => 'DECLINE', 'name' => 'Deterioration', 'polarity' => 'NEGATIVE', 'diagnostic' => true, 'description' => 'An area that has got worse since the previous assessment, even if it still scores acceptably.'],
+            ['code' => 'SYSTEMIC_ISSUE', 'name' => 'Systemic Issues', 'polarity' => 'NEGATIVE', 'diagnostic' => true, 'description' => 'A weakness appearing across several areas at once, which usually means one underlying cause rather than several separate problems.'],
+            ['code' => 'GOOD_PRACTICE', 'name' => 'Good Practice to Share', 'polarity' => 'POSITIVE', 'diagnostic' => false, 'description' => 'Something done notably well that other sites or teams could copy.'],
         ];
     }
 
@@ -289,6 +492,27 @@ class MethodologyCatalogueSeeder extends Seeder
             ['code' => 'COMMUNITY_OUTREACH', 'name' => 'Community Health and Outreach Assessment', 'scope' => 'FOCUSED', 'target' => null, 'minutes' => 60, 'description' => 'Community health services, outreach and engagement structures.'],
             ['code' => 'DIGITAL_READINESS', 'name' => 'Digital Health Readiness Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 60, 'description' => 'Connectivity, devices, systems, skills and digital governance.'],
             ['code' => 'RESEARCH_INSTRUMENT', 'name' => 'Research Data Collection Instrument', 'scope' => 'FOCUSED', 'target' => null, 'minutes' => null, 'description' => 'A blank structured instrument for a study, where the researcher supplies the content.'],
+
+            // Templates for the subjects promoted to health domains, plus the assessment
+            // types added to the objective catalogue.
+            ['code' => 'DATA_QUALITY_ASSESSMENT', 'name' => 'Data Quality Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 90, 'description' => 'Verify reported data against source records for completeness, accuracy and timeliness.'],
+            ['code' => 'NCD_SERVICES', 'name' => 'Non-Communicable Disease Services', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 90, 'description' => 'Hypertension, diabetes, cancer screening and chronic care continuity.'],
+            ['code' => 'SURGICAL_CARE_ASSESSMENT', 'name' => 'Surgical and Anaesthesia Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 90, 'description' => 'Theatre capacity, anaesthesia, surgical safety and post-operative care.'],
+            ['code' => 'BLOOD_SERVICES_ASSESSMENT', 'name' => 'Blood and Transfusion Services Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 60, 'description' => 'Availability, donor screening, transfusion safety and cold chain.'],
+            ['code' => 'AMR_ASSESSMENT', 'name' => 'Antimicrobial Resistance and Stewardship', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 60, 'description' => 'Stewardship, prescribing practice and resistance surveillance.'],
+            ['code' => 'OUTBREAK_READINESS', 'name' => 'Outbreak Preparedness and Response', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 90, 'description' => 'Detection, isolation, contact tracing and risk communication.'],
+            ['code' => 'SRH_ASSESSMENT', 'name' => 'Sexual and Reproductive Health Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 75, 'description' => 'STI services, cervical screening, gender-based violence care and family planning links.'],
+            ['code' => 'ADOLESCENT_SERVICES', 'name' => 'Adolescent Health Services Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 60, 'description' => 'Whether services are accessible and acceptable to young people.'],
+            ['code' => 'REHABILITATION_ASSESSMENT', 'name' => 'Rehabilitation Services Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 60, 'description' => 'Physiotherapy, assistive products and referral pathways.'],
+            ['code' => 'EYE_HEALTH_ASSESSMENT', 'name' => 'Eye Health Services Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 60, 'description' => 'Vision screening, refractive services and surgical eye care.'],
+            ['code' => 'ORAL_HEALTH_ASSESSMENT', 'name' => 'Oral Health Services Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 45, 'description' => 'Dental services and oral health prevention.'],
+            ['code' => 'DISABILITY_ACCESS_AUDIT', 'name' => 'Disability and Accessibility Audit', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 60, 'description' => 'Physical access, communication access and inclusive service design.'],
+            ['code' => 'RBF_VERIFICATION_VISIT', 'name' => 'Results-Based Financing Verification', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 90, 'description' => 'Independent verification of reported results where payment depends on them.'],
+            ['code' => 'TRAINING_NEEDS_ASSESSMENT', 'name' => 'Training Needs Assessment', 'scope' => 'FOCUSED', 'target' => null, 'minutes' => 60, 'description' => 'Identify skill and knowledge gaps to direct training and mentorship.'],
+            ['code' => 'HMIS_ASSESSMENT', 'name' => 'Health Information Systems Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 75, 'description' => 'Recording, reporting, data use and digital systems.'],
+            ['code' => 'CLIMATE_RESILIENCE', 'name' => 'Climate Resilience and Environmental Health', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 75, 'description' => 'Energy, water security, ventilation and resilience to climate shocks.'],
+            ['code' => 'OCCUPATIONAL_HEALTH_ASSESSMENT', 'name' => 'Staff Health and Safety Assessment', 'scope' => 'FOCUSED', 'target' => 'HEALTH_FACILITY', 'minutes' => 45, 'description' => 'Staff safety, immunization and wellbeing.'],
+            ['code' => 'DISTRICT_PHC_SUPERVISION', 'name' => 'District PHC Supervision Round', 'scope' => 'ENTERPRISE', 'target' => null, 'minutes' => 180, 'description' => 'Supervision across several primary healthcare facilities in one round.'],
         ];
     }
 
@@ -439,29 +663,51 @@ class MethodologyCatalogueSeeder extends Seeder
                 'ANALYSIS_LENS' => ['RISK', 'CAPACITY', 'PRIORITY_ACTION'],
                 'TEMPLATE' => ['EMERGENCY_CARE_ASSESSMENT'],
             ],
-            'HEALTH_WORKFORCE' => [
-                'ANALYSIS_LENS' => ['CAPACITY', 'PERFORMANCE'],
-                'MEASUREMENT_DOMAIN' => ['WORK'],
-            ],
-            'HEALTH_INFORMATION' => [
-                'ANALYSIS_LENS' => ['QUALITY', 'CAPACITY'],
-                'MEASUREMENT_DOMAIN' => ['INFO'],
-            ],
-            'LEADERSHIP_GOVERNANCE' => [
-                'ANALYSIS_LENS' => ['CLINICAL_GOVERNANCE', 'EXECUTIVE'],
-                'MEASUREMENT_DOMAIN' => ['GOV'],
-            ],
             'EQUITY_ACCESS' => [
                 'ANALYSIS_LENS' => ['EQUITY', 'PUBLIC_HEALTH'],
                 'MEASUREMENT_DOMAIN' => ['PCOM', 'SERV'],
             ],
-            'DIGITAL_HEALTH' => [
-                'TEMPLATE' => ['DIGITAL_READINESS'],
-                'ANALYSIS_LENS' => ['CAPACITY', 'OPERATIONS'],
-            ],
             'RESEARCH' => [
                 'TEMPLATE' => ['RESEARCH_INSTRUMENT'],
                 'ANALYSIS_LENS' => ['PERFORMANCE', 'BENCHMARK'],
+            ],
+            'DATA_QUALITY' => [
+                'TEMPLATE' => ['DATA_QUALITY_ASSESSMENT'],
+                'ANALYSIS_LENS' => ['DATA_CONFIDENCE', 'COMPLIANCE'],
+                'HEALTH_DOMAIN' => ['HEALTH_INFORMATION_SYSTEMS'],
+                'MEASUREMENT_DOMAIN' => ['INFO'],
+                'EVIDENCE_TYPE' => ['DOCUMENT', 'OBSERVATION'],
+            ],
+            'TRAINING_NEEDS' => [
+                'TEMPLATE' => ['TRAINING_NEEDS_ASSESSMENT'],
+                'ANALYSIS_LENS' => ['CAPACITY', 'PRIORITY_ACTION'],
+                'MEASUREMENT_DOMAIN' => ['WORK'],
+            ],
+            'RBF_VERIFICATION' => [
+                'TEMPLATE' => ['RBF_VERIFICATION_VISIT'],
+                'ANALYSIS_LENS' => ['COMPLIANCE', 'DATA_CONFIDENCE'],
+                'EVIDENCE_TYPE' => ['DOCUMENT'],
+            ],
+            'OUTBREAK_RESPONSE_REVIEW' => [
+                'TEMPLATE' => ['OUTBREAK_READINESS'],
+                'ANALYSIS_LENS' => ['RISK', 'PROGRAMME_EFFECTIVENESS'],
+                'HEALTH_DOMAIN' => ['OUTBREAK_RESPONSE'],
+            ],
+            'SERVICE_EXPANSION' => [
+                'ANALYSIS_LENS' => ['CAPACITY', 'PRIORITY_ACTION'],
+                'MEASUREMENT_DOMAIN' => ['RES', 'WORK'],
+            ],
+            'EFFICIENCY_REVIEW' => [
+                'ANALYSIS_LENS' => ['EFFICIENCY', 'EXECUTIVE'],
+            ],
+            'SUSTAINABILITY_REVIEW' => [
+                'ANALYSIS_LENS' => ['SUSTAINABILITY', 'PROGRAMME_EFFECTIVENESS', 'EXECUTIVE'],
+            ],
+            'PATIENT_SATISFACTION' => [
+                'TEMPLATE' => ['PATIENT_EXPERIENCE_SURVEY'],
+                'ANALYSIS_LENS' => ['QUALITY', 'EQUITY'],
+                'HEALTH_DOMAIN' => ['PATIENT_EXPERIENCE'],
+                'MEASUREMENT_DOMAIN' => ['PCOM'],
             ],
         ];
 
@@ -499,7 +745,9 @@ class MethodologyCatalogueSeeder extends Seeder
     private function seedPresets(MethodologyVersion $version): void
     {
         $presets = [
-            ['code' => 'MALARIA_BASELINE', 'name' => 'Malaria Baseline Assessment', 'objective' => 'BASELINE', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'MALARIA_PROGRAMME', 'lenses' => ['PERFORMANCE', 'CAPACITY']],
+            // Malaria is now a health domain in its own right. Before this it pointed at
+            // GENERAL_HEALTH_SYSTEMS, which mis-filed every malaria assessment.
+            ['code' => 'MALARIA_BASELINE', 'name' => 'Malaria Baseline Assessment', 'objective' => 'BASELINE', 'domains' => ['MALARIA'], 'template' => 'MALARIA_PROGRAMME', 'lenses' => ['PERFORMANCE', 'CAPACITY']],
             ['code' => 'HIV_SUPERVISION', 'name' => 'HIV Supportive Supervision', 'objective' => 'SUPPORTIVE_SUPERVISION', 'domains' => ['HIV'], 'template' => 'HIV_PROGRAMME', 'lenses' => ['PROGRESS', 'PRIORITY_ACTION']],
             ['code' => 'TB_PROGRAMME_REVIEW', 'name' => 'TB Programme Review', 'objective' => 'PROGRAMME_EVALUATION', 'domains' => ['TUBERCULOSIS'], 'template' => 'TB_PROGRAMME', 'lenses' => ['PROGRAMME_EFFECTIVENESS', 'TREND']],
             ['code' => 'HOSPITAL_READINESS_REVIEW', 'name' => 'Hospital Operational Readiness', 'objective' => 'OPERATIONAL_READINESS', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'HOSPITAL_READINESS', 'lenses' => ['PERFORMANCE', 'CAPACITY', 'PRIORITY_ACTION']],
@@ -512,8 +760,39 @@ class MethodologyCatalogueSeeder extends Seeder
             ['code' => 'IMMUNIZATION_MONITORING', 'name' => 'Immunization Routine Monitoring', 'objective' => 'MONITORING', 'domains' => ['IMMUNIZATION'], 'template' => 'IMMUNIZATION_PROGRAMME', 'lenses' => ['TREND', 'PERFORMANCE']],
             ['code' => 'NUTRITION_BASELINE', 'name' => 'Nutrition Programme Baseline', 'objective' => 'BASELINE', 'domains' => ['NUTRITION'], 'template' => 'NUTRITION_PROGRAMME', 'lenses' => ['PERFORMANCE', 'CAPACITY']],
             ['code' => 'MENTAL_HEALTH_SITUATION', 'name' => 'Mental Health Situation Analysis', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['MENTAL_HEALTH'], 'template' => 'MENTAL_HEALTH_SERVICES', 'lenses' => ['CAPACITY', 'EQUITY']],
-            ['code' => 'LAB_QUALITY', 'name' => 'Laboratory Quality Review', 'objective' => 'QUALITY_IMPROVEMENT', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'LABORATORY_ASSESSMENT', 'lenses' => ['QUALITY', 'CAPACITY']],
-            ['code' => 'EMERGENCY_READINESS', 'name' => 'Emergency Care Readiness', 'objective' => 'EMERGENCY_PREPAREDNESS', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'EMERGENCY_CARE_ASSESSMENT', 'lenses' => ['RISK', 'CAPACITY']],
+            ['code' => 'LAB_QUALITY', 'name' => 'Laboratory Quality Review', 'objective' => 'QUALITY_IMPROVEMENT', 'domains' => ['LABORATORY'], 'template' => 'LABORATORY_ASSESSMENT', 'lenses' => ['QUALITY', 'CAPACITY']],
+            ['code' => 'EMERGENCY_READINESS', 'name' => 'Emergency Care Readiness', 'objective' => 'EMERGENCY_PREPAREDNESS', 'domains' => ['EMERGENCY_CARE'], 'template' => 'EMERGENCY_CARE_ASSESSMENT', 'lenses' => ['RISK', 'CAPACITY']],
+
+            // Starting points for the newly promoted subjects and assessment types.
+            ['code' => 'DATA_QUALITY_AUDIT', 'name' => 'Data Quality Assessment', 'objective' => 'DATA_QUALITY', 'domains' => ['HEALTH_INFORMATION_SYSTEMS'], 'template' => 'DATA_QUALITY_ASSESSMENT', 'lenses' => ['DATA_CONFIDENCE', 'COMPLIANCE']],
+            ['code' => 'NCD_BASELINE', 'name' => 'NCD Services Baseline', 'objective' => 'BASELINE', 'domains' => ['NON_COMMUNICABLE_DISEASES'], 'template' => 'NCD_SERVICES', 'lenses' => ['PERFORMANCE', 'CAPACITY']],
+            ['code' => 'PHARMACY_SUPPLY_REVIEW', 'name' => 'Pharmacy and Supply Chain Review', 'objective' => 'OPERATIONAL_READINESS', 'domains' => ['PHARMACY'], 'template' => 'PHARMACY_ASSESSMENT', 'lenses' => ['OPERATIONS', 'RISK']],
+            ['code' => 'SURGICAL_SAFETY_REVIEW', 'name' => 'Surgical Safety Review', 'objective' => 'PATIENT_SAFETY', 'domains' => ['SURGICAL_CARE'], 'template' => 'SURGICAL_CARE_ASSESSMENT', 'lenses' => ['PATIENT_SAFETY', 'RISK']],
+            ['code' => 'AMR_STEWARDSHIP', 'name' => 'Antimicrobial Stewardship Review', 'objective' => 'QUALITY_IMPROVEMENT', 'domains' => ['ANTIMICROBIAL_RESISTANCE'], 'template' => 'AMR_ASSESSMENT', 'lenses' => ['CLINICAL_GOVERNANCE', 'RISK']],
+            ['code' => 'OUTBREAK_PREPAREDNESS_CHECK', 'name' => 'Outbreak Preparedness Check', 'objective' => 'EMERGENCY_PREPAREDNESS', 'domains' => ['OUTBREAK_RESPONSE'], 'template' => 'OUTBREAK_READINESS', 'lenses' => ['RISK', 'CAPACITY']],
+            ['code' => 'SRH_SITUATION', 'name' => 'Sexual and Reproductive Health Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['SEXUAL_REPRODUCTIVE_HEALTH'], 'template' => 'SRH_ASSESSMENT', 'lenses' => ['CAPACITY', 'EQUITY']],
+            ['code' => 'ADOLESCENT_FRIENDLY_REVIEW', 'name' => 'Adolescent-Friendly Services Review', 'objective' => 'QUALITY_IMPROVEMENT', 'domains' => ['ADOLESCENT_HEALTH'], 'template' => 'ADOLESCENT_SERVICES', 'lenses' => ['QUALITY', 'EQUITY']],
+            ['code' => 'DISABILITY_ACCESS', 'name' => 'Accessibility and Inclusion Audit', 'objective' => 'EQUITY_ACCESS', 'domains' => ['DISABILITY_INCLUSION'], 'template' => 'DISABILITY_ACCESS_AUDIT', 'lenses' => ['EQUITY', 'COMPLIANCE']],
+            ['code' => 'RBF_VERIFICATION_ROUND', 'name' => 'Results-Based Financing Verification', 'objective' => 'RBF_VERIFICATION', 'domains' => ['HEALTH_INFORMATION_SYSTEMS'], 'template' => 'RBF_VERIFICATION_VISIT', 'lenses' => ['COMPLIANCE', 'DATA_CONFIDENCE']],
+            ['code' => 'TRAINING_NEEDS_ROUND', 'name' => 'Training Needs Assessment', 'objective' => 'TRAINING_NEEDS', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'TRAINING_NEEDS_ASSESSMENT', 'lenses' => ['CAPACITY', 'PRIORITY_ACTION']],
+            ['code' => 'CLIMATE_RESILIENCE_CHECK', 'name' => 'Climate Resilience Check', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['ENVIRONMENTAL_HEALTH'], 'template' => 'CLIMATE_RESILIENCE', 'lenses' => ['RISK', 'SUSTAINABILITY']],
+            ['code' => 'STAFF_SAFETY_REVIEW', 'name' => 'Staff Health and Safety Review', 'objective' => 'PATIENT_SAFETY', 'domains' => ['OCCUPATIONAL_HEALTH'], 'template' => 'OCCUPATIONAL_HEALTH_ASSESSMENT', 'lenses' => ['RISK', 'CAPACITY']],
+            ['code' => 'HMIS_REVIEW', 'name' => 'Health Information Systems Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['HEALTH_INFORMATION_SYSTEMS'], 'template' => 'HMIS_ASSESSMENT', 'lenses' => ['CAPACITY', 'DATA_CONFIDENCE']],
+
+            // Entry points for the subjects and dimensions that are deliberately not
+            // objectives. A user still starts from the familiar name; the model behind it
+            // stays a purpose narrowed by a subject or a measurement dimension.
+            ['code' => 'WORKFORCE_REVIEW', 'name' => 'Health Workforce Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'HEALTH_FACILITY_GENERAL', 'lenses' => ['CAPACITY', 'PERFORMANCE']],
+            ['code' => 'GOVERNANCE_REVIEW', 'name' => 'Leadership and Governance Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'HEALTH_FACILITY_GENERAL', 'lenses' => ['CLINICAL_GOVERNANCE', 'EXECUTIVE']],
+            ['code' => 'FINANCING_REVIEW', 'name' => 'Health Financing Review', 'objective' => 'EFFICIENCY_REVIEW', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'HEALTH_FACILITY_GENERAL', 'lenses' => ['EFFICIENCY', 'SUSTAINABILITY']],
+            ['code' => 'INFRASTRUCTURE_REVIEW', 'name' => 'Infrastructure and Environment Review', 'objective' => 'OPERATIONAL_READINESS', 'domains' => ['ENVIRONMENTAL_HEALTH'], 'template' => 'CLIMATE_RESILIENCE', 'lenses' => ['CAPACITY', 'RISK']],
+            ['code' => 'SUPPLY_CHAIN_REVIEW', 'name' => 'Supply Chain and Commodities Review', 'objective' => 'OPERATIONAL_READINESS', 'domains' => ['PHARMACY'], 'template' => 'PHARMACY_ASSESSMENT', 'lenses' => ['OPERATIONS', 'RISK']],
+            ['code' => 'COMMUNITY_ENGAGEMENT_REVIEW', 'name' => 'Community Engagement Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['COMMUNITY_HEALTH'], 'template' => 'COMMUNITY_OUTREACH', 'lenses' => ['EQUITY', 'PUBLIC_HEALTH']],
+            ['code' => 'DIGITAL_READINESS_REVIEW', 'name' => 'Digital Health Readiness', 'objective' => 'SERVICE_EXPANSION', 'domains' => ['HEALTH_INFORMATION_SYSTEMS'], 'template' => 'DIGITAL_READINESS', 'lenses' => ['CAPACITY', 'OPERATIONS']],
+            ['code' => 'HEALTH_PROMOTION_REVIEW', 'name' => 'Health Promotion Review', 'objective' => 'PROGRAMME_EVALUATION', 'domains' => ['HEALTH_PROMOTION'], 'template' => 'COMMUNITY_OUTREACH', 'lenses' => ['PROGRAMME_EFFECTIVENESS', 'PUBLIC_HEALTH']],
+            ['code' => 'DISTRICT_SUPERVISION_ROUND', 'name' => 'District PHC Supervision Round', 'objective' => 'SUPPORTIVE_SUPERVISION', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'DISTRICT_PHC_SUPERVISION', 'lenses' => ['PROGRESS', 'PRIORITY_ACTION']],
+            ['code' => 'PATIENT_SATISFACTION_ROUND', 'name' => 'Patient Satisfaction Survey', 'objective' => 'PATIENT_SATISFACTION', 'domains' => ['PATIENT_EXPERIENCE'], 'template' => 'PATIENT_EXPERIENCE_SURVEY', 'lenses' => ['QUALITY', 'EQUITY']],
+            ['code' => 'SUSTAINABILITY_CHECK', 'name' => 'Programme Sustainability Review', 'objective' => 'SUSTAINABILITY_REVIEW', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'HEALTH_FACILITY_GENERAL', 'lenses' => ['SUSTAINABILITY', 'EXECUTIVE']],
         ];
 
         $objectives = AssessmentObjective::where('methodology_version_id', $version->methodology_version_id)

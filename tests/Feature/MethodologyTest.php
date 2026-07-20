@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AnalysisLens;
 use App\Models\AssessmentObjective;
 use App\Models\HealthArea;
+use App\Models\HealthDomain;
 use App\Models\InsightCategory;
 use App\Models\MethodologyVersion;
 use App\Models\ObjectiveRecommendation;
@@ -47,11 +48,11 @@ class MethodologyTest extends TestCase
         $version = $this->seedCatalogue();
 
         $this->assertGreaterThanOrEqual(25, $version->objectives()->count());
-        $this->assertGreaterThanOrEqual(50, $version->healthAreas()->count());
+        $this->assertGreaterThanOrEqual(120, $version->healthAreas()->count());
         $this->assertGreaterThanOrEqual(15, $version->analysisLenses()->count());
-        $this->assertGreaterThanOrEqual(12, $version->insightCategories()->count());
-        $this->assertGreaterThanOrEqual(20, $version->templates()->count());
-        $this->assertGreaterThanOrEqual(10, $version->presets()->count());
+        $this->assertGreaterThanOrEqual(20, $version->insightCategories()->count());
+        $this->assertGreaterThanOrEqual(35, $version->templates()->count());
+        $this->assertGreaterThanOrEqual(35, $version->presets()->count());
     }
 
     public function test_the_catalogue_is_idempotent(): void
@@ -71,13 +72,98 @@ class MethodologyTest extends TestCase
 
         // Objectives are purposes. If a subject such as Malaria appeared as an objective
         // it would also exist as a health domain, and a user could not tell which to pick.
-        $subjects = ['MALARIA', 'HIV', 'TUBERCULOSIS', 'NUTRITION', 'WASH', 'IMMUNIZATION'];
-        $codes = $version->objectives()->pluck('objective_code')->all();
+        // Checked against the whole health domain table rather than a hand-written list,
+        // so promoting a new subject to a domain cannot silently reintroduce a collision.
+        $objectives = $version->objectives()->pluck('objective_code')->all();
+        $healthDomains = HealthDomain::pluck('domain_code')->all();
 
-        foreach ($subjects as $subject) {
-            $this->assertNotContains($subject, $codes,
-                "{$subject} is a health domain, not an objective. Keeping subjects out of the objective catalogue is what stops the two colliding.");
+        $collisions = array_intersect($objectives, $healthDomains);
+
+        $this->assertSame([], array_values($collisions),
+            'These codes exist as both an objective and a health domain: '.implode(', ', $collisions)
+            .'. Objectives carry purpose; subjects live in health domains.');
+    }
+
+    public function test_no_objective_mirrors_a_measurement_domain(): void
+    {
+        $version = $this->seedCatalogue();
+
+        // The same rule in the other direction. "Health Workforce" is a measurement
+        // dimension, not a reason to run an assessment, and carrying it as an objective
+        // would put one concept in two places.
+        $objectives = $version->objectives()->pluck('objective_code')->all();
+
+        foreach ([
+            'HEALTH_WORKFORCE', 'LEADERSHIP_GOVERNANCE', 'HEALTH_FINANCING',
+            'HEALTH_INFORMATION', 'INFRASTRUCTURE', 'SUPPLY_CHAIN',
+            'COMMUNITY_ENGAGEMENT', 'DIGITAL_HEALTH', 'HEALTH_PROMOTION',
+        ] as $dimension) {
+            $this->assertNotContains($dimension, $objectives,
+                "{$dimension} names a subject or measurement dimension, not a purpose. It is reached through a purpose narrowed by a domain, with an objective preset as the entry point.");
         }
+    }
+
+    public function test_every_promoted_subject_is_a_health_domain(): void
+    {
+        $this->seedCatalogue();
+
+        // These were absorbed as areas under General Health Systems, which mis-filed
+        // every assessment about them. Malaria matters most: it is the highest disease
+        // burden in the primary market.
+        $codes = HealthDomain::pluck('domain_code')->all();
+
+        foreach ([
+            'MALARIA', 'NON_COMMUNICABLE_DISEASES', 'NEGLECTED_TROPICAL_DISEASES',
+            'LABORATORY', 'PHARMACY', 'EMERGENCY_CARE',
+        ] as $subject) {
+            $this->assertContains($subject, $codes, "{$subject} must be a health domain in its own right.");
+        }
+    }
+
+    public function test_general_health_systems_is_no_longer_absorbing_subjects(): void
+    {
+        $version = $this->seedCatalogue();
+
+        $general = HealthDomain::where('domain_code', 'GENERAL_HEALTH_SYSTEMS')->firstOrFail();
+        $areaCount = HealthArea::where('methodology_version_id', $version->methodology_version_id)
+            ->where('health_domain_id', $general->health_domain_id)
+            ->count();
+
+        // A catch-all domain growing large is the signal that subjects deserving to be
+        // first class are being hidden inside it.
+        $this->assertLessThanOrEqual(6, $areaCount,
+            'General Health Systems has grown to '.$areaCount.' areas. Something in it probably deserves to be a health domain.');
+    }
+
+    public function test_the_catalogue_removes_entries_that_were_dropped(): void
+    {
+        $version = $this->seedCatalogue();
+
+        HealthArea::create([
+            'methodology_version_id' => $version->methodology_version_id,
+            'health_domain_id' => HealthDomain::value('health_domain_id'),
+            'area_code' => 'AREA_REMOVED_FROM_CATALOGUE',
+            'area_name' => 'Left over from an earlier catalogue',
+        ]);
+
+        // Without pruning the seeder could only ever add, so an entry removed from the
+        // catalogue would linger in the database and still be shown to administrators.
+        $this->seed(MethodologyCatalogueSeeder::class);
+
+        $this->assertDatabaseMissing('health_areas', ['area_code' => 'AREA_REMOVED_FROM_CATALOGUE']);
+    }
+
+    public function test_data_gaps_are_a_reportable_finding(): void
+    {
+        $version = $this->seedCatalogue();
+
+        // The platform already records NOT_CALIBRATED and PARTIAL on every score. Without
+        // a category for it, an assessment that is largely unanswered still produces a
+        // confident-looking report.
+        $dataGap = InsightCategory::where('methodology_version_id', $version->methodology_version_id)
+            ->where('category_code', 'DATA_GAP')->firstOrFail();
+
+        $this->assertTrue($dataGap->is_diagnostic);
     }
 
     public function test_every_health_area_belongs_to_a_real_health_domain(): void

@@ -8,6 +8,7 @@ use App\Models\SettingType;
 use App\Models\Target;
 use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -44,7 +45,18 @@ class HealthTaxonomyTest extends TestCase
         $this->assertDatabaseHas('health_domains', ['domain_code' => 'MENTAL_HEALTH']);
         $this->assertDatabaseHas('health_domains', ['domain_code' => 'HIV']);
         $this->assertDatabaseHas('health_domains', ['domain_code' => 'INFECTION_PREVENTION']);
-        $this->assertSame(12, HealthDomain::count());
+
+        // The point of this test is that the two taxonomies stay separate, not how many
+        // health domains exist. The count was previously pinned at 12 and broke the
+        // moment the catalogue grew, which told us nothing about distinctness. Asserted
+        // directly instead, so it keeps holding as the catalogue expands.
+        $healthDomains = HealthDomain::pluck('domain_code')->all();
+        $measurementDomains = DB::table('domains')->pluck('domain_code')->all();
+
+        $this->assertSame([], array_values(array_intersect($healthDomains, $measurementDomains)),
+            'A code exists as both a health domain (the subject) and a measurement domain (the dimension scores roll up into).');
+
+        $this->assertGreaterThanOrEqual(12, count($healthDomains));
     }
 
     public function test_modules_can_map_to_more_than_one_health_domain(): void

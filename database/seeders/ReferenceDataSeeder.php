@@ -47,6 +47,12 @@ class ReferenceDataSeeder extends Seeder
             ['domain_code' => 'RES', 'domain_name' => 'Infrastructure, Equipment and Supplies', 'display_order' => 5],
             ['domain_code' => 'INFO', 'domain_name' => 'Information, Measurement and Learning', 'display_order' => 6],
             ['domain_code' => 'PCOM', 'domain_name' => 'Person-Centredness and Community Responsiveness', 'display_order' => 7],
+            // Financing completes the WHO health system building blocks. Without it a
+            // financing weakness cannot roll up and be compared across programmes the way
+            // a workforce weakness can. Added to the master list here; it only takes
+            // effect once a taxonomy version containing it is published, so nothing that
+            // is currently scored changes.
+            ['domain_code' => 'FIN', 'domain_name' => 'Financing and Resource Management', 'display_order' => 8],
         ];
 
         foreach ($domains as $domain) {
@@ -187,19 +193,57 @@ class ReferenceDataSeeder extends Seeder
             ]);
         }
 
+        // Health domains are subjects, never purposes. Each one here is a subject that is
+        // routinely assessed on its own somewhere in the world, which is the test for
+        // whether it deserves to be a domain rather than an area beneath one.
         $domains = [
+            // Cross-cutting and facility-wide
             ['GENERAL_HEALTH_SYSTEMS', 'General Health Systems'],
-            ['MENTAL_HEALTH', 'Mental Health'],
-            ['HIV', 'HIV'],
-            ['TUBERCULOSIS', 'Tuberculosis'],
-            ['WASH', 'Water, Sanitation and Hygiene'],
-            ['NUTRITION', 'Nutrition'],
-            ['FAMILY_PLANNING', 'Family Planning'],
-            ['IMMUNIZATION', 'Immunization'],
             ['PATIENT_EXPERIENCE', 'Patient Experience'],
             ['INFECTION_PREVENTION', 'Infection Prevention and Control'],
+            ['WASH', 'Water, Sanitation and Hygiene'],
+            ['ANTIMICROBIAL_RESISTANCE', 'Antimicrobial Resistance'],
+            ['HEALTH_INFORMATION_SYSTEMS', 'Health Information and Data Systems'],
+            ['HEALTH_PROMOTION', 'Health Promotion and Education'],
+            ['COMMUNITY_HEALTH', 'Community Health Services'],
+            ['ENVIRONMENTAL_HEALTH', 'Environmental Health and Climate Resilience'],
+            ['OCCUPATIONAL_HEALTH', 'Occupational Health and Safety'],
+            ['DISABILITY_INCLUSION', 'Disability and Inclusion'],
+
+            // Population groups
             ['MATERNAL_HEALTH', 'Maternal Health'],
             ['CHILD_HEALTH', 'Child Health'],
+            ['ADOLESCENT_HEALTH', 'Adolescent and Youth Health'],
+            ['OLDER_PEOPLE_HEALTH', 'Older People and Geriatric Care'],
+
+            // Communicable disease and programmes
+            ['HIV', 'HIV'],
+            ['TUBERCULOSIS', 'Tuberculosis'],
+            ['MALARIA', 'Malaria'],
+            ['NEGLECTED_TROPICAL_DISEASES', 'Neglected Tropical Diseases'],
+            ['IMMUNIZATION', 'Immunization'],
+            ['OUTBREAK_RESPONSE', 'Epidemic and Outbreak Response'],
+
+            // Non-communicable and mental health
+            ['NON_COMMUNICABLE_DISEASES', 'Non-Communicable Diseases'],
+            ['MENTAL_HEALTH', 'Mental Health'],
+            ['NUTRITION', 'Nutrition'],
+
+            // Sexual and reproductive health
+            ['FAMILY_PLANNING', 'Family Planning'],
+            ['SEXUAL_REPRODUCTIVE_HEALTH', 'Sexual and Reproductive Health'],
+
+            // Clinical services assessed in their own right
+            ['LABORATORY', 'Laboratory Services'],
+            ['PHARMACY', 'Pharmacy and Medical Supplies'],
+            ['EMERGENCY_CARE', 'Emergency and Critical Care'],
+            ['SURGICAL_CARE', 'Surgical and Anaesthesia Care'],
+            ['BLOOD_SERVICES', 'Blood and Transfusion Services'],
+            ['DIAGNOSTIC_IMAGING', 'Diagnostic Imaging'],
+            ['REHABILITATION', 'Rehabilitation Services'],
+            ['PALLIATIVE_CARE', 'Palliative and End-of-Life Care'],
+            ['ORAL_HEALTH', 'Oral Health'],
+            ['EYE_HEALTH', 'Eye Health'],
         ];
 
         foreach ($domains as $order => [$code, $name]) {
