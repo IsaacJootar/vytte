@@ -150,3 +150,45 @@
     background: linear-gradient(90deg, #1e293b 0%, #334155 48%, #1e293b 100%);
     background-size: 1200px 100%;
 }
+
+/* ---------------------------------------------------------------------------
+   Form controls carry a visible border by default.
+
+   Tailwind's preflight sets `border-width: 0` on every element, so a class such
+   as `border-slate-300` sets only the colour and the control renders with no
+   outline at all. The @tailwindcss/forms plugin normally restores this; it is
+   not installed here.
+
+   This lives in the base layer, so any utility class still wins: a control that
+   genuinely wants no border can still say `border-0`.
+   --------------------------------------------------------------------------- */
+@layer base {
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='submit']):not([type='button']),
+    select,
+    textarea {
+        border-width: 1px;
+        border-style: solid;
+        border-color: #CBD5E1;
+        background-color: #ffffff;
+    }
+
+    input[type='checkbox'],
+    input[type='radio'] {
+        border-width: 1px;
+        border-style: solid;
+        border-color: #94A3B8;
+    }
+
+    .dark input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='submit']):not([type='button']),
+    .dark select,
+    .dark textarea {
+        border-color: #475569;
+        background-color: #0F172A;
+        color: #F1F5F9;
+    }
+
+    .dark input[type='checkbox'],
+    .dark input[type='radio'] {
+        border-color: #64748B;
+    }
+}
