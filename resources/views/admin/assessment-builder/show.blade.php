@@ -10,12 +10,6 @@
         <x-assessment-status-badge :status="$assessment->status" />
     </div>
 
-    @if (session('success'))
-        <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" />
 
     <div class="grid gap-4 lg:grid-cols-3">

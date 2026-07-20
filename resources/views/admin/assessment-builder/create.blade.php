@@ -10,17 +10,6 @@
     <form method="POST" action="{{ route('admin.assessments.store') }}" class="section-card max-w-2xl space-y-6 p-6">
         @csrf
 
-        @if ($errors->any())
-            <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-                <p class="text-sm font-semibold text-red-800 dark:text-red-200">Please fix the following:</p>
-                <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
         <x-form-section title="Basic Information"
                         description="Only the name and department are required to save a draft.">
             <x-form-field label="Assessment name" for="display_name">

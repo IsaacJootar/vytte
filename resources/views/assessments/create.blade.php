@@ -11,12 +11,6 @@
             </p>
         </div>
 
-        @if ($errors->any())
-            <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
-                {{ $errors->first() }}
-            </div>
-        @endif
-
         <div class="grid gap-4 sm:grid-cols-2">
             <button type="button" @click="path = 'COMPREHENSIVE'"
                     class="rounded-2xl border p-5 text-left transition"

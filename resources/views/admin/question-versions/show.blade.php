@@ -22,31 +22,39 @@
                 <form method="POST" action="{{ route('admin.question-versions.approve', $version) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="rounded-xl border border-green-300 px-4 py-2 text-sm font-semibold text-green-700 dark:border-green-700 dark:text-green-300">Approve</button>
+                    <button class="btn-secondary">Approve</button>
                 </form>
             @endif
             @if ($version->status === 'APPROVED')
                 <form method="POST" action="{{ route('admin.question-versions.publish', $version) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Publish immutable version</button>
+                    <button class="btn-primary">Publish immutable version</button>
                 </form>
             @endif
             @if ($version->status === 'PUBLISHED')
                 <form method="POST" action="{{ route('admin.question-versions.supersede', $version) }}">
                     @csrf
-                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300">Create successor draft</button>
+                    <button class="btn-secondary">Create successor draft</button>
                 </form>
             @endif
             @if (in_array($version->status, ['DRAFT', 'INTERNAL_REVIEW', 'APPROVED', 'PUBLISHED'], true))
-                <form method="POST" action="{{ route('admin.question-versions.archive', $version) }}">
+                <form method="POST" action="{{ route('admin.question-versions.archive', $version) }}"
+                      onsubmit="return confirm('Archive this version? It stays on record and can still be read, but it can no longer be used or edited.')">
                     @csrf
                     @method('PATCH')
-                    <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 dark:border-red-700 dark:text-red-300">Archive</button>
+                    <button class="btn-danger">Archive</button>
                 </form>
             @endif
         </div>
     </div>
+
+    @if ($version->status === 'DRAFT')
+        <p class="-mt-2 mb-5 text-xs text-slate-500 dark:text-slate-400">
+            Drafts are archived rather than deleted. Nothing in the question library is ever erased,
+            so every report ever produced can still be traced back to the exact wording used.
+        </p>
+    @endif
 
     <div class="mb-5 grid gap-4 md:grid-cols-4">
         @foreach ($dependencySummary as $label => $count)
@@ -65,49 +73,86 @@
             <div class="xl:col-span-2 space-y-4">
                 <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Draft question configuration</h2>
-                    <label class="mt-4 block text-xs font-bold text-slate-500">Question wording</label>
-                    <textarea name="question_text" rows="4" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>{{ old('question_text', $version->question_text) }}</textarea>
 
-                    <div class="mt-4 grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500">Response type</label>
-                            <select name="type_id" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                                @foreach ($questionTypes as $type)
-                                    <option value="{{ $type->type_id }}" @selected((int) old('type_id', $version->type_id) === (int) $type->type_id)>{{ $type->type_code }}</option>
-                                @endforeach
-                            </select>
-                            <p class="mt-1 text-xs text-slate-500">Save after changing type to refresh the relevant option or numeric controls.</p>
+                    <div class="mt-4 space-y-4">
+                        <x-form-field label="Question wording" name="question_text"
+                                      hint="The exact words the respondent reads. Locked once published.">
+                            <textarea id="question_text" name="question_text" rows="4" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white" required>{{ old('question_text', $version->question_text) }}</textarea>
+                        </x-form-field>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <x-form-field label="Response type" name="type_id"
+                                          hint="Save after changing this to refresh the option or numeric controls below.">
+                                <select id="type_id" name="type_id" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white" required>
+                                    @foreach ($questionTypes as $type)
+                                        <option value="{{ $type->type_id }}" @selected((int) old('type_id', $version->type_id) === (int) $type->type_id)>{{ $type->type_code }}</option>
+                                    @endforeach
+                                </select>
+                            </x-form-field>
+                            <x-form-field label="Who should answer this?" name="respondent_role_hint" :optional="true"
+                                          hint="For example: Facility Manager, Head of Nursing.">
+                                <input id="respondent_role_hint" name="respondent_role_hint" value="{{ old('respondent_role_hint', $version->respondent_role_hint) }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                            </x-form-field>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-500">Respondent role hint</label>
-                            <input name="respondent_role_hint" value="{{ old('respondent_role_hint', $version->respondent_role_hint) }}" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+                            <label class="flex items-start gap-3 text-sm">
+                                <input type="checkbox" id="requires_observation" name="requires_observation" value="1" class="mt-0.5" @checked(old('requires_observation', $version->requires_observation))>
+                                <span>
+                                    <span class="font-semibold text-slate-800 dark:text-slate-100">The answer must be seen, not recalled</span>
+                                    <span class="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                                        Tick this when the respondent has to physically check something on site — look at the
+                                        equipment, open the register, walk the ward — rather than answer from memory or from a
+                                        record. Questions ticked here show a "Needs observation" badge to whoever builds an
+                                        assessment, so they can plan a site visit.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <x-form-field label="Methodology notes" name="methodology_notes" :optional="true"
+                                          hint="How this question should be interpreted and answered consistently.">
+                                <textarea id="methodology_notes" name="methodology_notes" rows="3" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">{{ old('methodology_notes', $version->methodology_notes) }}</textarea>
+                            </x-form-field>
+                            <x-form-field label="Source summary" name="source_summary" :optional="true"
+                                          hint="Where this question comes from — a standard, guideline, or reference.">
+                                <textarea id="source_summary" name="source_summary" rows="3" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">{{ old('source_summary', $version->source_summary) }}</textarea>
+                            </x-form-field>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <x-form-field label="Review notes" name="review_notes" :optional="true"
+                                          hint="Internal notes for whoever approves this draft.">
+                                <textarea id="review_notes" name="review_notes" rows="3" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">{{ old('review_notes', $version->review_notes) }}</textarea>
+                            </x-form-field>
+                            <x-form-field label="Effective date" name="effective_date" :optional="true"
+                                          hint="The date this wording is considered to apply from.">
+                                <input id="effective_date" name="effective_date" type="date" value="{{ old('effective_date', $version->effective_date?->format('Y-m-d')) }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                            </x-form-field>
                         </div>
                     </div>
-
-                    <label class="mt-4 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                        <input type="checkbox" name="requires_observation" value="1" @checked(old('requires_observation', $version->requires_observation))>
-                        Requires observation
-                    </label>
-
-                    <div class="mt-4 grid gap-4 md:grid-cols-2">
-                        <textarea name="methodology_notes" rows="3" placeholder="Methodology notes" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ old('methodology_notes', $version->methodology_notes) }}</textarea>
-                        <textarea name="source_summary" rows="3" placeholder="Source summary" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ old('source_summary', $version->source_summary) }}</textarea>
-                    </div>
-                    <textarea name="review_notes" rows="2" placeholder="Review notes" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ old('review_notes', $version->review_notes) }}</textarea>
-                    <input name="effective_date" type="date" value="{{ old('effective_date', $version->effective_date?->format('Y-m-d')) }}" class="mt-4 rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                 </div>
 
                 @if ($isOptionType)
                     <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                         <h2 class="text-sm font-bold text-slate-900 dark:text-white">Response options</h2>
                         <p class="mt-1 text-xs text-slate-500">Blank rows are ignored. Scores must be 0–100.</p>
-                        <div class="mt-4 space-y-2">
+
+                        {{-- Column headings, so each box is labelled once instead of relying on
+                             placeholder text that vanishes the moment the user types. --}}
+                        <div class="mt-4 hidden gap-2 px-1 text-xs font-semibold text-slate-500 md:grid md:grid-cols-[1fr_90px_110px] dark:text-slate-400">
+                            <span>Answer the respondent can choose</span>
+                            <span>Order</span>
+                            <span>Score</span>
+                        </div>
+                        <div class="mt-1.5 space-y-2">
                             @foreach ($optionRows as $index => $option)
-                                <div class="grid gap-2 md:grid-cols-[1fr_90px_110px]">
+                                <div class="grid items-center gap-2 md:grid-cols-[1fr_90px_110px]">
                                     <input type="hidden" name="options[{{ $index }}][option_id]" value="{{ $option['option_id'] ?? $index + 1 }}">
-                                    <input name="options[{{ $index }}][option_label]" value="{{ $option['option_label'] ?? '' }}" placeholder="Option label" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                                    <input name="options[{{ $index }}][option_order]" type="number" min="1" value="{{ $option['option_order'] ?? $index + 1 }}" placeholder="Order" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                                    <input name="options[{{ $index }}][score_weight]" type="number" min="0" max="100" step="0.01" value="{{ $option['score_weight'] ?? '' }}" placeholder="Score" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                    <input name="options[{{ $index }}][option_label]" value="{{ $option['option_label'] ?? '' }}" aria-label="Answer label for row {{ $index + 1 }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                                    <input name="options[{{ $index }}][option_order]" type="number" min="1" value="{{ $option['option_order'] ?? $index + 1 }}" aria-label="Order for row {{ $index + 1 }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                                    <input name="options[{{ $index }}][score_weight]" type="number" min="0" max="100" step="0.01" value="{{ $option['score_weight'] ?? '' }}" aria-label="Score for row {{ $index + 1 }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
                                 </div>
                             @endforeach
                         </div>
@@ -117,22 +162,37 @@
                 @if ($isNumericType)
                     <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                         <h2 class="text-sm font-bold text-slate-900 dark:text-white">Numeric validation and bands</h2>
-                        <div class="mt-4 grid gap-3 md:grid-cols-4">
-                            <input name="numeric_min" type="number" step="0.0001" value="{{ old('numeric_min', $numericConfig['min_value'] ?? '') }}" placeholder="Minimum" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                            <input name="numeric_max" type="number" step="0.0001" value="{{ old('numeric_max', $numericConfig['max_value'] ?? '') }}" placeholder="Maximum" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                            <input name="numeric_unit" value="{{ old('numeric_unit', $numericConfig['unit'] ?? '') }}" placeholder="Unit" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                            <input name="numeric_step" type="number" min="0.0001" step="0.0001" value="{{ old('numeric_step', $numericConfig['step'] ?? '') }}" placeholder="Step" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+                            <x-form-field label="Minimum" name="numeric_min" :optional="true">
+                                <input id="numeric_min" name="numeric_min" type="number" step="0.0001" value="{{ old('numeric_min', $numericConfig['min_value'] ?? '') }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                            </x-form-field>
+                            <x-form-field label="Maximum" name="numeric_max" :optional="true">
+                                <input id="numeric_max" name="numeric_max" type="number" step="0.0001" value="{{ old('numeric_max', $numericConfig['max_value'] ?? '') }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                            </x-form-field>
+                            <x-form-field label="Unit" name="numeric_unit" :optional="true">
+                                <input id="numeric_unit" name="numeric_unit" value="{{ old('numeric_unit', $numericConfig['unit'] ?? '') }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                            </x-form-field>
+                            <x-form-field label="Step" name="numeric_step" :optional="true">
+                                <input id="numeric_step" name="numeric_step" type="number" min="0.0001" step="0.0001" value="{{ old('numeric_step', $numericConfig['step'] ?? '') }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                            </x-form-field>
                         </div>
 
-                        <p class="mt-4 text-xs text-slate-500">Numeric bands are used when the question placement is scored.</p>
-                        <div class="mt-3 space-y-2">
+                        <p class="mt-5 text-xs text-slate-500">Numeric bands are used when the question placement is scored.</p>
+                        <div class="mt-3 hidden gap-2 px-1 text-xs font-semibold text-slate-500 md:grid md:grid-cols-[1fr_100px_100px_100px_90px] dark:text-slate-400">
+                            <span>Band label</span>
+                            <span>Min</span>
+                            <span>Max</span>
+                            <span>Score</span>
+                            <span>Order</span>
+                        </div>
+                        <div class="mt-1.5 space-y-2">
                             @foreach ($bandRows as $index => $band)
-                                <div class="grid gap-2 md:grid-cols-[1fr_100px_100px_100px_90px]">
-                                    <input name="numeric_bands[{{ $index }}][label]" value="{{ $band['label'] ?? '' }}" placeholder="Band label" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                                    <input name="numeric_bands[{{ $index }}][min_value]" type="number" step="0.0001" value="{{ $band['min_value'] ?? '' }}" placeholder="Min" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                                    <input name="numeric_bands[{{ $index }}][max_value]" type="number" step="0.0001" value="{{ $band['max_value'] ?? '' }}" placeholder="Max" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                                    <input name="numeric_bands[{{ $index }}][score_weight]" type="number" min="0" max="100" step="0.01" value="{{ $band['score_weight'] ?? '' }}" placeholder="Score" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                                    <input name="numeric_bands[{{ $index }}][display_order]" type="number" min="1" value="{{ $band['display_order'] ?? $index + 1 }}" placeholder="Order" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                <div class="grid items-center gap-2 md:grid-cols-[1fr_100px_100px_100px_90px]">
+                                    <input name="numeric_bands[{{ $index }}][label]" value="{{ $band['label'] ?? '' }}" aria-label="Band label for row {{ $index + 1 }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                                    <input name="numeric_bands[{{ $index }}][min_value]" type="number" step="0.0001" value="{{ $band['min_value'] ?? '' }}" aria-label="Minimum for row {{ $index + 1 }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                                    <input name="numeric_bands[{{ $index }}][max_value]" type="number" step="0.0001" value="{{ $band['max_value'] ?? '' }}" aria-label="Maximum for row {{ $index + 1 }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                                    <input name="numeric_bands[{{ $index }}][score_weight]" type="number" min="0" max="100" step="0.01" value="{{ $band['score_weight'] ?? '' }}" aria-label="Score for row {{ $index + 1 }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
+                                    <input name="numeric_bands[{{ $index }}][display_order]" type="number" min="1" value="{{ $band['display_order'] ?? $index + 1 }}" aria-label="Order for row {{ $index + 1 }}" class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
                                 </div>
                             @endforeach
                         </div>
@@ -140,7 +200,7 @@
                 @endif
 
                 <div class="text-right">
-                    <button class="rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-bold text-white">Save draft configuration</button>
+                    <button class="btn-primary">Save draft configuration</button>
                 </div>
             </div>
 
@@ -181,7 +241,7 @@
                 <p class="mt-3 text-sm leading-6 text-slate-700 dark:text-slate-300">{{ $version->question_text }}</p>
                 <dl class="mt-5 grid gap-3 text-xs text-slate-500 md:grid-cols-2">
                     <div><dt class="font-bold text-slate-700 dark:text-slate-200">Respondent role</dt><dd>{{ $version->respondent_role_hint ?? '—' }}</dd></div>
-                    <div><dt class="font-bold text-slate-700 dark:text-slate-200">Requires observation</dt><dd>{{ $version->requires_observation ? 'Yes' : 'No' }}</dd></div>
+                    <div><dt class="font-bold text-slate-700 dark:text-slate-200">Answer must be seen, not recalled</dt><dd>{{ $version->requires_observation ? "Yes — needs a site visit to answer" : "No — can be answered from records" }}</dd></div>
                     <div><dt class="font-bold text-slate-700 dark:text-slate-200">Effective date</dt><dd>{{ $version->effective_date?->format('Y-m-d') ?? '—' }}</dd></div>
                     <div><dt class="font-bold text-slate-700 dark:text-slate-200">Content hash</dt><dd class="break-all">{{ $version->content_hash ?? 'Not published' }}</dd></div>
                 </dl>

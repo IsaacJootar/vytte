@@ -6,17 +6,6 @@
         <p class="text-xs text-slate-500 dark:text-slate-400">In {{ $placement->section?->section_name }}</p>
     </div>
 
-    @if ($errors->any())
-        <div class="mb-4 max-w-2xl rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-            <p class="text-sm font-semibold text-red-800 dark:text-red-200">Please fix the following:</p>
-            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     @if ($scoringGroups->isEmpty())
         <div class="mb-4 max-w-2xl rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-950">
             <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">This department has no score yet</p>

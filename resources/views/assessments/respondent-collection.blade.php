@@ -36,12 +36,6 @@
         </div>
     @endif
 
-    @if ($errors->any())
-        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            {{ $errors->first() }}
-        </div>
-    @endif
-
     <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
             <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Eligible completed</p>

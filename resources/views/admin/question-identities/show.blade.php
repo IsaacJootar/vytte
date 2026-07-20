@@ -21,26 +21,36 @@
             <form method="POST" action="{{ route('admin.questions.toggle', $question) }}" class="mt-3">
                 @csrf
                 @method('PATCH')
-                <button class="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">{{ $question->is_active ? 'Disable question' : 'Enable question' }}</button>
+                <button class="btn-secondary w-full">{{ $question->is_active ? 'Disable question' : 'Enable question' }}</button>
+                <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    {{ $question->is_active
+                        ? 'Disabling hides this question from new assessments. Assessments already published keep it.'
+                        : 'Enabling makes this question available to new assessments again.' }}
+                </p>
             </form>
-            <form method="POST" action="{{ route('admin.questions.update', $question) }}" class="mt-4">
+            <form method="POST" action="{{ route('admin.questions.update', $question) }}" class="mt-5">
                 @csrf
                 @method('PUT')
-                <label class="block text-xs font-bold uppercase tracking-wide text-slate-500">Create replacement draft wording</label>
-                <textarea name="question_text" rows="5" class="mt-2 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ $question->question_text }}</textarea>
-                <button class="mt-2 w-full rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Create draft version</button>
+                <label for="replacement_text" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Create replacement draft wording</label>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Published wording can never change. Edit here to start a new draft version instead.</p>
+                <textarea id="replacement_text" name="question_text" rows="5" class="mt-1.5 w-full rounded-lg text-sm dark:bg-slate-900 dark:text-white">{{ $question->question_text }}</textarea>
+                <button class="btn-primary mt-2 w-full">Create draft version</button>
             </form>
         </div>
     </div>
 
     <div class="mt-4 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
         <h2 class="text-sm font-bold text-slate-900 dark:text-white">Versions</h2>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Select a version to open it. Versions are never deleted, so past reports stay reproducible.</p>
         <div class="mt-3 space-y-3">
             @foreach ($question->versions as $version)
-                <a href="{{ route('admin.question-versions.show', $version) }}" class="block rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
-                    <div class="flex items-center justify-between">
+                <a href="{{ route('admin.question-versions.show', $version) }}" class="nav-card group block rounded-xl bg-slate-50 p-4 dark:bg-slate-900">
+                    <div class="flex items-center justify-between gap-3">
                         <p class="text-sm font-semibold text-slate-900 dark:text-white">Version {{ $version->version_number }}</p>
-                        <span class="text-xs font-bold text-slate-500">{{ $version->status }}</span>
+                        <span class="flex items-center gap-2">
+                            <x-assessment-status-badge :status="$version->status" />
+                            <span class="text-vytte-700 transition-transform group-hover:translate-x-0.5 dark:text-vytte-300" aria-hidden="true">&rarr;</span>
+                        </span>
                     </div>
                     <p class="mt-1 text-sm text-slate-500">{{ $version->question_text }}</p>
                 </a>

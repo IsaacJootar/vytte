@@ -20,17 +20,6 @@
         @csrf
         @method('PUT')
 
-        @if ($errors->any())
-            <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-                <p class="text-sm font-semibold text-red-800 dark:text-red-200">Please fix the following:</p>
-                <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
         <div>
             <label for="display_name" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Assessment name</label>
             <input id="display_name" name="display_name" value="{{ old('display_name', $assessment->display_name) }}" required maxlength="180" @disabled(! $isEditable)

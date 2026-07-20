@@ -7,16 +7,6 @@
         </p>
     </div>
 
-    @if ($errors->any())
-        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-            <ul class="list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     <form method="GET" class="mb-4 flex flex-wrap items-center gap-3 section-card p-4 dark:border-slate-700 dark:bg-slate-800">
         <input name="search" value="{{ request('search') }}" placeholder="Search question wording"
                class="min-w-[16rem] flex-1 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">

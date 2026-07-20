@@ -135,6 +135,8 @@
             </div>
         </header>
 
+        <x-flash-toast />
+
         <main id="main-content" class="flex-1 px-4 py-5 sm:px-6 lg:px-8 pb-28 lg:pb-8">
             <div class="mx-auto w-full max-w-[1280px]">
                 {{ $slot }}

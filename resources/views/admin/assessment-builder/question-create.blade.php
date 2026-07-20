@@ -5,17 +5,6 @@
         <p class="text-sm text-slate-500 dark:text-slate-400">Adding to <span class="font-semibold">{{ $section->section_name }}</span>.</p>
     </div>
 
-    @if ($errors->any())
-        <div class="mb-4 max-w-2xl rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-            <p class="text-sm font-semibold text-red-800 dark:text-red-200">Please fix the following:</p>
-            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     <form method="POST" action="{{ route('admin.assessments.questions.store', [$assessment, $section]) }}"
           x-data="{ format: '{{ old('format', 'yes_no') }}' }"
           class="max-w-2xl space-y-6 section-card p-6 dark:border-slate-700 dark:bg-slate-800">

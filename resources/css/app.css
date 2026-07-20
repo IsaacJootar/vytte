@@ -116,6 +116,61 @@
 .section-card :where(pre) {
     overflow-x: auto;
 }
+/* Buttons DO something. Links GO somewhere. The two must never look alike,
+   because the user cannot undo an action they thought was navigation. */
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+.btn-primary {
+    background: #0369A1;
+    color: #FFFFFF;
+    border: 1px solid #0369A1;
+}
+.btn-primary:hover { background: #075985; border-color: #075985; }
+.btn-secondary {
+    background: #FFFFFF;
+    color: #334155;
+    border: 1px solid #CBD5E1;
+}
+.btn-secondary:hover { background: #F1F5F9; }
+.dark .btn-secondary { background: #1E293B; color: #E2E8F0; border-color: #475569; }
+.dark .btn-secondary:hover { background: #334155; }
+.btn-danger {
+    background: #FFFFFF;
+    color: #B91C1C;
+    border: 1px solid #FCA5A5;
+}
+.btn-danger:hover { background: #FEF2F2; }
+.dark .btn-danger { background: #1E293B; color: #FCA5A5; border-color: #7F1D1D; }
+
+/* A navigation link never wears button chrome. It is text, in the link colour,
+   and it underlines on hover. */
+.link-nav {
+    color: #0369A1;
+    font-weight: 600;
+    text-decoration: none;
+}
+.link-nav:hover { text-decoration: underline; }
+.dark .link-nav { color: #7DD3FC; }
+
+/* A whole card that navigates. The arrow inside is the affordance; this just
+   confirms it on hover so it never reads as a static panel. */
+.nav-card { transition: background-color 120ms ease, border-color 120ms ease; }
+.nav-card:hover { background-color: #EFF6FF; }
+.dark .nav-card:hover { background-color: #172033; }
+
 .section-card-header {
     padding: 0.875rem 1.25rem;
     border-bottom: 1px solid #F1F5F9;

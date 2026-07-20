@@ -12,22 +12,6 @@
 
     <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" />
 
-    @if (session('success'))
-        <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if ($errors->any())
-        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950">
-            <ul class="list-disc space-y-1 pl-5 text-sm text-red-700 dark:text-red-300">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     @unless ($isEditable)
         <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
             <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">This assessment is published and cannot be changed</p>

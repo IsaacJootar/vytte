@@ -5,12 +5,6 @@
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Changes take effect immediately for all workspaces.</p>
     </div>
 
-    @if (session('success'))
-        <div class="mb-5 px-4 py-3 rounded-xl text-sm font-medium bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300">
-            {{ session('success') }}
-        </div>
-    @endif
-
     <form method="POST" action="{{ route('admin.settings.update') }}">
         @csrf
         @method('PUT')
