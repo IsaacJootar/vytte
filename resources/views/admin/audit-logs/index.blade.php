@@ -1,38 +1,66 @@
-<x-admin-layout title="Audit Logs">
+<x-admin-layout title="Activity">
     <div class="mb-5">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">Audit Logs</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Immutable platform and workspace activity trail.</p>
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white">Activity</h1>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            Everything that has happened on Vytte — who did it, when, and where. This record can never be edited or deleted.
+        </p>
     </div>
-    <form method="GET" class="mb-4 flex flex-wrap gap-3 section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-        <input name="event" value="{{ request('event') }}" placeholder="Filter event" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-        <input name="workspace_id" value="{{ request('workspace_id') }}" placeholder="Workspace ID" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-        <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">Filter</button>
-    </form>
-    <div class="section-card">
-        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
-            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-            <tr><th class="px-4 py-3">Time</th><th class="px-4 py-3">Event</th><th class="px-4 py-3">Actor</th><th class="px-4 py-3">Workspace</th><th class="px-4 py-3">Subject</th><th class="px-4 py-3">Changes</th></tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-            @forelse ($logs as $log)
-                <tr>
-                    <td class="px-4 py-3 text-xs text-slate-500">{{ $log->created_at?->format('Y-m-d H:i') }}</td>
-                    <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white">{{ $log->event }}</td>
-                    <td class="px-4 py-3 text-xs font-mono text-slate-500">{{ $log->user_id ?? 'system/public' }}</td>
-                    <td class="px-4 py-3 text-xs font-mono text-slate-500">{{ $log->workspace_id ?? '—' }}</td>
-                    <td class="px-4 py-3 text-xs text-slate-500">{{ $log->auditable_type ? class_basename($log->auditable_type) : '—' }}<br><span class="font-mono">{{ $log->auditable_id }}</span></td>
-                    <td class="px-4 py-3 text-xs text-slate-500">
-                        <details>
-                            <summary class="cursor-pointer font-semibold">View JSON</summary>
-                            <pre class="mt-2 max-w-md overflow-auto rounded-lg bg-slate-950 p-3 text-[11px] text-slate-100">{{ json_encode(['old' => $log->old_values, 'new' => $log->new_values], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
-                        </details>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">No audit records found.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
+
+    <div class="mb-4 grid gap-3 sm:grid-cols-3">
+        <x-stat-card tone="blue" label="Today" :value="$counts['today']" sub="Events recorded since midnight" />
+        <x-stat-card tone="slate" label="This week" :value="$counts['week']" sub="Events in the last 7 days" />
+        <x-stat-card tone="strong" label="All time" :value="$counts['total']" sub="Permanent record" />
     </div>
-    <div class="mt-4">{{ $logs->links() }}</div>
+
+    <x-admin-table
+        search-label="Search activity"
+        search-placeholder="Search by what happened, or who did it"
+        :headings="['What happened', 'Who', 'Where', 'When']"
+        :paginator="$logs"
+        empty="No activity matches your search"
+        empty-hint="Try a different search, a wider date range, or clear the filters.">
+
+        <x-slot:filters>
+            <x-admin-filter label="Kind" name="category">
+                <option value="">Everything</option>
+                @foreach ($categories as $category)
+                    <option value="{{ $category }}" @selected(request('category') === $category)>{{ $category }}</option>
+                @endforeach
+            </x-admin-filter>
+            <x-admin-filter label="Workspace" name="workspace_id">
+                <option value="">All workspaces</option>
+                @foreach ($workspaces as $workspace)
+                    <option value="{{ $workspace->workspace_id }}" @selected(request('workspace_id') === $workspace->workspace_id)>{{ $workspace->name }}</option>
+                @endforeach
+            </x-admin-filter>
+            <x-admin-filter label="When" name="since">
+                <option value="">Any time</option>
+                <option value="today" @selected(request('since') === 'today')>Today</option>
+                <option value="week" @selected(request('since') === 'week')>Last 7 days</option>
+                <option value="month" @selected(request('since') === 'month')>Last 30 days</option>
+            </x-admin-filter>
+        </x-slot:filters>
+
+        @foreach ($logs as $log)
+            <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                <td class="px-4 py-3">
+                    <p class="font-medium text-slate-900 dark:text-white">{{ \App\Support\AuditEventLabel::for($log->event) }}</p>
+                    <p class="mt-0.5 text-xs text-slate-400">{{ \App\Support\AuditEventLabel::categoryFor($log->event) }}</p>
+                </td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+                    {{ $log->user?->name ?? 'Vytte itself' }}
+                    @if ($log->user)
+                        <p class="text-xs text-slate-400">{{ $log->user->email }}</p>
+                    @endif
+                </td>
+                <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                    {{ $log->ip_address ?? '—' }}
+                </td>
+                <td class="whitespace-nowrap px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                    {{ $log->created_at?->format('j M Y, H:i') }}
+                    <p class="text-slate-400">{{ $log->created_at?->diffForHumans() }}</p>
+                </td>
+            </tr>
+        @endforeach
+    </x-admin-table>
 </x-admin-layout>

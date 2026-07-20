@@ -1,45 +1,79 @@
-<x-admin-layout title="Report Shares">
+<x-admin-layout title="Shared Reports">
     <div class="mb-5">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">Report Share-Link Control</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Platform-wide oversight and emergency revocation for shared immutable reports.</p>
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white">Shared Reports</h1>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            Report links customers have shared outside Vytte. Anyone holding a live link can read that report without signing in.
+        </p>
     </div>
-    <form method="GET" class="mb-4 flex flex-wrap gap-3 section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-        <select name="status" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-            <option value="">All links</option>
-            <option value="active" @selected(request('status') === 'active')>Active</option>
-            <option value="revoked" @selected(request('status') === 'revoked')>Revoked</option>
-            <option value="expired" @selected(request('status') === 'expired')>Expired</option>
-        </select>
-        <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">Filter</button>
-    </form>
-    <div class="section-card">
-        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
-            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-            <tr><th class="px-4 py-3">Report</th><th class="px-4 py-3">Workspace</th><th class="px-4 py-3">Usage</th><th class="px-4 py-3">Expires</th><th class="px-4 py-3">Status</th><th class="px-4 py-3"></th></tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-            @forelse ($shareLinks as $shareLink)
-                <tr>
-                    <td class="px-4 py-3"><p class="font-semibold text-slate-900 dark:text-white">{{ $shareLink->assessment?->target?->name ?? 'Report' }}</p><p class="text-xs font-mono text-slate-500">{{ $shareLink->link_id }}</p></td>
-                    <td class="px-4 py-3 text-slate-500">{{ $shareLink->assessment?->project?->workspace?->name ?? '—' }}</td>
-                    <td class="px-4 py-3 text-xs text-slate-500">{{ $shareLink->use_count }} views · last {{ $shareLink->last_used_at?->diffForHumans() ?? 'never' }}</td>
-                    <td class="px-4 py-3 text-xs text-slate-500">{{ $shareLink->expires_at?->format('Y-m-d') ?? 'No expiry' }}</td>
-                    <td class="px-4 py-3 text-xs font-bold text-slate-500">{{ $shareLink->is_active ? ($shareLink->expires_at?->isPast() ? 'EXPIRED' : 'ACTIVE') : 'REVOKED' }}</td>
-                    <td class="px-4 py-3 text-right">
-                        @if ($shareLink->is_active)
-                            <form method="POST" action="{{ route('admin.report-shares.revoke', $shareLink) }}">
-                                @csrf
-                                @method('PATCH')
-                                <button class="text-xs font-bold text-red-600 dark:text-red-400">Revoke</button>
-                            </form>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">No share links found.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
+
+    <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <x-stat-card tone="strong" label="Live links" :value="$counts['active']" sub="Readable right now" />
+        <x-stat-card tone="moderate" label="Expired" :value="$counts['expired']" sub="Past their expiry date" />
+        <x-stat-card tone="slate" label="Revoked" :value="$counts['revoked']" sub="Switched off deliberately" />
+        <x-stat-card tone="blue" label="Times opened" :value="$counts['opens']" sub="Across every shared link" />
     </div>
-    <div class="mt-4">{{ $shareLinks->links() }}</div>
+
+    <x-admin-table
+        search-label="Search shared reports"
+        search-placeholder="Search by what was assessed"
+        :headings="['Report', 'Workspace', 'Opened', 'Expires', 'Status']"
+        :paginator="$shareLinks"
+        empty="No shared reports match your search"
+        empty-hint="Try a different search, or clear the filters.">
+
+        <x-slot:filters>
+            <x-admin-filter label="Status" name="status">
+                <option value="">Any status</option>
+                <option value="active" @selected(request('status') === 'active')>Live</option>
+                <option value="expired" @selected(request('status') === 'expired')>Expired</option>
+                <option value="revoked" @selected(request('status') === 'revoked')>Revoked</option>
+            </x-admin-filter>
+        </x-slot:filters>
+
+        @foreach ($shareLinks as $link)
+            @php
+                $isExpired = $link->expires_at && $link->expires_at->isPast();
+                $isLive = $link->is_active && ! $isExpired;
+            @endphp
+            <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                <td class="px-4 py-3">
+                    <p class="font-semibold text-slate-900 dark:text-white">{{ $link->assessment?->target?->target_name ?? 'Unnamed report' }}</p>
+                    <p class="mt-0.5 text-xs text-slate-400">Shared {{ $link->created_at?->diffForHumans() }}</p>
+                </td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+                    {{ $link->assessment?->project?->workspace?->name ?? '—' }}
+                </td>
+                <td class="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">
+                    {{ $link->use_count ?? 0 }} {{ Str::plural('time', $link->use_count ?? 0) }}
+                    @if ($link->last_used_at)
+                        <p class="text-xs text-slate-400">Last {{ $link->last_used_at->diffForHumans() }}</p>
+                    @endif
+                </td>
+                <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                    {{ $link->expires_at?->format('j M Y') ?? 'No expiry date' }}
+                </td>
+                <td class="px-4 py-3">
+                    @if (! $link->is_active)
+                        <span class="inline-flex rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">Revoked</span>
+                    @elseif ($isExpired)
+                        <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Expired</span>
+                    @else
+                        <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">Live</span>
+                    @endif
+                </td>
+                <td class="px-4 py-3 text-right">
+                    @if ($isLive)
+                        <form method="POST" action="{{ route('admin.report-shares.revoke', $link) }}"
+                              onsubmit="return confirm('Revoke this link? Anyone holding it will immediately lose access to the report.')">
+                            @csrf @method('PATCH')
+                            <button class="text-sm font-semibold text-slate-500 hover:text-red-600 hover:underline dark:text-slate-400"
+                                    data-loading-label="Revoking…">Revoke</button>
+                        </form>
+                    @else
+                        <span class="text-xs text-slate-400">No longer live</span>
+                    @endif
+                </td>
+            </tr>
+        @endforeach
+    </x-admin-table>
 </x-admin-layout>

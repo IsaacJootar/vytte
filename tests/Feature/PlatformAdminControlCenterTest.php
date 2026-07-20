@@ -75,10 +75,15 @@ class PlatformAdminControlCenterTest extends TestCase
             route('admin.catalogue-releases.index') => 'Publishing',
             route('admin.facility-profiles.index') => 'Facility Profiles',
             route('admin.scoring-policies.index') => 'Scoring and Aggregation Policies',
-            route('admin.platform-users.index') => 'Platform Users and Roles',
+            // Named for who they are, not for the roles table behind them.
+            route('admin.platform-users.index') => 'People',
             route('admin.assessment-oversight.index') => 'Assessment Oversight',
-            route('admin.report-shares.index') => 'Report Share-Link Control',
-            route('admin.audit-logs.index') => 'Audit Logs',
+            // "Share-Link Control" described the mechanism; an administrator is looking
+            // for the reports customers have shared.
+            route('admin.report-shares.index') => 'Shared Reports',
+            // One place to see what happened, so it is named for the question it answers
+            // rather than for the audit_logs table.
+            route('admin.audit-logs.index') => 'Activity',
         ] as $url => $text) {
             $this->actingAs($admin)->get($url)->assertOk()->assertSee($text);
         }

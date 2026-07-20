@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\GeographicUsageController as AdminGeographicUsage
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\ModuleImportController;
 use App\Http\Controllers\Admin\ModuleTranslationController;
+use App\Http\Controllers\Admin\MonitoringController as AdminMonitoringController;
 use App\Http\Controllers\Admin\OfficialContentController as AdminOfficialContentController;
 use App\Http\Controllers\Admin\PlanFeatureController;
 use App\Http\Controllers\Admin\PlatformSettingController;
@@ -159,12 +160,16 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::patch('workspaces/{workspace}/status', [AdminWorkspaceController::class, 'updateStatus'])->name('workspaces.status');
 
     Route::get('platform-users', [AdminPlatformUserController::class, 'index'])->name('platform-users.index');
+    Route::get('platform-users/{user}', [AdminPlatformUserController::class, 'show'])->name('platform-users.show');
     Route::patch('platform-users/{user}/role', [AdminPlatformUserController::class, 'updateRole'])->name('platform-users.role');
+    Route::patch('platform-users/{user}/suspend', [AdminPlatformUserController::class, 'suspend'])->name('platform-users.suspend');
+    Route::patch('platform-users/{user}/reactivate', [AdminPlatformUserController::class, 'reactivate'])->name('platform-users.reactivate');
 
     Route::get('assessment-oversight', [AdminAssessmentOversightController::class, 'index'])->name('assessment-oversight.index');
     Route::get('report-shares', [AdminReportShareController::class, 'index'])->name('report-shares.index');
     Route::patch('report-shares/{shareLink}/revoke', [AdminReportShareController::class, 'revoke'])->name('report-shares.revoke');
     Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::get('monitoring', [AdminMonitoringController::class, 'index'])->name('monitoring.index');
 
     Route::get('settings', [PlatformSettingController::class, 'index'])->name('settings.index');
     Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');

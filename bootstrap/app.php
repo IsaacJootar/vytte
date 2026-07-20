@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureWorkspaceIsActive;
 use App\Http\Middleware\ResolveWorkspace;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Foundation\Application;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             ResolveWorkspace::class,
+            EnsureWorkspaceIsActive::class,
             SetLocale::class,
         ]);
         $middleware->prependToPriorityList(

@@ -27,8 +27,19 @@ class ReportShareController extends Controller
             }
         }
 
+        if ($request->filled('search')) {
+            $search = '%'.strtolower($request->string('search')->value()).'%';
+            $query->whereHas('assessment.target', fn ($target) => $target->whereRaw('LOWER(target_name) LIKE ?', [$search]));
+        }
+
         return view('admin.report-shares.index', [
             'shareLinks' => $query->paginate(30)->withQueryString(),
+            'counts' => [
+                'active' => AssessmentShareLink::where('is_active', true)->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()))->count(),
+                'expired' => AssessmentShareLink::where('is_active', true)->where('expires_at', '<', now())->count(),
+                'revoked' => AssessmentShareLink::where('is_active', false)->count(),
+                'opens' => (int) AssessmentShareLink::sum('use_count'),
+            ],
         ]);
     }
 

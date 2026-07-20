@@ -50,6 +50,19 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // A suspended account must not hold a session. Checked after the credentials
+        // pass, so a wrong password never reveals that an account is suspended.
+        if (Auth::user()?->isSuspended()) {
+            $reason = Auth::user()->suspension_reason;
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => $reason
+                    ? 'This account has been suspended. Reason: '.$reason
+                    : 'This account has been suspended. Contact Vytte support to restore access.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

@@ -26,6 +26,8 @@ class User extends Authenticatable
         'active_workspace_id',
         'theme',
         'locale',
+        'suspended_at',
+        'suspension_reason',
     ];
 
     protected $hidden = [
@@ -38,6 +40,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'suspended_at' => 'datetime',
         ];
     }
 
@@ -54,5 +57,13 @@ class User extends Authenticatable
     public function isPlatformAdmin(): bool
     {
         return $this->platform_role === 'PLATFORM_ADMIN';
+    }
+
+    /**
+     * A suspended account keeps all its data and history but cannot hold a session.
+     */
+    public function isSuspended(): bool
+    {
+        return $this->suspended_at !== null;
     }
 }

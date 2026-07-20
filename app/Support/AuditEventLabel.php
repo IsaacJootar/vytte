@@ -42,7 +42,30 @@ final class AuditEventLabel
         'department.framework.published' => 'Framework published',
         'department.framework.superseded' => 'Framework replaced',
         'assessment.catalogue.published' => 'Catalogue release published',
+        'domain.taxonomy.published' => 'Analytical domains published',
+        'workspace.status_updated' => 'Workspace access changed',
+        'platform.user.role_updated' => 'Platform access changed',
+        'platform.user.suspended' => 'Account suspended',
+        'platform.user.reactivated' => 'Account restored',
+        'platform.report_link.revoked' => 'Shared report link revoked',
     ];
+
+    /**
+     * Which part of the platform an event belongs to.
+     *
+     * Grouping is derived from the event key rather than stored, so a new event gets a
+     * sensible category without a migration. Anything unrecognised falls into "Other",
+     * which is honest — better than filing it under a category it may not belong to.
+     */
+    private const CATEGORY_PREFIXES = [
+        'Publishing' => ['assessment.published', 'assessment.catalogue', 'question.version.published', 'department.framework', 'domain.taxonomy'],
+        'Approvals' => ['assessment.question.approved', 'question.version.approved'],
+        'Content' => ['assessment.', 'question.'],
+        'Workspaces' => ['workspace.'],
+        'Security' => ['platform.user', 'platform.report_link'],
+    ];
+
+    public const CATEGORIES = ['Publishing', 'Approvals', 'Content', 'Workspaces', 'Security', 'Other'];
 
     public static function for(?string $event): string
     {
@@ -51,5 +74,32 @@ final class AuditEventLabel
         }
 
         return self::LABELS[$event] ?? Str::of($event)->replace(['.', '_'], ' ')->ucfirst()->value();
+    }
+
+    public static function categoryFor(?string $event): string
+    {
+        if (! $event) {
+            return 'Other';
+        }
+
+        foreach (self::CATEGORY_PREFIXES as $category => $prefixes) {
+            foreach ($prefixes as $prefix) {
+                if (str_starts_with($event, $prefix)) {
+                    return $category;
+                }
+            }
+        }
+
+        return 'Other';
+    }
+
+    /**
+     * The stored event keys that belong to a category, for filtering a query.
+     *
+     * @return array<int, string>
+     */
+    public static function prefixesForCategory(string $category): array
+    {
+        return self::CATEGORY_PREFIXES[$category] ?? [];
     }
 }
