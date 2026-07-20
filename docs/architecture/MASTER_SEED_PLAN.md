@@ -104,3 +104,16 @@ Publication now refuses any taxonomy version that leaves a measurement domain un
 `php artisan methodology:validate` checks that every entity is reachable and every reference resolves. It must pass before the master seed, and a test runs it.
 
 First run found twelve advisories, all now fixed: seven objectives that suggested nothing and appeared in no starting point, and five templates nothing routed to. Current result: no problems, no advisories.
+
+## Post-seed backlog
+
+Agreed 2026-07-20: recorded now, fixed after the Official Master Seed. None blocks seeding — each becomes live work when the phase that depends on it begins.
+
+| # | Item | Becomes urgent when | Notes |
+| --- | --- | --- | --- |
+| PS-1 | **Clinical review of the catalogue.** Curated from WHO SARA, SPA, HHFA, the health system building blocks, WASH FIT and IPC minimum requirements. Broad and defensible, but not verified against source documents. | Before the catalogue is presented to customers as authoritative Vytte methodology. | A health methodologist review, not an engineering task. Nothing in the structure changes; wording and coverage may. |
+| PS-2 | **Lens preconditions are unenforced.** Trend requires two completed assessments of the same target; Benchmarking requires a peer set. Today this is prose in the lens description and nothing checks it. | When lens-driven reporting is built. | A lens with unmet preconditions must say so rather than render empty. Structure the precondition in the taxonomy instead of describing it. |
+| PS-3 | **No link between a baseline and its endline.** Trend infers sequence by date, which is right for routine monitoring and wrong for a study with a defined start and end. | When Trend reporting is built, or the first research customer runs a paired study. | Originally D2 in the architecture review. Fails quietly rather than loudly, which is why it is written down. |
+| PS-4 | **No agreed-actions entity for Progress Tracking.** The lens reads results "against previously agreed actions" and no such entity exists, so supportive supervision would silently fall back to comparing scores. | When lens-driven reporting is built. | Originally D3. Either build the entity or narrow the lens definition and rename it honestly. |
+
+PS-2, PS-3 and PS-4 all land in the same phase — the one that builds lens-driven reporting — and should be scoped together rather than picked off individually.

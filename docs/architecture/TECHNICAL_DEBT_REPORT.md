@@ -76,3 +76,16 @@ The codebase is organized and the core architecture is coherent, but production 
 | --- | --- | --- |
 | RESOLVED | `FIN` is defined in the published taxonomy and Platform Admin has a full version-and-publish workflow. Publication refuses to leave any measurement domain undefined. See DEC-2026-07-20-033. |
 | LOW | Objective presets reference health domains and templates by code with no foreign key, matching `objective_recommendations`. A renamed domain code would leave a preset pointing at nothing. | Publication validation checks lens, template and area references but not health domain codes, since those live outside the methodology version. Add a cross-lifecycle check if domain codes start changing. |
+
+## Deferred to after the Official Master Seed
+
+Four items agreed for post-seed resolution. Full detail in `MASTER_SEED_PLAN.md` under Post-seed backlog.
+
+| Ref | Item | Severity |
+| --- | --- | --- |
+| PS-1 | Methodology catalogue not yet reviewed by a health methodologist against source documents. | MEDIUM |
+| PS-2 | Trend and Benchmarking lens preconditions are described in prose and enforced nowhere. | MEDIUM |
+| PS-3 | No baseline-to-endline link; Trend infers sequence by date. | MEDIUM |
+| PS-4 | No agreed-actions entity, so the Progress Tracking lens has nothing to track against. | MEDIUM |
+
+None blocks seeding. PS-2, PS-3 and PS-4 belong to the lens-driven reporting phase and should be scoped together.
