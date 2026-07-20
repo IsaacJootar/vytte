@@ -46,12 +46,12 @@
                 empty-hint="Create the first score using the form beside this table.">
 
                 <x-slot:filters>
-                    <select name="department" class="rounded-xl border-slate-300 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                    <x-admin-filter label="Department" name="department">
                         <option value="">All departments</option>
                         @foreach ($departments as $department)
                             <option value="{{ $department->module_id }}" @selected((int) request('department') === (int) $department->module_id)>{{ $department->module_name }}</option>
                         @endforeach
-                    </select>
+                    </x-admin-filter>
                 </x-slot:filters>
 
                 @foreach ($scores as $score)

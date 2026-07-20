@@ -52,18 +52,18 @@
         </x-slot:action>
 
         <x-slot:filters>
-            <select name="status" class="rounded-xl border-slate-300 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+            <x-admin-filter label="Status" name="status">
                 <option value="">Any status</option>
                 <option value="PUBLISHED" @selected(request('status') === 'PUBLISHED')>Live now</option>
                 <option value="DRAFT" @selected(request('status') === 'DRAFT')>Being prepared</option>
                 <option value="SUPERSEDED" @selected(request('status') === 'SUPERSEDED')>Replaced</option>
                 <option value="ARCHIVED" @selected(request('status') === 'ARCHIVED')>Archived</option>
-            </select>
-            <select name="creation_path" class="rounded-xl border-slate-300 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+            </x-admin-filter>
+            <x-admin-filter label="Type" name="creation_path">
                 <option value="">Any type</option>
                 <option value="FOCUSED" @selected(request('creation_path') === 'FOCUSED')>Focused</option>
                 <option value="COMPREHENSIVE" @selected(request('creation_path') === 'COMPREHENSIVE')>Comprehensive</option>
-            </select>
+            </x-admin-filter>
         </x-slot:filters>
 
         @foreach ($releases as $release)

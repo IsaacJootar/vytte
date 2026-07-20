@@ -27,23 +27,23 @@
         </x-slot:action>
 
         <x-slot:filters>
-            <select name="module_id" class="rounded-xl border-slate-300 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+            <x-admin-filter label="Department" name="module_id">
                 <option value="">All departments</option>
                 @foreach ($modules as $module)
                     <option value="{{ $module->module_id }}" @selected(request('module_id') == $module->module_id)>{{ $module->module_name }}</option>
                 @endforeach
-            </select>
-            <select name="format" class="rounded-xl border-slate-300 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
-                <option value="">Any answer format</option>
+            </x-admin-filter>
+            <x-admin-filter label="Answer format" name="format">
+                <option value="">Any format</option>
                 @foreach (collect($formats)->unique('type_code') as $format)
                     <option value="{{ $format['type_code'] }}" @selected(request('format') === $format['type_code'])>{{ $format['label'] }}</option>
                 @endforeach
-            </select>
-            <select name="readiness" class="rounded-xl border-slate-300 py-2.5 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+            </x-admin-filter>
+            <x-admin-filter label="Status" name="readiness">
                 <option value="">Any status</option>
                 <option value="ready" @selected(request('readiness') === 'ready')>Ready to use</option>
                 <option value="pending" @selected(request('readiness') === 'pending')>Needs approval</option>
-            </select>
+            </x-admin-filter>
         </x-slot:filters>
 
         @foreach ($questions as $question)

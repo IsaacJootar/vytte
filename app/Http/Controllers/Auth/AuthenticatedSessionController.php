@@ -28,7 +28,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // A platform administrator governs the platform; they are not a customer. Landing
+        // them in a workspace put them in front of projects and assessments that are not
+        // theirs to create. See DEC-2026-07-18-009.
+        $home = $request->user()->isPlatformAdmin()
+            ? route('admin.dashboard', absolute: false)
+            : route('dashboard', absolute: false);
+
+        return redirect()->intended($home);
     }
 
     /**

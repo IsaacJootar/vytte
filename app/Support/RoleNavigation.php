@@ -84,12 +84,10 @@ final class RoleNavigation
                 self::mobile('admin.catalogue-releases.index', 'Publish', 'arrow-up-tray', 'admin.catalogue-releases.*'),
                 self::mobile('admin.settings.index', 'More', 'cog-6-tooth', 'admin.settings.*'),
             ],
-            'footer' => [
-                'label' => 'Access level',
-                'value' => 'Vytte Platform Admin',
-                'accent' => true,
-                'link' => ['route' => 'dashboard', 'label' => 'Back to workspace'],
-            ],
+            // No footer card. A platform administrator has no plan and no workspace to
+            // return to, so an "access level" badge and a way back were noise. The role is
+            // already stated under the logo.
+            'footer' => null,
         ];
     }
 

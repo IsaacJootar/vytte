@@ -79,15 +79,17 @@
                 @endif
             @endforeach
 
-            <div class="mx-1 mt-3 rounded-lg border px-3 py-2 {{ $nav['footer']['accent'] ? 'border-amber-400/30 bg-amber-400/[0.07]' : 'border-white/[0.08] bg-white/[0.04]' }}">
-                <p class="text-[9px] font-semibold uppercase tracking-wider {{ $nav['footer']['accent'] ? 'text-amber-200/70' : 'text-white/35' }}">{{ $nav['footer']['label'] }}</p>
-                <p class="mt-0.5 text-[11px] font-bold text-white/75">{{ $nav['footer']['value'] }}</p>
-                @if ($nav['footer']['link'])
-                    <a href="{{ route($nav['footer']['link']['route']) }}" class="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-vytte-300 hover:text-white">
-                        {{ $nav['footer']['link']['label'] }} <span aria-hidden="true">→</span>
-                    </a>
-                @endif
-            </div>
+            @if ($nav['footer'])
+                <div class="mx-1 mt-3 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-2">
+                    <p class="text-[9px] font-semibold uppercase tracking-wider text-white/35">{{ $nav['footer']['label'] }}</p>
+                    <p class="mt-0.5 text-[11px] font-bold text-white/75">{{ $nav['footer']['value'] }}</p>
+                    @if ($nav['footer']['link'])
+                        <a href="{{ route($nav['footer']['link']['route']) }}" class="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold text-vytte-300 hover:text-white">
+                            {{ $nav['footer']['link']['label'] }} <span aria-hidden="true">→</span>
+                        </a>
+                    @endif
+                </div>
+            @endif
         </nav>
 
         <div class="flex items-center gap-2.5 px-3.5 py-3 border-t border-white/[0.08]">
