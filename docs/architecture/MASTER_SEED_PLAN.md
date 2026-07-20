@@ -46,3 +46,19 @@ Deliberately generic where national standards differ. Vytte supplies structure a
 ## After approval
 
 Approving the methodology catalogue unblocks the official question library, which is the largest remaining seed component and the one that must follow this methodology rather than precede it.
+
+## Blocking findings from the P4 architecture review
+
+Recorded 2026-07-20. See `DIAGNOSTICS_AND_INTELLIGENCE_PIPELINE.md` for the full analysis.
+
+These should be resolved **before** the master seed, because after it the official question library will already be mapped to health domains and re-mapping means a methodology version plus a content migration.
+
+| # | Finding | Severity |
+| --- | --- | --- |
+| D1 | Malaria, NCDs and NTDs are not health domains. Malaria is an area under `GENERAL_HEALTH_SYSTEMS`, so the seeded `MALARIA_BASELINE` preset mis-files every malaria assessment. For a product whose primary market is Nigeria, Ghana, Kenya and South Africa this is a methodology error rather than a gap. | **Blocking** |
+| — | Six subjects should be promoted to health domains: Malaria, Non-Communicable Diseases, Laboratory, Pharmacy and Supply Chain, Emergency and Critical Care, Neglected Tropical Diseases. `GENERAL_HEALTH_SYSTEMS` currently carries 14 areas, which is a sign it is absorbing too much. | **Blocking** |
+| — | Add a **Data Gaps / Insufficient Evidence** insight category. The platform already computes `NOT_CALIBRATED` and `PARTIAL` calibration states and nothing surfaces them, so an assessment that is 40% unanswered produces a confident-looking report from thin data. | **Blocking** |
+| — | Add three objectives: Data Quality Assessment, Training and Capacity Needs Assessment, Results-Based Financing Verification. DQA is the most commonly performed international assessment type currently absent. | Recommended |
+| — | Consider Health Financing as an eighth measurement domain. It is a WHO building block with no dimension for findings to roll up into. Touches `domain_scores`; a genuine architectural change rather than catalogue content. | Decision needed |
+| D2 | No link between a baseline assessment and its endline. Trend infers sequence by date, which is right for monitoring and wrong for a study. | Non-blocking |
+| D3 | No agreed-actions entity for the Progress Tracking lens. Supportive supervision has nothing to track progress against. | Non-blocking |
