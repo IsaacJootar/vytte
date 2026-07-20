@@ -69,7 +69,7 @@
                         <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
                             @forelse ($recentAssessments as $assessment)
                                 <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40">
-                                    <td class="px-5 py-3 font-medium text-slate-900 dark:text-white">{{ $assessment->target?->target_name ?? 'Unnamed' }}</td>
+                                    <td class="px-5 py-3 font-medium text-slate-900 dark:text-white">{{ $assessment->target?->name ?? 'Unnamed' }}</td>
                                     <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ $assessment->project?->name ?? '—' }}</td>
                                     <td class="px-5 py-3">
                                         @if ($assessment->completed_at)

@@ -37,7 +37,7 @@
             @endphp
             <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40">
                 <td class="px-4 py-3">
-                    <p class="font-semibold text-slate-900 dark:text-white">{{ $link->assessment?->target?->target_name ?? 'Unnamed report' }}</p>
+                    <p class="font-semibold text-slate-900 dark:text-white">{{ $link->assessment?->target?->name ?? 'Unnamed report' }}</p>
                     <p class="mt-0.5 text-xs text-slate-400">Shared {{ $link->created_at?->diffForHumans() }}</p>
                 </td>
                 <td class="px-4 py-3 text-slate-600 dark:text-slate-300">

@@ -77,7 +77,9 @@ class PlatformAdminControlCenterTest extends TestCase
             route('admin.scoring-policies.index') => 'Scoring and Aggregation Policies',
             // Named for who they are, not for the roles table behind them.
             route('admin.platform-users.index') => 'People',
-            route('admin.assessment-oversight.index') => 'Assessment Oversight',
+            // Renamed to distinguish it from the templates Vytte authors: this screen holds
+            // the filled-in assessments customers are running.
+            route('admin.assessment-oversight.index') => 'Assessments in Use',
             // "Share-Link Control" described the mechanism; an administrator is looking
             // for the reports customers have shared.
             route('admin.report-shares.index') => 'Shared Reports',

@@ -328,6 +328,47 @@ class PlatformOperationsTest extends TestCase
             ->assertDontSee('Kwame Mensah');
     }
 
+    // ─── The two assessment screens are different things ─────────
+
+    public function test_assessments_in_use_lists_what_customers_run_not_what_vytte_publishes(): void
+    {
+        $this->actingAs($this->makeAdmin())
+            ->get(route('admin.assessment-oversight.index'))
+            ->assertOk()
+            ->assertSee('Assessments in Use')
+            ->assertSee('customers are running in their own workspaces');
+    }
+
+    public function test_assessments_in_use_never_exposes_storage_vocabulary(): void
+    {
+        $response = $this->actingAs($this->makeAdmin())
+            ->get(route('admin.assessment-oversight.index'))
+            ->assertOk();
+
+        // This screen used to print snapshot presence, raw statuses and creation paths.
+        // None of that means anything to a reader, and the product rules forbid exposing it.
+        foreach (['Immutable artifacts', 'Snapshot:', 'metadata view'] as $leak) {
+            $response->assertDontSee($leak);
+        }
+
+        // Storage codes may still appear as filter option values — the query needs them to
+        // wire the form up. What matters is that none of them is ever shown as text.
+        foreach (['COMPREHENSIVE', 'FOCUSED', 'IN_PROGRESS'] as $code) {
+            $response->assertDontSeeText($code);
+        }
+
+        $response->assertSee('Whole facility')->assertSee('One health area');
+    }
+
+    public function test_assessments_in_use_can_be_searched_by_workspace(): void
+    {
+        Workspace::factory()->create(['name' => 'Kaduna Teaching Hospital']);
+
+        $this->actingAs($this->makeAdmin())
+            ->get(route('admin.assessment-oversight.index', ['search' => 'Kaduna']))
+            ->assertOk();
+    }
+
     // ─── Shared reports ──────────────────────────────────────────
 
     public function test_shared_reports_page_summarises_link_status(): void

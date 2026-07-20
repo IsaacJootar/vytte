@@ -57,7 +57,7 @@ final class RoleNavigation
                     'items' => [
                         self::item('admin.workspaces.index', 'Workspaces', 'building-office', 'admin.workspaces.*'),
                         self::item('admin.platform-users.index', 'People', 'user-group', 'admin.platform-users.*'),
-                        self::item('admin.assessment-oversight.index', 'Assessments Running', 'inbox-stack', 'admin.assessment-oversight.*'),
+                        self::item('admin.assessment-oversight.index', 'Assessments in Use', 'inbox-stack', 'admin.assessment-oversight.*'),
                         self::item('admin.audit-logs.index', 'Activity', 'clock', 'admin.audit-logs.*'),
                         self::item('admin.report-shares.index', 'Shared Reports', 'share', 'admin.report-shares.*'),
                         self::item('admin.plan-features.index', 'Plans', 'credit-card', 'admin.plan-features.*'),

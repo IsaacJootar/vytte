@@ -29,7 +29,7 @@ class ReportShareController extends Controller
 
         if ($request->filled('search')) {
             $search = '%'.strtolower($request->string('search')->value()).'%';
-            $query->whereHas('assessment.target', fn ($target) => $target->whereRaw('LOWER(target_name) LIKE ?', [$search]));
+            $query->whereHas('assessment.target', fn ($target) => $target->whereRaw('LOWER(name) LIKE ?', [$search]));
         }
 
         return view('admin.report-shares.index', [
