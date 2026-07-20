@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Models\AssessmentRespondentToken;
 use App\Models\PublicResponseSession;
 use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
@@ -28,7 +29,14 @@ class MultiRespondentAssessmentController extends Controller
             'publicResponseSessions.accessToken',
         ]);
 
-        return view('assessments.respondent-collection', compact('assessment', 'preview'));
+        // Respondent links used to be flashed once at creation and never shown again, so a
+        // link the user did not copy in that moment was unrecoverable. They are listed now.
+        $respondentTokens = AssessmentRespondentToken::where('assessment_id', $assessment->assessment_id)
+            ->whereNull('revoked_at')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('assessments.respondent-collection', compact('assessment', 'preview', 'respondentTokens'));
     }
 
     public function classify(

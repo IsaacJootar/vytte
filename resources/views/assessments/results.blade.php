@@ -58,21 +58,35 @@
         </div>
     </div>
 
-    {{-- Share link display --}}
-    @if (session('share_link'))
-        <div class="mb-5 p-4 bg-vytte-50 dark:bg-vytte-900/20 border border-vytte-200 dark:border-vytte-800 rounded-xl no-print" x-data>
-            <p class="text-sm font-semibold text-vytte-900 dark:text-vytte-300 mb-2">Shareable report link (expires in 30 days):</p>
-            <div class="flex items-center gap-2">
-                <input type="text" value="{{ session('share_link') }}" readonly
-                       class="flex-1 text-xs font-mono bg-white dark:bg-slate-800 border border-vytte-200 dark:border-vytte-700 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-vytte-500"
-                       x-ref="shareUrl"
-                       @click="$refs.shareUrl.select()">
-                <button @click="navigator.clipboard.writeText($refs.shareUrl.value); $el.textContent = 'Copied!'"
-                        class="text-xs font-semibold px-3 py-2 bg-vytte-700 text-white rounded-lg hover:bg-vytte-800 transition-colors flex-shrink-0">
-                    Copy
-                </button>
+    {{-- Every live share link for this report, not just the one most recently created. --}}
+    @if ($shareLinks->isNotEmpty())
+        <div class="no-print mb-5 rounded-xl border border-vytte-200 bg-vytte-50 p-4 dark:border-vytte-800 dark:bg-vytte-900/20">
+            <p class="text-sm font-semibold text-vytte-900 dark:text-vytte-300">Shared report links</p>
+            <p class="mt-0.5 text-xs text-vytte-700 dark:text-vytte-400">
+                Anyone holding one of these can read this report without signing in.
+            </p>
+
+            <div class="mt-3 space-y-3">
+                @foreach ($shareLinks as $shareLink)
+                    <div>
+                        <x-share-link
+                            :url="route('reports.shared.token', $shareLink->token)"
+                            :message="'Here is the Vytte assessment report for '.($target?->name ?? 'our facility').':'"
+                            :label="'Link '.$loop->iteration"
+                            :hint="$shareLink->expires_at ? 'Expires '.$shareLink->expires_at->diffForHumans() : 'No expiry date'" />
+
+                        <form method="POST" action="{{ route('assessments.share.revoke', [$assessment, $shareLink]) }}"
+                              class="mt-1 text-right"
+                              onsubmit="return confirm('Revoke this link? Anyone holding it will immediately lose access to the report.')">
+                            @csrf @method('DELETE')
+                            <button class="text-xs font-medium text-slate-400 transition-colors hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
+                                    data-loading-label="Revoking…">
+                                Revoke this link
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
             </div>
-            <p class="text-xs text-vytte-700 dark:text-vytte-400 mt-1.5">Anyone with this link can view the report — no login required.</p>
         </div>
     @endif
 

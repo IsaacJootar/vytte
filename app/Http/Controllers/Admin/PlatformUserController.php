@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Models\WorkspaceInvitation;
 use App\Services\AuditService;
+use App\Services\SessionRevocationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rule;
 
 class PlatformUserController extends Controller
 {
+    public function __construct(private SessionRevocationService $sessions) {}
+
     public function index(Request $request): View
     {
         $query = User::with('activeWorkspace')
@@ -114,6 +117,10 @@ class PlatformUserController extends Controller
             'suspended_at' => now(),
             'suspension_reason' => $validated['suspension_reason'],
         ]);
+
+        // Blocking sign-in is not enough on its own: an existing session would let them
+        // keep working until it expired.
+        $this->sessions->forUser($user);
 
         $audit->record('platform.user.suspended', $user, ['suspended_at' => null], [
             'suspended_at' => $user->suspended_at?->toIso8601String(),

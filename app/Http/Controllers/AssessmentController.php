@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModuleScope;
+use App\Models\AssessmentShareLink;
 use App\Models\FacilityProfile;
 use App\Models\Project;
 use App\Models\Response;
@@ -248,7 +249,14 @@ class AssessmentController extends Controller
             }
         }
 
-        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history'));
+        // Share links were flashed once at creation and never shown again, so a link the
+        // user did not copy in that moment was gone. They are listed now.
+        $shareLinks = AssessmentShareLink::where('assessment_id', $assessment->assessment_id)
+            ->where('is_active', true)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks'));
     }
 
     private function authorizeWorkspace(Assessment $assessment): void

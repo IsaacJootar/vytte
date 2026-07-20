@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Project;
 use App\Models\Workspace;
 use App\Services\AuditService;
+use App\Services\SessionRevocationService;
 use App\Services\WorkspaceHealthService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -78,8 +79,12 @@ class WorkspaceController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Workspace $workspace, AuditService $audit): RedirectResponse
-    {
+    public function updateStatus(
+        Request $request,
+        Workspace $workspace,
+        AuditService $audit,
+        SessionRevocationService $sessions,
+    ): RedirectResponse {
         $validated = $request->validate([
             'status' => ['required', Rule::in(self::STATUSES)],
         ]);
@@ -90,6 +95,12 @@ class WorkspaceController extends Controller
 
         $oldValues = $workspace->only(['status']);
         $workspace->update(['status' => $validated['status']]);
+
+        // Losing access has to take effect now, not whenever the member's session
+        // happens to expire.
+        if ($validated['status'] !== 'ACTIVE') {
+            $sessions->forWorkspace($workspace);
+        }
 
         $audit->record(
             'workspace.status_updated',

@@ -29,10 +29,35 @@
         @endif
     </div>
 
-    @if (session('respondent_link'))
-        <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-            <p class="text-sm font-semibold text-emerald-900">Respondent link created</p>
-            <input class="mt-2 w-full rounded-lg border-emerald-200 bg-white text-sm" readonly value="{{ session('respondent_link') }}">
+    @if ($respondentTokens->isNotEmpty())
+        <div class="mb-5 section-card p-5">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Respondent links</h2>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Send one of these to each person who should answer. They do not need a Vytte account.
+                Email is switched off during beta, so share these yourself.
+            </p>
+
+            <div class="mt-3 space-y-3">
+                @foreach ($respondentTokens as $respondentToken)
+                    <div>
+                        <x-share-link
+                            :url="route('respondent.show', $respondentToken->token)"
+                            :message="'Please complete this assessment for '.($assessment->target?->name ?? 'our facility').'. It takes a few minutes and you do not need an account:'"
+                            :label="'Link '.($loop->iteration)"
+                            :hint="'Created '.$respondentToken->created_at?->diffForHumans()" />
+
+                        <form method="POST" action="{{ route('assessments.respondent-link.destroy', [$assessment, $respondentToken]) }}"
+                              class="mt-1 text-right"
+                              onsubmit="return confirm('Deactivate this link? Anyone holding it will no longer be able to answer. Answers already submitted are kept.')">
+                            @csrf @method('DELETE')
+                            <button class="text-xs font-medium text-slate-400 transition-colors hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
+                                    data-loading-label="Deactivating…">
+                                Deactivate this link
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SubscriptionPlan;
 use App\Services\PlanService;
+use App\Services\PlanUsageService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class PlanFeatureController extends Controller
 {
-    public function index(): View
+    public function index(PlanUsageService $usage): View
     {
         $rows = DB::table('plan_features')->get()->keyBy(fn ($r) => $r->plan.'|'.$r->feature_key);
 
@@ -29,6 +30,9 @@ class PlanFeatureController extends Controller
             'matrix' => $matrix,
             'features' => PlanService::FEATURES,
             'plans' => SubscriptionPlan::orderBy('display_order')->get(),
+            'usage' => $usage->byPlan(),
+            'nearLimit' => $usage->workspacesNearLimit(),
+            'totals' => $usage->totals(),
         ]);
     }
 

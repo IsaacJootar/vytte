@@ -31,21 +31,15 @@
         </div>
     @endif
 
-    {{-- Invite link (shown after invite created) --}}
+    {{-- The link a just-created invite produced is repeated under Pending Invites below,
+         so nothing is lost by navigating away. This only draws attention to the new one. --}}
     @if (session('invite_link'))
-        <div class="mb-5 p-4 bg-vytte-50 dark:bg-vytte-900/20 border border-vytte-200 dark:border-vytte-800 rounded-xl" x-data>
-            <p class="text-sm font-semibold text-vytte-900 dark:text-vytte-300 mb-2">Share this invite link:</p>
-            <div class="flex items-center gap-2">
-                <input type="text" value="{{ session('invite_link') }}" readonly
-                       class="flex-1 text-xs font-mono bg-white dark:bg-slate-800 border border-vytte-200 dark:border-vytte-700 rounded-lg px-3 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-vytte-500"
-                       x-ref="inviteUrl"
-                       @click="$refs.inviteUrl.select()">
-                <button @click="navigator.clipboard.writeText($refs.inviteUrl.value); $el.textContent = 'Copied!'"
-                        class="text-xs font-semibold px-3 py-2 bg-vytte-700 text-white rounded-lg hover:bg-vytte-800 transition-colors flex-shrink-0">
-                    Copy
-                </button>
-            </div>
-            <p class="text-xs text-vytte-700 dark:text-vytte-400 mt-1.5">Link expires in 7 days. Email delivery is currently disabled — share this link directly.</p>
+        <div class="mb-5 rounded-xl border border-vytte-200 bg-vytte-50 p-4 dark:border-vytte-800 dark:bg-vytte-900/20">
+            <p class="mb-2 text-sm font-semibold text-vytte-900 dark:text-vytte-300">Invite created — send this link</p>
+            <x-share-link :url="session('invite_link')"
+                          :message="'You have been invited to join '.$workspace->name.' on Vytte. Open this link to accept:'"
+                          label="Invitation link"
+                          hint="Email is switched off during beta, so share this link yourself. It is also saved under Pending Invites below." />
         </div>
     @endif
 
@@ -176,29 +170,49 @@
             </div>
             <div class="divide-y divide-slate-100 dark:divide-slate-700">
                 @foreach ($pendingInvites as $invite)
-                    <div class="flex items-center gap-3 px-5 py-3.5">
-                        <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400 dark:text-slate-500 flex-shrink-0 uppercase">
-                            {{ substr($invite->email, 0, 1) }}
+                    <div class="px-5 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-400 dark:text-slate-500 flex-shrink-0 uppercase">
+                                {{ substr($invite->email, 0, 1) }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{{ $invite->email }}</p>
+                                <p class="text-xs text-slate-400 dark:text-slate-500">
+                                    Invited by {{ $invite->invitedBy?->name ?? 'someone' }}
+                                    · Expires {{ $invite->expires_at?->diffForHumans() ?? 'never' }}
+                                </p>
+                            </div>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex-shrink-0">
+                                {{ ucfirst(strtolower($invite->role)) }}
+                            </span>
+                            @if ($isAdmin)
+                                <form method="POST" action="{{ route('team.invite.refresh', $invite->id) }}"
+                                      onsubmit="return confirm('Create a new link for this invite? The current link will stop working.')">
+                                    @csrf @method('PATCH')
+                                    <button type="submit" class="flex-shrink-0 text-xs font-medium text-slate-400 transition-colors hover:text-vytte-700 dark:text-slate-500 dark:hover:text-vytte-300"
+                                            data-loading-label="Creating…">
+                                        New link
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ route('team.invite.cancel', $invite->id) }}"
+                                      onsubmit="return confirm('Cancel this invite? Its link will stop working immediately.')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="flex-shrink-0 text-xs font-medium text-slate-400 transition-colors hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
+                                            data-loading-label="Cancelling…">
+                                        Cancel
+                                    </button>
+                                </form>
+                            @endif
                         </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{{ $invite->email }}</p>
-                            <p class="text-xs text-slate-400 dark:text-slate-500">
-                                Invited by {{ $invite->invitedBy?->name ?? 'someone' }}
-                                · Expires {{ $invite->expires_at?->diffForHumans() ?? 'never' }}
-                            </p>
-                        </div>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex-shrink-0">
-                            {{ ucfirst(strtolower($invite->role)) }}
-                        </span>
+
                         @if ($isAdmin)
-                            <form method="POST" action="{{ route('team.invite.cancel', $invite->id) }}"
-                                  @submit.prevent="if (confirm('Cancel this invite?')) $el.submit()" x-data>
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 font-medium transition-colors flex-shrink-0">
-                                    Cancel
-                                </button>
-                            </form>
+                            {{-- The link stays on the page. Email is off for beta, so this is
+                                 the only way the invitation actually reaches anyone. --}}
+                            <x-share-link class="mt-3"
+                                          :url="route('invitations.show', $invite->token)"
+                                          :message="'You have been invited to join '.$workspace->name.' on Vytte. Open this link to accept:'"
+                                          label="Invitation link"
+                                          hint="Send this to {{ $invite->email }}. It works until it expires or you cancel it." />
                         @endif
                     </div>
                 @endforeach

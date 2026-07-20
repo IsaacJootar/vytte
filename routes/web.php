@@ -93,6 +93,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/team/members/{user}/role', [TeamController::class, 'updateRole'])->name('team.role');
     Route::delete('/team/members/{user}', [TeamController::class, 'destroy'])->name('team.destroy');
     Route::delete('/team/invitations/{invitation}', [TeamController::class, 'cancelInvite'])->name('team.invite.cancel');
+    Route::patch('/team/invitations/{invitation}/refresh', [TeamController::class, 'refreshInvite'])->name('team.invite.refresh');
 
     Route::get('/invitations/{token}/accept', [InvitationController::class, 'accept'])->name('invitations.accept');
 

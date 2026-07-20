@@ -430,4 +430,116 @@ class TeamTest extends TestCase
 
         $this->assertDatabaseHas('workspace_invitations', ['id' => $inviteA->id]);
     }
+
+    // ─── Invites must work without email ─────────────────────────
+
+    private function makeInvite(Workspace $workspace, User $owner, string $email = 'invitee@example.com'): WorkspaceInvitation
+    {
+        return WorkspaceInvitation::create([
+            'workspace_id' => $workspace->workspace_id,
+            'email' => $email,
+            'role' => 'MEMBER',
+            'token' => Str::random(64),
+            'invited_by' => $owner->user_id,
+            'expires_at' => now()->addDays(7),
+        ]);
+    }
+
+    public function test_a_pending_invite_keeps_its_link_on_the_page(): void
+    {
+        [$owner, $workspace] = $this->makeOwner();
+        $invite = $this->makeInvite($workspace, $owner);
+
+        // Email is off for beta, so a link only shown once at creation would be
+        // unrecoverable. It has to survive a plain page load.
+        $this->actingAs($owner)
+            ->get(route('team.index'))
+            ->assertOk()
+            ->assertSee(route('invitations.show', $invite->token));
+    }
+
+    public function test_a_pending_invite_offers_a_whatsapp_share(): void
+    {
+        [$owner, $workspace] = $this->makeOwner();
+        $this->makeInvite($workspace, $owner);
+
+        $this->actingAs($owner)
+            ->get(route('team.index'))
+            ->assertOk()
+            ->assertSee('https://wa.me/?text=', false)
+            ->assertSee('WhatsApp');
+    }
+
+    public function test_admin_can_issue_a_new_link_for_an_invite(): void
+    {
+        [$owner, $workspace] = $this->makeOwner();
+        $invite = $this->makeInvite($workspace, $owner);
+        $originalToken = $invite->token;
+
+        $this->actingAs($owner)
+            ->patch(route('team.invite.refresh', $invite->id))
+            ->assertSessionHas('success');
+
+        $invite->refresh();
+        $this->assertNotSame($originalToken, $invite->token);
+    }
+
+    public function test_the_previous_link_stops_working_once_a_new_one_is_issued(): void
+    {
+        [$owner, $workspace] = $this->makeOwner();
+        $invite = $this->makeInvite($workspace, $owner);
+        $originalToken = $invite->token;
+
+        $this->actingAs($owner)->patch(route('team.invite.refresh', $invite->id));
+
+        // Assert as the person receiving the invite, not as the owner — the owner is
+        // already a member, so they would be redirected rather than shown the invite.
+        auth()->logout();
+
+        // A link shared with the wrong person has to be revocable.
+        $this->get(route('invitations.show', $originalToken))->assertNotFound();
+        $this->get(route('invitations.show', $invite->fresh()->token))->assertOk();
+    }
+
+    public function test_a_member_cannot_issue_a_new_invite_link(): void
+    {
+        [$owner, $workspace] = $this->makeOwner();
+        $invite = $this->makeInvite($workspace, $owner);
+        $member = $this->addMember($workspace);
+
+        $this->actingAs($member)
+            ->patch(route('team.invite.refresh', $invite->id))
+            ->assertForbidden();
+    }
+
+    public function test_an_invite_from_another_workspace_cannot_be_refreshed(): void
+    {
+        [$ownerA, $workspaceA] = $this->makeOwner();
+        $invite = $this->makeInvite($workspaceA, $ownerA);
+
+        $userB = User::factory()->create();
+        $workspaceB = Workspace::factory()->create();
+        WorkspaceMember::create([
+            'workspace_id' => $workspaceB->workspace_id,
+            'user_id' => $userB->user_id,
+            'role' => 'OWNER',
+        ]);
+        $userB->update(['active_workspace_id' => $workspaceB->workspace_id]);
+        app()->instance('current.workspace', $workspaceB);
+
+        $this->actingAs($userB)
+            ->patch(route('team.invite.refresh', $invite->id))
+            ->assertNotFound();
+    }
+
+    public function test_a_cancelled_invite_link_stops_working(): void
+    {
+        [$owner, $workspace] = $this->makeOwner();
+        $invite = $this->makeInvite($workspace, $owner);
+        $token = $invite->token;
+
+        $this->actingAs($owner)->delete(route('team.invite.cancel', $invite->id));
+
+        $this->get(route('invitations.show', $token))->assertNotFound();
+    }
 }

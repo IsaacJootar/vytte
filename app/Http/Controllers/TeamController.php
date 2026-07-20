@@ -156,7 +156,36 @@ class TeamController extends Controller
 
         $invitation->delete();
 
-        return back()->with('success', 'Invite cancelled.');
+        return back()->with('success', 'Invite cancelled. Its link no longer works.');
+    }
+
+    /**
+     * Issue a fresh link for an existing invite.
+     *
+     * With email switched off for beta, "resend" means "give me a working link again".
+     * The old token is replaced rather than extended, so a link that was shared with the
+     * wrong person, or posted somewhere it should not have been, stops working the moment
+     * a new one is issued.
+     */
+    public function refreshInvite(WorkspaceInvitation $invitation): RedirectResponse
+    {
+        $workspace = app('current.workspace');
+        $this->requireAdmin($workspace);
+
+        if ($invitation->workspace_id !== $workspace->workspace_id) {
+            abort(404);
+        }
+
+        if ($invitation->isAccepted()) {
+            return back()->with('error', 'That invite has already been accepted, so it does not need a new link.');
+        }
+
+        $invitation->update([
+            'token' => Str::random(64),
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        return back()->with('success', 'New link created for '.$invitation->email.'. The previous link no longer works.');
     }
 
     private function requireAdmin(Workspace $workspace): void

@@ -8,6 +8,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\PlatformHealthService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -282,6 +283,94 @@ class PlatformOperationsTest extends TestCase
             ->assertSee('Amina Bello')
             ->assertSee('History')
             ->assertSee('Assessment created in a workspace');
+    }
+
+    // ─── Losing access takes effect immediately ──────────────────
+
+    /**
+     * The suite runs with the array session driver, which has no server-side record to
+     * delete. Production stores sessions in the database, so these tests assert against
+     * that configuration rather than the test default.
+     */
+    private function useDatabaseSessions(): void
+    {
+        config(['session.driver' => 'database']);
+    }
+
+    public function test_suspending_a_person_ends_the_session_they_already_have(): void
+    {
+        $this->useDatabaseSessions();
+        $person = User::factory()->create();
+
+        DB::table('sessions')->insert([
+            'id' => 'session-under-test',
+            'user_id' => $person->user_id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'test',
+            'payload' => '',
+            'last_activity' => now()->timestamp,
+        ]);
+
+        $this->actingAs($this->makeAdmin())
+            ->patch(route('admin.platform-users.suspend', $person), [
+                'suspension_reason' => 'Payment dispute under review',
+            ]);
+
+        // Blocking sign-in alone would leave them working until the session expired.
+        $this->assertDatabaseMissing('sessions', ['id' => 'session-under-test']);
+    }
+
+    public function test_suspending_a_workspace_ends_its_members_sessions(): void
+    {
+        $this->useDatabaseSessions();
+        [$user, $workspace] = $this->makeCustomer();
+
+        DB::table('sessions')->insert([
+            'id' => 'workspace-session',
+            'user_id' => $user->user_id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'test',
+            'payload' => '',
+            'last_activity' => now()->timestamp,
+        ]);
+
+        $this->actingAs($this->makeAdmin())
+            ->patch(route('admin.workspaces.status', $workspace), ['status' => 'SUSPENDED']);
+
+        $this->assertDatabaseMissing('sessions', ['id' => 'workspace-session']);
+    }
+
+    public function test_reactivating_a_workspace_does_not_end_sessions(): void
+    {
+        $this->useDatabaseSessions();
+        [$user, $workspace] = $this->makeCustomer('SUSPENDED');
+
+        DB::table('sessions')->insert([
+            'id' => 'kept-session',
+            'user_id' => $user->user_id,
+            'ip_address' => '127.0.0.1',
+            'user_agent' => 'test',
+            'payload' => '',
+            'last_activity' => now()->timestamp,
+        ]);
+
+        $this->actingAs($this->makeAdmin())
+            ->patch(route('admin.workspaces.status', $workspace), ['status' => 'ACTIVE']);
+
+        $this->assertDatabaseHas('sessions', ['id' => 'kept-session']);
+    }
+
+    // ─── Plans ───────────────────────────────────────────────────
+
+    public function test_plans_screen_shows_what_each_plan_is_carrying(): void
+    {
+        $this->makeCustomer();
+
+        $this->actingAs($this->makeAdmin())
+            ->get(route('admin.plan-features.index'))
+            ->assertOk()
+            ->assertSee('Who is on each plan')
+            ->assertSee('Workspaces');
     }
 
     // ─── Activity centre ─────────────────────────────────────────

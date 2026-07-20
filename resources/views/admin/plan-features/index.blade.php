@@ -7,6 +7,82 @@
         </div>
     </div>
 
+    {{-- What the plans are carrying. The screen could set limits but never showed usage
+         against them, so there was no way to see who was near a ceiling. --}}
+    <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <x-stat-card tone="blue" label="Workspaces" :value="$totals['workspaces']" sub="On a plan" />
+        <x-stat-card tone="slate" label="People" :value="$totals['people']" sub="Across all workspaces" />
+        <x-stat-card tone="strong" label="Projects" :value="$totals['projects']" sub="Created by customers" />
+        <x-stat-card tone="blue" label="Assessments" :value="$totals['assessments']" sub="Run by customers" />
+    </div>
+
+    @if (count($nearLimit) > 0)
+        <section class="mb-4" aria-labelledby="near-limit-heading">
+            <h2 id="near-limit-heading" class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Close to a limit
+            </h2>
+            <div class="grid gap-3 sm:grid-cols-2">
+                @foreach ($nearLimit as $flag)
+                    <div class="rounded-2xl border p-4 {{ $flag['over']
+                        ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950'
+                        : 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950' }}">
+                        <a href="{{ route('admin.workspaces.show', $flag['workspace']) }}" class="text-sm font-bold text-slate-900 hover:underline dark:text-white">
+                            {{ $flag['workspace']->name }}
+                        </a>
+                        <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">
+                            {{ $flag['over'] ? 'Over the' : 'Close to the' }} {{ strtolower($flag['limit']) }} limit —
+                            using {{ $flag['used'] }} of {{ $flag['allowed'] }}.
+                        </p>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
+    <section class="mb-5 section-card" aria-labelledby="allocation-heading">
+        <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-700">
+            <h2 id="allocation-heading" class="text-sm font-bold text-slate-900 dark:text-white">Who is on each plan</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-900/50">
+                    <tr>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Plan</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Workspaces</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">People</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Projects</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Limits</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @foreach ($usage as $row)
+                        <tr>
+                            <td class="px-5 py-3">
+                                <p class="font-semibold text-slate-900 dark:text-white">{{ $row['plan']->public_label ?: $row['plan']->plan_name }}</p>
+                                @unless ($row['plan']->is_active)
+                                    <p class="mt-0.5 text-xs text-slate-400">Not offered</p>
+                                @endunless
+                            </td>
+                            <td class="px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">
+                                {{ $row['workspace_count'] }}
+                                <p class="text-xs text-slate-400">{{ $row['active_count'] }} active</p>
+                            </td>
+                            <td class="px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">{{ $row['people_count'] }}</td>
+                            <td class="px-5 py-3 tabular-nums text-slate-600 dark:text-slate-300">{{ $row['project_count'] }}</td>
+                            <td class="px-5 py-3">
+                                <ul class="space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                    @foreach ($row['limits'] as $limit)
+                                        <li>{{ $limit['label'] }}: <span class="font-medium text-slate-700 dark:text-slate-200">{{ $limit['value'] }}</span></li>
+                                    @endforeach
+                                </ul>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <form method="POST" action="{{ route('admin.plan-features.update') }}">
         @csrf
         @method('PUT')
