@@ -95,7 +95,7 @@
                                         <form method="POST" action="{{ route('admin.assessments.questions.approve', [$assessment, $placement]) }}"
                                               onsubmit="return confirm('Approve this question? Its wording and answers are locked permanently once approved.')">
                                             @csrf @method('PATCH')
-                                            <button class="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">Approve</button>
+                                            <button class="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200" data-loading-label="Approving…">Approve</button>
                                         </form>
                                     @endif
                                     @if (! $loop->first)

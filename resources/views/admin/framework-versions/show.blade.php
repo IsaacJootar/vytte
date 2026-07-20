@@ -10,20 +10,20 @@
                 <form method="POST" action="{{ route('admin.framework-versions.publish', $framework) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Publish immutable framework</button>
+                    <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white" data-loading-label="Publishing…">Publish immutable framework</button>
                 </form>
             @endif
             @if ($framework->status === 'PUBLISHED')
                 <form method="POST" action="{{ route('admin.framework-versions.supersede', $framework) }}">
                     @csrf
-                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300">Create successor draft</button>
+                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300" data-loading-label="Creating…">Create successor draft</button>
                 </form>
             @endif
             @if (in_array($framework->status, ['DRAFT', 'PUBLISHED'], true))
                 <form method="POST" action="{{ route('admin.framework-versions.archive', $framework) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 dark:border-red-700 dark:text-red-300">Archive</button>
+                    <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 dark:border-red-700 dark:text-red-300" data-loading-label="Archiving…">Archive</button>
                 </form>
             @endif
         </div>
@@ -31,10 +31,9 @@
 
     <div class="mb-5 grid gap-4 md:grid-cols-4">
         @foreach ($dependencySummary as $label => $count)
-            <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ str($label)->replace('_', ' ') }}</p>
-                <p class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ $count }}</p>
-            </div>
+            <x-stat-card :tone="$count > 0 ? 'blue' : 'slate'"
+                         :label="str($label)->replace('_', ' ')->title()"
+                         :value="$count" />
         @endforeach
     </div>
 

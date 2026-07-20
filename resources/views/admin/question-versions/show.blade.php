@@ -22,20 +22,20 @@
                 <form method="POST" action="{{ route('admin.question-versions.approve', $version) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="btn-secondary">Approve</button>
+                    <button class="btn-secondary" data-loading-label="Approving…">Approve</button>
                 </form>
             @endif
             @if ($version->status === 'APPROVED')
                 <form method="POST" action="{{ route('admin.question-versions.publish', $version) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="btn-primary">Publish immutable version</button>
+                    <button class="btn-primary" data-loading-label="Publishing…">Publish immutable version</button>
                 </form>
             @endif
             @if ($version->status === 'PUBLISHED')
                 <form method="POST" action="{{ route('admin.question-versions.supersede', $version) }}">
                     @csrf
-                    <button class="btn-secondary">Create successor draft</button>
+                    <button class="btn-secondary" data-loading-label="Creating…">Create successor draft</button>
                 </form>
             @endif
             @if (in_array($version->status, ['DRAFT', 'INTERNAL_REVIEW', 'APPROVED', 'PUBLISHED'], true))
@@ -43,7 +43,7 @@
                       onsubmit="return confirm('Archive this version? It stays on record and can still be read, but it can no longer be used or edited.')">
                     @csrf
                     @method('PATCH')
-                    <button class="btn-danger">Archive</button>
+                    <button class="btn-danger" data-loading-label="Archiving…">Archive</button>
                 </form>
             @endif
         </div>
@@ -58,10 +58,9 @@
 
     <div class="mb-5 grid gap-4 md:grid-cols-4">
         @foreach ($dependencySummary as $label => $count)
-            <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ str($label)->replace('_', ' ') }}</p>
-                <p class="mt-1 text-2xl font-black text-slate-900 dark:text-white">{{ $count }}</p>
-            </div>
+            <x-stat-card :tone="$count > 0 ? 'blue' : 'slate'"
+                         :label="str($label)->replace('_', ' ')->title()"
+                         :value="$count" />
         @endforeach
     </div>
 
@@ -200,7 +199,7 @@
                 @endif
 
                 <div class="text-right">
-                    <button class="btn-primary">Save draft configuration</button>
+                    <button class="btn-primary" data-loading-label="Saving…">Save draft configuration</button>
                 </div>
             </div>
 

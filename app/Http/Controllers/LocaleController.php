@@ -31,6 +31,6 @@ class LocaleController extends Controller
             $request->user()->update(['locale' => $locale]);
         }
 
-        return redirect()->back();
+        return redirect()->back()->with('success', 'Language updated.');
     }
 }

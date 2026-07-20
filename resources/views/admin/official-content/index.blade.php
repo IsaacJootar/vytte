@@ -9,10 +9,7 @@
 
     <div class="grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-6">
         @foreach ($stats as $label => $value)
-            <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">{{ $label }}</p>
-                <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ $value }}</p>
-            </div>
+            <x-stat-card :tone="$loop->index % 2 === 0 ? 'blue' : 'slate'" :label="$label" :value="$value" />
         @endforeach
     </div>
 

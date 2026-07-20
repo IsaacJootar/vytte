@@ -155,6 +155,26 @@
 .btn-danger:hover { background: #FEF2F2; }
 .dark .btn-danger { background: #1E293B; color: #FCA5A5; border-color: #7F1D1D; }
 
+/* Submitting state. The button keeps its colour so it still reads as the control
+   the user just pressed, but stops accepting further clicks. */
+.is-submitting {
+    opacity: 0.75;
+    cursor: progress;
+    pointer-events: none;
+}
+.submit-spinner {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    animation: submit-spin 700ms linear infinite;
+}
+@keyframes submit-spin {
+    to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .submit-spinner { animation-duration: 2.4s; }
+}
+
 /* A navigation link never wears button chrome. It is text, in the link colour,
    and it underlines on hover. */
 .link-nav {

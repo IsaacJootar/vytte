@@ -11,14 +11,10 @@
     </div>
 
     <div class="mb-4 grid gap-3 sm:grid-cols-2">
-        <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">In progress</p>
-            <p class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{{ $draftCount }}</p>
-        </div>
-        <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Published</p>
-            <p class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{{ $publishedCount }}</p>
-        </div>
+        <x-stat-card tone="blue" label="In progress" :value="$draftCount"
+                     :sub="$draftCount === 1 ? '1 assessment being built' : $draftCount.' assessments being built'" />
+        <x-stat-card tone="strong" label="Published" :value="$publishedCount"
+                     :sub="$publishedCount === 1 ? '1 assessment workspaces can use' : $publishedCount.' assessments workspaces can use'" />
     </div>
 
     <x-admin-table

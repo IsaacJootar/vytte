@@ -10,15 +10,37 @@ use Illuminate\Http\Request;
 
 class ModuleController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $modules = AssessmentModule::withCount('questions')
+        $query = AssessmentModule::withCount('questions')
             ->with('targetType')
             ->orderBy('target_type_code')
-            ->orderBy('module_name')
-            ->get();
+            ->orderBy('module_name');
 
-        return view('admin.modules.index', compact('modules'));
+        if ($request->filled('search')) {
+            $search = '%'.$request->string('search')->lower().'%';
+            $query->where(function ($inner) use ($search): void {
+                $inner->whereRaw('LOWER(module_name) LIKE ?', [$search])
+                    ->orWhereRaw('LOWER(module_code) LIKE ?', [$search]);
+            });
+        }
+
+        if ($request->filled('target_type_code')) {
+            $query->where('target_type_code', $request->string('target_type_code'));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->string('status')->value() === 'active');
+        }
+
+        return view('admin.modules.index', [
+            'modules' => $query->paginate(20)->withQueryString(),
+            'targetTypes' => AssessmentModule::query()
+                ->select('target_type_code')
+                ->distinct()
+                ->orderBy('target_type_code')
+                ->pluck('target_type_code'),
+        ]);
     }
 
     public function show(AssessmentModule $module): View

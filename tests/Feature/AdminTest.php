@@ -9,9 +9,11 @@ use App\Models\QuestionGroup;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\ViewErrorBag;
 use Tests\TestCase;
 
 class AdminTest extends TestCase
@@ -147,6 +149,43 @@ class AdminTest extends TestCase
             ->assertForbidden();
     }
 
+    // ─── Action feedback ─────────────────────────────────────────
+
+    public function test_a_successful_action_is_confirmed_to_the_user(): void
+    {
+        $module = AssessmentModule::first();
+        $this->assertNotNull($module, 'Reference data must be seeded');
+
+        $this->actingAs($this->makeAdmin())
+            ->put(route('admin.modules.update', $module), [
+                'module_name' => 'Renamed Department',
+            ])
+            ->assertRedirect(route('admin.modules.show', $module))
+            ->assertSessionHas('success');
+
+        // The flash is worthless if the page it lands on does not render it.
+        $this->actingAs($this->makeAdmin())
+            ->withSession(['success' => 'Module updated.'])
+            ->get(route('admin.modules.show', $module))
+            ->assertOk()
+            ->assertSee('Module updated.');
+    }
+
+    public function test_a_rejected_action_tells_the_user_why(): void
+    {
+        $module = AssessmentModule::first();
+
+        $this->actingAs($this->makeAdmin())
+            ->from(route('admin.modules.edit', $module))
+            ->put(route('admin.modules.update', $module), ['module_name' => ''])
+            ->assertSessionHasErrors('module_name');
+
+        $this->actingAs($this->makeAdmin())
+            ->withSession(['errors' => new ViewErrorBag])
+            ->get(route('admin.modules.index'))
+            ->assertOk();
+    }
+
     // ─── Module management ───────────────────────────────────────
 
     public function test_admin_can_list_modules(): void
@@ -155,6 +194,55 @@ class AdminTest extends TestCase
             ->get(route('admin.modules.index'))
             ->assertOk()
             ->assertSee('Module Library');
+    }
+
+    public function test_module_library_search_narrows_the_list(): void
+    {
+        $module = AssessmentModule::first();
+        $this->assertNotNull($module, 'Reference data must be seeded');
+
+        $other = AssessmentModule::where('module_id', '!=', $module->module_id)->first();
+        $this->assertNotNull($other, 'Need a second module to prove the search filters');
+
+        $this->actingAs($this->makeAdmin())
+            ->get(route('admin.modules.index', ['search' => $module->module_name]))
+            ->assertOk()
+            ->assertSee($module->module_name)
+            ->assertDontSee($other->module_name);
+    }
+
+    public function test_module_library_search_matches_module_code(): void
+    {
+        $module = AssessmentModule::first();
+
+        $this->actingAs($this->makeAdmin())
+            ->get(route('admin.modules.index', ['search' => strtolower($module->module_code)]))
+            ->assertOk()
+            ->assertSee($module->module_name);
+    }
+
+    public function test_module_library_paginates_rather_than_listing_everything(): void
+    {
+        $response = $this->actingAs($this->makeAdmin())
+            ->get(route('admin.modules.index'))
+            ->assertOk();
+
+        $this->assertTrue(
+            $response->viewData('modules') instanceof LengthAwarePaginator,
+            'The module library must paginate so the page stays usable as the library grows'
+        );
+        $this->assertLessThanOrEqual(20, $response->viewData('modules')->count());
+    }
+
+    public function test_module_library_status_filter_excludes_inactive_modules(): void
+    {
+        $module = AssessmentModule::first();
+        $module->update(['is_active' => false]);
+
+        $this->actingAs($this->makeAdmin())
+            ->get(route('admin.modules.index', ['status' => 'active']))
+            ->assertOk()
+            ->assertDontSee($module->module_name);
     }
 
     public function test_admin_can_view_module_detail(): void

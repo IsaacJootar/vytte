@@ -9,14 +9,8 @@
 
     {{-- Summary stats --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <div class="section-card p-4">
-            <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-1">Assessments Mapped</p>
-            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ number_format($totalAssessments) }}</p>
-        </div>
-        <div class="section-card p-4">
-            <p class="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-1">Countries</p>
-            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ $countryCount }}</p>
-        </div>
+        <x-stat-card tone="blue" label="Assessments Mapped" :value="number_format($totalAssessments)" />
+        <x-stat-card tone="slate" label="Countries" :value="$countryCount" />
         <div class="col-span-2 sm:col-span-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
             <p class="text-xs text-amber-700 dark:text-amber-400 font-semibold mb-1">Data scope</p>
             <p class="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">Target location only — no workspace, project, or respondent identity is shown or derivable from this view.</p>

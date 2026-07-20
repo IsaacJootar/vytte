@@ -8,16 +8,12 @@
 
     <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         @foreach ([
-            'Live now' => ['value' => $counts['live'], 'hint' => 'Workspaces can select these'],
-            'Being prepared' => ['value' => $counts['draft'], 'hint' => 'Not yet available'],
-            'Replaced' => ['value' => $counts['replaced'], 'hint' => 'A newer version exists'],
-            'Archived' => ['value' => $counts['archived'], 'hint' => 'Withdrawn from use'],
+            'Live now' => ['value' => $counts['live'], 'hint' => 'Workspaces can select these', 'tone' => 'strong'],
+            'Being prepared' => ['value' => $counts['draft'], 'hint' => 'Not yet available', 'tone' => 'blue'],
+            'Replaced' => ['value' => $counts['replaced'], 'hint' => 'A newer version exists', 'tone' => 'moderate'],
+            'Archived' => ['value' => $counts['archived'], 'hint' => 'Withdrawn from use', 'tone' => 'slate'],
         ] as $label => $stat)
-            <div class="section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $label }}</p>
-                <p class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">{{ $stat['value'] }}</p>
-                <p class="mt-0.5 text-xs text-slate-400">{{ $stat['hint'] }}</p>
-            </div>
+            <x-stat-card :tone="$stat['tone']" :label="$label" :value="$stat['value']" :sub="$stat['hint']" />
         @endforeach
     </div>
 
