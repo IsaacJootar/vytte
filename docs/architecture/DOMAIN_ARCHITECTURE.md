@@ -4,7 +4,7 @@
 
 Vytte uses one small platform-governed universal analytical-domain taxonomy.
 
-Domains are analytical lenses for interpretation, findings, recommendations, trends, and reporting. They are not departments, facility services, framework sections, indicators, question banks, question generators, scoring profiles, or workspace tags.
+Domains are the measurement dimensions that scored question contributions roll up into. Since P4 they are called Measurement Domains, and the word "lens" is reserved for the intelligence layer — see HEALTH_METHODOLOGY_ARCHITECTURE.md. They are not departments, facility services, framework sections, indicators, question banks, question generators, scoring profiles, or workspace tags.
 
 ## Final universal taxonomy
 

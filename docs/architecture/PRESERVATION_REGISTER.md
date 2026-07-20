@@ -66,3 +66,17 @@ Do not build new product behavior on reserved structures without a fresh design 
 - Final-report immutability
 - Respondent/report token expiry and revocation
 - PostgreSQL migration, seeding, and test behavior
+
+## Retired in P4 (2026-07-20)
+
+| Artifact | Reason | Recovery |
+| --- | --- | --- |
+| `recommendations` | Single-threshold recommendation model superseded by the P4 recommendation framework. Empty and unreferenced. | `down()` on `2026_07_20_123000_retire_legacy_recommendation_tables` restores the original structure. |
+| `recommendation_rules` | Same. Could not express objective, lens, evidence or history as inputs. | Same migration. |
+| `root_causes` | Existed only to be referenced by `recommendations`. Root cause returns in P4 as an analysis lens over live results rather than a stored table of pre-computed causes. | Same migration. |
+
+All three were empty at retirement. See `RECOMMENDATION_FRAMEWORK.md` for what replaced the model.
+
+## Superseded wording
+
+`DOMAIN_ARCHITECTURE.md` previously described measurement domains as "analytical lenses for interpretation, findings, recommendations, trends, and reporting". P4 reserves "lens" for the intelligence layer. The measurement domains themselves are unchanged; only the wording was retired. See `HEALTH_METHODOLOGY_ARCHITECTURE.md`.

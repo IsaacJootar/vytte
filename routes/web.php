@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\DomainTaxonomyController as AdminDomainTaxonomyCo
 use App\Http\Controllers\Admin\FacilityProfileController as AdminFacilityProfileController;
 use App\Http\Controllers\Admin\FrameworkVersionController as AdminFrameworkVersionController;
 use App\Http\Controllers\Admin\GeographicUsageController as AdminGeographicUsageController;
+use App\Http\Controllers\Admin\MethodologyController as AdminMethodologyController;
 use App\Http\Controllers\Admin\ModuleController as AdminModuleController;
 use App\Http\Controllers\Admin\ModuleImportController;
 use App\Http\Controllers\Admin\ModuleTranslationController;
@@ -171,6 +172,16 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::patch('report-shares/{shareLink}/revoke', [AdminReportShareController::class, 'revoke'])->name('report-shares.revoke');
     Route::get('audit-logs', [AdminAuditLogController::class, 'index'])->name('audit-logs.index');
     Route::get('monitoring', [AdminMonitoringController::class, 'index'])->name('monitoring.index');
+
+    // The official health knowledge model.
+    Route::get('methodology', [AdminMethodologyController::class, 'index'])->name('methodology.index');
+    Route::get('methodology/objectives', [AdminMethodologyController::class, 'objectives'])->name('methodology.objectives');
+    Route::get('methodology/health-areas', [AdminMethodologyController::class, 'healthAreas'])->name('methodology.health-areas');
+    Route::get('methodology/lenses', [AdminMethodologyController::class, 'lenses'])->name('methodology.lenses');
+    Route::get('methodology/insight-categories', [AdminMethodologyController::class, 'insightCategories'])->name('methodology.insight-categories');
+    Route::get('methodology/templates', [AdminMethodologyController::class, 'templates'])->name('methodology.templates');
+    Route::get('methodology/starting-points', [AdminMethodologyController::class, 'presets'])->name('methodology.presets');
+    Route::post('methodology/{methodologyVersion}/publish', [AdminMethodologyController::class, 'publish'])->name('methodology.publish');
 
     Route::get('settings', [PlatformSettingController::class, 'index'])->name('settings.index');
     Route::put('settings', [PlatformSettingController::class, 'update'])->name('settings.update');

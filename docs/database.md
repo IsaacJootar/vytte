@@ -83,6 +83,19 @@ Laravel migrations are the database source of truth. PostgreSQL is the database 
 - `local_custom_sections`
 - `assessment_share_links`
 
+### Methodology Layer
+
+Sits above the assessment platform. Adds no column to questions, frameworks, snapshots, scoring or reporting.
+
+- `methodology_versions`
+- `assessment_objectives`
+- `health_areas`
+- `analysis_lenses`
+- `insight_categories`
+- `assessment_templates`
+- `objective_recommendations`
+- `objective_presets`
+
 ### Response, Scoring, and Reports
 
 - `responses`
@@ -107,9 +120,8 @@ Present in the schema but not current product authority. Do not build new behavi
 - `topic_scores`
 - `project_domain_scores`
 - `project_scores`
-- `root_causes`
-- `recommendation_rules`
-- `recommendations`
+
+`root_causes`, `recommendation_rules` and `recommendations` were retired in P4. See the preservation register and `RECOMMENDATION_FRAMEWORK.md`.
 
 ### Framework Tables
 
@@ -237,3 +249,18 @@ Current local checks:
 - production frontend build passes.
 
 Before release, run the same migration and test suite against PostgreSQL.
+
+### Methodology Layer Columns
+
+- `methodology_versions` — the governed container. Published versions are immutable and carry a content hash.
+- `assessment_objectives` — why an assessment is run. Purposes only.
+- `health_areas` — subdivisions of `health_domains`.
+- `analysis_lenses` — how results are interpreted. Holds no score.
+- `insight_categories` — the shape a finding takes. `polarity` and `is_diagnostic`.
+- `assessment_templates` — official starting points. `scope_type` is ENTERPRISE or FOCUSED.
+- `objective_recommendations` — what an objective suggests. Suggestions only.
+- `objective_presets` — saved starting combinations.
+
+Retired in P4: `recommendations`, `recommendation_rules`, `root_causes`. See the preservation register.
+
+See `HEALTH_METHODOLOGY_ARCHITECTURE.md`.

@@ -60,3 +60,13 @@ The codebase is organized and the core architecture is coherent, but production 
 - The cleanup report intentionally names removed legacy artifacts.
 - Route list contains no first-party API endpoints yet.
 - Laravel placeholder text in framework config is not app debt, but production env values must be real.
+
+## Added in P4
+
+| Severity | Debt | Recommendation |
+| --- | --- | --- |
+| MEDIUM | The methodology catalogue is curated from established international practice but has not been reviewed against source documents by a health methodologist. It is broad and defensible, not authoritative. | Review before it becomes the official master seed. |
+| MEDIUM | Methodology administration is browse, search and publish only. There is no per-entry create or edit. | Acceptable while the catalogue is seeded as a set. Build authoring if it starts being maintained entry by entry. |
+| MEDIUM | The Trend and Benchmarking analysis lenses have preconditions — two completed assessments, and a peer set — that nothing yet enforces. A lens with unmet preconditions must say so rather than render empty. | Enforce when lens-driven reporting is built. |
+| LOW | `GENERAL_HEALTH_SYSTEMS` carries 14 health areas because it absorbs clinical services with no dedicated health domain, including Malaria and NCDs. | Promote either to a health domain if it becomes a frequent focus. A methodology version change, not a schema change. |
+| LOW | Objective recommendations reference health domains, measurement domains and evidence types by code without validation at publication, because those entities have their own lifecycle. A renamed measurement domain would leave a dangling recommendation. | Add a cross-lifecycle check if those taxonomies start changing. |

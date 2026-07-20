@@ -180,3 +180,43 @@
 - **Decision:** Every notification returns `['database']` from `via()` and appends `'mail'` only when the platform setting `email.notifications_enabled` is true. Account suspension and reactivation follow the same rule as the existing notifications.
 - **Rationale:** In-app notification does not depend on a third-party service being configured, so it keeps working during beta while email is off.
 - **Honesty requirement:** The toggle can be switched on while no mail service can actually send. Platform Health reports a configured Resend transport with no `RESEND_API_KEY` as a warning, and the Settings screen states this before the switch is flipped rather than allowing the belief that it worked.
+
+### DEC-2026-07-20-024: The Methodology Layer Sits Above The Platform
+
+- **Status:** Accepted and implemented.
+- **Context:** P4 introduces objectives, health areas, analysis lenses, insight categories, templates and presets. The obvious implementation would attach them to assessments, questions and snapshots.
+- **Decision:** The methodology layer adds no column to, and changes no behaviour of, questions, frameworks, catalogue releases, snapshots, scoring or reporting. An assessment that never references an objective behaves exactly as it did before P4.
+- **Rationale:** The layer beneath is already governed, versioned and immutable. Reaching into it would put two authorities over the same rows and would make every existing reproducibility guarantee conditional on methodology state.
+- **Test contract:** A test asserts the absence of methodology columns on `assessments`, `questions`, `question_versions` and `assessment_snapshots`.
+
+### DEC-2026-07-20-025: Objectives Are Purposes, Subjects Are Health Domains
+
+- **Status:** Accepted and implemented.
+- **Context:** The P4 brief listed Malaria, HIV and TB as assessment objectives. Those already existed as health domains.
+- **Decision:** Objectives carry purpose only — Baseline, Accreditation, Supportive Supervision. Subjects stay in health domains. "Malaria" is not an objective; a Baseline applied to Malaria is.
+- **Rationale:** Carrying the same concept in both entities would leave a user unable to tell which to pick and would make objective mapping circular.
+- **Preserved:** The familiar name survives as an Objective Preset — "Malaria Baseline Assessment" preselects the objective, health domains, template and lenses. A preset is a saved combination, not a third entity.
+- **Test contract:** A test asserts no health-domain subject appears in the objective catalogue.
+
+### DEC-2026-07-20-026: Measurement Domains And Analysis Lenses Are Different Things
+
+- **Status:** Accepted and implemented.
+- **Context:** `DOMAIN_ARCHITECTURE.md` already described the seven `domains` as "analytical lenses". P4 needed the word for a genuinely different concept.
+- **Decision:** `domains` are **Measurement Domains** — dimensions that scores roll up into, stored in `domain_scores`. `analysis_lenses` are **Analysis Lenses** — ways of reading results, holding no score. The "lens" wording is retired from the domain documentation.
+- **Distinguishing test:** Executive Summary is a valid analysis lens and could never be a measurement domain, because nothing rolls up into it.
+- **Boundary:** No schema, scoring or reporting behaviour changed. This is vocabulary, corrected before the master seed made it permanent.
+
+### DEC-2026-07-20-027: The Methodology Publishes As One Coherent Version
+
+- **Status:** Accepted and implemented.
+- **Decision:** Objectives, health areas, lenses, insight categories, templates and presets belong to one `methodology_versions` row and publish together, with a content hash over the whole contents. Publication refuses a version whose recommendations do not resolve within it.
+- **Rationale:** Objectives recommend lenses and templates. Independent versioning would allow publishing an objective pointing at a lens that does not exist, and the reader would see an empty recommendation with no explanation.
+- **Boundary:** Health domains, measurement domains and evidence types are referenced but not validated at publication, because they have their own lifecycle outside the methodology version.
+
+### DEC-2026-07-20-028: A Recommendation Must Name The Finding It Came From
+
+- **Status:** Accepted as the governing constraint for a future phase. No generation is implemented.
+- **Decision:** Any recommendation, however generated, must point at a specific score, response, pain point or trend.
+- **Rationale:** A recommendation that cannot cite its finding is generic advice. In a health assessment report that is worse than none, because it borrows the authority of the assessment without its evidence.
+- **Consequence:** The dormant `recommendations`, `recommendation_rules` and `root_causes` tables were retired. Their single-threshold shape could not express objective, lens, evidence or history as inputs, and extending them would have carried that assumption into the new framework. All three were empty and unreferenced.
+- **Deliberately undecided:** Whether generation is rule-based or AI-assisted, where generated recommendations are stored, and whether they are frozen into the report snapshot. Recorded as open rather than guessed.

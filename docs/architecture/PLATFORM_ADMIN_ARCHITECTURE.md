@@ -38,7 +38,7 @@ Platform Admin navigation is grouped by how often the work is done, not by the o
 - **Primary (always open):** Dashboard, Assessments, Question Library, Publishing.
 - **Setup (collapsed):** Departments, Facility Types, Scores.
 - **Oversight (collapsed):** Workspaces, People, Assessments in Use, Activity, Shared Reports, Plans, Usage, Platform Health, Settings.
-- **Advanced Tools (collapsed):** Official Content, Frameworks, Question Versions, Question Groups, Measurement Areas.
+- **Advanced Tools (collapsed):** Methodology, Official Content, Frameworks, Question Versions, Question Groups, Measurement Areas.
 
 Setup and Advanced Tools are collapsed by default so an administrator who never opens them never meets governance vocabulary.
 
@@ -80,3 +80,19 @@ Nothing is deleted in any of these states. See DEC-020 and DEC-021.
 ## Immutability
 
 Draft official content can be edited through governed flows. Published official question versions, framework versions, catalogue releases, assessment snapshots, respondent score snapshots, aggregation results, and final reports are immutable. Changes require a new version or a new assessment/report lifecycle event.
+
+## Methodology administration
+
+`admin.methodology.*` under Advanced Tools. Browse, search, filter and paginate the official knowledge model, and publish a methodology version.
+
+- `admin.methodology.index` — version in force, counts, version history, publish control.
+- `admin.methodology.objectives` — why an assessment is run.
+- `admin.methodology.health-areas` — subdivisions of a health domain.
+- `admin.methodology.lenses` — how results are interpreted.
+- `admin.methodology.insight-categories` — the shape a finding takes.
+- `admin.methodology.templates` — official starting points.
+- `admin.methodology.presets` — shown as Starting Points. Saved combinations.
+
+Per-entry authoring is deliberately absent. The catalogue is curated and seeded as a coherent set, so browsing and publication are the operations that matter; creating one objective at a time by hand is not how the methodology is maintained. Recorded as remaining work rather than half-built.
+
+See `HEALTH_METHODOLOGY_ARCHITECTURE.md`.

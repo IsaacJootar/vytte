@@ -70,6 +70,7 @@ final class RoleNavigation
                     'label' => 'Advanced Tools',
                     'collapsible' => true,
                     'items' => [
+                        self::item('admin.methodology.index', 'Methodology', 'academic-cap', 'admin.methodology.*'),
                         self::item('admin.official-content.index', 'Official Content', 'shield-check', 'admin.official-content.*'),
                         self::item('admin.framework-versions.index', 'Frameworks', 'document-text', 'admin.framework-versions.*'),
                         self::item('admin.question-versions.index', 'Question Versions', 'document-text', 'admin.question-versions.*'),
