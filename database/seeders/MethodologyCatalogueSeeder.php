@@ -709,6 +709,35 @@ class MethodologyCatalogueSeeder extends Seeder
                 'HEALTH_DOMAIN' => ['PATIENT_EXPERIENCE'],
                 'MEASUREMENT_DOMAIN' => ['PCOM'],
             ],
+
+            // Objectives that were selectable but suggested nothing, so choosing one left
+            // the user at a blank page with no hint of where to go next.
+            'MIDLINE' => [
+                'ANALYSIS_LENS' => ['TREND', 'PROGRESS', 'PERFORMANCE'],
+            ],
+            'NEEDS_ASSESSMENT' => [
+                'ANALYSIS_LENS' => ['CAPACITY', 'PRIORITY_ACTION'],
+                'MEASUREMENT_DOMAIN' => ['RES', 'WORK'],
+            ],
+            'LICENSING' => [
+                'ANALYSIS_LENS' => ['COMPLIANCE', 'RISK'],
+                'MEASUREMENT_DOMAIN' => ['GOV'],
+                'EVIDENCE_TYPE' => ['DOCUMENT'],
+            ],
+            'CLINICAL_AUDIT' => [
+                'ANALYSIS_LENS' => ['QUALITY', 'CLINICAL_GOVERNANCE', 'PATIENT_SAFETY'],
+                'MEASUREMENT_DOMAIN' => ['SAFE'],
+            ],
+            'PERFORMANCE_REVIEW' => [
+                'ANALYSIS_LENS' => ['PERFORMANCE', 'BENCHMARK', 'EXECUTIVE'],
+            ],
+            'GAP_ANALYSIS' => [
+                'ANALYSIS_LENS' => ['CAPACITY', 'PRIORITY_ACTION', 'PERFORMANCE'],
+            ],
+            'SERVICE_AVAILABILITY' => [
+                'ANALYSIS_LENS' => ['PERFORMANCE', 'EQUITY', 'PUBLIC_HEALTH'],
+                'MEASUREMENT_DOMAIN' => ['SERV'],
+            ],
         ];
 
         $objectives = AssessmentObjective::where('methodology_version_id', $version->methodology_version_id)
@@ -793,6 +822,15 @@ class MethodologyCatalogueSeeder extends Seeder
             ['code' => 'DISTRICT_SUPERVISION_ROUND', 'name' => 'District PHC Supervision Round', 'objective' => 'SUPPORTIVE_SUPERVISION', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'DISTRICT_PHC_SUPERVISION', 'lenses' => ['PROGRESS', 'PRIORITY_ACTION']],
             ['code' => 'PATIENT_SATISFACTION_ROUND', 'name' => 'Patient Satisfaction Survey', 'objective' => 'PATIENT_SATISFACTION', 'domains' => ['PATIENT_EXPERIENCE'], 'template' => 'PATIENT_EXPERIENCE_SURVEY', 'lenses' => ['QUALITY', 'EQUITY']],
             ['code' => 'SUSTAINABILITY_CHECK', 'name' => 'Programme Sustainability Review', 'objective' => 'SUSTAINABILITY_REVIEW', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'HEALTH_FACILITY_GENERAL', 'lenses' => ['SUSTAINABILITY', 'EXECUTIVE']],
+
+            // Templates that existed but nothing led to them. A template nobody is routed
+            // to is only findable by browsing the whole catalogue, which is the same as
+            // not existing for most users.
+            ['code' => 'BLOOD_SERVICES_REVIEW', 'name' => 'Blood and Transfusion Services Review', 'objective' => 'OPERATIONAL_READINESS', 'domains' => ['BLOOD_SERVICES'], 'template' => 'BLOOD_SERVICES_ASSESSMENT', 'lenses' => ['CAPACITY', 'PATIENT_SAFETY']],
+            ['code' => 'DISTRICT_SYSTEM_REVIEW', 'name' => 'District Health System Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['GENERAL_HEALTH_SYSTEMS'], 'template' => 'DISTRICT_REVIEW', 'lenses' => ['PERFORMANCE', 'EQUITY', 'EXECUTIVE']],
+            ['code' => 'EYE_HEALTH_REVIEW', 'name' => 'Eye Health Services Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['EYE_HEALTH'], 'template' => 'EYE_HEALTH_ASSESSMENT', 'lenses' => ['CAPACITY', 'EQUITY']],
+            ['code' => 'ORAL_HEALTH_REVIEW', 'name' => 'Oral Health Services Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['ORAL_HEALTH'], 'template' => 'ORAL_HEALTH_ASSESSMENT', 'lenses' => ['CAPACITY', 'EQUITY']],
+            ['code' => 'REHABILITATION_REVIEW', 'name' => 'Rehabilitation Services Review', 'objective' => 'SITUATION_ANALYSIS', 'domains' => ['REHABILITATION'], 'template' => 'REHABILITATION_ASSESSMENT', 'lenses' => ['CAPACITY', 'EQUITY']],
         ];
 
         $objectives = AssessmentObjective::where('methodology_version_id', $version->methodology_version_id)

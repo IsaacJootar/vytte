@@ -74,5 +74,5 @@ The codebase is organized and the core architecture is coherent, but production 
 
 | Severity | Debt | Recommendation |
 | --- | --- | --- |
-| MEDIUM | `FIN` (Financing and Resource Management) exists in the `domains` master list but is inert: no published domain taxonomy version contains it, so nothing maps to or scores it. Platform Admin has no publish control for domain taxonomies, only browse, so a draft version could not be published through the UI. | Add a taxonomy version publish action, then create and publish a version containing all eight measurement domains. Until then the WHO building blocks remain incomplete in scoring. |
+| RESOLVED | `FIN` is defined in the published taxonomy and Platform Admin has a full version-and-publish workflow. Publication refuses to leave any measurement domain undefined. See DEC-2026-07-20-033. |
 | LOW | Objective presets reference health domains and templates by code with no foreign key, matching `objective_recommendations`. A renamed domain code would leave a preset pointing at nothing. | Publication validation checks lens, template and area references but not health domain codes, since those live outside the methodology version. Add a cross-lifecycle check if domain codes start changing. |

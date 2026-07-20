@@ -126,6 +126,14 @@ class PlatformGovernedDemoSeeder extends Seeder
                 'Respectful, understandable, responsive, and community-aware service experience.',
                 'Required because community and patient feedback should be interpreted through the normal assessment engine.',
             ],
+            // Completes the WHO health system building blocks. Defined here so a fresh
+            // install has every measurement domain in force from version 1; publication
+            // now refuses a version that leaves any domain undefined and therefore inert.
+            'FIN' => [
+                'Financing and Resource Management',
+                'Budgeting, funding flows, cost of care, financial protection for patients, and financial management practice.',
+                'Required because a financing weakness otherwise has no dimension to roll up into, and cannot be compared across programmes the way a workforce weakness can.',
+            ],
         ];
 
         $mapped = [];

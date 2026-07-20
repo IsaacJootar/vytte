@@ -93,14 +93,14 @@ The seeder also gained pruning. It previously could only add, so an entry remove
 the catalogue lingered in the database and was still shown to administrators. It now
 reconciles, and a test proves a dropped entry is removed.
 
-### Financing measurement domain — partially actioned
+### Financing measurement domain — resolved
 
-`FIN` (Financing and Resource Management) is added to the master `domains` list,
-completing the WHO building blocks. It is currently **inert**: nothing maps to it and
-nothing scores it, because a measurement domain only takes effect once a published
-domain taxonomy version contains it.
+`FIN` (Financing and Resource Management) is now defined in the published taxonomy, completing the WHO health system building blocks. A fresh install seeds all eight in version 1; the existing environment was moved forward through the normal governance path — new version, publish, previous version superseded — with both steps audited.
 
-Adopting it needs a new taxonomy version to be created and published, and Platform Admin
-has no publish control for domain taxonomies — only browse. Rather than leave a draft
-version nobody can publish, the domain is staged and the gap is recorded as debt.
-Nothing currently scored changes.
+Publication now refuses any taxonomy version that leaves a measurement domain undefined, so no domain can be left staged and inert again. See DEC-2026-07-20-033.
+
+## Pre-seed validation
+
+`php artisan methodology:validate` checks that every entity is reachable and every reference resolves. It must pass before the master seed, and a test runs it.
+
+First run found twelve advisories, all now fixed: seven objectives that suggested nothing and appeared in no starting point, and five templates nothing routed to. Current result: no problems, no advisories.

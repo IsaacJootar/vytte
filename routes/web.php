@@ -196,6 +196,8 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
 
     Route::get('domain-taxonomies', [AdminDomainTaxonomyController::class, 'index'])->name('domain-taxonomies.index');
     Route::get('domain-taxonomy-versions/{version}', [AdminDomainTaxonomyController::class, 'show'])->name('domain-taxonomies.show');
+    Route::post('domain-taxonomies/{taxonomy}/versions', [AdminDomainTaxonomyController::class, 'startVersion'])->name('domain-taxonomies.versions.store');
+    Route::patch('domain-taxonomy-versions/{version}/publish', [AdminDomainTaxonomyController::class, 'publish'])->name('domain-taxonomies.publish');
 
     Route::get('question-groups', [AdminQuestionGroupController::class, 'index'])->name('question-groups.index');
     Route::get('question-groups/create', [AdminQuestionGroupController::class, 'create'])->name('question-groups.create');

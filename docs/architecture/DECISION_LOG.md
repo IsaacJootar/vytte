@@ -252,3 +252,19 @@
 - **Decision:** `FIN` is added to the `domains` master list. It is inert — nothing maps to it and nothing scores it — because a measurement domain only takes effect once a published domain taxonomy version contains it.
 - **Why not further:** Adopting it needs a new taxonomy version to be created and published, and Platform Admin has no publish control for domain taxonomies, only browse. Creating a draft version nobody could publish would have been worse than staging the domain and recording the gap.
 - **Consequence:** The WHO building blocks remain incomplete in scoring until a taxonomy publish action exists. Recorded as debt.
+
+### DEC-2026-07-20-033: A Measurement Domain Cannot Be Published Into Inertness
+
+- **Status:** Accepted and implemented.
+- **Context:** `FIN` was added to the measurement domain master list but no published taxonomy version defined it, so it carried no scores and appeared in no report while looking active in the domain list. There was also no way to fix that: publish and supersede services existed, but nothing created a new version and no route invoked either.
+- **Decision:** `startNewVersion()` copies the version in force into a draft and adds a stub for every undefined measurement domain. Publication refuses any version that leaves a domain undefined, and supersedes the previous version so exactly one is ever in force. Both actions are audited and reachable from Platform Admin.
+- **Rationale:** A governance object that is half-active is worse than one that is absent, because the list implies it works.
+- **Boundary:** Superseding does not touch published frameworks or existing reports. Framework content is frozen at publication and `domain_scores` records the taxonomy version and hash it was measured against, so only new mappings use the version now in force.
+- **Result:** Taxonomy v2 publishes all eight WHO building blocks including Financing. v1 is superseded and stays on record.
+
+### DEC-2026-07-20-034: Nothing Exists Only Because It Was Seeded
+
+- **Status:** Accepted and enforced by command and test.
+- **Decision:** Every methodology entity must be reachable: directly selectable, recommended through a relationship, or a participant in the diagnostics pipeline. `php artisan methodology:validate` checks this and fails the build if anything is unreachable or any reference does not resolve.
+- **Found on first run:** Seven objectives suggested nothing and appeared in no starting point, so choosing one left the user at a blank page. Five templates were recommended by nothing, making them findable only by browsing the whole catalogue — the same as not existing, for most users. All twelve now have relationships.
+- **Rationale:** A catalogue entry nobody is routed to will eventually be found by an administrator, not understood, and not trusted.

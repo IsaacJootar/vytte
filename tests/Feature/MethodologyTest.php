@@ -4,12 +4,19 @@ namespace Tests\Feature;
 
 use App\Models\AnalysisLens;
 use App\Models\AssessmentObjective;
+use App\Models\AssessmentTemplate;
+use App\Models\Domain;
+use App\Models\DomainDefinition;
+use App\Models\DomainTaxonomy;
+use App\Models\DomainTaxonomyVersion;
 use App\Models\HealthArea;
 use App\Models\HealthDomain;
 use App\Models\InsightCategory;
 use App\Models\MethodologyVersion;
+use App\Models\ObjectivePreset;
 use App\Models\ObjectiveRecommendation;
 use App\Models\User;
+use App\Services\DomainTaxonomyPublishingService;
 use App\Services\MethodologyPublishingService;
 use Database\Seeders\MethodologyCatalogueSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -173,6 +180,189 @@ class MethodologyTest extends TestCase
         $orphans = HealthArea::whereDoesntHave('healthDomain')->count();
 
         $this->assertSame(0, $orphans);
+    }
+
+    // ─── Nothing exists only because it was seeded ───────────────
+
+    public function test_the_whole_methodology_passes_its_own_reachability_check(): void
+    {
+        $this->seedCatalogue();
+
+        // The command reports a problem for anything unreachable and an advisory for
+        // anything nothing routes to. Both must be clear before the master seed.
+        $this->artisan('methodology:validate')
+            ->expectsOutputToContain('Every entity is reachable and every reference resolves.')
+            ->assertSuccessful();
+    }
+
+    public function test_every_objective_leads_somewhere(): void
+    {
+        $version = $this->seedCatalogue();
+
+        $objectives = AssessmentObjective::where('methodology_version_id', $version->methodology_version_id)->get();
+        $withSuggestions = ObjectiveRecommendation::pluck('assessment_objective_id')->unique();
+        $inPresets = ObjectivePreset::where('methodology_version_id', $version->methodology_version_id)
+            ->pluck('assessment_objective_id')->unique();
+
+        $bare = $objectives
+            ->reject(fn ($o) => $withSuggestions->contains($o->assessment_objective_id) || $inPresets->contains($o->assessment_objective_id))
+            ->pluck('objective_code');
+
+        $this->assertSame([], $bare->values()->all(),
+            'These objectives suggest nothing and appear in no starting point, so choosing one leaves the user at a blank page: '.$bare->implode(', '));
+    }
+
+    public function test_every_template_is_reachable_without_browsing_the_whole_catalogue(): void
+    {
+        $version = $this->seedCatalogue();
+
+        $referenced = ObjectiveRecommendation::where('recommends_type', 'TEMPLATE')->pluck('recommends_ref')
+            ->merge(ObjectivePreset::where('methodology_version_id', $version->methodology_version_id)->pluck('template_code'))
+            ->filter()->unique();
+
+        $unreachable = AssessmentTemplate::where('methodology_version_id', $version->methodology_version_id)
+            ->whereNotIn('template_code', $referenced)
+            ->pluck('template_code');
+
+        $this->assertSame([], $unreachable->values()->all(),
+            'Nothing routes to these templates: '.$unreachable->implode(', '));
+    }
+
+    public function test_every_starting_point_resolves(): void
+    {
+        $version = $this->seedCatalogue();
+
+        $domains = HealthDomain::pluck('domain_code')->all();
+        $templates = AssessmentTemplate::where('methodology_version_id', $version->methodology_version_id)->pluck('template_code')->all();
+        $lenses = AnalysisLens::where('methodology_version_id', $version->methodology_version_id)->pluck('lens_code')->all();
+
+        foreach (ObjectivePreset::where('methodology_version_id', $version->methodology_version_id)->with('objective')->get() as $preset) {
+            $this->assertNotNull($preset->objective, "Starting point {$preset->preset_code} has no objective.");
+
+            foreach ($preset->health_domain_codes ?? [] as $code) {
+                $this->assertContains($code, $domains, "Starting point {$preset->preset_code} names a health domain that does not exist.");
+            }
+
+            if ($preset->template_code) {
+                $this->assertContains($preset->template_code, $templates, "Starting point {$preset->preset_code} names a template that does not exist.");
+            }
+
+            foreach ($preset->analysis_lens_codes ?? [] as $code) {
+                $this->assertContains($code, $lenses, "Starting point {$preset->preset_code} names an analysis lens that does not exist.");
+            }
+        }
+    }
+
+    // ─── Measurement domain governance ───────────────────────────
+
+    public function test_a_measurement_domain_cannot_be_left_inert(): void
+    {
+        // A domain with no definition in the taxonomy in force carries no scores and
+        // reports nothing, while still appearing in the domain list as though it works.
+        $taxonomy = DomainTaxonomy::firstOrFail();
+        $publishing = app(DomainTaxonomyPublishingService::class);
+
+        Domain::create([
+            'domain_code' => 'TUND',
+            'domain_name' => 'Deliberately Undefined',
+            'is_operational' => false,
+            'display_order' => 99,
+        ]);
+
+        $draft = DomainTaxonomyVersion::create([
+            'domain_taxonomy_id' => $taxonomy->domain_taxonomy_id,
+            'version_number' => 99,
+            'status' => DomainTaxonomyVersion::STATUS_DRAFT,
+        ]);
+
+        DomainDefinition::create([
+            'domain_taxonomy_version_id' => $draft->domain_taxonomy_version_id,
+            'domain_id' => Domain::where('domain_code', 'GOV')->value('domain_id'),
+            'domain_code' => 'GOV',
+            'domain_name' => 'Governance',
+            'definition' => 'x',
+            'rationale' => 'x',
+            'display_order' => 1,
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        $publishing->publish($draft);
+    }
+
+    public function test_starting_a_new_taxonomy_version_carries_forward_and_fills_gaps(): void
+    {
+        $taxonomy = DomainTaxonomy::firstOrFail();
+        $publishing = app(DomainTaxonomyPublishingService::class);
+
+        Domain::create([
+            'domain_code' => 'TNEW',
+            'domain_name' => 'New Dimension',
+            'is_operational' => false,
+            'display_order' => 98,
+        ]);
+
+        $draft = $publishing->startNewVersion($taxonomy);
+
+        // Everything the published version defined, plus a stub for the new domain, so
+        // the draft is publishable rather than immediately invalid.
+        $this->assertSame(Domain::count(), $draft->definitions()->count());
+        $this->assertTrue($draft->definitions()->where('domain_code', 'TNEW')->exists());
+        $this->assertSame(DomainTaxonomyVersion::STATUS_DRAFT, $draft->status);
+    }
+
+    public function test_publishing_a_taxonomy_version_retires_the_previous_one(): void
+    {
+        $taxonomy = DomainTaxonomy::firstOrFail();
+        $publishing = app(DomainTaxonomyPublishingService::class);
+
+        $before = DomainTaxonomyVersion::where('status', DomainTaxonomyVersion::STATUS_PUBLISHED)->pluck('domain_taxonomy_version_id');
+
+        $published = $publishing->publish($publishing->startNewVersion($taxonomy));
+
+        // Exactly one taxonomy is ever in force; two would leave new mappings free to
+        // point at either with nothing saying which applied.
+        $this->assertSame(1, DomainTaxonomyVersion::where('status', DomainTaxonomyVersion::STATUS_PUBLISHED)->count());
+        $this->assertSame($published->domain_taxonomy_version_id,
+            DomainTaxonomyVersion::where('status', DomainTaxonomyVersion::STATUS_PUBLISHED)->value('domain_taxonomy_version_id'));
+
+        foreach ($before as $old) {
+            $this->assertSame(DomainTaxonomyVersion::STATUS_SUPERSEDED,
+                DomainTaxonomyVersion::find($old)->status);
+        }
+    }
+
+    public function test_admin_can_publish_a_taxonomy_version_through_the_screen(): void
+    {
+        $taxonomy = DomainTaxonomy::firstOrFail();
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->post(route('admin.domain-taxonomies.versions.store', $taxonomy))
+            ->assertRedirect();
+
+        $draft = DomainTaxonomyVersion::where('status', DomainTaxonomyVersion::STATUS_DRAFT)->firstOrFail();
+
+        $this->actingAs($admin)
+            ->patch(route('admin.domain-taxonomies.publish', $draft))
+            ->assertSessionHas('success');
+
+        $this->assertSame(DomainTaxonomyVersion::STATUS_PUBLISHED, $draft->fresh()->status);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'domain.taxonomy.published']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'domain.taxonomy.version_started']);
+    }
+
+    public function test_only_one_taxonomy_draft_at_a_time(): void
+    {
+        $taxonomy = DomainTaxonomy::firstOrFail();
+        $publishing = app(DomainTaxonomyPublishingService::class);
+
+        $publishing->startNewVersion($taxonomy);
+
+        // Two open drafts would make it ambiguous which one publication should promote.
+        $this->expectException(ValidationException::class);
+
+        $publishing->startNewVersion($taxonomy);
     }
 
     // ─── Publication ─────────────────────────────────────────────
