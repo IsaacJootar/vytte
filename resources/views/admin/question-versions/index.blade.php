@@ -1,50 +1,54 @@
 <x-admin-layout title="Question Versions">
     <div class="mb-5">
         <h1 class="text-xl font-bold text-slate-900 dark:text-white">Question Versions</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">Approve and publish exact immutable question content.</p>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            Every version of every question, including replaced and archived ones. Approve and publish exact immutable wording here.
+        </p>
     </div>
 
-    <form method="GET" class="mb-4 flex flex-wrap gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-        <input name="search" value="{{ request('search') }}" placeholder="Search question code or text" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-        <select name="status" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-            <option value="">All status</option>
-            @foreach ($statuses as $status)
-                <option value="{{ $status }}" @selected(request('status') === $status)>{{ $status }}</option>
-            @endforeach
-        </select>
-        <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">Filter</button>
-    </form>
+    @if (session('success'))
+        <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+            {{ session('success') }}
+        </div>
+    @endif
 
-    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-        <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
-            <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-            <tr>
-                <th class="px-4 py-3">Version</th>
-                <th class="px-4 py-3">Question</th>
-                <th class="px-4 py-3">Type</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3">Published</th>
-                <th class="px-4 py-3"></th>
+    <x-admin-table
+        search-label="Search"
+        search-placeholder="Search question wording or code"
+        :headings="['Version', 'Question', 'Answer format', 'Status', 'Published']"
+        :paginator="$versions"
+        empty="No question versions match your search"
+        empty-hint="Try a different search, or clear the filters.">
+
+        <x-slot:filters>
+            <x-admin-filter label="Status" name="status">
+                <option value="">Any status</option>
+                @foreach ($statuses as $status)
+                    <option value="{{ $status }}" @selected(request('status') === $status)>{{ ucfirst(strtolower(str_replace('_', ' ', $status))) }}</option>
+                @endforeach
+            </x-admin-filter>
+        </x-slot:filters>
+
+        @foreach ($versions as $version)
+            <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white">v{{ $version->version_number }}</td>
+                <td class="px-4 py-3">
+                    <a href="{{ route('admin.question-versions.show', $version) }}" class="font-semibold text-slate-900 hover:text-vytte-700 hover:underline dark:text-white dark:hover:text-vytte-300">
+                        {{ $version->question_text }}
+                    </a>
+                    <p class="mt-0.5 text-xs text-slate-400">{{ $version->question?->question_code }}</p>
+                </td>
+                <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+                    {{ \App\Support\AnswerFormat::labelForTypeCode($version->questionType?->type_code, $version->options ?? []) }}
+                </td>
+                <td class="px-4 py-3"><x-assessment-status-badge :status="$version->status" /></td>
+                <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{{ $version->published_at?->format('j M Y') ?? '—' }}</td>
+                <td class="px-4 py-3 text-right">
+                    <a href="{{ route('admin.question-versions.show', $version) }}" class="inline-flex items-center gap-1 text-sm font-semibold text-vytte-700 hover:underline dark:text-vytte-300">
+                        Open <span aria-hidden="true">→</span>
+                    </a>
+                </td>
             </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-            @forelse ($versions as $version)
-                <tr>
-                    <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white">v{{ $version->version_number }}</td>
-                    <td class="px-4 py-3">
-                        <p class="font-semibold text-slate-900 dark:text-white">{{ $version->question?->question_code }}</p>
-                        <p class="mt-1 max-w-xl text-xs text-slate-500">{{ $version->question_text }}</p>
-                    </td>
-                    <td class="px-4 py-3 text-xs font-bold text-slate-500">{{ $version->questionType?->type_code }}</td>
-                    <td class="px-4 py-3 text-xs font-bold text-slate-500">{{ $version->status }}</td>
-                    <td class="px-4 py-3 text-xs text-slate-500">{{ $version->published_at?->format('Y-m-d') ?? '—' }}</td>
-                    <td class="px-4 py-3 text-right"><a href="{{ route('admin.question-versions.show', $version) }}" class="text-sm font-semibold text-vytte-700 dark:text-vytte-300">Open</a></td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-slate-500">No question versions found.</td></tr>
-            @endforelse
-            </tbody>
-        </table>
-    </div>
-    <div class="mt-4">{{ $versions->links() }}</div>
+        @endforeach
+    </x-admin-table>
 </x-admin-layout>
