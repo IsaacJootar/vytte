@@ -12,8 +12,6 @@
  * Opt out with `data-no-loading` on the form or the button.
  */
 
-const BUSY_LABEL_ATTRIBUTE = 'data-loading-label';
-
 const SPINNER = `
 <svg class="submit-spinner" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" opacity="0.25"/>
@@ -25,14 +23,13 @@ function markBusy(button) {
         return;
     }
 
-    // Fix the current width first, so replacing the label does not make the
-    // button jump to a different size mid-click.
-    button.style.minWidth = `${button.offsetWidth}px`;
     button.dataset.submitBusy = '1';
     button.dataset.originalHtml = button.innerHTML;
 
-    const busyLabel = button.getAttribute(BUSY_LABEL_ATTRIBUTE) || 'Working…';
-    button.innerHTML = `${SPINNER}<span>${busyLabel}</span>`;
+    // The spinner joins the existing label rather than replacing it. Swapping the text
+    // for "Working…" threw away the one piece of information the user actually wanted —
+    // which action they had just pressed — and made the button resize mid-click.
+    button.insertAdjacentHTML('afterbegin', SPINNER);
 
     // aria-disabled rather than disabled: a disabled button is dropped from the
     // submitted payload, which would lose the value of a named submit button.
@@ -48,7 +45,6 @@ function releaseBusy(button) {
     button.innerHTML = button.dataset.originalHtml ?? button.innerHTML;
     delete button.dataset.submitBusy;
     delete button.dataset.originalHtml;
-    button.style.minWidth = '';
     button.removeAttribute('aria-disabled');
     button.classList.remove('is-submitting');
 }

@@ -190,7 +190,7 @@
                                       onsubmit="return confirm('Create a new link for this invite? The current link will stop working.')">
                                     @csrf @method('PATCH')
                                     <button type="submit" class="flex-shrink-0 text-xs font-medium text-slate-400 transition-colors hover:text-vytte-700 dark:text-slate-500 dark:hover:text-vytte-300"
-                                            data-loading-label="Creating…">
+>
                                         New link
                                     </button>
                                 </form>
@@ -198,7 +198,7 @@
                                       onsubmit="return confirm('Cancel this invite? Its link will stop working immediately.')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="flex-shrink-0 text-xs font-medium text-slate-400 transition-colors hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
-                                            data-loading-label="Cancelling…">
+>
                                         Cancel
                                     </button>
                                 </form>

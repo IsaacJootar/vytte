@@ -3,7 +3,11 @@
     <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
             <h1 class="text-xl font-bold text-slate-900 dark:text-white">Module Library</h1>
-            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Departments and services that assessments can be built for.</p>
+            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                Parts of a facility that people tick on or off when setting up an assessment — the outpatient
+                department, the laboratory, the pharmacy. Not to be confused with health domains, which are the
+                <em>subjects</em> questions are about.
+            </p>
         </div>
         <a href="{{ route('admin.modules.import') }}" class="btn-primary">
             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

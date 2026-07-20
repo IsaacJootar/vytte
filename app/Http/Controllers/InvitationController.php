@@ -39,6 +39,14 @@ class InvitationController extends Controller
             }
         }
 
+        // A guest has to sign in or register before they can accept. Both of those land
+        // on the dashboard by default, which loses the invitation entirely — and with
+        // email switched off these links are the only way anyone joins a workspace.
+        // Recording where they were headed makes both paths return here.
+        if (! $user) {
+            redirect()->setIntendedUrl(route('invitations.accept', $token));
+        }
+
         return view('invitations.show', compact('invite', 'user'));
     }
 

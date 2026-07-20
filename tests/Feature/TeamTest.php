@@ -532,6 +532,60 @@ class TeamTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_a_new_person_joins_the_workspace_after_registering_from_an_invite(): void
+    {
+        [$owner, $workspace] = $this->makeOwner();
+        $invite = $this->makeInvite($workspace, $owner, 'newcomer@example.com');
+
+        // Viewing the invitation as a guest is what records where they were headed.
+        $this->get(route('invitations.show', $invite->token))->assertOk();
+
+        $this->post(route('register'), [
+            'name' => 'New Comer',
+            'email' => 'newcomer@example.com',
+            'password' => 'correct-horse-battery',
+            'password_confirmation' => 'correct-horse-battery',
+        ])->assertRedirect(route('invitations.accept', $invite->token));
+
+        // Registration used to end on the dashboard, which lost the invitation silently.
+        $this->get(route('invitations.accept', $invite->token));
+
+        $newUser = User::where('email', 'newcomer@example.com')->firstOrFail();
+        $this->assertDatabaseHas('workspace_members', [
+            'workspace_id' => $workspace->workspace_id,
+            'user_id' => $newUser->user_id,
+        ]);
+        $this->assertNotNull($invite->fresh()->accepted_at);
+    }
+
+    public function test_an_existing_person_returns_to_the_invite_after_signing_in(): void
+    {
+        [$owner, $workspace] = $this->makeOwner();
+        $invite = $this->makeInvite($workspace, $owner, 'existing@example.com');
+
+        $existing = User::factory()->create([
+            'email' => 'existing@example.com',
+            'password' => bcrypt('correct-horse-battery'),
+        ]);
+
+        $this->get(route('invitations.show', $invite->token))->assertOk();
+
+        $this->post(route('login'), [
+            'email' => $existing->email,
+            'password' => 'correct-horse-battery',
+        ])->assertRedirect(route('invitations.accept', $invite->token));
+    }
+
+    public function test_signing_in_without_an_invite_still_lands_on_the_dashboard(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('correct-horse-battery')]);
+
+        $this->post(route('login'), [
+            'email' => $user->email,
+            'password' => 'correct-horse-battery',
+        ])->assertRedirect(route('dashboard'));
+    }
+
     public function test_a_cancelled_invite_link_stops_working(): void
     {
         [$owner, $workspace] = $this->makeOwner();

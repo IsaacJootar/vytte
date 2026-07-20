@@ -34,7 +34,7 @@
                 <label for="replacement_text" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Create replacement draft wording</label>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Published wording can never change. Edit here to start a new draft version instead.</p>
                 <textarea id="replacement_text" name="question_text" rows="5" class="mt-1.5 w-full rounded-lg text-sm dark:bg-slate-900 dark:text-white">{{ $question->question_text }}</textarea>
-                <button class="btn-primary mt-2 w-full" data-loading-label="Creating…">Create draft version</button>
+                <button class="btn-primary mt-2 w-full">Create draft version</button>
             </form>
         </div>
     </div>

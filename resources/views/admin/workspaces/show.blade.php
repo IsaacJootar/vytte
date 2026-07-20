@@ -105,7 +105,7 @@
                     <form method="POST" action="{{ route('admin.workspaces.status', $workspace) }}" class="mt-3">
                         @csrf @method('PATCH')
                         <input type="hidden" name="status" value="ACTIVE">
-                        <button class="btn-primary w-full" data-loading-label="Reactivating…">Reactivate workspace</button>
+                        <button class="btn-primary w-full">Reactivate workspace</button>
                         <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Members get access back immediately.</p>
                     </form>
                 @endif
@@ -115,7 +115,7 @@
                           onsubmit="return confirm('Put this workspace on hold? Their team will not be able to use Vytte until you reactivate it. Nothing will be deleted.')">
                         @csrf @method('PATCH')
                         <input type="hidden" name="status" value="SUSPENDED">
-                        <button class="btn-secondary w-full" data-loading-label="Putting on hold…">Put on hold</button>
+                        <button class="btn-secondary w-full">Put on hold</button>
                         <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Temporarily blocks access. Reversible at any time.</p>
                     </form>
                 @endif
@@ -125,7 +125,7 @@
                           onsubmit="return confirm('Close this workspace? Their data is kept, but the workspace can no longer be used and reopening it needs support.')">
                         @csrf @method('PATCH')
                         <input type="hidden" name="status" value="ARCHIVED">
-                        <button class="btn-danger w-full" data-loading-label="Closing…">Close workspace</button>
+                        <button class="btn-danger w-full">Close workspace</button>
                         <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Ends the relationship. Data is kept for the record.</p>
                     </form>
                 @endif

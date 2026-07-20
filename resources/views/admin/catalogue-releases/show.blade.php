@@ -10,20 +10,20 @@
                 <form method="POST" action="{{ route('admin.catalogue-releases.publish', $release) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white" data-loading-label="Publishing…">Publish release</button>
+                    <button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Publish release</button>
                 </form>
             @endif
             @if ($release->status === 'PUBLISHED')
                 <form method="POST" action="{{ route('admin.catalogue-releases.supersede', $release) }}">
                     @csrf
-                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300" data-loading-label="Creating…">Create successor draft</button>
+                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300">Create successor draft</button>
                 </form>
             @endif
             @if (in_array($release->status, ['DRAFT', 'PUBLISHED'], true))
                 <form method="POST" action="{{ route('admin.catalogue-releases.archive', $release) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 dark:border-red-700 dark:text-red-300" data-loading-label="Archiving…">Archive</button>
+                    <button class="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 dark:border-red-700 dark:text-red-300">Archive</button>
                 </form>
             @endif
         </div>

@@ -24,7 +24,7 @@
 
             <form method="POST" action="{{ route('logout') }}" class="mt-6">
                 @csrf
-                <button class="btn-secondary w-full" data-loading-label="Signing out…">Sign out</button>
+                <button class="btn-secondary w-full">Sign out</button>
             </form>
         </div>
     </div>

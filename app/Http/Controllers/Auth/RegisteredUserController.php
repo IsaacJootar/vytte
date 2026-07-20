@@ -59,6 +59,9 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard'));
+        // Honour where the person was trying to get to. Somebody arriving from a
+        // workspace invitation registers in order to accept it, and sending them to
+        // their own dashboard instead silently loses the invitation.
+        return redirect()->intended(route('dashboard'));
     }
 }

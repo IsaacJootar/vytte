@@ -70,7 +70,7 @@
                     <form method="POST" action="{{ route('admin.methodology.publish', $version) }}" class="mt-4"
                           onsubmit="return confirm('Publish this methodology version? Its contents can never be changed afterwards — future changes need a new version.')">
                         @csrf
-                        <button class="btn-primary w-full" data-loading-label="Publishing…">Publish methodology</button>
+                        <button class="btn-primary w-full">Publish methodology</button>
                         <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                             Freezes the whole knowledge model so a report can always be traced to the exact
                             methodology in force when it was produced.

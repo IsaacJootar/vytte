@@ -92,7 +92,7 @@
                 <form method="POST" action="{{ route('admin.platform-users.role', $user) }}" class="mt-3">
                     @csrf @method('PATCH')
                     <input type="hidden" name="platform_role" value="{{ $user->isPlatformAdmin() ? '' : 'PLATFORM_ADMIN' }}">
-                    <button class="btn-secondary w-full" data-loading-label="Updating…">
+                    <button class="btn-secondary w-full">
                         {{ $user->isPlatformAdmin() ? 'Remove platform admin access' : 'Make platform admin' }}
                     </button>
                     <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
@@ -108,7 +108,7 @@
                 @if ($user->isSuspended())
                     <form method="POST" action="{{ route('admin.platform-users.reactivate', $user) }}" class="mt-3">
                         @csrf @method('PATCH')
-                        <button class="btn-primary w-full" data-loading-label="Restoring…">Restore access</button>
+                        <button class="btn-primary w-full">Restore access</button>
                         <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">This person will be able to sign in again immediately.</p>
                     </form>
                 @else
@@ -121,7 +121,7 @@
                                    maxlength="255" required
                                    class="w-full rounded-xl text-sm dark:bg-slate-900 dark:text-white">
                         </x-form-field>
-                        <button class="btn-danger w-full" data-loading-label="Suspending…">Suspend account</button>
+                        <button class="btn-danger w-full">Suspend account</button>
                         <p class="text-xs text-slate-500 dark:text-slate-400">
                             Blocks sign-in only. Their workspaces, assessments and history all stay exactly as they are.
                         </p>

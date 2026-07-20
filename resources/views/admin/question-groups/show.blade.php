@@ -11,7 +11,7 @@
                 <form method="POST" action="{{ route('admin.question-groups.archive', $group) }}">
                     @csrf
                     @method('PATCH')
-                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300" data-loading-label="Archiving…">Archive</button>
+                    <button class="rounded-xl border border-amber-300 px-4 py-2 text-sm font-semibold text-amber-700 dark:border-amber-700 dark:text-amber-300">Archive</button>
                 </form>
             @endif
         </div>

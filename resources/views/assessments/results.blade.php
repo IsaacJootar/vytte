@@ -80,7 +80,7 @@
                               onsubmit="return confirm('Revoke this link? Anyone holding it will immediately lose access to the report.')">
                             @csrf @method('DELETE')
                             <button class="text-xs font-medium text-slate-400 transition-colors hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
-                                    data-loading-label="Revoking…">
+>
                                 Revoke this link
                             </button>
                         </form>

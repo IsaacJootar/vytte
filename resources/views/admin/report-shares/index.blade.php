@@ -67,7 +67,7 @@
                               onsubmit="return confirm('Revoke this link? Anyone holding it will immediately lose access to the report.')">
                             @csrf @method('PATCH')
                             <button class="text-sm font-semibold text-slate-500 hover:text-red-600 hover:underline dark:text-slate-400"
-                                    data-loading-label="Revoking…">Revoke</button>
+>Revoke</button>
                         </form>
                     @else
                         <span class="text-xs text-slate-400">No longer live</span>

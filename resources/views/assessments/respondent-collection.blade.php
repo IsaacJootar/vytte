@@ -51,7 +51,7 @@
                               onsubmit="return confirm('Deactivate this link? Anyone holding it will no longer be able to answer. Answers already submitted are kept.')">
                             @csrf @method('DELETE')
                             <button class="text-xs font-medium text-slate-400 transition-colors hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
-                                    data-loading-label="Deactivating…">
+>
                                 Deactivate this link
                             </button>
                         </form>

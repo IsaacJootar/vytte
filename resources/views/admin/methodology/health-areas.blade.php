@@ -3,8 +3,9 @@
         <a href="{{ route('admin.methodology.index') }}" class="link-nav text-sm">&larr; Methodology</a>
         <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Health Areas</h1>
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Subdivisions of a health domain. Domains were flat, so HIV could not distinguish testing from
-            treatment from prevention. Areas give enough resolution to recommend content precisely.
+            Subdivisions of a health domain — HIV splits into testing, treatment and prevention. A health domain
+            is a <em>subject</em> questions are about, which is different from a department: a department is a part
+            of the building people tick on or off, and one department can cover several subjects.
         </p>
     </div>
 
