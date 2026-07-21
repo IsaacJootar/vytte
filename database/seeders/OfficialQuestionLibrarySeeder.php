@@ -202,6 +202,11 @@ class OfficialQuestionLibrarySeeder extends Seeder
             self::personCentredness(),
             self::infectionPrevention(),
             self::wash(),
+            self::hiv(),
+            self::tuberculosis(),
+            self::malaria(),
+            self::immunization(),
+            self::dataBurden(),
         );
     }
 
@@ -801,6 +806,253 @@ class OfficialQuestionLibrarySeeder extends Seeder
             ['code' => 'WASH.016', 'module' => 'WSHF', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
                 'text' => 'Which WASH problem most affects patients or staff here?',
                 'why' => 'WASH failures are highly visible to users and often known long before any assessment.'],
+        ];
+    }
+
+    /**
+     * HIV and PMTCT services.
+     *
+     * Half-scope programme coverage: enough to compose a credible HIV framework. Some
+     * questions carry forward strong ideas from the PHSAI legacy questionnaire — notably
+     * the confidentiality of the HIV register and the quality of PMTCT linkage — rewritten
+     * from descriptive workflow into scored readiness.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function hiv(): array
+    {
+        $respondent = 'HIV Focal Person · PMTCT Focal Person · Nurse';
+
+        return [
+            ['code' => 'HIV.001', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_NO, 'respondent' => $respondent,
+                'text' => 'Is HIV counselling and testing offered at this facility?',
+                'why' => 'Establishes whether the service exists before anything about its quality is asked.'],
+            ['code' => 'HIV.002', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are HIV test kits available?',
+                'why' => 'A testing service without kits is a service on paper only.',
+                'observe' => true],
+            ['code' => 'HIV.003', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is pre- and post-test counselling provided in a private space?',
+                'why' => 'Counselling overheard by others deters testing and breaches confidentiality at the most sensitive moment.',
+                'observe' => true],
+            ['code' => 'HIV.004', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => [
+                ['label' => 'Separate, restricted-access HIV register', 'score' => 100],
+                ['label' => 'Coded or de-identified entries', 'score' => 75],
+                ['label' => 'Same general register as other patients', 'score' => 25],
+                ['label' => 'No specific confidentiality measure', 'score' => 0, 'critical' => true],
+            ], 'respondent' => $respondent,
+                'text' => 'How is the confidentiality of HIV records maintained?',
+                'why' => 'HIV status recorded without access control exposes patients to stigma and harm; no measure at all is a critical failure. Carried forward and strengthened from legacy content.'],
+            ['code' => 'HIV.005', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => [
+                ['label' => 'Routine ANC testing with same-day linkage to care', 'score' => 100],
+                ['label' => 'Testing done, linkage delayed or tracked separately', 'score' => 60],
+                ['label' => 'Referred to a separate HIV clinic', 'score' => 40],
+                ['label' => 'No standardised linkage process', 'score' => 0, 'critical' => true],
+            ], 'respondent' => $respondent,
+                'text' => 'How are HIV-positive pregnant women identified and linked to care?',
+                'why' => 'The break between testing positive and starting treatment is where PMTCT most often fails. Rewritten from legacy content into a scored judgement.'],
+            ['code' => 'HIV.006', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is antiretroviral treatment initiated and continued for eligible patients?',
+                'why' => 'Testing without treatment access is diagnosis without care.'],
+            ['code' => 'HIV.007', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are antiretroviral medicines in stock?',
+                'why' => 'An ART stockout forces treatment interruption, which drives resistance and transmission.',
+                'observe' => true],
+            ['code' => 'HIV.008', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a system to trace patients who miss appointments?',
+                'why' => 'Retention is the hardest part of HIV care and the one that determines outcomes.'],
+            ['code' => 'HIV.009', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is viral load testing accessible for patients on treatment?',
+                'why' => 'Viral load is the measure of whether treatment is working; without it, care is managed blind.'],
+            ['code' => 'HIV.010', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are HIV prevention commodities, such as condoms or PrEP where offered, available?',
+                'why' => 'Prevention is the cheapest point of the whole HIV response.'],
+            ['code' => 'HIV.011', 'module' => 'HTB', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What is the most significant obstacle to HIV or PMTCT services here?',
+                'why' => 'Programme staff usually know the binding constraint before any assessment starts.'],
+        ];
+    }
+
+    /**
+     * Tuberculosis services.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function tuberculosis(): array
+    {
+        $respondent = 'TB Focal Person · Medical Officer · Laboratory Scientist';
+
+        return [
+            ['code' => 'TB.001', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_NO, 'respondent' => $respondent,
+                'text' => 'Is TB screening offered at this facility?',
+                'why' => 'The entry point to the TB cascade.'],
+            ['code' => 'TB.002', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are patients with a cough or TB symptoms routinely screened for TB?',
+                'why' => 'Passive detection misses cases; routine symptom screening is what finds them.'],
+            ['code' => 'TB.003', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => [
+                ['label' => 'GeneXpert or molecular testing on site', 'score' => 100],
+                ['label' => 'Sputum microscopy on site', 'score' => 70],
+                ['label' => 'Referral to another facility only', 'score' => 40],
+                ['label' => 'No diagnostic access', 'score' => 0, 'critical' => true],
+            ], 'respondent' => $respondent,
+                'text' => 'What TB diagnostic capacity does the facility have?',
+                'why' => 'Diagnostic delay drives transmission; no access at all is a critical gap. Improved from legacy content.'],
+            ['code' => 'TB.004', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are first-line TB medicines available?',
+                'why' => 'A TB treatment interruption risks resistance, which is far costlier to treat.',
+                'observe' => true],
+            ['code' => 'TB.005', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is treatment adherence supported and monitored through to completion?',
+                'why' => 'TB is cured by completing a long course, not by starting one.'],
+            ['code' => 'TB.006', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are TB patients routinely offered an HIV test, and vice versa?',
+                'why' => 'The two infections drive each other; separating their services misses co-infection.'],
+            ['code' => 'TB.007', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are TB infection control measures in place in waiting and consultation areas?',
+                'why' => 'A TB service with no infection control can transmit the disease it treats; hence critical.',
+                'observe' => true],
+            ['code' => 'TB.008', 'module' => 'HTB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are TB treatment outcomes recorded and reviewed?',
+                'why' => 'Outcome review is how a programme learns whether its patients are actually being cured.'],
+            ['code' => 'TB.009', 'module' => 'HTB', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What is the most significant obstacle to TB services here?',
+                'why' => 'Names the binding constraint in the words of the people running the service.'],
+        ];
+    }
+
+    /**
+     * Malaria services.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function malaria(): array
+    {
+        $respondent = 'Medical Officer · Nurse · Laboratory Scientist';
+
+        return [
+            ['code' => 'MAL.001', 'module' => 'MAL', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is malaria diagnosis confirmed by test before treatment, rather than treated on symptoms alone?',
+                'why' => 'Treating without testing wastes medicine, misses other causes of fever and drives resistance; the core of current malaria policy.'],
+            ['code' => 'MAL.002', 'module' => 'MAL', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are malaria rapid diagnostic tests or microscopy available?',
+                'why' => 'Test-based treatment is impossible without a functioning test supply.',
+                'observe' => true],
+            ['code' => 'MAL.003', 'module' => 'MAL', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently is first-line antimalarial treatment in stock?',
+                'why' => 'A confirmed diagnosis with no medicine to follow it is a diagnosis wasted.',
+                'observe' => true],
+            ['code' => 'MAL.004', 'module' => 'MAL', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is severe malaria recognised and either treated or referred promptly?',
+                'why' => 'Severe malaria kills within hours; recognition and speed are what save lives.'],
+            ['code' => 'MAL.005', 'module' => 'MAL', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently is injectable artesunate available for severe malaria?',
+                'why' => 'The single most important commodity for surviving severe malaria.',
+                'observe' => true],
+            ['code' => 'MAL.006', 'module' => 'MAL', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is malaria in pregnancy prevented and managed according to guidelines?',
+                'why' => 'Pregnant women and their babies carry the heaviest malaria risk.'],
+            ['code' => 'MAL.007', 'module' => 'MAL', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are insecticide-treated nets or other prevention commodities provided where indicated?',
+                'why' => 'Prevention averts the case that never has to be treated.'],
+            ['code' => 'MAL.008', 'module' => 'MAL', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are malaria cases recorded and reported for surveillance?',
+                'why' => 'Case data is how outbreaks are seen and how the programme is steered.'],
+            ['code' => 'MAL.009', 'module' => 'MAL', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most limits malaria diagnosis or treatment here?',
+                'why' => 'Surfaces the local constraint behind the numbers.'],
+        ];
+    }
+
+    /**
+     * Immunization services.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function immunization(): array
+    {
+        $respondent = 'Immunization Focal Person · Nurse · CHEW';
+
+        return [
+            ['code' => 'IMM.001', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly are routine immunization sessions held?',
+                'why' => 'Session frequency determines how easily a caregiver can complete a child\'s schedule.'],
+            ['code' => 'IMM.002', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are the vaccines in the national schedule available?',
+                'why' => 'A missed vaccine is a child left unprotected and a caregiver who may not return.',
+                'observe' => true],
+            ['code' => 'IMM.003', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is there a functioning cold chain maintaining vaccines at the correct temperature?',
+                'why' => 'Vaccines exposed to wrong temperatures are silently inactivated; giving them is worse than giving nothing, so failure is critical.',
+                'observe' => true],
+            ['code' => 'IMM.004', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly is cold chain temperature recorded?',
+                'why' => 'A fridge that is on is not the same as a fridge proven to hold temperature.',
+                'evidence' => 'Sight the temperature log for the last two weeks.'],
+            ['code' => 'IMM.005', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a backup plan to protect vaccines during a power failure?',
+                'why' => 'Power is unreliable in much of the market; the backup is what saves the stock.'],
+            ['code' => 'IMM.006', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are children who miss scheduled vaccines identified and followed up?',
+                'why' => 'Defaulter tracing is the difference between starting and completing the schedule.'],
+            ['code' => 'IMM.007', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are adverse events following immunization recognised and reported?',
+                'why' => 'AEFI reporting protects both the child and public confidence in the programme.'],
+            ['code' => 'IMM.008', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is safe injection and sharps disposal practised in immunization sessions?',
+                'why' => 'High injection volumes make immunization a real sharps-injury and transmission risk if handled poorly.',
+                'observe' => true],
+            ['code' => 'IMM.009', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly does the facility conduct immunization outreach?',
+                'why' => 'Fixed sessions miss the children furthest from the facility, who are often the least protected.'],
+            ['code' => 'IMM.010', 'module' => 'IMM', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most limits immunization coverage in this area?',
+                'why' => 'Coverage gaps have local causes — distance, stockouts, hesitancy — that a number cannot show.'],
+        ];
+    }
+
+    /**
+     * Documentation and data burden.
+     *
+     * The valuable seam from the PHSAI legacy questionnaire, rewritten from descriptive
+     * workflow into scored findings. Vytte's information questions ask whether records are
+     * accurate and used; these ask how much duplicate effort producing them costs, which
+     * is a distinct and common operational drain that nothing else in the library captures.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function dataBurden(): array
+    {
+        $respondent = 'Records Officer · Nurse in Charge · Data Clerk';
+
+        return [
+            ['code' => 'BURD.001', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => [
+                ['label' => 'Entered once and shared', 'score' => 100],
+                ['label' => 'Entered twice', 'score' => 60],
+                ['label' => 'Entered three or more times', 'score' => 20],
+                ['label' => 'Entered in many registers separately', 'score' => 0],
+            ], 'respondent' => $respondent,
+                'text' => 'How many times is the same patient information written into different registers?',
+                'why' => 'Duplicate entry is unpaid, error-prone work that steals time from care. The core insight the legacy questionnaire captured and the official library did not.'],
+            ['code' => 'BURD.002', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How often do staff complete documentation outside working hours to keep up?',
+                'why' => 'After-hours documentation is a hidden sign that the recording burden exceeds the working day.'],
+            ['code' => 'BURD.003', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => [
+                ['label' => 'One or two', 'score' => 100],
+                ['label' => 'Three to five', 'score' => 70],
+                ['label' => 'Six to ten', 'score' => 35],
+                ['label' => 'More than ten', 'score' => 0],
+            ], 'respondent' => $respondent,
+                'text' => 'How many separate registers or forms must be completed for a single patient encounter?',
+                'why' => 'Register proliferation is a measurable, reducible drain that few facilities have ever counted.'],
+            ['code' => 'BURD.004', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Do staff report that documentation takes time away from patient care?',
+                'why' => 'The trade-off between recording and caring is the real cost of a heavy data burden.'],
+            ['code' => 'BURD.005', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Has any register or form been removed or merged in the last two years to reduce duplication?',
+                'why' => 'Distinguishes facilities that actively manage their data burden from those that only accumulate it.'],
+            ['code' => 'BURD.006', 'module' => 'REC', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'Which single register or form causes the most duplicated effort, and why?',
+                'why' => 'Points directly at the highest-value target for reducing the recording burden.'],
         ];
     }
 }

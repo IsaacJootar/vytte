@@ -117,3 +117,28 @@ Agreed 2026-07-20: recorded now, fixed after the Official Master Seed. None bloc
 | PS-4 | **No agreed-actions entity for Progress Tracking.** The lens reads results "against previously agreed actions" and no such entity exists, so supportive supervision would silently fall back to comparing scores. | When lens-driven reporting is built. | Originally D3. Either build the entity or narrow the lens definition and rename it honestly. |
 
 PS-2, PS-3 and PS-4 all land in the same phase — the one that builds lens-driven reporting — and should be scoped together rather than picked off individually.
+
+## Scope decision, 2026-07-20 (time-limited beta)
+
+The full ~600-question library was cut to roughly half by instruction, to reach a
+shippable beta sooner. Stages 4–6 still run, but each subject is authored at about half
+its planned depth. After the question stages, work goes straight to Stage 7 (catalogue
+releases, objective and template wiring) and Stage 8 (demo removal, validation, report).
+
+Post-seed, the remaining depth can be added through the same governed workflow without
+touching anything already published, because questions and frameworks only ever add.
+
+### PHSAI legacy document
+
+Audited `PHSAI_Departmental_Questionnaires_v1_1.docx` (23 departments, ~350–400 questions).
+It is a workflow and data-systems discovery study, not a scored assessment, so it is not
+migrated wholesale. Two seams are harvested through the governed workflow:
+
+- **Data-burden diagnostics** (~25 questions) — register proliferation, duplicate data
+  entry, documentation time, after-hours recording. Vytte lacks this; it maps to the
+  Information measurement domain. Folded into the library during the seed.
+- **Subject-specific service questions** — HIV/PMTCT/TB, immunization, nutrition service
+  availability. These feed the halved programme frameworks in Stages 4–6.
+
+Everything else in PHSAI is either already covered better by the official library, is
+descriptive workflow of a different genre, or is respondent-profile boilerplate.

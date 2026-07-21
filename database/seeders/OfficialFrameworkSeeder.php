@@ -137,6 +137,28 @@ class OfficialFrameworkSeeder extends Seeder
     }
 
     /**
+     * The supporting systems a focused programme framework should still check around its
+     * service: a light read on governance, supplies, information and data burden. Kept
+     * short so the programme service remains the focus.
+     *
+     * @return array<int, array{domain: string, name: string, questions: array<int, string>}>
+     */
+    private static function programmeSupport(): array
+    {
+        return [
+            ['domain' => 'GOV', 'name' => 'Programme Governance', 'questions' => [
+                'GOV.006', 'GOV.008', 'WRK.007', 'WRK.009',
+            ]],
+            ['domain' => 'RES', 'name' => 'Commodities & Cold Chain', 'questions' => [
+                'INF.013', 'INF.014', 'INF.015', 'INF.016', 'INF.017', 'INF.018',
+            ]],
+            ['domain' => 'INFO', 'name' => 'Records & Reporting', 'questions' => [
+                'INFO.001', 'INFO.003', 'INFO.004', 'INFO.005', 'BURD.001', 'BURD.003',
+            ]],
+        ];
+    }
+
+    /**
      * @return array<int, array{module: string, code: string, name: string, description: string, type: string, sections: array<int, array{domain: string, name: string, questions: array<int, string>}>}>
      */
     private static function frameworks(): array
@@ -189,6 +211,59 @@ class OfficialFrameworkSeeder extends Seeder
                         'IPC.004', 'IPC.005', 'IPC.009', 'IPC.012', 'IPC.013',
                     ]],
                 ],
+            ],
+
+            // Stage 4 — focused disease-programme frameworks. Each leads with its service
+            // and adds a light read on the systems around it, drawn from the shared library.
+            [
+                'module' => 'HTB',
+                'code' => 'HIV_PROGRAMME',
+                'name' => 'HIV Programme Assessment',
+                'description' => 'Focused assessment of HIV testing, treatment, PMTCT, prevention and retention, with the commodities, records and confidentiality the programme depends on.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'HIV & PMTCT Services', 'questions' => [
+                        'HIV.001', 'HIV.002', 'HIV.003', 'HIV.004', 'HIV.005', 'HIV.006',
+                        'HIV.007', 'HIV.008', 'HIV.009', 'HIV.010', 'HIV.011',
+                    ]],
+                ], self::programmeSupport()),
+            ],
+            [
+                'module' => 'HTB',
+                'code' => 'TB_PROGRAMME',
+                'name' => 'TB Programme Assessment',
+                'description' => 'Focused assessment of TB screening, diagnosis, treatment, adherence and infection control, with commodities and reporting.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'TB Services', 'questions' => [
+                        'TB.001', 'TB.002', 'TB.003', 'TB.004', 'TB.005', 'TB.006', 'TB.007', 'TB.008', 'TB.009',
+                    ]],
+                ], self::programmeSupport()),
+            ],
+            [
+                'module' => 'MAL',
+                'code' => 'MALARIA_PROGRAMME',
+                'name' => 'Malaria Programme Assessment',
+                'description' => 'Focused assessment of malaria diagnosis, case management, severe malaria, prevention and surveillance, with commodities and reporting.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Malaria Services', 'questions' => [
+                        'MAL.001', 'MAL.002', 'MAL.003', 'MAL.004', 'MAL.005', 'MAL.006', 'MAL.007', 'MAL.008', 'MAL.009',
+                    ]],
+                ], self::programmeSupport()),
+            ],
+            [
+                'module' => 'IMM',
+                'code' => 'IMMUNIZATION_PROGRAMME',
+                'name' => 'Immunization Programme Assessment',
+                'description' => 'Focused assessment of routine immunization, cold chain, defaulter follow-up, safety and outreach, with commodities and reporting.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Immunization Services', 'questions' => [
+                        'IMM.001', 'IMM.002', 'IMM.003', 'IMM.004', 'IMM.005', 'IMM.006',
+                        'IMM.007', 'IMM.008', 'IMM.009', 'IMM.010',
+                    ]],
+                ], self::programmeSupport()),
             ],
         ];
     }
