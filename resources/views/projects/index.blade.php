@@ -4,7 +4,7 @@
     <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Projects</h1>
-            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Each project represents one facility, school, or community you are diagnosing.</p>
+            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Each project represents one health facility, community, or health subject you are diagnosing.</p>
         </div>
         <a href="{{ route('projects.create') }}"
            class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-vytte-800 transition-colors duration-150 flex-shrink-0 self-start sm:self-auto">
@@ -46,7 +46,7 @@
                 {{ request('search') ? 'No projects match "' . request('search') . '"' : 'No projects yet' }}
             </p>
             <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
-                {{ request('search') ? 'Try a different search term.' : 'Create your first project to start diagnosing a health facility, school, or community.' }}
+                {{ request('search') ? 'Try a different search term.' : 'Create your first project to start diagnosing a health facility, or community, or health subject.' }}
             </p>
             @unless(request('search'))
                 <a href="{{ route('projects.create') }}"

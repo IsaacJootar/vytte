@@ -10,7 +10,6 @@ use App\Models\DepartmentFrameworkVersion;
 use App\Models\PlatformSetting;
 use App\Models\Question;
 use App\Models\QuestionVersion;
-use App\Models\SubIndex;
 use App\Services\AssessmentReadinessService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -97,16 +96,25 @@ class DashboardController extends Controller
             ];
         }
 
-        $departmentsWithoutScore = AssessmentModule::where('is_active', true)
-            ->whereNotIn('module_id', SubIndex::query()->select('module_id'))
+        // Genuinely broken scoring: a question placed into a framework and meant to score,
+        // but with no scoring group to score into. This is the real "cannot score" case.
+        //
+        // The old check flagged any department that did not own a scoring group. That is
+        // wrong for the reuse model: a cross-cutting question scores through the framework
+        // that places it, not through a group owned by its home department, and a subject
+        // with no framework yet has nothing to score by design. Both used to raise a false
+        // alarm; neither is a fault.
+        $unscoredPlacements = DB::table('framework_question_placements')
+            ->where('scoring_contribution', true)
+            ->whereNull('sub_index_id')
             ->count();
 
-        if ($departmentsWithoutScore > 0) {
+        if ($unscoredPlacements > 0) {
             $items[] = [
                 'tone' => 'warning',
-                'title' => $departmentsWithoutScore.' '.str('department')->plural($departmentsWithoutScore).' cannot score questions yet',
-                'detail' => 'A department needs a score before its questions can affect results.',
-                'action' => 'Set up',
+                'title' => $unscoredPlacements.' '.str('question')->plural($unscoredPlacements).' are placed but cannot score',
+                'detail' => 'These questions are in a framework but have no scoring group, so their answers will not affect the result.',
+                'action' => 'Review scoring',
                 'href' => route('admin.scores.index'),
             ];
         }
