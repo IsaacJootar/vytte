@@ -265,6 +265,57 @@ class OfficialFrameworkSeeder extends Seeder
                     ]],
                 ], self::programmeSupport()),
             ],
+
+            // Stage 5 — maternal, child, nutrition and mental health frameworks.
+            [
+                'module' => 'ANC',
+                'code' => 'MATERNAL_NEWBORN',
+                'name' => 'Maternal & Newborn Care Assessment',
+                'description' => 'Focused assessment of antenatal care, high-risk identification, delivery, emergency obstetric and newborn care, and postnatal follow-up.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Maternal & Newborn Services', 'questions' => [
+                        'MAT.001', 'MAT.002', 'MAT.003', 'MAT.004', 'MAT.005', 'MAT.006',
+                        'MAT.007', 'MAT.008', 'MAT.009', 'MAT.010', 'MAT.011',
+                    ]],
+                ], self::programmeSupport()),
+            ],
+            [
+                'module' => 'IMM',
+                'code' => 'CHILD_HEALTH',
+                'name' => 'Child Health Assessment',
+                'description' => 'Focused assessment of integrated child illness care, growth monitoring, immunization checks and newborn care.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Child Health Services', 'questions' => [
+                        'CHD.001', 'CHD.002', 'CHD.003', 'CHD.004', 'CHD.005', 'CHD.006', 'CHD.007', 'CHD.008',
+                    ]],
+                ], self::programmeSupport()),
+            ],
+            [
+                'module' => 'NUT',
+                'code' => 'NUTRITION_PROGRAMME',
+                'name' => 'Nutrition Programme Assessment',
+                'description' => 'Focused assessment of malnutrition screening and treatment, feeding counselling, micronutrients and follow-up.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Nutrition Services', 'questions' => [
+                        'NUT.001', 'NUT.002', 'NUT.003', 'NUT.004', 'NUT.005', 'NUT.006', 'NUT.007',
+                    ]],
+                ], self::programmeSupport()),
+            ],
+            [
+                'module' => 'MNH',
+                'code' => 'MENTAL_HEALTH_SERVICES',
+                'name' => 'Mental Health Services Assessment',
+                'description' => 'Focused assessment of mental health screening, treatment or referral, psychotropic availability, follow-up, confidentiality and dignity.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Mental Health Services', 'questions' => [
+                        'MEN.001', 'MEN.002', 'MEN.003', 'MEN.004', 'MEN.005', 'MEN.006', 'MEN.007',
+                    ]],
+                ], self::programmeSupport()),
+            ],
         ];
     }
 }

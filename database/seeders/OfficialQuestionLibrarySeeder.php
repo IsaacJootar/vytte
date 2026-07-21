@@ -207,6 +207,10 @@ class OfficialQuestionLibrarySeeder extends Seeder
             self::malaria(),
             self::immunization(),
             self::dataBurden(),
+            self::maternalNewborn(),
+            self::childHealth(),
+            self::nutrition(),
+            self::mentalHealth(),
         );
     }
 
@@ -1053,6 +1057,179 @@ class OfficialQuestionLibrarySeeder extends Seeder
             ['code' => 'BURD.006', 'module' => 'REC', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
                 'text' => 'Which single register or form causes the most duplicated effort, and why?',
                 'why' => 'Points directly at the highest-value target for reducing the recording burden.'],
+        ];
+    }
+
+    /**
+     * Maternal and newborn care.
+     *
+     * Antenatal, delivery, emergency obstetric and newborn care. Several questions carry
+     * forward strong clinical ideas from the PHSAI legacy antenatal questionnaire — the
+     * structured identification of high-risk pregnancy, the availability of the ANC card
+     * on return, and escalation of complications — rewritten into scored readiness.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function maternalNewborn(): array
+    {
+        $respondent = 'Midwife · Nurse-Midwife · Medical Officer';
+
+        return [
+            ['code' => 'MAT.001', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is antenatal care provided according to the recommended schedule of contacts?',
+                'why' => 'Contact frequency is the backbone of catching problems in pregnancy before they become emergencies.'],
+            ['code' => 'MAT.002', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a structured tool for identifying high-risk pregnancies?',
+                'why' => 'High-risk pregnancies missed at antenatal care become the emergencies that kill. Carried forward from legacy content as a scored capability.'],
+            ['code' => 'MAT.003', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are high-risk pregnancies clearly flagged so any clinician seeing the woman knows?',
+                'why' => 'Identifying risk is worthless if the flag is not visible at the next contact.',
+                'observe' => true],
+            ['code' => 'MAT.004', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'Is the woman\'s antenatal record available when she returns for care?',
+                'why' => 'Care without the prior record repeats work and misses the risks already found. Carried forward from legacy content.',
+                'observe' => true],
+            ['code' => 'MAT.005', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is a skilled birth attendant available for deliveries whenever the facility conducts them?',
+                'why' => 'A delivery service without a skilled attendant is where preventable maternal and newborn deaths occur; hence critical.'],
+            ['code' => 'MAT.006', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is the facility able to provide or promptly refer for emergency obstetric care?',
+                'why' => 'Most maternal deaths are from complications that are survivable with timely emergency care.'],
+            ['code' => 'MAT.007', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are the medicines for managing obstetric emergencies available?',
+                'why' => 'Drugs for haemorrhage and pre-eclampsia decide whether a complication is survived.',
+                'observe' => true],
+            ['code' => 'MAT.008', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is immediate newborn care, including warmth, early feeding and resuscitation readiness, provided?',
+                'why' => 'The first minutes of life carry the highest newborn risk.'],
+            ['code' => 'MAT.009', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is postnatal care provided for mother and baby after delivery?',
+                'why' => 'The postnatal period is neglected in many settings yet carries substantial late risk.'],
+            ['code' => 'MAT.010', 'module' => 'ANC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are maternal and newborn deaths reviewed to learn what happened?',
+                'why' => 'Death review is how a service turns a tragedy into a prevented next one.'],
+            ['code' => 'MAT.011', 'module' => 'ANC', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most threatens safe maternal or newborn care here?',
+                'why' => 'The staff conducting deliveries know the weakest link before any assessment.'],
+        ];
+    }
+
+    /**
+     * Child health.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function childHealth(): array
+    {
+        $respondent = 'Nurse · CHEW · Medical Officer';
+
+        return [
+            ['code' => 'CHD.001', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are sick children assessed using an integrated approach covering the common danger signs?',
+                'why' => 'Integrated assessment catches the serious illness hiding behind a common presenting complaint.'],
+            ['code' => 'CHD.002', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are danger signs requiring urgent referral recognised and acted on?',
+                'why' => 'A missed danger sign in a child is a preventable death; hence critical.'],
+            ['code' => 'CHD.003', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is every child\'s growth monitored and plotted?',
+                'why' => 'Growth faltering is the earliest visible sign of a child in trouble.'],
+            ['code' => 'CHD.004', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is the immunization status of every child checked at each contact?',
+                'why' => 'Every visit is a chance to catch a child up on missed vaccines.'],
+            ['code' => 'CHD.005', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are essential child health medicines available?',
+                'why' => 'Oral rehydration, zinc, antibiotics and antimalarials are cheap and decisive when in stock.',
+                'observe' => true],
+            ['code' => 'CHD.006', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is care for the newborn and young infant provided or promptly referred?',
+                'why' => 'The youngest infants deteriorate fastest and need the lowest threshold to act.'],
+            ['code' => 'CHD.007', 'module' => 'IMM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are caregivers advised on danger signs to watch for at home?',
+                'why' => 'The caregiver is the first line of detection between visits.'],
+            ['code' => 'CHD.008', 'module' => 'IMM', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most limits child health care here?',
+                'why' => 'Names the local constraint on caring for children.'],
+        ];
+    }
+
+    /**
+     * Nutrition services.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function nutrition(): array
+    {
+        $respondent = 'Nutrition Focal Person · Nurse · CHEW';
+
+        return [
+            ['code' => 'NUT.001', 'module' => 'NUT', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are children screened for acute malnutrition using a recognised measure?',
+                'why' => 'Malnutrition unrecognised is malnutrition untreated; screening is the entry point.'],
+            ['code' => 'NUT.002', 'module' => 'NUT', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is severe acute malnutrition with complications recognised and treated or referred urgently?',
+                'why' => 'Severe acute malnutrition has a high untreated mortality; a missed case can be fatal, hence critical.'],
+            ['code' => 'NUT.003', 'module' => 'NUT', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are therapeutic and supplementary foods available?',
+                'why' => 'The treatment for malnutrition is food designed for it; without stock, diagnosis leads nowhere.',
+                'observe' => true],
+            ['code' => 'NUT.004', 'module' => 'NUT', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is infant and young child feeding counselling, including breastfeeding support, provided?',
+                'why' => 'Feeding practice in the first two years shapes a lifetime of health.'],
+            ['code' => 'NUT.005', 'module' => 'NUT', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are micronutrient supplements, such as vitamin A and iron, provided where indicated?',
+                'why' => 'Cheap supplements prevent expensive and disabling deficiencies.'],
+            ['code' => 'NUT.006', 'module' => 'NUT', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are malnourished children followed up until they recover?',
+                'why' => 'Nutrition treatment works over weeks; follow-up is what makes it work.'],
+            ['code' => 'NUT.007', 'module' => 'NUT', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most limits nutrition services here?',
+                'why' => 'Names the local constraint.'],
+        ];
+    }
+
+    /**
+     * Mental health services.
+     *
+     * Several questions carry forward strong ideas from the PHSAI legacy mental health
+     * questionnaire — the use of a standardised screening tool, tracking of clients lost
+     * to follow-up, confidentiality of records and psychotropic availability — rewritten
+     * into scored readiness.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function mentalHealth(): array
+    {
+        $respondent = 'Mental Health Focal Person · Nurse · Medical Officer';
+
+        return [
+            ['code' => 'MEN.001', 'module' => 'MNH', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are common mental health conditions screened for using a recognised tool?',
+                'why' => 'Mental illness is under-detected everywhere; a structured tool is what surfaces it. Carried forward from legacy content.'],
+            ['code' => 'MEN.002', 'module' => 'MNH', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Can the facility provide basic treatment for common mental health conditions, or refer reliably?',
+                'why' => 'Screening without a route to treatment raises expectations it cannot meet.'],
+            ['code' => 'MEN.003', 'module' => 'MNH', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are essential psychotropic medicines available?',
+                'why' => 'Psychotropic stockouts force treatment interruption, which risks relapse and crisis. Carried forward from legacy content.',
+                'observe' => true],
+            ['code' => 'MEN.004', 'module' => 'MNH', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are mental health clients who miss appointments identified and followed up?',
+                'why' => 'Loss to follow-up is the central failure mode of mental health care. Carried forward from legacy content.'],
+            ['code' => 'MEN.005', 'module' => 'MNH', 'type' => 'SINGLE_SELECT', 'options' => [
+                ['label' => 'Separate, restricted-access record', 'score' => 100],
+                ['label' => 'Coded or de-identified entries', 'score' => 75],
+                ['label' => 'Same general register as other patients', 'score' => 25],
+                ['label' => 'No specific confidentiality measure', 'score' => 0, 'critical' => true],
+            ], 'respondent' => $respondent,
+                'text' => 'How is the confidentiality of mental health records maintained?',
+                'why' => 'Mental health carries heavy stigma; records without access control expose clients to harm. Improved from legacy content.'],
+            ['code' => 'MEN.006', 'module' => 'MNH', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are clients treated with dignity and without discrimination for their condition?',
+                'why' => 'Disrespect in mental health care is both harm and a reason people never return.',
+                'observe' => true],
+            ['code' => 'MEN.007', 'module' => 'MNH', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most limits mental health services here?',
+                'why' => 'Names the local constraint on a routinely under-resourced service.'],
         ];
     }
 }
