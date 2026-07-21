@@ -316,6 +316,44 @@ class OfficialFrameworkSeeder extends Seeder
                     ]],
                 ], self::programmeSupport()),
             ],
+
+            // Stage 6 — clinical service frameworks.
+            [
+                'module' => 'LAB',
+                'code' => 'LABORATORY_ASSESSMENT',
+                'name' => 'Laboratory Services Assessment',
+                'description' => 'Focused assessment of laboratory test menu, reagents, quality control, biosafety, equipment, turnaround and referral.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Laboratory Services', 'questions' => [
+                        'LAB.001', 'LAB.002', 'LAB.003', 'LAB.004', 'LAB.005', 'LAB.006', 'LAB.007', 'LAB.008',
+                    ]],
+                ], self::programmeSupport()),
+            ],
+            [
+                'module' => 'PHM',
+                'code' => 'PHARMACY_ASSESSMENT',
+                'name' => 'Pharmacy & Medicines Assessment',
+                'description' => 'Focused assessment of medicine availability, storage, expiry control, stock management, dispensing, rational use and controlled substances.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Pharmacy Services', 'questions' => [
+                        'PHA.001', 'PHA.002', 'PHA.003', 'PHA.004', 'PHA.005', 'PHA.006', 'PHA.007', 'PHA.008',
+                    ]],
+                ], self::programmeSupport()),
+            ],
+            [
+                'module' => 'EMR',
+                'code' => 'EMERGENCY_CARE',
+                'name' => 'Emergency Care Assessment',
+                'description' => 'Focused assessment of triage, resuscitation, emergency commodities, oxygen, trained staff, referral and transport.',
+                'type' => 'FOCUSED',
+                'sections' => array_merge([
+                    ['domain' => 'SERV', 'name' => 'Emergency Services', 'questions' => [
+                        'EMR.001', 'EMR.002', 'EMR.003', 'EMR.004', 'EMR.005', 'EMR.006', 'EMR.007', 'EMR.008',
+                    ]],
+                ], self::programmeSupport()),
+            ],
         ];
     }
 }

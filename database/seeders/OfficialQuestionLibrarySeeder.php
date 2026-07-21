@@ -211,6 +211,9 @@ class OfficialQuestionLibrarySeeder extends Seeder
             self::childHealth(),
             self::nutrition(),
             self::mentalHealth(),
+            self::laboratory(),
+            self::pharmacy(),
+            self::emergency(),
         );
     }
 
@@ -1230,6 +1233,128 @@ class OfficialQuestionLibrarySeeder extends Seeder
             ['code' => 'MEN.007', 'module' => 'MNH', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
                 'text' => 'What most limits mental health services here?',
                 'why' => 'Names the local constraint on a routinely under-resourced service.'],
+        ];
+    }
+
+    /**
+     * Laboratory services.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function laboratory(): array
+    {
+        $respondent = 'Laboratory Scientist · Laboratory Technician';
+
+        return [
+            ['code' => 'LAB.001', 'module' => 'LAB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Does the laboratory offer the tests expected for the facility\'s level of care?',
+                'why' => 'Establishes whether the test menu matches what the clinical services need.'],
+            ['code' => 'LAB.002', 'module' => 'LAB', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are reagents and consumables available for the tests offered?',
+                'why' => 'A test on the menu with no reagent is a test that cannot be done.',
+                'observe' => true],
+            ['code' => 'LAB.003', 'module' => 'LAB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are quality controls run to confirm that test results can be trusted?',
+                'why' => 'A result without quality control is a number, not a diagnosis.',
+                'evidence' => 'Sight quality control records for a common test.'],
+            ['code' => 'LAB.004', 'module' => 'LAB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are biosafety measures in place to protect laboratory staff from specimens?',
+                'why' => 'A laboratory that endangers its own staff is a serious and preventable failure; hence critical.',
+                'observe' => true],
+            ['code' => 'LAB.005', 'module' => 'LAB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is equipment maintained and calibrated so results stay accurate?',
+                'why' => 'Uncalibrated equipment produces confident, wrong results.'],
+            ['code' => 'LAB.006', 'module' => 'LAB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are results returned to the clinician quickly enough to guide treatment?',
+                'why' => 'A correct result that arrives after the treatment decision changes nothing.'],
+            ['code' => 'LAB.007', 'module' => 'LAB', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a reliable way to refer tests the laboratory cannot perform?',
+                'why' => 'No laboratory does everything; the referral link is part of the service.'],
+            ['code' => 'LAB.008', 'module' => 'LAB', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most limits laboratory services here?',
+                'why' => 'Names the binding constraint in the laboratory\'s own words.'],
+        ];
+    }
+
+    /**
+     * Pharmacy and medicines.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function pharmacy(): array
+    {
+        $respondent = 'Pharmacist · Pharmacy Technician · Store Officer';
+
+        return [
+            ['code' => 'PHA.001', 'module' => 'PHM', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are the essential medicines for the facility\'s services available?',
+                'why' => 'The most visible measure of whether a facility can act on its diagnoses.',
+                'observe' => true],
+            ['code' => 'PHA.002', 'module' => 'PHM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are medicines stored at the correct temperature and protected from light and damp?',
+                'why' => 'Poor storage silently degrades medicines that then fail when given.',
+                'observe' => true],
+            ['code' => 'PHA.003', 'module' => 'PHM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are expired medicines removed from dispensing stock and held separately for disposal?',
+                'why' => 'Expired stock mixed with usable stock is a direct route to patient harm; hence critical.',
+                'observe' => true],
+            ['code' => 'PHA.004', 'module' => 'PHM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a stock management system that reorders before medicines run out?',
+                'why' => 'The difference between managing stock and discovering a stockout at the counter.'],
+            ['code' => 'PHA.005', 'module' => 'PHM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are medicines dispensed with clear instructions the patient understands?',
+                'why' => 'A correctly chosen medicine taken wrongly is a treatment failure the facility caused.'],
+            ['code' => 'PHA.006', 'module' => 'PHM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is prescribing monitored for rational use, including of antibiotics?',
+                'why' => 'Irrational prescribing wastes medicine and drives antimicrobial resistance.'],
+            ['code' => 'PHA.007', 'module' => 'PHM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are controlled medicines secured and accurately accounted for?',
+                'why' => 'Controlled substances carry legal and diversion risks that ordinary stock does not.',
+                'observe' => true],
+            ['code' => 'PHA.008', 'module' => 'PHM', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most limits medicine availability or safe use here?',
+                'why' => 'Names the binding constraint on the pharmacy.'],
+        ];
+    }
+
+    /**
+     * Emergency and critical care.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function emergency(): array
+    {
+        $respondent = 'Emergency Officer · Medical Officer · Nurse';
+
+        return [
+            ['code' => 'EMR.001', 'module' => 'EMR', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are arriving patients triaged so the sickest are seen first?',
+                'why' => 'Without triage, a critically ill patient can wait behind minor cases and die in the queue; hence critical.',
+                'observe' => true],
+            ['code' => 'EMR.002', 'module' => 'EMR', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is the facility able to provide immediate resuscitation for a collapsed patient?',
+                'why' => 'Resuscitation capability is the defining function of an emergency service; its absence is critical.',
+                'observe' => true],
+            ['code' => 'EMR.003', 'module' => 'EMR', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are emergency medicines and supplies available and ready?',
+                'why' => 'Emergencies do not wait for a stock order; readiness has to be standing.',
+                'observe' => true],
+            ['code' => 'EMR.004', 'module' => 'EMR', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is an uninterrupted oxygen supply available for emergencies?',
+                'why' => 'Oxygen is the commonest life-saving emergency treatment; running out is a critical failure.',
+                'observe' => true],
+            ['code' => 'EMR.005', 'module' => 'EMR', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are staff on duty trained in emergency and resuscitation skills?',
+                'why' => 'Equipment without trained hands to use it is decoration.'],
+            ['code' => 'EMR.006', 'module' => 'EMR', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a functioning process to refer emergencies the facility cannot manage?',
+                'why' => 'Stabilise-and-refer is the correct pathway for most facilities; the referral link is part of the emergency service.'],
+            ['code' => 'EMR.007', 'module' => 'EMR', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there timely transport available for referring an emergency?',
+                'why' => 'A correct referral decision fails if there is no way to move the patient.'],
+            ['code' => 'EMR.008', 'module' => 'EMR', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What most limits emergency care here?',
+                'why' => 'Names the binding constraint on the emergency service.'],
         ];
     }
 }
