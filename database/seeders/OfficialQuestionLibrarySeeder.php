@@ -196,6 +196,10 @@ class OfficialQuestionLibrarySeeder extends Seeder
             self::governance(),
             self::workforce(),
             self::qualityAndSafety(),
+            self::infrastructure(),
+            self::information(),
+            self::financing(),
+            self::personCentredness(),
         );
     }
 
@@ -384,6 +388,262 @@ class OfficialQuestionLibrarySeeder extends Seeder
             ['code' => 'QAS.016', 'module' => 'QAS', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
                 'text' => 'What quality or safety problem would staff here most want fixed?',
                 'why' => 'Staff usually know the answer before any assessment starts. Asking directly is cheaper than inferring it.'],
+        ];
+    }
+
+    /**
+     * Infrastructure, equipment and supplies.
+     *
+     * The physical conditions in which care happens. A recurring finding in facility
+     * assessments worldwide is that clinical competence is undone by a power cut, an empty
+     * water tank or a broken steriliser, so these are scored in their own right.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function infrastructure(): array
+    {
+        $respondent = 'Facility Manager · Maintenance Officer · Matron';
+
+        return [
+            ['code' => 'INF.001', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How reliable is the electricity supply during opening hours?',
+                'why' => 'Power failure stops sterilisation, cold chain, lighting for procedures and most diagnostics at once.',
+                'observe' => true],
+            ['code' => 'INF.002', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is there a functioning backup power source for essential services?',
+                'why' => 'For a facility providing inpatient or emergency care, no backup power is a critical exposure rather than a weakness.',
+                'observe' => true],
+            ['code' => 'INF.003', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How reliable is the supply of safe water to the facility?',
+                'why' => 'Without water there is no hand hygiene, no cleaning and no safe procedures.',
+                'observe' => true],
+            ['code' => 'INF.004', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there water storage sufficient to continue services through a supply interruption?',
+                'why' => 'Reliability today is not the same as resilience tomorrow.',
+                'observe' => true],
+            ['code' => 'INF.005', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are the buildings structurally sound and weatherproof?',
+                'why' => 'A leaking roof or cracked wall affects infection control, records and equipment together.',
+                'observe' => true],
+            ['code' => 'INF.006', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there adequate lighting in clinical areas, including at night if the facility operates then?',
+                'why' => 'Poor lighting causes procedural and dispensing errors that are entirely preventable.',
+                'observe' => true],
+            ['code' => 'INF.007', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there adequate ventilation in clinical and waiting areas?',
+                'why' => 'Ventilation is a first-line control against airborne transmission, particularly of TB.',
+                'observe' => true],
+            ['code' => 'INF.008', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are there enough consultation spaces to see patients privately?',
+                'why' => 'Space shortage is a common and unspoken cause of privacy and dignity failures.',
+                'observe' => true],
+            ['code' => 'INF.009', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is essential clinical equipment for the services offered available and functioning?',
+                'why' => 'The point where stated services and actual capability most often diverge.',
+                'observe' => true],
+            ['code' => 'INF.010', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a maintenance schedule for clinical equipment, and is it followed?',
+                'why' => 'Equipment without planned maintenance fails when it is needed rather than when it is convenient.',
+                'evidence' => 'Sight the maintenance log for two pieces of equipment.'],
+            ['code' => 'INF.011', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a process for reporting and repairing broken equipment?',
+                'why' => 'A broken item with no repair route becomes permanent, whatever the maintenance plan says.'],
+            ['code' => 'INF.012', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there functioning equipment to sterilise or decontaminate reusable instruments?',
+                'why' => 'Reprocessing failure turns reusable instruments into a transmission route.',
+                'observe' => true],
+            ['code' => 'INF.013', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are essential medicines in stock?',
+                'why' => 'The single most visible measure of readiness to the patient in front of you.'],
+            ['code' => 'INF.014', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a system to track stock levels and reorder before items run out?',
+                'why' => 'Distinguishes facilities that manage stock from those that discover a stockout at the point of care.'],
+            ['code' => 'INF.015', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are medicines and supplies stored at the correct temperature and protected from damage?',
+                'why' => 'Poor storage silently degrades medicines that then fail when used.',
+                'observe' => true],
+            ['code' => 'INF.016', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are expired medicines removed from use and stored separately for disposal?',
+                'why' => 'Expired stock mixed with usable stock is a direct route to patient harm, hence critical.',
+                'observe' => true],
+            ['code' => 'INF.017', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a functioning cold chain for items that require it?',
+                'why' => 'Vaccines and some medicines are worthless, and can be harmful, if the cold chain breaks.',
+                'observe' => true],
+            ['code' => 'INF.018', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is cold chain temperature monitored and recorded?',
+                'why' => 'A fridge that is on is not the same as a fridge holding the right temperature.',
+                'evidence' => 'Sight the temperature log for the last two weeks.'],
+            ['code' => 'INF.019', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are functioning communication means available to summon help or make referrals?',
+                'why' => 'A referral decision is only as good as the ability to act on it.'],
+            ['code' => 'INF.020', 'module' => 'INF', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'Which single piece of infrastructure or equipment, if fixed, would most improve services here?',
+                'why' => 'Turns a list of gaps into the one that matters most to the people running the facility.'],
+        ];
+    }
+
+    /**
+     * Information, records and their use.
+     *
+     * A facility that cannot trust its own numbers cannot manage itself, and its reports
+     * mislead everyone above it. These separate whether records exist from whether they
+     * are accurate and, hardest of all, whether they are used.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function information(): array
+    {
+        $respondent = 'Records Officer · Data Clerk · Facility Manager';
+
+        return [
+            ['code' => 'INFO.001', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Does the facility keep a record for every patient it sees?',
+                'why' => 'Continuity of care is impossible without a record to continue from.'],
+            ['code' => 'INFO.002', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Can a patient record be retrieved quickly when the patient returns?',
+                'why' => 'Records that cannot be found in time are, at the moment of care, records that do not exist.',
+                'observe' => true],
+            ['code' => 'INFO.003', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are the registers required for routine reporting complete and up to date?',
+                'why' => 'Incomplete registers make every derived report wrong, however good the reporting process.',
+                'evidence' => 'Check two registers for gaps in the last month.'],
+            ['code' => 'INFO.004', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How consistently are required reports submitted on time?',
+                'why' => 'Late reporting distorts the wider health information system, not just this facility.'],
+            ['code' => 'INFO.005', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a process to check reported figures against source records?',
+                'why' => 'The core of data quality: whether anyone verifies that the number sent up matches the register.'],
+            ['code' => 'INFO.006', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'When errors are found in the data, are they corrected and the cause addressed?',
+                'why' => 'Finding errors is common; fixing why they occur is what separates data quality from data cleaning.'],
+            ['code' => 'INFO.007', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly does the facility review its own service data to guide decisions?',
+                'why' => 'The hardest and most valuable step: data used for management rather than only for reporting upward.'],
+            ['code' => 'INFO.008', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Can staff give an example of a decision changed by their own data in the last year?',
+                'why' => 'Tests data use as a lived practice rather than a claimed one.',
+                'observe' => true],
+            ['code' => 'INFO.009', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are patient records stored securely and protected from loss or damage?',
+                'why' => 'Records lost to fire, water or pests take the facility memory with them.',
+                'observe' => true],
+            ['code' => 'INFO.010', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_NO, 'respondent' => $respondent,
+                'text' => 'Does the facility use any electronic system for records or reporting?',
+                'why' => 'Establishes the digital starting point without assuming paper is a failure.'],
+            ['code' => 'INFO.011', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Where electronic systems are used, are staff trained and confident in using them?',
+                'why' => 'A system staff cannot use well produces worse data than the paper it replaced.'],
+            ['code' => 'INFO.012', 'module' => 'REC', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a backup for electronic data against device failure or loss?',
+                'why' => 'Digitising records concentrates the risk of losing them all at once.'],
+            ['code' => 'INFO.013', 'module' => 'REC', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What would make the facility data more useful to the people who work here?',
+                'why' => 'Data systems are usually designed for those above the facility; this asks those inside it.'],
+        ];
+    }
+
+    /**
+     * Financing and resource management.
+     *
+     * The WHO building block with the least visible presence in most facility tools, and
+     * the one that quietly determines whether everything else is sustainable. Written to
+     * be answerable by a facility that does not control its own budget, because most do not.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function financing(): array
+    {
+        $respondent = 'Facility Manager · Finance Officer · Administrator';
+
+        return [
+            ['code' => 'FIN.001', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Does the facility have a budget covering its operating costs?',
+                'why' => 'A facility running without a budget is managing money by reaction rather than by plan.'],
+            ['code' => 'FIN.002', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Does the facility have any discretion over how at least part of its funds are spent?',
+                'why' => 'Distinguishes a facility that can respond to its own priorities from one that can only spend as directed.'],
+            ['code' => 'FIN.003', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are income and expenditure recorded and reconciled?',
+                'why' => 'Money that is not recorded cannot be accounted for, and unaccounted money is where trust fails.',
+                'evidence' => 'Sight the most recent financial records.'],
+            ['code' => 'FIN.004', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Where fees are charged, is the schedule of charges displayed openly to patients?',
+                'why' => 'Hidden or informal charges are a leading source of both corruption and lost trust.',
+                'observe' => true],
+            ['code' => 'FIN.005', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a mechanism to protect the poorest patients from being turned away over cost?',
+                'why' => 'Financial protection is a stated aim of most health systems and a common gap at the front line.'],
+            ['code' => 'FIN.006', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Where the facility participates in health insurance, are claims submitted and paid reliably?',
+                'why' => 'Insurance income that arrives late or not at all can destabilise a facility that has come to rely on it.'],
+            ['code' => 'FIN.007', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How predictable is the funding the facility receives?',
+                'why' => 'Unpredictable funding makes planning impossible regardless of the amount.'],
+            ['code' => 'FIN.008', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is spending subject to any independent check or audit?',
+                'why' => 'Oversight is what makes financial records trustworthy rather than merely present.'],
+            ['code' => 'FIN.009', 'module' => 'FIN', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Can the facility meet an unexpected essential cost, such as an urgent repair?',
+                'why' => 'Tests financial resilience, which is invisible until the moment it is needed.'],
+            ['code' => 'FIN.010', 'module' => 'FIN', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What is the most significant financial constraint on services here?',
+                'why' => 'Financial constraints are often the real cause behind findings that look clinical.'],
+        ];
+    }
+
+    /**
+     * Person-centredness and community responsiveness.
+     *
+     * Whether the facility is experienced as respectful, accessible and answerable to the
+     * people it serves. These matter because a clinically capable facility people avoid,
+     * distrust or cannot reach delivers no health.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function personCentredness(): array
+    {
+        $respondent = 'Matron · Community Health Officer · Facility Manager';
+
+        return [
+            ['code' => 'PCOM.001', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are opening hours suited to the community the facility serves?',
+                'why' => 'Hours set for staff convenience rather than patient need are a quiet barrier to access.'],
+            ['code' => 'PCOM.002', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Can patients understand the language staff use with them?',
+                'why' => 'Care delivered in a language the patient does not follow is care they cannot consent to or act on.'],
+            ['code' => 'PCOM.003', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are patients treated with courtesy and respect by staff?',
+                'why' => 'Disrespectful treatment is one of the most common reasons people stop using a facility.',
+                'observe' => true],
+            ['code' => 'PCOM.004', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is the facility physically accessible to people with mobility difficulties?',
+                'why' => 'Steps, narrow doors and high counters exclude people before any clinical judgement is made.',
+                'observe' => true],
+            ['code' => 'PCOM.005', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are waiting times reasonable, and are patients told what to expect?',
+                'why' => 'A long wait is more tolerable when it is explained; an unexplained one erodes trust.'],
+            ['code' => 'PCOM.006', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are patients involved in decisions about their own care?',
+                'why' => 'Shared decisions improve adherence and are a basic expression of respect.'],
+            ['code' => 'PCOM.007', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Does the facility work with community health workers or community structures?',
+                'why' => 'The link between facility and community is where prevention and follow-up succeed or fail.'],
+            ['code' => 'PCOM.008', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly does the facility conduct outreach to its catchment population?',
+                'why' => 'Outreach reaches the people least likely to come to the facility, who often need it most.'],
+            ['code' => 'PCOM.009', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a way for the community to give feedback or raise concerns about services?',
+                'why' => 'A facility with no feedback channel hears about problems only when they become complaints or departures.'],
+            ['code' => 'PCOM.010', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are services offered without discrimination on grounds such as sex, age, disability or status?',
+                'why' => 'Equitable treatment is both an ethical baseline and a determinant of who actually gets care.'],
+            ['code' => 'PCOM.011', 'module' => 'COM', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are health education or promotion messages provided to patients and the community?',
+                'why' => 'Prevention is cheaper than treatment, and the facility is a trusted place to deliver it.'],
+            ['code' => 'PCOM.012', 'module' => 'COM', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'What do patients or the community most commonly complain about here?',
+                'why' => 'The community usually already knows the facility weakest point; this records it in their words.'],
         ];
     }
 }
