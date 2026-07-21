@@ -200,6 +200,8 @@ class OfficialQuestionLibrarySeeder extends Seeder
             self::information(),
             self::financing(),
             self::personCentredness(),
+            self::infectionPrevention(),
+            self::wash(),
         );
     }
 
@@ -644,6 +646,161 @@ class OfficialQuestionLibrarySeeder extends Seeder
             ['code' => 'PCOM.012', 'module' => 'COM', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
                 'text' => 'What do patients or the community most commonly complain about here?',
                 'why' => 'The community usually already knows the facility weakest point; this records it in their words.'],
+        ];
+    }
+
+    /**
+     * Infection prevention and control.
+     *
+     * Structured around the WHO IPC minimum requirements: a programme and guidelines,
+     * training, surveillance, multimodal strategy, monitoring, and the physical
+     * enablers of hand hygiene, environment and reprocessing. IPC is where a single
+     * failure harms many, so several answers here are treated as critical.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function infectionPrevention(): array
+    {
+        $respondent = 'IPC Focal Person · Matron · Medical Officer';
+
+        return [
+            ['code' => 'IPC.001', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a named person or team responsible for infection prevention and control?',
+                'why' => 'The first WHO IPC minimum requirement. Without ownership, IPC is nobody\'s daily job.'],
+            ['code' => 'IPC.002', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are written IPC guidelines available and relevant to the services provided?',
+                'why' => 'Guidelines are the reference against which practice is judged and corrected.',
+                'evidence' => 'Sight the IPC guidelines and check they cover the services offered.'],
+            ['code' => 'IPC.003', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly do staff receive IPC training?',
+                'why' => 'IPC practice decays without reinforcement; training frequency predicts adherence.'],
+            ['code' => 'IPC.004', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are functioning hand hygiene stations available at points of care?',
+                'why' => 'Hand hygiene is the single most effective infection control measure; absence of the means to perform it is critical.',
+                'observe' => true],
+            ['code' => 'IPC.005', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently are hand hygiene supplies — soap, water or alcohol rub — available?',
+                'why' => 'A station without supplies is a fixture, not a control.',
+                'observe' => true],
+            ['code' => 'IPC.006', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Do staff perform hand hygiene at the recognised key moments during care?',
+                'why' => 'Availability enables the behaviour; this checks the behaviour itself.',
+                'observe' => true],
+            ['code' => 'IPC.007', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How consistently is appropriate personal protective equipment available to staff?',
+                'why' => 'PPE gaps expose staff and patients alike, and were a defining failure of recent outbreaks.',
+                'observe' => true],
+            ['code' => 'IPC.008', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Do staff use PPE correctly for the tasks that require it?',
+                'why' => 'Incorrectly used PPE offers false reassurance, which can be worse than none.',
+                'observe' => true],
+            ['code' => 'IPC.009', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are sharps disposed of immediately into puncture-proof containers?',
+                'why' => 'Unsafe sharps handling causes needlestick injury and bloodborne transmission; a serious and preventable failure.',
+                'observe' => true],
+            ['code' => 'IPC.010', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is reusable equipment cleaned, disinfected or sterilised correctly between patients?',
+                'why' => 'Reprocessing failure turns shared instruments into a transmission route.',
+                'observe' => true],
+            ['code' => 'IPC.011', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a process to confirm that sterilisation has actually worked?',
+                'why' => 'Running a steriliser is not the same as confirming a sterile result; indicators close that gap.',
+                'evidence' => 'Ask how sterilisation is verified and sight the record.'],
+            ['code' => 'IPC.012', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly are clinical surfaces and areas cleaned?',
+                'why' => 'Environmental cleaning is a foundational and frequently neglected IPC control.'],
+            ['code' => 'IPC.013', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are cleaning staff trained in IPC and provided with the right materials?',
+                'why' => 'Cleaning is an IPC task, but the people doing it are often the least trained and equipped.'],
+            ['code' => 'IPC.014', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there capacity to isolate or separate patients with a suspected transmissible infection?',
+                'why' => 'Without separation, one infectious patient in a shared space becomes many.',
+                'observe' => true],
+            ['code' => 'IPC.015', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are healthcare-associated infections monitored in any form?',
+                'why' => 'A facility that does not look for infections it may be causing cannot know whether IPC is working.'],
+            ['code' => 'IPC.016', 'module' => 'INF', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly is IPC practice observed and audited?',
+                'why' => 'IPC audit is the feedback loop the WHO multimodal strategy depends on.'],
+            ['code' => 'IPC.017', 'module' => 'INF', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'Which infection control practice is hardest to maintain here, and why?',
+                'why' => 'The honest answer usually points at a supply, space or staffing cause behind an IPC symptom.'],
+        ];
+    }
+
+    /**
+     * Water, sanitation, hygiene, waste and cleaning in health care facilities.
+     *
+     * Structured around WHO/UNICEF WASH FIT. Placed against the facility WASH department
+     * rather than the school WASH module, because a health facility carries obligations a
+     * school does not, particularly around health care waste.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function wash(): array
+    {
+        $respondent = 'Facility Manager · WASH Focal Person · Cleaner Supervisor';
+
+        return [
+            ['code' => 'WASH.001', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is safe drinking water available to patients and staff at the facility?',
+                'why' => 'A health facility that cannot provide safe water fails a basic condition of care; hence critical.',
+                'observe' => true],
+            ['code' => 'WASH.002', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'How reliable is the water supply across the whole facility, including clinical areas?',
+                'why' => 'Water present at a tap by the gate is not the same as water at the point of care.',
+                'observe' => true],
+            ['code' => 'WASH.003', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is the quality of the water source known and monitored?',
+                'why' => 'Water that looks clean can still transmit disease; monitoring is what makes it safe.'],
+            ['code' => 'WASH.004', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Are there functioning, clean and private toilets for patients?',
+                'why' => 'Toilets that are absent, broken or unusable are a dignity failure and a disease risk at once.',
+                'observe' => true],
+            ['code' => 'WASH.005', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are there separate toilets for women and men, and for staff and patients?',
+                'why' => 'Separation matters for dignity, safety and use, particularly for women.',
+                'observe' => true],
+            ['code' => 'WASH.006', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are toilets accessible to people with limited mobility?',
+                'why' => 'An inaccessible toilet excludes the patients most likely to need inpatient care.',
+                'observe' => true],
+            ['code' => 'WASH.007', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are there facilities for managing menstrual hygiene?',
+                'why' => 'A basic and routinely overlooked condition for women using or working in the facility.',
+                'observe' => true],
+            ['code' => 'WASH.008', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are hand washing facilities available at toilets and usable?',
+                'why' => 'Sanitation without hand washing leaves the transmission route open.',
+                'observe' => true],
+            ['code' => 'WASH.009', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is health care waste segregated at the point of generation into the correct categories?',
+                'why' => 'Mixing sharps and infectious waste with general waste endangers staff, waste handlers and the community; a critical failure.',
+                'observe' => true],
+            ['code' => 'WASH.010', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are colour-coded or clearly labelled bins available where waste is generated?',
+                'why' => 'Segregation is only possible if the means to segregate is present where waste arises.',
+                'observe' => true],
+            ['code' => 'WASH.011', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is health care waste treated and disposed of safely?',
+                'why' => 'Segregation is undone if the end point is an open pit or uncontrolled burning.',
+                'observe' => true],
+            ['code' => 'WASH.012', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are staff who handle waste trained and given protective equipment?',
+                'why' => 'Waste handlers carry real risk and are frequently the least protected people in the facility.'],
+            ['code' => 'WASH.013', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'How regularly is the facility environment cleaned to a defined standard?',
+                'why' => 'Environmental cleaning links WASH and IPC and is a common weak point in both.'],
+            ['code' => 'WASH.014', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are cleaning materials and equipment available and maintained?',
+                'why' => 'A cleaning standard with no materials to meet it is an aspiration.',
+                'observe' => true],
+            ['code' => 'WASH.015', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Is there a WASH improvement plan based on an assessment of the facility?',
+                'why' => 'WASH FIT is built around a cycle of assess, improve and monitor; the plan is what makes it a cycle.'],
+            ['code' => 'WASH.016', 'module' => 'WSHF', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
+                'text' => 'Which WASH problem most affects patients or staff here?',
+                'why' => 'WASH failures are highly visible to users and often known long before any assessment.'],
         ];
     }
 }
