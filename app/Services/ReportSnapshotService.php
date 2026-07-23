@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Assessment;
 use App\Models\AssessmentReportSnapshot;
+use App\Services\Reporting\ReportComposer;
 use Illuminate\Support\Facades\DB;
 
 class ReportSnapshotService
@@ -75,7 +76,7 @@ class ReportSnapshotService
 
         $aggregation = $assessment->aggregationResult;
 
-        return [
+        $payload = [
             'schema_version' => self::SCHEMA_VERSION,
             'assessment_id' => $assessment->assessment_id,
             'composition_hash' => $assessment->composition_hash,
@@ -123,6 +124,13 @@ class ReportSnapshotService
                 'is_multi_respondent' => false,
             ],
         ];
+
+        // Freeze the deterministic intelligence — findings, insights, recommendations —
+        // alongside the scores it was derived from. Frozen together, a report reads
+        // identically forever, and the reader never sees numbers without their meaning.
+        $payload['intelligence'] = app(ReportComposer::class)->intelligence($payload);
+
+        return $payload;
     }
 
     private function snapshotScoreBreakdown(Assessment $assessment, array $contentModules): array

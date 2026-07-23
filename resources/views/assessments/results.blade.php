@@ -246,50 +246,91 @@
         </div>
     @endif
 
-    {{-- Findings --}}
+    {{-- Report intelligence: findings, insights and recommendations, read through a lens. --}}
     @php
-        $findings = $subIndexScores->filter(fn ($row) => $row->score === null || (float) $row->score < 70);
+        $headline = $intelligence['insights']['headline'] ?? null;
+        $lead = collect($lensView['lead'] ?? []);
+        $recommendations = collect($lensView['recommendations'] ?? []);
+
+        $categoryStyle = fn ($category, $severity) => match ($category) {
+            'CRITICAL_FINDING' => ['border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/20', 'text-red-600 dark:text-red-400', 'Critical'],
+            'WEAKNESS' => $severity === 'HIGH'
+                ? ['border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20', 'text-red-500 dark:text-red-400', 'Weak']
+                : ['border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20', 'text-amber-500 dark:text-amber-400', 'Needs work'],
+            'STRENGTH' => ['border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20', 'text-green-600 dark:text-green-400', 'Strength'],
+            'OPPORTUNITY' => ['border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-700/40', 'text-slate-500 dark:text-slate-400', 'Opportunity'],
+            default => ['border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-700/40', 'text-slate-400 dark:text-slate-500', 'Data gap'],
+        };
     @endphp
-    @if ($findings->isNotEmpty())
-        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Findings</h2>
-            <ul class="flex flex-col gap-3">
-                @foreach ($findings as $row)
-                    @php
-                        $fs = $row->score !== null ? (float) $row->score : null;
-                        if ($fs === null || $row->calibration_status === 'NOT_CALIBRATED') {
-                            $icon  = 'text-slate-400 dark:text-slate-500';
-                            $bg    = 'bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600';
-                            $label = 'Uncalibrated';
-                            $text  = $row->acronym . ' (' . $row->full_name . ') could not be scored — no responses were recorded for this sub-index. Ensure all questions are answered.';
-                            $textCls = 'text-slate-700 dark:text-slate-300';
-                        } elseif ($fs < 45) {
-                            $icon  = 'text-red-500 dark:text-red-400';
-                            $bg    = 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-                            $label = 'Weak';
-                            $text  = $row->acronym . ' (' . $row->full_name . ') scored ' . number_format($fs, 1) . ' — this area needs immediate attention. Review responses and consider targeted interventions.';
-                            $textCls = 'text-slate-700 dark:text-slate-300';
-                        } else {
-                            $icon  = 'text-amber-500 dark:text-amber-400';
-                            $bg    = 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
-                            $label = 'Moderate';
-                            $text  = $row->acronym . ' (' . $row->full_name . ') scored ' . number_format($fs, 1) . ' — developing, with room for improvement. Monitor and support this area.';
-                            $textCls = 'text-slate-700 dark:text-slate-300';
-                        }
-                    @endphp
-                    <li class="flex items-start gap-3 p-3 rounded-xl border {{ $bg }}">
-                        <svg class="w-4 h-4 flex-shrink-0 mt-0.5 {{ $icon }}" viewBox="0 0 20 20" fill="currentColor">
+
+    {{-- Lens selector — the same result, read for a different audience. --}}
+    <div class="mt-5 no-print flex flex-wrap items-center gap-2">
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Read this report as:</span>
+        @foreach ($lensOptions as $key => $meta)
+            <a href="{{ route('assessments.results', $assessment) }}?lens={{ $key }}"
+               class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors {{ $lensView['lens'] === $key ? 'border-vytte-600 bg-vytte-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700' }}">
+                {{ $meta['name'] }}
+            </a>
+        @endforeach
+    </div>
+
+    <div class="mt-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+        <div class="flex items-baseline justify-between gap-3">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $lensView['lens_name'] }}</h2>
+            <span class="text-xs text-slate-400 dark:text-slate-500">{{ $lensView['lens_question'] }}</span>
+        </div>
+
+        @if ($headline)
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ $headline }}</p>
+        @endif
+
+        @if ($lead->isNotEmpty())
+            <ul class="mt-4 flex flex-col gap-3">
+                @foreach ($lead as $finding)
+                    @php [$box, $icon, $label] = $categoryStyle($finding['category'], $finding['severity'] ?? null); @endphp
+                    <li class="flex items-start gap-3 rounded-xl border p-3 {{ $box }}">
+                        <svg class="mt-0.5 h-4 w-4 flex-shrink-0 {{ $icon }}" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd"/>
                         </svg>
-                        <div>
+                        <div class="min-w-0">
                             <span class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $label }}</span>
-                            <p class="text-sm {{ $textCls }} mt-0.5">{{ $text }}</p>
+                            <p class="mt-0.5 text-sm text-slate-700 dark:text-slate-300">{{ $finding['statement'] }}</p>
+                            @if (! empty($finding['why']))
+                                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ $finding['why'] }}</p>
+                            @endif
                         </div>
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <p class="mt-3 text-sm text-slate-400 dark:text-slate-500">Nothing stands out under this lens.</p>
+        @endif
+    </div>
+
+    {{-- Recommendations — each one cites the finding it came from. --}}
+    @if ($recommendations->isNotEmpty())
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">What to do next</h2>
+            <ul class="flex flex-col gap-3">
+                @foreach ($recommendations as $rec)
+                    <li class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-700/40">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-[10px] font-bold uppercase tracking-wide {{ $rec['horizon'] === 'IMMEDIATE' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400' }}">
+                                {{ $rec['horizon'] === 'IMMEDIATE' ? 'Do now' : 'Plan for' }}
+                            </span>
+                            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ $rec['type'] }}</span>
+                        </div>
+                        <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">{{ $rec['statement'] }}</p>
+                        <p class="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+                            Because: {{ $rec['from_finding']['statement'] }}
+                        </p>
                     </li>
                 @endforeach
             </ul>
         </div>
     @endif
+
+    <x-methodology-note />
 
     {{-- Score history (only when ≥ 2 assessments for same module on this project) --}}
     @if ($history->count() >= 2)

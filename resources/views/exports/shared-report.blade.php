@@ -168,6 +168,68 @@
             </div>
         @endif
 
+        {{-- What we found + what to do — from the frozen deterministic engine. --}}
+        @php
+            $intel = $report['intelligence'] ?? null;
+            $lead = collect($intel['findings'] ?? [])
+                ->whereIn('category', ['CRITICAL_FINDING', 'WEAKNESS', 'STRENGTH'])
+                ->take(6);
+            $recs = collect($intel['recommendations'] ?? []);
+        @endphp
+
+        @if ($lead->isNotEmpty())
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">
+                <div class="px-5 py-3.5 border-b border-slate-100">
+                    <h2 class="text-sm font-bold text-slate-900">What we found</h2>
+                </div>
+                <ul class="divide-y divide-slate-100">
+                    @foreach ($lead as $finding)
+                        @php
+                            $dot = match ($finding['category']) {
+                                'CRITICAL_FINDING' => '#B91C1C',
+                                'WEAKNESS' => ($finding['severity'] ?? null) === 'HIGH' ? '#B91C1C' : '#B45309',
+                                'STRENGTH' => '#15803D',
+                                default => '#94A3B8',
+                            };
+                        @endphp
+                        <li class="flex items-start gap-3 px-5 py-3">
+                            <span class="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style="background: {{ $dot }}"></span>
+                            <p class="text-sm text-slate-700">{{ $finding['statement'] }}</p>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @if ($recs->isNotEmpty())
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">
+                <div class="px-5 py-3.5 border-b border-slate-100">
+                    <h2 class="text-sm font-bold text-slate-900">What to do next</h2>
+                </div>
+                <ul class="divide-y divide-slate-100">
+                    @foreach ($recs as $rec)
+                        <li class="px-5 py-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wide" style="color: {{ $rec['horizon'] === 'IMMEDIATE' ? '#B91C1C' : '#B45309' }}">
+                                    {{ $rec['horizon'] === 'IMMEDIATE' ? 'Do now' : 'Plan for' }}
+                                </span>
+                                <span class="text-xs font-semibold text-slate-500">{{ $rec['type'] }}</span>
+                            </div>
+                            <p class="mt-1 text-sm text-slate-700">{{ $rec['statement'] }}</p>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- WHO-aware methodology label. --}}
+        <div class="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed text-slate-500 mb-5">
+            <span class="font-semibold text-slate-600">About this assessment.</span>
+            Its questions draw on WHO and other public health frameworks. It is not a World
+            Health Organization product, and its results are a management guide, not a
+            clinical diagnosis or an official accreditation.
+        </div>
+
         {{-- Footer --}}
         <div class="text-center text-xs text-slate-400 mt-8 no-print">
             <p>Shared via <strong class="text-slate-600">Vytte</strong> · Read-only · This link expires in 30 days</p>

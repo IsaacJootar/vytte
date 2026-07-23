@@ -193,8 +193,36 @@ class ResultsTest extends TestCase
         $this->actingAs($user)
             ->get(route('assessments.results', $assessment))
             ->assertOk()
-            ->assertSee('Findings')
-            ->assertSee('Weak');
+            ->assertSee('Weak')
+            ->assertSee('What to do next');
+    }
+
+    public function test_results_page_shows_lens_selector_and_methodology_note(): void
+    {
+
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupCompleteAssessment($workspace, $user, withAnswers: true);
+
+        $this->actingAs($user)
+            ->get(route('assessments.results', $assessment))
+            ->assertOk()
+            ->assertSee('Read this report as')
+            ->assertSee('Performance')
+            ->assertSee('not a World') // methodology note: WHO-aware label
+            ->assertSee('clinical diagnosis');
+    }
+
+    public function test_risk_lens_changes_the_report_emphasis(): void
+    {
+
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupCompleteAssessment($workspace, $user, answerMode: 'worst');
+
+        $this->actingAs($user)
+            ->get(route('assessments.results', $assessment).'?lens=RISK')
+            ->assertOk()
+            ->assertSee('Risk')
+            ->assertSee('What could go wrong?');
     }
 
     // ---- Score history shows when 2+ runs ----

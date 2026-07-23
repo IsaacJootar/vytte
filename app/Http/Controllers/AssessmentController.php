@@ -14,6 +14,7 @@ use App\Notifications\AssessmentCompletedNotification;
 use App\Services\AssessmentCreationService;
 use App\Services\AuditService;
 use App\Services\PlanService;
+use App\Services\Reporting\ReportComposer;
 use App\Services\ReportSnapshotService;
 use App\Services\ScoringService;
 use Illuminate\Contracts\View\View;
@@ -220,6 +221,15 @@ class AssessmentController extends Controller
         $assessmentTitle = $report['title'];
         $subIndexScores = collect($report['sub_index_scores'])->map(fn ($row) => (object) $row);
         $domainScores = collect($report['domain_scores'])->map(fn ($row) => (object) $row);
+
+        // The deterministic intelligence is frozen into the snapshot payload. Snapshots
+        // taken before the reporting engine existed have no 'intelligence' key, so it is
+        // recomputed on the fly — the engine is pure, so the result is identical.
+        $composer = app(ReportComposer::class);
+        $intelligence = $report['intelligence'] ?? $composer->intelligence($report);
+        $lens = request()->query('lens', 'PERFORMANCE');
+        $lensView = $composer->throughLens($intelligence, is_string($lens) ? $lens : 'PERFORMANCE');
+        $lensOptions = ReportComposer::lenses();
         if ($assessment->score) {
             $assessment->score->overall_score = $report['score']['overall_score'];
             $assessment->score->calibration_status = $report['score']['calibration_status'];
@@ -256,7 +266,7 @@ class AssessmentController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks'));
+        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions'));
     }
 
     /**
