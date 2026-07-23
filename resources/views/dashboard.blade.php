@@ -42,6 +42,18 @@
         </a>
     </div>
 
+    {{-- Operational row: the daily work — what is being set up, what is out collecting,
+         and how many responses have arrived. --}}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
+        <x-stat-card :tone="$operations['awaiting_publish'] > 0 ? 'moderate' : 'slate'"
+                     label="Awaiting publication" :value="$operations['awaiting_publish']"
+                     sub="Set up, not yet opened for responses" />
+        <x-stat-card tone="blue" label="Collecting now" :value="$operations['collecting']"
+                     sub="Published and gathering responses" />
+        <x-stat-card tone="strong" label="Responses in" :value="$operations['responses']"
+                     sub="Completed responses across all assessments" />
+    </div>
+
     {{-- Stat cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5"
          x-data="{ loaded: false }" x-init="$nextTick(() => { loaded = true })">

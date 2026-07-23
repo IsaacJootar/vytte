@@ -259,6 +259,101 @@ class AssessmentController extends Controller
         return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks'));
     }
 
+    /**
+     * Publish opens the assessment for responses. Until this is done an assessment is a
+     * draft: it cannot generate respondent links and the public runner will not accept
+     * answers. Publishing is the deliberate act that turns a set-up assessment into a
+     * live data-collection activity.
+     */
+    public function publish(Assessment $assessment, AuditService $audit): RedirectResponse
+    {
+        $this->authorizeWorkspace($assessment);
+
+        if (! $assessment->isDraft()) {
+            return back()->with('info', 'This assessment is already published.');
+        }
+
+        if (! $assessment->snapshot()->exists()) {
+            return back()->with('error', 'This assessment has no governed content and cannot be published.');
+        }
+
+        $assessment->markPublished(auth()->id());
+        $audit->record('assessment.published', $assessment, ['publish_status' => Assessment::PUBLISH_DRAFT], [
+            'publish_status' => Assessment::PUBLISH_PUBLISHED,
+        ]);
+
+        return back()->with('success', 'Assessment published. You can now share it and collect responses.');
+    }
+
+    /**
+     * Close ends the collection window. No new responses are accepted after this; existing
+     * ones are kept for finalisation. Reversible until the assessment is finalised.
+     */
+    public function close(Assessment $assessment, AuditService $audit): RedirectResponse
+    {
+        $this->authorizeWorkspace($assessment);
+
+        if (! $assessment->isPublished() || $assessment->isComplete()) {
+            return back()->with('error', 'Only a live assessment can be closed to responses.');
+        }
+
+        $assessment->markClosed();
+        $audit->record('assessment.closed', $assessment, newValues: ['closed_at' => $assessment->closed_at?->toIso8601String()]);
+
+        return back()->with('success', 'Collection closed. No new responses will be accepted.');
+    }
+
+    public function reopen(Assessment $assessment, AuditService $audit): RedirectResponse
+    {
+        $this->authorizeWorkspace($assessment);
+
+        if (! $assessment->isClosed() || $assessment->isComplete()) {
+            return back()->with('error', 'This assessment is not closed.');
+        }
+
+        $assessment->reopen();
+        $audit->record('assessment.reopened', $assessment, newValues: ['closed_at' => null]);
+
+        return back()->with('success', 'Collection reopened. The assessment is accepting responses again.');
+    }
+
+    /**
+     * Live monitoring of an assessment's responses: how many have come in, how far each has
+     * got, and how many are complete. A read-only view over the response sessions, so an
+     * organisation can watch collection without touching the data.
+     */
+    public function monitor(Assessment $assessment): View
+    {
+        $this->authorizeWorkspace($assessment);
+
+        $assessment->load(['project', 'target', 'snapshot']);
+
+        $sessions = $assessment->publicResponseSessions()
+            ->orderByDesc('last_activity_at')
+            ->get();
+
+        $submitted = $sessions->whereNotNull('submitted_at');
+        $eligible = $submitted->where('eligibility_status', 'ELIGIBLE');
+
+        $minimum = (int) ($assessment->snapshot?->collection_config['minimum_completed_respondents'] ?? 1);
+
+        return view('assessments.monitor', [
+            'assessment' => $assessment,
+            'sessions' => $sessions,
+            'stats' => [
+                'started' => $sessions->count(),
+                'in_progress' => $sessions->whereNull('submitted_at')->count(),
+                'submitted' => $submitted->count(),
+                'eligible' => $eligible->count(),
+                'excluded' => $submitted->where('eligibility_status', 'EXCLUDED')->count(),
+                'minimum' => $minimum,
+                'completion_rate' => $sessions->count() > 0
+                    ? (int) round($submitted->count() / $sessions->count() * 100)
+                    : 0,
+            ],
+        ]);
+    }
+
     private function authorizeWorkspace(Assessment $assessment): void
     {
         $this->authorize('view', $assessment);

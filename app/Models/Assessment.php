@@ -42,6 +42,7 @@ class Assessment extends Model
         'published_by',
         'started_at',
         'completed_at',
+        'closed_at',
         'assessor_name',
     ];
 
@@ -49,6 +50,7 @@ class Assessment extends Model
         'published_at' => 'datetime',
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
+        'closed_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -161,5 +163,46 @@ class Assessment extends Model
     public function isComplete(): bool
     {
         return $this->status === self::STATUS_COMPLETE;
+    }
+
+    /**
+     * Closed to new responses. A closed assessment stops collecting but is not yet scored;
+     * it is the deliberate end of the collection window before finalisation.
+     */
+    public function isClosed(): bool
+    {
+        return $this->closed_at !== null;
+    }
+
+    /**
+     * Open and accepting responses: published, not closed, not yet complete. This is the
+     * one condition the public respondent runner and link generation both check.
+     */
+    public function isCollecting(): bool
+    {
+        return $this->isPublished() && ! $this->isClosed() && ! $this->isComplete();
+    }
+
+    /**
+     * Publish opens the assessment for responses. It is the deliberate moment the setup is
+     * locked and distribution begins; only a draft can be published.
+     */
+    public function markPublished(?string $userId = null): void
+    {
+        $this->update([
+            'publish_status' => self::PUBLISH_PUBLISHED,
+            'published_at' => now(),
+            'published_by' => $userId,
+        ]);
+    }
+
+    public function markClosed(): void
+    {
+        $this->update(['closed_at' => now()]);
+    }
+
+    public function reopen(): void
+    {
+        $this->update(['closed_at' => null]);
     }
 }

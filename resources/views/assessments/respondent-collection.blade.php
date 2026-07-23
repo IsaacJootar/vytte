@@ -19,13 +19,34 @@
                class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800">
                 View final report
             </a>
-        @else
-            <form method="POST" action="{{ route('assessments.respondent-link', $assessment) }}">
+        @elseif ($assessment->isDraft())
+            {{-- Publishing opens the assessment for responses. Links cannot be created until then. --}}
+            <form method="POST" action="{{ route('assessments.publish', $assessment) }}">
                 @csrf
                 <button class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800">
-                    Create respondent link
+                    Publish & open for responses
                 </button>
             </form>
+        @elseif ($assessment->isClosed())
+            <form method="POST" action="{{ route('assessments.reopen', $assessment) }}">
+                @csrf
+                <button class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200">
+                    Reopen collection
+                </button>
+            </form>
+        @else
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('assessments.monitor', $assessment) }}"
+                   class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200">
+                    Monitor responses
+                </a>
+                <form method="POST" action="{{ route('assessments.respondent-link', $assessment) }}">
+                    @csrf
+                    <button class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800">
+                        Create respondent link
+                    </button>
+                </form>
+            </div>
         @endif
     </div>
 

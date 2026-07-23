@@ -85,7 +85,10 @@ class PublicRespondentRunner extends Component
         }
 
         $this->assessmentId = $assessment->assessment_id;
-        $this->assessmentClosed = $assessment->status === Assessment::STATUS_COMPLETE;
+        // A respondent may answer only while collection is open: published, not closed,
+        // not finalised. Closing an assessment therefore stops new answers even on links
+        // already shared.
+        $this->assessmentClosed = ! $assessment->isCollecting();
         if ($this->assessmentClosed) {
             return;
         }

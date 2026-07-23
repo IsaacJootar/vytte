@@ -20,8 +20,10 @@ class RespondentLinkController extends Controller
             return back()->with('error', 'Shareable respondent links are not available on your current plan. Upgrade to share assessments with external respondents.');
         }
 
-        if ($assessment->status !== Assessment::STATUS_IN_PROGRESS) {
-            return back()->with('error', 'Respondent links can only be created for in-progress assessments.');
+        // Distribution is gated on publishing. A draft has not been opened for collection,
+        // and a closed or completed assessment is no longer collecting.
+        if (! $assessment->isCollecting()) {
+            return back()->with('error', 'Publish this assessment before sharing it, and make sure collection is still open.');
         }
 
         $snapshot = $assessment->snapshot()->first();

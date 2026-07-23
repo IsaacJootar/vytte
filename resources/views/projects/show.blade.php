@@ -155,7 +155,15 @@
                                         @endif
                                     </p>
                                     <p class="text-xs text-slate-400 dark:text-slate-500">
-                                        {{ $assessment->status === 'COMPLETE' ? 'Completed' : 'In progress' }}
+                                        @if ($assessment->isComplete())
+                                            Completed
+                                        @elseif ($assessment->isClosed())
+                                            Collection closed
+                                        @elseif ($assessment->isPublished())
+                                            Collecting responses
+                                        @else
+                                            Draft — not yet published
+                                        @endif
                                         @if ($assessment->started_at)
                                             · {{ $assessment->started_at->format('d M Y') }}
                                         @endif
@@ -194,14 +202,24 @@
                                        class="text-xs font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
                                         View →
                                     </a>
-                                @else
-                                    <form method="POST" action="{{ route('assessments.respondent-link', $assessment) }}">
+                                @elseif ($assessment->isDraft())
+                                    {{-- Publishing is the deliberate act that opens the assessment for responses. --}}
+                                    <form method="POST" action="{{ route('assessments.publish', $assessment) }}">
                                         @csrf
                                         <button type="submit"
-                                                class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
-                                            Share link
+                                                class="text-xs font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
+                                            Publish
                                         </button>
                                     </form>
+                                    <a href="{{ route('assessments.run', $assessment) }}"
+                                       class="text-sm font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
+                                        Continue →
+                                    </a>
+                                @else
+                                    <a href="{{ route('assessments.monitor', $assessment) }}"
+                                       class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+                                        Monitor
+                                    </a>
                                     <a href="{{ route('assessments.run', $assessment) }}"
                                        class="text-sm font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
                                         Continue →

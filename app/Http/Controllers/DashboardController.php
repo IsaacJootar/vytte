@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assessment;
 use App\Models\Project;
+use App\Models\PublicResponseSession;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 
@@ -58,6 +59,43 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Operational view of the daily work: what is being set up, what is out collecting,
+        // and how many responses have arrived. These read the same tables as the outcome
+        // figures above, just at a different stage of the lifecycle.
+        $operations = [
+            'awaiting_publish' => Assessment::whereIn('project_id', $workspaceProjectIds)
+                ->where('publish_status', Assessment::PUBLISH_DRAFT)
+                ->where('status', Assessment::STATUS_IN_PROGRESS)
+                ->count(),
+            'collecting' => Assessment::whereIn('project_id', $workspaceProjectIds)
+                ->where('publish_status', Assessment::PUBLISH_PUBLISHED)
+                ->whereNull('closed_at')
+                ->where('status', Assessment::STATUS_IN_PROGRESS)
+                ->count(),
+            'responses' => PublicResponseSession::whereIn(
+                'assessment_id',
+                Assessment::whereIn('project_id', $workspaceProjectIds)->select('assessment_id')
+            )->whereNotNull('submitted_at')->count(),
+        ];
+
+        $assessmentsAwaitingPublish = Assessment::whereIn('project_id', $workspaceProjectIds)
+            ->where('publish_status', Assessment::PUBLISH_DRAFT)
+            ->where('status', Assessment::STATUS_IN_PROGRESS)
+            ->with(['project', 'target'])
+            ->latest('updated_at')
+            ->limit(5)
+            ->get();
+
+        $assessmentsCollecting = Assessment::whereIn('project_id', $workspaceProjectIds)
+            ->where('publish_status', Assessment::PUBLISH_PUBLISHED)
+            ->whereNull('closed_at')
+            ->where('status', Assessment::STATUS_IN_PROGRESS)
+            ->with(['project', 'target'])
+            ->withCount(['publicResponseSessions as submitted_count' => fn ($q) => $q->whereNotNull('submitted_at')])
+            ->latest('published_at')
+            ->limit(5)
+            ->get();
+
         return view('dashboard', compact(
             'activeProjectCount',
             'totalAssessments',
@@ -65,6 +103,9 @@ class DashboardController extends Controller
             'distribution',
             'recentProjects',
             'recentAssessments',
+            'operations',
+            'assessmentsAwaitingPublish',
+            'assessmentsCollecting',
         ));
     }
 }

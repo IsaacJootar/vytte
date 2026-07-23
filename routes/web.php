@@ -76,6 +76,10 @@ Route::middleware('auth')->group(function () {
     Route::get('reports', [ReportsController::class, 'index'])->name('reports.index');
     Route::get('projects/{project}/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('projects/{project}/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
+    Route::post('assessments/{assessment}/publish', [AssessmentController::class, 'publish'])->name('assessments.publish');
+    Route::post('assessments/{assessment}/close', [AssessmentController::class, 'close'])->name('assessments.close');
+    Route::post('assessments/{assessment}/reopen', [AssessmentController::class, 'reopen'])->name('assessments.reopen');
+    Route::get('assessments/{assessment}/monitor', [AssessmentController::class, 'monitor'])->name('assessments.monitor');
     Route::get('assessments/{assessment}/run', [AssessmentController::class, 'run'])->name('assessments.run');
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');

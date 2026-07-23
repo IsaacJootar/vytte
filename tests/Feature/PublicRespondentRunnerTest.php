@@ -61,7 +61,11 @@ class PublicRespondentRunnerTest extends TestCase
         $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
         $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
 
-        return $this->replaceSnapshot($assessment, [
+        // Collection is only open on a published assessment, so a respondent fixture must
+        // publish before it can accept responses.
+        $assessment->markPublished($user->user_id);
+
+        return $this->replaceSnapshot($assessment->fresh(), [
             'collection_config' => [
                 'allows_multi_respondent' => true,
                 'minimum_completed_respondents' => 1,
