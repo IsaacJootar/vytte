@@ -228,4 +228,30 @@ class DashboardTest extends TestCase
         $this->assertTrue($response->viewData('recentProjects')->isEmpty());
         $this->assertTrue($response->viewData('recentAssessments')->isEmpty());
     }
+
+    public function test_empty_workspace_shows_the_activation_checklist(): void
+    {
+        [$user] = $this->userWithWorkspace();
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertSee('Get started in 3 steps')
+            ->assertSee('Create a project'); // the first step's call-to-action
+    }
+
+    public function test_dashboard_previews_the_latest_report_intelligence(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $this->createScoredAssessment($workspace, $user, bestAnswers: false); // weak → has findings
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk()
+            ->assertSee('Your latest report')
+            ->assertSee('Open full report', false)
+            ->assertDontSee('Get started in 3 steps'); // checklist gone once a report exists
+
+        $this->assertNotNull($response->viewData('latestReport'));
+    }
 }

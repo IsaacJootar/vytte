@@ -42,6 +42,80 @@
         </a>
     </div>
 
+    {{-- First-run activation: the three steps, shown until the first report exists. Always a
+         clear next step, never a wall of zeros. --}}
+    @unless ($activation['report'])
+        @php
+            $steps = [
+                ['done' => $activation['project'], 'title' => 'Create your first project', 'desc' => 'A project holds one assessment target — a clinic, community, hospital, or programme.', 'cta' => route('projects.create'), 'label' => 'Create a project'],
+                ['done' => $activation['assessment'], 'title' => 'Run an assessment', 'desc' => 'Open your project and answer the questions. It only takes a few minutes.', 'cta' => route('projects.index'), 'label' => 'Start an assessment'],
+                ['done' => $activation['report'], 'title' => 'See your report', 'desc' => 'Scores, findings, risks, and what to do — generated the moment you submit.', 'cta' => route('reports.index'), 'label' => 'Open reports'],
+            ];
+            $currentIndex = collect($steps)->search(fn ($s) => ! $s['done']);
+        @endphp
+        <div class="mb-5 bg-white dark:bg-slate-800 rounded-2xl border border-vytte-200 dark:border-vytte-800 p-5">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Get started in 3 steps</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Your first health check is a few minutes away.</p>
+            <ol class="mt-4 flex flex-col gap-3">
+                @foreach ($steps as $i => $step)
+                    <li class="flex items-start gap-3">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold
+                            {{ $step['done'] ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : ($i === $currentIndex ? 'bg-vytte-600 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500') }}">
+                            @if ($step['done']) ✓ @else {{ $i + 1 }} @endif
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold {{ $step['done'] ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white' }}">{{ $step['title'] }}</p>
+                            @unless ($step['done'])
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $step['desc'] }}</p>
+                            @endunless
+                        </div>
+                        @if ($i === $currentIndex)
+                            <a href="{{ $step['cta'] }}" class="flex-shrink-0 inline-flex items-center px-3 py-1.5 bg-vytte-700 text-white text-xs font-semibold rounded-lg hover:bg-vytte-800 transition-colors">
+                                {{ $step['label'] }}
+                            </a>
+                        @endif
+                    </li>
+                @endforeach
+            </ol>
+        </div>
+    @endunless
+
+    {{-- Latest report: the intelligence, previewed on the front door. --}}
+    @if ($latestReport)
+        @php $lr = $latestReport; $lrScore = $lr['score'] !== null ? (float) $lr['score'] : null; @endphp
+        <div class="mb-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Your latest report</h2>
+                <a href="{{ route('assessments.results', $lr['assessment']) }}" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Open full report →</a>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-shrink-0 flex sm:flex-col items-center gap-2 sm:w-28">
+                    <span class="text-3xl font-black tabular-nums" style="color: {{ $lrScore === null ? '#94A3B8' : ($lrScore >= 70 ? '#15803D' : ($lrScore >= 45 ? '#B45309' : '#B91C1C')) }}">{{ $lrScore !== null ? number_format($lrScore, 1) : '—' }}</span>
+                    <span class="text-[11px] text-slate-500 dark:text-slate-400 text-center">{{ $lr['title'] }}</span>
+                </div>
+                <div class="flex-1 min-w-0 flex flex-col gap-2 border-l border-slate-100 dark:border-slate-700 sm:pl-4">
+                    @if ($lr['top_finding'])
+                        <div><span class="text-[10px] font-bold uppercase tracking-wide text-red-600 dark:text-red-400">Biggest issue</span>
+                            <p class="text-sm text-slate-700 dark:text-slate-300">{{ $lr['top_finding']['statement'] }}</p></div>
+                    @endif
+                    @if ($lr['top_risk'])
+                        <div><span class="text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">Top risk</span>
+                            <p class="text-sm text-slate-700 dark:text-slate-300">{{ $lr['top_risk']['statement'] }}</p></div>
+                    @endif
+                    @if ($lr['top_action'])
+                        <div><span class="text-[10px] font-bold uppercase tracking-wide text-vytte-600 dark:text-vytte-400">Do next</span>
+                            <p class="text-sm text-slate-700 dark:text-slate-300">{{ $lr['top_action']['statement'] }}</p></div>
+                    @endif
+                    @if ($openActions > 0)
+                        <a href="{{ route('actions.index', $lr['assessment']->project_id) }}" class="mt-1 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:underline">
+                            {{ $openActions }} open action{{ $openActions !== 1 ? 's' : '' }}@if ($overdueActions > 0) · <span class="text-red-600 dark:text-red-400">{{ $overdueActions }} overdue</span>@endif
+                        </a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Operational row: the daily work — what is being set up, what is out collecting,
          and how many responses have arrived. --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">

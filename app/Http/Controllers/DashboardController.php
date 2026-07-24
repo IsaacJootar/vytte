@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Models\AssessmentAction;
 use App\Models\Project;
 use App\Models\PublicResponseSession;
+use App\Services\Reporting\ReportComposer;
+use App\Services\ReportSnapshotService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 
@@ -96,6 +99,27 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // First-run activation: the three steps a new workspace works through. The dashboard
+        // leads with this checklist until the first report exists, so a new user always has a
+        // clear next step rather than a wall of zeros.
+        $anyProject = Project::exists();
+        $anyAssessment = Assessment::whereIn('project_id', $workspaceProjectIds)->exists();
+        $activation = [
+            'project' => $anyProject,
+            'assessment' => $anyAssessment,
+            'report' => $totalAssessments > 0,
+        ];
+
+        // Action attention across the workspace (AssessmentAction is workspace-scoped).
+        $openActions = AssessmentAction::whereIn('status', [AssessmentAction::STATUS_OPEN, AssessmentAction::STATUS_IN_PROGRESS])->count();
+        $overdueActions = AssessmentAction::whereNotNull('due_date')
+            ->whereDate('due_date', '<', today())
+            ->whereNotIn('status', [AssessmentAction::STATUS_DONE, AssessmentAction::STATUS_VERIFIED])
+            ->count();
+
+        // A preview of the latest report's intelligence, so the front door shows value.
+        $latestReport = $this->latestReportPreview($recentAssessments->first());
+
         return view('dashboard', compact(
             'activeProjectCount',
             'totalAssessments',
@@ -106,6 +130,38 @@ class DashboardController extends Controller
             'operations',
             'assessmentsAwaitingPublish',
             'assessmentsCollecting',
+            'activation',
+            'openActions',
+            'overdueActions',
+            'latestReport',
         ));
+    }
+
+    /**
+     * Top finding, biggest risk, and first recommendation from the most recent completed
+     * assessment — the intelligence, previewed on the home page.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function latestReportPreview(?Assessment $latest): ?array
+    {
+        if ($latest === null) {
+            return null;
+        }
+
+        $payload = app(ReportSnapshotService::class)->payloadFor($latest);
+        $intelligence = $payload['intelligence'] ?? app(ReportComposer::class)->intelligence($payload);
+        $findings = collect($intelligence['findings'] ?? []);
+
+        return [
+            'assessment' => $latest,
+            'title' => $payload['title'] ?? 'Assessment report',
+            'score' => $payload['score']['overall_score'] ?? null,
+            'calibration' => $payload['score']['calibration_status'] ?? null,
+            'top_finding' => $findings->firstWhere('category', 'CRITICAL_FINDING')
+                ?? $findings->firstWhere('category', 'WEAKNESS'),
+            'top_risk' => collect($intelligence['risks'] ?? [])->first(),
+            'top_action' => collect($intelligence['recommendations'] ?? [])->first(),
+        ];
     }
 }

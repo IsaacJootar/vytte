@@ -51,4 +51,10 @@ committed, docs in lockstep, then work stops for approval.
   sentence · one primary CTA · optional greyed preview). Applied to Reports, Benchmark,
   Projects, Assessments, Actions, and project Progress — every empty page now routes forward
   instead of dead-ending. Copy uses "Assessment Target".
-- A2–A5: pending.
+- **A2 — Adaptive Dashboard: ✅ built.** The home now leads a new workspace through a 3-step
+  activation checklist (Create project → Run assessment → See report), shown until the first
+  report exists; once there is data it previews the latest report's intelligence (biggest
+  issue, top risk, do-next) plus open/overdue action counts. Stat cards stay present (zeros
+  when empty). `DashboardController` computes activation state, action attention, and the
+  latest-report preview via the reporting engine.
+- A3–A5: pending.
