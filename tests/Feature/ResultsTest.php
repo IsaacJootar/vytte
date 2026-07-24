@@ -212,6 +212,19 @@ class ResultsTest extends TestCase
             ->assertSee('Low-Performing Areas'); // a governed insight category surfaced from weak scores
     }
 
+    public function test_results_page_renders_visualisations(): void
+    {
+
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupCompleteAssessment($workspace, $user, answerMode: 'worst');
+
+        $this->actingAs($user)
+            ->get(route('assessments.results', $assessment))
+            ->assertOk()
+            ->assertSee('Question drill-down')      // per-domain question breakdown
+            ->assertSee('Impact →', false);         // the risk-matrix visualisation
+    }
+
     public function test_results_page_shows_lens_selector_and_methodology_note(): void
     {
 

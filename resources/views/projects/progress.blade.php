@@ -52,6 +52,16 @@
                             {{ $trend['since_first_delta'] >= 0 ? 'Up' : 'Down' }} {{ number_format(abs($trend['since_first_delta']), 1) }} since the first run.
                         @endif
                     </p>
+                    @php
+                        $trendPoints = $assessments->filter(fn ($a) => $a->score?->overall_score !== null)
+                            ->map(fn ($a) => ['label' => $a->completed_at?->format('d M') ?? '', 'value' => (float) $a->score->overall_score])
+                            ->values()->all();
+                    @endphp
+                    @if (count($trendPoints) >= 2)
+                        <div class="mt-3">
+                            <x-viz.trend-line :points="$trendPoints" />
+                        </div>
+                    @endif
                     @if (! empty($trend['domain_movements']))
                         <div class="mt-3 flex flex-col gap-1.5">
                             @foreach ($trend['domain_movements'] as $dm)

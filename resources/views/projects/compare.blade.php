@@ -70,6 +70,23 @@
         @endforeach
     </div>
 
+    {{-- Domain profile overlay: A (dashed) vs B (solid) --}}
+    @php
+        $radarA = collect($allDomains)->filter(fn ($d) => isset($domainsA[$d->domain_id]))
+            ->map(fn ($d) => ['label' => $d->domain_code, 'value' => (float) $domainsA[$d->domain_id]])->values()->all();
+        $radarB = collect($allDomains)->filter(fn ($d) => isset($domainsB[$d->domain_id]))
+            ->map(fn ($d) => ['label' => $d->domain_code, 'value' => (float) $domainsB[$d->domain_id]])->values()->all();
+    @endphp
+    @if (count($radarB) >= 3)
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5 flex flex-col items-center">
+            <div class="self-start flex items-center gap-3 mb-2">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Domain profile</h2>
+                <span class="text-[11px] text-slate-400 dark:text-slate-500">B solid · A dashed</span>
+            </div>
+            <x-viz.radar :series="$radarB" :compare="$radarA" />
+        </div>
+    @endif
+
     {{-- Domain delta table --}}
     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">

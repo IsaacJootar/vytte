@@ -151,7 +151,8 @@ class TrendTest extends TestCase
             ->get(route('projects.progress', $this->project))
             ->assertOk()
             ->assertSee('Trend')
-            ->assertSee('Action follow-through');
+            ->assertSee('Action follow-through')
+            ->assertSee('Score over time', false); // the trend-line SVG aria-label
     }
 
     public function test_issue_matching_classifies_resolved_and_new(): void

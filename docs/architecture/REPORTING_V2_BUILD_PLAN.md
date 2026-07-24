@@ -50,7 +50,14 @@ foundation this builds on).
   No Change); `BenchmarkService` in-tenant facility league table + workspace domain averages.
   Progress page gains typing, a "since last assessment" panel, and targets; new Benchmark page.
   Cross-tenant anonymous benchmarking remains the deferred exception.
-- P5–P7: pending.
+- **P5 — Visualisation: ✅ built.** Self-contained SVG/CSS Blade components (no external
+  libraries), theme-aware: `x-viz.radar` (domain profile, with optional A-vs-B overlay),
+  `x-viz.trend-line` (score over time), `x-viz.risk-matrix` (likelihood × impact grid). Report
+  payload gains a per-domain `question_breakdown` powering a **question drill-down** on the
+  results page. Radar + risk matrix + drill-down on results; trend line on the Progress page
+  (the domain × run heat-map table already existed); radar overlay on the Compare page.
+  Geographic maps remain deferred (need per-facility coordinates + a mapping engine).
+- P6–P7: pending.
 
 ## Phases
 
@@ -60,7 +67,7 @@ foundation this builds on).
 | **P2** ✅ | Insights engine | Real classification into the 21 seeded insight categories: strengths, weaknesses, priority areas, quick wins, pain points, systemic issues, domain risks, good practice | P1 |
 | **P3** ✅ | Lens engine + recommendations | 7 reinterpreting lenses (wired to seeded analysis lenses); contextual recommendations + a curated intervention library | P1, P2 |
 | **P4** ✅ | Trend & progress depth | Assessment typing (baseline/midline/endline/follow-up); resolved/persistent/new/regressed matching; target/goal tracking; trend-only insights; in-tenant benchmarking | P1 |
-| **P5** | Visualisation | Radar, heat map, trend line, risk matrix, comparison tables, question drill-down (self-contained SVG/CSS) | P1–P4 |
+| **P5** ✅ | Visualisation | Radar, heat map, trend line, risk matrix, comparison tables, question drill-down (self-contained SVG/CSS) | P1–P4 |
 | **P6** | AI products | Executive briefing, diagnostic summary, root-cause narrative, donor/clinical/operational summaries (OpenAI, boundary-enforced) | P1–P3 |
 | **P7** | Delivery | Email report, scheduled reports | P5 |
 

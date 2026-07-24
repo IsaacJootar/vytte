@@ -221,6 +221,18 @@
     @endif
 
     {{-- Domain breakdown --}}
+    {{-- Domain profile radar --}}
+    @php
+        $radarSeries = $domainScores->filter(fn ($r) => $r->score !== null)
+            ->map(fn ($r) => ['label' => $r->domain_code, 'value' => (float) $r->score])->values()->all();
+    @endphp
+    @if (count($radarSeries) >= 3)
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid flex flex-col items-center">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white self-start mb-2">Domain profile</h2>
+            <x-viz.radar :series="$radarSeries" />
+        </div>
+    @endif
+
     @if ($domainScores->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden print-break-avoid">
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
@@ -255,6 +267,33 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+        </div>
+    @endif
+
+    {{-- Question drill-down: the individual questions behind each domain score. --}}
+    @php $drilldown = $domainScores->filter(fn ($r) => ! empty($r->question_breakdown ?? null)); @endphp
+    @if ($drilldown->isNotEmpty())
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Question drill-down</h2>
+            <div class="flex flex-col gap-2">
+                @foreach ($drilldown as $row)
+                    <details class="rounded-xl border border-slate-200 dark:border-slate-600">
+                        <summary class="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer">
+                            <span class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ $row->domain_name }}</span>
+                            <span class="text-xs text-slate-400 dark:text-slate-500">{{ count($row->question_breakdown) }} questions</span>
+                        </summary>
+                        <ul class="px-3 pb-3 pt-1 divide-y divide-slate-100 dark:divide-slate-700">
+                            @foreach ($row->question_breakdown as $q)
+                                @php $qc = $q['score'] >= 70 ? '#15803D' : ($q['score'] >= 45 ? '#B45309' : '#B91C1C'); @endphp
+                                <li class="flex items-start gap-3 py-1.5">
+                                    <span class="text-xs font-bold tabular-nums flex-shrink-0 w-8 text-right" style="color: {{ $qc }}">{{ number_format($q['score'], 0) }}</span>
+                                    <span class="text-xs text-slate-600 dark:text-slate-300">{{ $q['question_text'] }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </details>
+                @endforeach
             </div>
         </div>
     @endif
@@ -369,6 +408,11 @@
     @if ($risks->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Risks &amp; what happens if nothing changes</h2>
+            @if ($risks->count() >= 2)
+                <div class="mb-4 overflow-x-auto">
+                    <x-viz.risk-matrix :risks="$risks->all()" />
+                </div>
+            @endif
             <ul class="flex flex-col gap-3">
                 @foreach ($risks as $risk)
                     @php

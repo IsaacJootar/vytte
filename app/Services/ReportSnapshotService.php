@@ -224,17 +224,20 @@ class ReportSnapshotService
             ->all();
 
         return collect($domains)->map(function ($domain) use ($questionText) {
-            $failed = collect($domain['contributing_question_trace'] ?? [])
-                ->filter(fn ($item) => isset($item['score']) && $item['score'] !== null && (float) $item['score'] < self::WEAK_INDICATOR)
+            // Every contributing question, worst first — the drill-down behind the domain score.
+            $breakdown = collect($domain['contributing_question_trace'] ?? [])
+                ->filter(fn ($item) => isset($item['score']) && $item['score'] !== null)
                 ->map(fn ($item) => [
                     'question_id' => $item['question_id'] ?? null,
                     'question_text' => $questionText[(string) ($item['question_id'] ?? '')] ?? 'Question',
                     'score' => (float) $item['score'],
                 ])
                 ->sortBy('score')
-                ->values()
-                ->all();
+                ->values();
 
+            $domain['question_breakdown'] = $breakdown->all();
+            // The subset below the weakness line — the failed indicators diagnostics reads.
+            $failed = $breakdown->filter(fn ($q) => $q['score'] < self::WEAK_INDICATOR)->values()->all();
             $domain['failed_indicators'] = $failed;
             $domain['failed_indicator_count'] = count($failed);
 
