@@ -30,11 +30,16 @@ class TestLoginSeeder extends Seeder
     public function run(): void
     {
         $this->platformAdmin();
-        $this->professionalOwner();
+        // One workspace owner per tier, so each plan can be tested end to end.
+        $this->tierOwner('starter@vytte.test', 'Test Starter', 'STARTER', 'test-starter-workspace');
+        $this->tierOwner('pro@vytte.test', 'Test Professional', 'PROFESSIONAL', 'test-professional-workspace');
+        $this->tierOwner('org@vytte.test', 'Test Organization', 'ORGANIZATION', 'test-organization-workspace');
 
-        $this->command?->info('Test logins ready. Password for both: '.self::PASSWORD);
+        $this->command?->info('Test logins ready. Password for all: '.self::PASSWORD);
         $this->command?->info('  Platform admin:  platform@vytte.test  ->  /admin');
+        $this->command?->info('  Starter:         starter@vytte.test   ->  /dashboard');
         $this->command?->info('  Professional:    pro@vytte.test       ->  /dashboard');
+        $this->command?->info('  Organization:    org@vytte.test       ->  /dashboard');
     }
 
     private function platformAdmin(): void
@@ -51,12 +56,12 @@ class TestLoginSeeder extends Seeder
         );
     }
 
-    private function professionalOwner(): void
+    private function tierOwner(string $email, string $name, string $plan, string $slug): void
     {
         $user = User::updateOrCreate(
-            ['email' => 'pro@vytte.test'],
+            ['email' => $email],
             [
-                'name' => 'Test Professional',
+                'name' => $name,
                 'password' => Hash::make(self::PASSWORD),
                 'account_type' => 'CUSTOMER',
                 'email_verified_at' => now(),
@@ -64,15 +69,17 @@ class TestLoginSeeder extends Seeder
         );
 
         $workspace = Workspace::firstOrCreate(
-            ['slug' => 'test-professional-workspace'],
+            ['slug' => $slug],
             [
-                'name' => 'Test Professional Workspace',
+                'name' => $name.' Workspace',
                 'workspace_type' => 'ORGANISATION',
-                'plan' => 'PROFESSIONAL',
+                'plan' => $plan,
                 'status' => 'ACTIVE',
                 'settings' => [],
             ]
         );
+        // Keep the plan aligned even if the workspace already existed.
+        $workspace->update(['plan' => $plan]);
 
         WorkspaceMember::firstOrCreate(
             ['workspace_id' => $workspace->workspace_id, 'user_id' => $user->user_id],
