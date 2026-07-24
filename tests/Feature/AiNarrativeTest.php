@@ -91,12 +91,12 @@ class AiNarrativeTest extends TestCase
         $assessment = $this->completedAssessment();
 
         $this->actingAs($this->user)
-            ->post(route('assessments.narrative', $assessment), ['lens' => 'EXECUTIVE'])
+            ->post(route('assessments.narrative', $assessment), ['product' => 'EXECUTIVE_BRIEFING'])
             ->assertRedirect();
 
         $narrative = AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)->first();
         $this->assertNotNull($narrative);
-        $this->assertSame('EXECUTIVE', $narrative->lens);
+        $this->assertSame('EXECUTIVE_BRIEFING', $narrative->product);
         $this->assertSame('gpt-4o', $narrative->model);
         $this->assertStringContainsString('governance', $narrative->body);
     }
@@ -111,7 +111,7 @@ class AiNarrativeTest extends TestCase
         $this->configureAi('test-key');
         $assessment = $this->completedAssessment();
 
-        $this->actingAs($this->user)->post(route('assessments.narrative', $assessment), ['lens' => 'EXECUTIVE']);
+        $this->actingAs($this->user)->post(route('assessments.narrative', $assessment), ['product' => 'EXECUTIVE_BRIEFING']);
 
         Http::assertSent(function ($request) {
             $body = $request->data();
@@ -126,13 +126,25 @@ class AiNarrativeTest extends TestCase
         });
     }
 
+    public function test_products_send_different_instructions(): void
+    {
+        Http::fake(['api.openai.com/*' => Http::response(['choices' => [['message' => ['content' => 'x']]]])]);
+        $this->configureAi('test-key');
+        $assessment = $this->completedAssessment();
+
+        $this->actingAs($this->user)->post(route('assessments.narrative', $assessment), ['product' => 'DONOR_SUMMARY']);
+
+        // The donor product carries its own audience instruction — proof the products differ.
+        Http::assertSent(fn ($request) => str_contains($request->data()['messages'][0]['content'], 'donor or funder'));
+    }
+
     public function test_generation_degrades_gracefully_when_not_configured(): void
     {
         $this->configureAi(null);
         $assessment = $this->completedAssessment();
 
         $this->actingAs($this->user)
-            ->post(route('assessments.narrative', $assessment), ['lens' => 'EXECUTIVE'])
+            ->post(route('assessments.narrative', $assessment), ['product' => 'EXECUTIVE_BRIEFING'])
             ->assertRedirect();
 
         $this->assertSame(0, AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)->count());
@@ -145,7 +157,7 @@ class AiNarrativeTest extends TestCase
         $assessment = $this->completedAssessment();
 
         $this->actingAs($this->user)
-            ->post(route('assessments.narrative', $assessment), ['lens' => 'EXECUTIVE'])
+            ->post(route('assessments.narrative', $assessment), ['product' => 'EXECUTIVE_BRIEFING'])
             ->assertRedirect();
 
         $this->assertSame(0, AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)->count());
@@ -156,7 +168,7 @@ class AiNarrativeTest extends TestCase
             ->assertOk();
     }
 
-    public function test_results_page_offers_generation_when_configured(): void
+    public function test_results_page_offers_the_products_when_configured(): void
     {
         $this->configureAi('test-key');
         $assessment = $this->completedAssessment();
@@ -164,10 +176,12 @@ class AiNarrativeTest extends TestCase
         $this->actingAs($this->user)
             ->get(route('assessments.results', $assessment))
             ->assertOk()
-            ->assertSee('Generate AI summary');
+            ->assertSee('AI summaries')
+            ->assertSee('Executive briefing')
+            ->assertSee('Donor summary');
     }
 
-    public function test_regeneration_replaces_the_existing_narrative_for_a_lens(): void
+    public function test_regeneration_replaces_the_existing_product(): void
     {
         Http::fake(['api.openai.com/*' => Http::sequence()
             ->push(['choices' => [['message' => ['role' => 'assistant', 'content' => 'First version.']]]])
@@ -176,10 +190,10 @@ class AiNarrativeTest extends TestCase
         $this->configureAi('test-key');
         $assessment = $this->completedAssessment();
 
-        $this->actingAs($this->user)->post(route('assessments.narrative', $assessment), ['lens' => 'EXECUTIVE']);
-        $this->actingAs($this->user)->post(route('assessments.narrative', $assessment), ['lens' => 'EXECUTIVE']);
+        $this->actingAs($this->user)->post(route('assessments.narrative', $assessment), ['product' => 'EXECUTIVE_BRIEFING']);
+        $this->actingAs($this->user)->post(route('assessments.narrative', $assessment), ['product' => 'EXECUTIVE_BRIEFING']);
 
-        $narratives = AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)->where('lens', 'EXECUTIVE')->get();
+        $narratives = AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)->where('product', 'EXECUTIVE_BRIEFING')->get();
         $this->assertCount(1, $narratives);
         $this->assertSame('Second version.', $narratives->first()->body);
     }

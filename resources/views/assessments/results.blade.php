@@ -516,45 +516,44 @@
         </div>
     @endif
 
-    {{-- AI summary — a plain-language retelling of the findings above. Optional; the report
-         does not depend on it, and it never adds a fact the engine did not find. --}}
-    @if ($narrative || $aiAvailable)
+    {{-- AI products — purpose-built summaries over the findings above. Optional; the report
+         does not depend on them, and none adds a fact the engine did not find. --}}
+    @if ($aiAvailable || $narratives->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
-            <div class="flex items-center justify-between gap-3 mb-2">
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4 text-vytte-600 dark:text-vytte-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path d="M10 2a1 1 0 01.94.66l1.3 3.5 3.5 1.3a1 1 0 010 1.88l-3.5 1.3-1.3 3.5a1 1 0 01-1.88 0l-1.3-3.5-3.5-1.3a1 1 0 010-1.88l3.5-1.3 1.3-3.5A1 1 0 0110 2z"/>
-                    </svg>
-                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">AI summary</h2>
-                    <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">{{ $lensView['lens_name'] }}</span>
-                </div>
+            <div class="flex items-center gap-2 mb-1">
+                <svg class="w-4 h-4 text-vytte-600 dark:text-vytte-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path d="M10 2a1 1 0 01.94.66l1.3 3.5 3.5 1.3a1 1 0 010 1.88l-3.5 1.3-1.3 3.5a1 1 0 01-1.88 0l-1.3-3.5-3.5-1.3a1 1 0 010-1.88l3.5-1.3 1.3-3.5A1 1 0 0110 2z"/>
+                </svg>
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">AI summaries</h2>
             </div>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Purpose-built retellings of the findings above — a summary, never a new assessment.</p>
 
-            @if ($narrative)
-                <div class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{{ $narrative->body }}</div>
-                <p class="mt-3 text-[11px] text-slate-400 dark:text-slate-500">
-                    Written by {{ $narrative->model }} from this report's findings — a summary, not a new assessment.
-                </p>
-                @if ($aiAvailable)
-                    <form method="POST" action="{{ route('assessments.narrative', $assessment) }}" class="no-print mt-2">
-                        @csrf
-                        <input type="hidden" name="lens" value="{{ $lensView['lens'] }}">
-                        <button type="submit" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Regenerate</button>
-                    </form>
-                @endif
-            @else
-                <p class="text-sm text-slate-500 dark:text-slate-400">
-                    Turn the findings above into a short, plain-language summary for this lens.
-                </p>
-                <form method="POST" action="{{ route('assessments.narrative', $assessment) }}" class="no-print mt-3">
-                    @csrf
-                    <input type="hidden" name="lens" value="{{ $lensView['lens'] }}">
-                    <button type="submit"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-vytte-600 rounded-lg hover:bg-vytte-700 transition-colors">
-                        Generate AI summary
-                    </button>
-                </form>
-            @endif
+            <div class="flex flex-col gap-3">
+                @foreach ($aiProducts as $key => $meta)
+                    @php $existing = $narratives->get($key); @endphp
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ $meta['name'] }}</p>
+                                <p class="text-[11px] text-slate-400 dark:text-slate-500">{{ $meta['blurb'] }}</p>
+                            </div>
+                            @if ($aiAvailable)
+                                <form method="POST" action="{{ route('assessments.narrative', $assessment) }}" class="no-print flex-shrink-0">
+                                    @csrf
+                                    <input type="hidden" name="product" value="{{ $key }}">
+                                    <button type="submit" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">
+                                        {{ $existing ? 'Regenerate' : 'Generate' }}
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                        @if ($existing)
+                            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{{ $existing->body }}</div>
+                            <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">Written by {{ $existing->model }}.</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
         </div>
     @endif
 

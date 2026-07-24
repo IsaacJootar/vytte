@@ -13,6 +13,7 @@ use App\Models\Response;
 use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
 use App\Services\Ai\AiNarrativeService;
+use App\Services\Ai\AiProductCatalog;
 use App\Services\AssessmentCreationService;
 use App\Services\AuditService;
 use App\Services\PlanService;
@@ -234,12 +235,12 @@ class AssessmentController extends Controller
         $lensView = $composer->throughLens($intelligence, is_string($lens) ? $lens : LensCatalog::DEFAULT);
         $lensOptions = ReportComposer::lenses();
 
-        // Optional AI narrative for the current lens — present only if generated, and only
-        // offered if the integration is configured. The report never depends on it.
+        // Optional AI products — offered only if the integration is configured; any already
+        // generated are shown. The report never depends on them.
         $aiAvailable = app(AiNarrativeService::class)->isAvailable();
-        $narrative = AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)
-            ->where('lens', $lensView['lens'])
-            ->first();
+        $aiProducts = AiProductCatalog::options();
+        $narratives = AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)
+            ->get()->keyBy('product');
 
         if ($assessment->score) {
             $assessment->score->overall_score = $report['score']['overall_score'];
@@ -277,32 +278,35 @@ class AssessmentController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions', 'aiAvailable', 'narrative'));
+        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions', 'aiAvailable', 'aiProducts', 'narratives'));
     }
 
     /**
-     * Generate (or regenerate) the AI narrative for the current lens.
+     * Generate (or regenerate) one AI product for an assessment.
      *
-     * The narrative is a retelling of the already-frozen intelligence; it adds no new facts.
-     * A failure — no key, API down — degrades to a plain message and never breaks the report.
+     * A product is a retelling of the already-frozen intelligence for a particular audience;
+     * it adds no new facts. A failure — no key, API down — degrades to a plain message and
+     * never breaks the report.
      */
     public function generateNarrative(Request $request, Assessment $assessment, ReportSnapshotService $reports, AiNarrativeService $narrator): RedirectResponse
     {
         $this->authorize('update', $assessment);
 
-        $lens = $request->input('lens', 'EXECUTIVE');
-        $lens = is_string($lens) && array_key_exists($lens, ReportComposer::lenses()) ? $lens : 'EXECUTIVE';
+        $product = $request->input('product', 'EXECUTIVE_BRIEFING');
+        if (! is_string($product) || ! AiProductCatalog::exists($product)) {
+            $product = 'EXECUTIVE_BRIEFING';
+        }
 
         if ($assessment->status !== Assessment::STATUS_COMPLETE) {
             return back()->with('error', 'Complete the assessment before generating a summary.');
         }
 
         if (! $narrator->isAvailable()) {
-            return back()->with('error', 'The AI summary is not available yet. It needs the OpenAI API key to be configured.');
+            return back()->with('error', 'AI summaries are not available yet. They need the OpenAI API key to be configured.');
         }
 
         try {
-            $result = $narrator->narrate($reports->payloadFor($assessment), $lens);
+            $result = $narrator->generate($reports->payloadFor($assessment), $product);
         } catch (\Throwable $e) {
             report($e);
 
@@ -310,7 +314,7 @@ class AssessmentController extends Controller
         }
 
         AssessmentAiNarrative::updateOrCreate(
-            ['assessment_id' => $assessment->assessment_id, 'lens' => $result['lens']],
+            ['assessment_id' => $assessment->assessment_id, 'product' => $result['product']],
             [
                 'model' => $result['model'],
                 'source_hash' => $result['source_hash'],
@@ -321,12 +325,11 @@ class AssessmentController extends Controller
         );
 
         app(AuditService::class)->record('assessment.ai_narrative.generated', $assessment, newValues: [
-            'lens' => $result['lens'],
+            'product' => $result['product'],
             'model' => $result['model'],
         ]);
 
-        return back(fallback: route('assessments.results', $assessment).'?lens='.$result['lens'])
-            ->with('success', 'AI summary ready.');
+        return back()->with('success', AiProductCatalog::get($result['product'])['name'].' ready.');
     }
 
     /**

@@ -57,7 +57,15 @@ foundation this builds on).
   results page. Radar + risk matrix + drill-down on results; trend line on the Progress page
   (the domain × run heat-map table already existed); radar overlay on the Compare page.
   Geographic maps remain deferred (need per-facility coordinates + a mapping engine).
-- P6–P7: pending.
+- **P6 — AI products: ✅ built.** The single lens-keyed narrative becomes six purpose-built
+  products (`AiProductCatalog`): Executive briefing, Diagnostic summary, Root-cause analysis,
+  Donor / Clinical / Operational summaries. Each is a different audience and a different slice of
+  the frozen intelligence (the clinical product sees only SAFE/SERV; the donor product sees
+  strengths and strategic priorities), but all obey the same hard rule — never invent, cite the
+  structured findings. Provider is OpenAI behind `AiChatClient`. `assessment_ai_narratives`
+  pivoted from `lens` to `product`; results page offers each product with generate/regenerate.
+  Risk/Improvement forecasts stay deferred (predictive, need history).
+- P7: pending.
 
 ## Phases
 
@@ -68,7 +76,7 @@ foundation this builds on).
 | **P3** ✅ | Lens engine + recommendations | 7 reinterpreting lenses (wired to seeded analysis lenses); contextual recommendations + a curated intervention library | P1, P2 |
 | **P4** ✅ | Trend & progress depth | Assessment typing (baseline/midline/endline/follow-up); resolved/persistent/new/regressed matching; target/goal tracking; trend-only insights; in-tenant benchmarking | P1 |
 | **P5** ✅ | Visualisation | Radar, heat map, trend line, risk matrix, comparison tables, question drill-down (self-contained SVG/CSS) | P1–P4 |
-| **P6** | AI products | Executive briefing, diagnostic summary, root-cause narrative, donor/clinical/operational summaries (OpenAI, boundary-enforced) | P1–P3 |
+| **P6** ✅ | AI products | Executive briefing, diagnostic summary, root-cause narrative, donor/clinical/operational summaries (OpenAI, boundary-enforced) | P1–P3 |
 | **P7** | Delivery | Email report, scheduled reports | P5 |
 
 ---

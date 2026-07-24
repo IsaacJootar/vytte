@@ -21,7 +21,7 @@ class AssessmentAiNarrative extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'assessment_id', 'lens', 'model', 'source_hash', 'body', 'generated_by', 'created_at',
+        'assessment_id', 'product', 'model', 'source_hash', 'body', 'generated_by', 'created_at',
     ];
 
     protected $casts = [
