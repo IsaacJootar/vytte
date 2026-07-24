@@ -64,9 +64,23 @@ class ReportingEngineTest extends TestCase
         foreach ($recommendations as $rec) {
             $this->assertArrayHasKey('from_finding', $rec);
             $this->assertNotEmpty($rec['from_finding']['statement']);
-            // A recommendation may only come from a problem, never a strength or a gap.
-            $this->assertContains($rec['from_finding']['category'], ['CRITICAL_FINDING', 'WEAKNESS']);
+            // A recommendation may only come from a problem or an unscored gap, never a
+            // strength or a moderate opportunity.
+            $this->assertContains($rec['from_finding']['category'], ['CRITICAL_FINDING', 'WEAKNESS', 'DATA_GAP']);
         }
+    }
+
+    public function test_unscored_domain_produces_a_data_collection_recommendation(): void
+    {
+        $findings = (new DiagnosticsService)->findings($this->payload());
+        $recommendations = (new RecommendationService)->recommendations($findings);
+
+        // Financing was unanswered — the report must tell the user to go collect it.
+        $dataRec = collect($recommendations)->firstWhere('type', 'Data collection');
+        $this->assertNotNull($dataRec, 'An unscored domain must generate a data-collection recommendation.');
+        $this->assertSame('DATA_GAP', $dataRec['from_finding']['category']);
+        $this->assertSame('IMMEDIATE', $dataRec['horizon']);
+        $this->assertStringContainsString('Financing', $dataRec['statement']);
     }
 
     public function test_strengths_do_not_generate_recommendations(): void

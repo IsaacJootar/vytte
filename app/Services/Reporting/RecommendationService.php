@@ -41,17 +41,22 @@ class RecommendationService
         $recommendations = [];
 
         foreach ($findings as $finding) {
-            // Only findings that describe a problem generate a recommendation. Strengths,
-            // opportunities and data gaps are reported but not turned into actions here.
-            if (! in_array($finding['category'], ['CRITICAL_FINDING', 'WEAKNESS'], true)) {
+            // A recommendation only comes from a finding, and only these three kinds of
+            // finding call for an action. A weakness or critical finding needs fixing; a
+            // data gap — a domain that could not be scored — needs the missing data, which
+            // is itself an action, and the most useful one when little was answered. A
+            // partial data gap (the domain scored, just thinly) is skipped: the score-based
+            // finding for that same domain already carries its recommendation.
+            $isUnscoredGap = $finding['category'] === 'DATA_GAP' && ($finding['score'] ?? null) === null;
+            if (! in_array($finding['category'], ['CRITICAL_FINDING', 'WEAKNESS'], true) && ! $isUnscoredGap) {
                 continue;
             }
 
             $recommendations[] = [
                 'statement' => $this->statementFor($finding),
-                'type' => self::DOMAIN_ACTION[$finding['measurement_domain'] ?? ''] ?? 'General',
-                'horizon' => $finding['severity'] === 'HIGH' ? 'IMMEDIATE' : 'MEDIUM_TERM',
-                'priority' => $finding['severity'],
+                'type' => $isUnscoredGap ? 'Data collection' : (self::DOMAIN_ACTION[$finding['measurement_domain'] ?? ''] ?? 'General'),
+                'horizon' => ($finding['severity'] === 'HIGH' || $isUnscoredGap) ? 'IMMEDIATE' : 'MEDIUM_TERM',
+                'priority' => $isUnscoredGap ? 'MEDIUM' : $finding['severity'],
                 // The citation. This is what makes the recommendation defensible.
                 'from_finding' => [
                     'subject' => $finding['subject'],
@@ -71,6 +76,10 @@ class RecommendationService
     {
         if ($finding['category'] === 'CRITICAL_FINDING') {
             return 'Address the critical failure before relying on any other result. It outranks everything else in this report.';
+        }
+
+        if ($finding['category'] === 'DATA_GAP') {
+            return 'Collect the missing answers for '.$finding['subject'].'. It could not be scored, and a blank is not a pass — this is the first step before the area can be judged at all.';
         }
 
         return 'Strengthen '.$finding['subject'].'. It is the weakest area measured and the one where improvement will move the overall result most.';
