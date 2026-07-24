@@ -29,6 +29,77 @@
         </div>
     @else
 
+        {{-- Trend at a glance + action follow-through --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+            {{-- Trend --}}
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Trend</h2>
+                @if ($trend['comparable'])
+                    @php
+                        $delta = $trend['overall_delta'];
+                        $dirColor = $trend['direction'] === 'UP' ? 'text-green-600 dark:text-green-400' : ($trend['direction'] === 'DOWN' ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400');
+                        $arrow = $trend['direction'] === 'UP' ? '▲' : ($trend['direction'] === 'DOWN' ? '▼' : '—');
+                    @endphp
+                    <div class="mt-3 flex items-end gap-3">
+                        <span class="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{{ $trend['latest_score'] !== null ? number_format($trend['latest_score'], 1) : '—' }}</span>
+                        <span class="text-sm font-bold {{ $dirColor }} mb-1">
+                            {{ $arrow }} {{ $delta !== null ? ($delta > 0 ? '+' : '').number_format($delta, 1) : '—' }}
+                        </span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Latest score vs the previous run.
+                        @if ($trend['since_first_delta'] !== null)
+                            {{ $trend['since_first_delta'] >= 0 ? 'Up' : 'Down' }} {{ number_format(abs($trend['since_first_delta']), 1) }} since the first run.
+                        @endif
+                    </p>
+                    @if (! empty($trend['domain_movements']))
+                        <div class="mt-3 flex flex-col gap-1.5">
+                            @foreach ($trend['domain_movements'] as $dm)
+                                @php
+                                    $dc = $dm['direction'] === 'UP' ? 'text-green-600 dark:text-green-400' : ($dm['direction'] === 'DOWN' ? 'text-red-600 dark:text-red-400' : 'text-slate-400 dark:text-slate-500');
+                                @endphp
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-slate-600 dark:text-slate-300">{{ $dm['domain_name'] }}</span>
+                                    <span class="font-semibold tabular-nums {{ $dc }}">
+                                        {{ $dm['delta'] !== null ? ($dm['delta'] > 0 ? '+' : '').number_format($dm['delta'], 1) : '—' }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                @else
+                    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                        Run this assessment at least twice to see movement over time. Only runs with the same content are compared.
+                    </p>
+                @endif
+            </div>
+
+            {{-- Action follow-through --}}
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+                <div class="flex items-center justify-between gap-2">
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">Action follow-through</h2>
+                    <a href="{{ route('actions.index', $project) }}" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Open plan</a>
+                </div>
+                @if ($followThrough['total'] > 0)
+                    <div class="mt-3 flex items-end gap-3">
+                        <span class="text-3xl font-black text-slate-900 dark:text-white tabular-nums">{{ $followThrough['completion_rate'] !== null ? $followThrough['completion_rate'].'%' : '—' }}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 mb-1">{{ $followThrough['completed'] }} of {{ $followThrough['total'] }} done</span>
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Did the agreed actions get done?</p>
+                    <div class="mt-3 grid grid-cols-4 gap-2 text-center">
+                        <div><p class="text-lg font-bold text-slate-700 dark:text-slate-200 tabular-nums">{{ $followThrough['open'] }}</p><p class="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">Open</p></div>
+                        <div><p class="text-lg font-bold text-blue-600 dark:text-blue-400 tabular-nums">{{ $followThrough['in_progress'] }}</p><p class="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">Doing</p></div>
+                        <div><p class="text-lg font-bold text-green-600 dark:text-green-400 tabular-nums">{{ $followThrough['done'] + $followThrough['verified'] }}</p><p class="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">Done</p></div>
+                        <div><p class="text-lg font-bold {{ $followThrough['overdue'] > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-200' }} tabular-nums">{{ $followThrough['overdue'] }}</p><p class="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">Overdue</p></div>
+                    </div>
+                @else
+                    <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                        No actions yet. Add recommendations from an assessment's results to start tracking follow-through.
+                    </p>
+                @endif
+            </div>
+        </div>
+
         {{-- Assessment runs table --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">

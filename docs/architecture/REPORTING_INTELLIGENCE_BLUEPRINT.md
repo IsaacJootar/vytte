@@ -314,6 +314,34 @@ If these four hold, R1 can begin with no schema change.
 
 ---
 
+## 19a. R6 status — Trend built, Benchmark seam only (deferred for launch)
+
+**Trend / Progress is built.** `TrendService` (`app/Services/Reporting/TrendService.php`)
+computes the longitudinal summary — overall score trajectory, per-domain movement between
+the latest two composition-matched runs, and **action follow-through** (did the agreed
+actions get done?), reading the R5 action plan. Surfaced on the project Progress page. Fully
+in-tenant; no schema change.
+
+**Benchmark is deferred — the seam, not the build.** The cross-tenant comparison is designed
+but deliberately not implemented before go-live. When it is built, it slots in here without
+disturbing anything above it, honouring the §8 contract:
+
+- a `BenchmarkService` alongside `TrendService`, the *only* service permitted to read across
+  workspaces, and doing so through a single audited path — never an ad-hoc cross-tenant query;
+- **opt-in**: a workspace setting a benchmark-contribution flag is the sole trigger for its
+  anonymised data entering a cohort;
+- **anonymised + aggregate-only**: cohorts store aggregates (means, counts, bands), never
+  workspace-identifiable rows; the store is a new table (`benchmark_cohort_aggregates`), the
+  only cross-tenant table in the system;
+- **matched cohorts**: comparison is composition-hash + facility-profile scoped, so a facility
+  is only ever compared with genuinely like facilities;
+- **a deliberate, audited exception**: every cohort read and every contribution is written to
+  the audit log, and the tenancy exception is documented here, not discovered in code.
+
+Nothing cross-tenant exists yet. Trend ships; Benchmark is a named, contracted follow-on.
+
+---
+
 ## 20. In one paragraph
 
 Build a deterministic engine — Diagnostics → Insights → Recommendations — that reads the frozen assessment snapshot and freezes its output back into an extended report payload. Reports are not twenty coded types but one engine reading that output through the twenty analysis lenses already seeded, at a chosen scope, in a chosen template. Actions are the one new living domain and the bridge to Progress Tracking. Benchmarking is the one tenancy-crossing feature and is built last, opt-in and anonymised. AI is the final layer, narrating the structured output and forbidden from inventing anything the deterministic engine did not find. R1–R4 need no migrations; only actions (R5) and benchmarks (R6) touch the schema. The frozen-snapshot spine makes reports cheap at scale and keeps every report reproducible for the life of the platform.

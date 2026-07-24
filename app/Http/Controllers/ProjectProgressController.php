@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\Project;
 use App\Services\PlanService;
+use App\Services\Reporting\TrendService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProjectProgressController extends Controller
 {
-    public function index(Project $project): View|RedirectResponse
+    public function index(Project $project, TrendService $trends): View|RedirectResponse
     {
         $this->authorize('view', $project);
         $workspace = app('current.workspace');
@@ -45,7 +46,10 @@ class ProjectProgressController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains'));
+        $trend = $trends->summary($project);
+        $followThrough = $trends->actionFollowThrough($project);
+
+        return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains', 'trend', 'followThrough'));
     }
 
     public function compare(Project $project, Request $request): View|RedirectResponse
