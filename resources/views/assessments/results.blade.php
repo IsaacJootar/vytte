@@ -385,6 +385,38 @@
         </div>
     @endif
 
+    {{-- Insights — findings named as what they mean, using the governed insight categories. --}}
+    @php
+        $insightItems = collect($intelligence['insights']['items'] ?? []);
+        // One row per (category, subject); group by category, ordered negative → neutral → positive.
+        $polarityOrder = ['NEGATIVE' => 0, 'NEUTRAL' => 1, 'POSITIVE' => 2];
+        $insightGroups = $insightItems
+            ->unique(fn ($i) => $i['category_code'].'|'.$i['subject'])
+            ->groupBy('category_code')
+            ->sortBy(fn ($group, $code) => ($polarityOrder[$group->first()['polarity']] ?? 1).$code);
+    @endphp
+    @if ($insightGroups->isNotEmpty())
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Insights</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                @foreach ($insightGroups as $code => $group)
+                    @php
+                        $pol = $group->first()['polarity'];
+                        $dot = $pol === 'POSITIVE' ? 'bg-green-500' : ($pol === 'NEGATIVE' ? 'bg-red-500' : 'bg-amber-500');
+                    @endphp
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-3">
+                        <div class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full {{ $dot }}"></span>
+                            <span class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ $group->first()['category_name'] }}</span>
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500">{{ $group->count() }}</span>
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $group->pluck('subject')->unique()->join(', ') }}</p>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Recommendations — each one cites the finding it came from. --}}
     @if ($recommendations->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">

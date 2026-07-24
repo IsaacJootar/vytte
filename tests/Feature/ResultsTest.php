@@ -207,7 +207,9 @@ class ResultsTest extends TestCase
             ->get(route('assessments.results', $assessment))
             ->assertOk()
             ->assertSee('Risks &amp; what happens if nothing changes', false)
-            ->assertSee('improvement potential');
+            ->assertSee('improvement potential')
+            ->assertSee('Insights')
+            ->assertSee('Low-Performing Areas'); // a governed insight category surfaced from weak scores
     }
 
     public function test_results_page_shows_lens_selector_and_methodology_note(): void

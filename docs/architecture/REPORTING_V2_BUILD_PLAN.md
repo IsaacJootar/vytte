@@ -29,14 +29,20 @@ foundation this builds on).
   domain), `RootCauseService`, `RiskService`, `DomainRiskProfile` (criticality + consequence),
   and expected-impact / consequence fields on findings. Wired into `ReportComposer.intelligence()`
   (`root_causes`, `risks`) and rendered on the results page. Engine version `vytte-reporting-2.0`.
-- P2–P7: pending.
+- **P2 — Insights engine: ✅ built.** `InsightCatalog` (the 21 governed categories as a pure
+  constant, verified against the seeded `insight_categories` table by `InsightCatalogTest`).
+  `InsightService` rebuilt to classify each finding into the real categories — one weak domain
+  can surface as Weakness + Low-Performing + Pain Point + Systemic Issue + a domain-specific
+  Risk + Strategic Priority at once. Rendered as an Insights section on the results page.
+  Trend-only categories (emerging/decline/no-change) arrive with P4.
+- P3–P7: pending.
 
 ## Phases
 
 | Phase | Module | Delivers | Depends on |
 |---|---|---|---|
 | **P1** ✅ | Diagnostics depth | Failed indicators, root-cause layer, risk objects, consequence ("what if nothing changes"), priority, light dependencies, expected impact | — |
-| **P2** | Insights engine | Real classification into the 21 seeded insight categories: strengths, weaknesses, priority areas, outliers, capacity gaps, bottlenecks, hidden risks | P1 |
+| **P2** ✅ | Insights engine | Real classification into the 21 seeded insight categories: strengths, weaknesses, priority areas, quick wins, pain points, systemic issues, domain risks, good practice | P1 |
 | **P3** | Lens engine + recommendations | 7 reinterpreting lenses; contextual recommendations + a seeded intervention library | P1, P2 |
 | **P4** | Trend & progress depth | Assessment typing (baseline/midline/endline/follow-up); resolved/persistent/new/regressed matching; target/goal tracking; in-tenant benchmarking | P1 |
 | **P5** | Visualisation | Radar, heat map, trend line, risk matrix, comparison tables, question drill-down (self-contained SVG/CSS) | P1–P4 |

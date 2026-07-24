@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\Reporting\DiagnosticsService;
+use App\Services\Reporting\InsightCatalog;
 use App\Services\Reporting\InsightService;
 use App\Services\Reporting\RecommendationService;
 use App\Services\Reporting\ReportComposer;
@@ -149,6 +150,40 @@ class ReportingEngineTest extends TestCase
         $this->assertCount(1, $insights['strengths']);
         $this->assertCount(1, $insights['data_gaps']);
         $this->assertNotNull($insights['headline']);
+    }
+
+    public function test_insights_classify_into_the_governed_categories(): void
+    {
+        $findings = (new DiagnosticsService)->findings($this->payload());
+        $insights = (new InsightService)->insights($findings);
+        $codes = collect($insights['items'])->pluck('category_code')->unique();
+
+        // The weak GOV domain (2 failing items, high-criticality, high severity) surfaces as
+        // several governed categories at once.
+        $this->assertTrue($codes->contains('WEAKNESS'));
+        $this->assertTrue($codes->contains('LOW_PERFORMING'));
+        $this->assertTrue($codes->contains('PAIN_POINT'));         // it has failing items
+        $this->assertTrue($codes->contains('SYSTEMIC_ISSUE'));     // 2+ failing together
+        $this->assertTrue($codes->contains('COMPLIANCE_RISK'));    // GOV → compliance risk
+        $this->assertTrue($codes->contains('STRATEGIC_PRIORITY')); // GOV is high-criticality
+        // The strong WORK domain surfaces as positive categories.
+        $this->assertTrue($codes->contains('HIGH_PERFORMING'));
+
+        // Every category emitted must be a real governed category.
+        foreach ($codes as $code) {
+            $this->assertTrue(InsightCatalog::exists($code), "Unknown insight category: {$code}");
+        }
+    }
+
+    public function test_good_practice_only_for_excellent_critical_domains(): void
+    {
+        $findings = [
+            ['subject' => 'Safety', 'measurement_domain' => 'SAFE', 'category' => 'STRENGTH', 'severity' => 'POSITIVE', 'score' => 92.0, 'statement' => 's', 'why' => 'w', 'evidence' => [], 'failed_indicators' => []],
+        ];
+        $codes = collect((new InsightService)->insights($findings)['items'])->pluck('category_code');
+
+        $this->assertTrue($codes->contains('ACHIEVEMENT'));    // >= 85
+        $this->assertTrue($codes->contains('GOOD_PRACTICE'));  // >= 85 in a high-criticality domain
     }
 
     public function test_risk_lens_leads_with_high_severity_only(): void
