@@ -297,6 +297,11 @@
             <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">{{ $headline }}</p>
         @endif
 
+        @php $lensCats = collect($lensView['lens_insights'] ?? [])->pluck('category_name')->unique(); @endphp
+        @if ($lensCats->isNotEmpty())
+            <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">Through this lens: {{ $lensCats->join(' · ') }}</p>
+        @endif
+
         @if ($lead->isNotEmpty())
             <ul class="mt-4 flex flex-col gap-3">
                 @foreach ($lead as $finding)
@@ -440,6 +445,9 @@
                                 {{ $rec['horizon'] === 'IMMEDIATE' ? 'Do now' : 'Plan for' }}
                             </span>
                             <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">{{ $rec['type'] }}</span>
+                            @if (! empty($rec['expected_impact']))
+                                <span class="text-[10px] font-semibold uppercase tracking-wide text-vytte-600 dark:text-vytte-400">{{ ucfirst(strtolower($rec['expected_impact'])) }} impact</span>
+                            @endif
                         </div>
                         <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">{{ $rec['statement'] }}</p>
                         <p class="mt-1.5 text-xs text-slate-400 dark:text-slate-500">

@@ -35,7 +35,15 @@ foundation this builds on).
   can surface as Weakness + Low-Performing + Pain Point + Systemic Issue + a domain-specific
   Risk + Strategic Priority at once. Rendered as an Insights section on the results page.
   Trend-only categories (emerging/decline/no-change) arrive with P4.
-- P3–P7: pending.
+- **P3 — Lens engine + recommendations: ✅ built.** `LensCatalog` — 7 lenses (EXECUTIVE,
+  OPERATIONS, QUALITY, RISK, COMPLIANCE, PROGRAMME_EFFECTIVENESS, EFFICIENCY) each wired to a
+  seeded `analysis_lens` (verified by `LensCatalogTest`) and each declaring the domains it
+  foregrounds, the insight categories it leads with, and its ordering. `ReportComposer.throughLens`
+  now *reinterprets* — the Clinical lens ignores financing, the Value lens leads with strengths —
+  rather than re-sorting. `InterventionLibrary` (curated action per domain × severity) makes
+  `RecommendationService` contextual: specific interventions aimed at the concrete failing items,
+  carrying expected impact; the citation rule is preserved. Default lens is EXECUTIVE.
+- P4–P7: pending.
 
 ## Phases
 
@@ -43,7 +51,7 @@ foundation this builds on).
 |---|---|---|---|
 | **P1** ✅ | Diagnostics depth | Failed indicators, root-cause layer, risk objects, consequence ("what if nothing changes"), priority, light dependencies, expected impact | — |
 | **P2** ✅ | Insights engine | Real classification into the 21 seeded insight categories: strengths, weaknesses, priority areas, quick wins, pain points, systemic issues, domain risks, good practice | P1 |
-| **P3** | Lens engine + recommendations | 7 reinterpreting lenses; contextual recommendations + a seeded intervention library | P1, P2 |
+| **P3** ✅ | Lens engine + recommendations | 7 reinterpreting lenses (wired to seeded analysis lenses); contextual recommendations + a curated intervention library | P1, P2 |
 | **P4** | Trend & progress depth | Assessment typing (baseline/midline/endline/follow-up); resolved/persistent/new/regressed matching; target/goal tracking; in-tenant benchmarking | P1 |
 | **P5** | Visualisation | Radar, heat map, trend line, risk matrix, comparison tables, question drill-down (self-contained SVG/CSS) | P1–P4 |
 | **P6** | AI products | Executive briefing, diagnostic summary, root-cause narrative, donor/clinical/operational summaries (OpenAI, boundary-enforced) | P1–P3 |

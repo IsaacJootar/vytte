@@ -6,6 +6,7 @@ use App\Models\ActionUpdate;
 use App\Models\Assessment;
 use App\Models\AssessmentAction;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -47,7 +48,10 @@ class ActionService
             'source_finding_statement' => $finding['statement'],
             'source_measurement_domain' => $recommendation['measurement_domain'] ?? null,
             'recommendation_statement' => $recommendation['statement'] ?? $finding['statement'],
-            'title' => $attributes['title'] ?? ($recommendation['statement'] ?? $finding['statement']),
+            // The title is a short label (column is varchar 255); the full recommendation
+            // lives in recommendation_statement. Contextual recommendations can be a full
+            // paragraph, so cap it rather than overflow the column.
+            'title' => Str::limit($attributes['title'] ?? ($recommendation['statement'] ?? $finding['statement']), 250),
             'owner_user_id' => $attributes['owner_user_id'] ?? null,
             'priority' => $attributes['priority'] ?? ($recommendation['priority'] ?? 'MEDIUM'),
             'due_date' => $attributes['due_date'] ?? null,

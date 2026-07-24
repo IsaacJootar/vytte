@@ -222,7 +222,7 @@ class ResultsTest extends TestCase
             ->get(route('assessments.results', $assessment))
             ->assertOk()
             ->assertSee('Read this report as')
-            ->assertSee('Performance')
+            ->assertSee('Executive')
             ->assertSee('not a World') // methodology note: WHO-aware label
             ->assertSee('clinical diagnosis');
     }

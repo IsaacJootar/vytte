@@ -194,19 +194,59 @@ class ReportingEngineTest extends TestCase
         $risk = $composer->throughLens($intelligence, 'RISK');
 
         $this->assertSame('RISK', $risk['lens']);
-        foreach ($risk['lead'] as $finding) {
-            $this->assertSame('HIGH', $finding['severity']);
-        }
+        // Risk leads worst-first: the high-severity weakness sits at the top.
+        $this->assertSame('WEAKNESS', $risk['lead'][0]['category']);
+        $this->assertSame('HIGH', $risk['lead'][0]['severity']);
     }
 
-    public function test_unknown_lens_falls_back_to_performance(): void
+    public function test_lenses_reinterpret_by_foregrounding_different_domains(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $payload = [
+            'score' => ['overall_score' => 40.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                ['domain_name' => 'Patient Safety', 'domain_code' => 'SAFE', 'score' => 20.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+                ['domain_name' => 'Financing', 'domain_code' => 'FIN', 'score' => 25.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+            ],
+        ];
+        $intelligence = $composer->intelligence($payload);
+
+        // The Clinical/Quality lens foregrounds SAFE and ignores FIN entirely.
+        $quality = $composer->throughLens($intelligence, 'QUALITY');
+        $qualityDomains = collect($quality['lead'])->pluck('measurement_domain');
+        $this->assertTrue($qualityDomains->contains('SAFE'));
+        $this->assertFalse($qualityDomains->contains('FIN'));
+
+        // The Value lens foregrounds FIN and ignores SAFE.
+        $value = $composer->throughLens($intelligence, 'EFFICIENCY');
+        $valueDomains = collect($value['lead'])->pluck('measurement_domain');
+        $this->assertTrue($valueDomains->contains('FIN'));
+        $this->assertFalse($valueDomains->contains('SAFE'));
+    }
+
+    public function test_unknown_lens_falls_back_to_the_default(): void
     {
         $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
         $intelligence = $composer->intelligence($this->payload());
 
         $view = $composer->throughLens($intelligence, 'NONSENSE');
 
-        $this->assertSame('PERFORMANCE', $view['lens']);
+        $this->assertSame('EXECUTIVE', $view['lens']);
+    }
+
+    public function test_recommendations_are_contextual_and_cite_evidence(): void
+    {
+        $findings = (new DiagnosticsService)->findings($this->payload());
+        $recs = (new RecommendationService)->recommendations($findings);
+
+        $gov = collect($recs)->firstWhere('measurement_domain', 'GOV');
+        $this->assertNotNull($gov);
+        // A specific governance intervention, not "strengthen governance".
+        $this->assertStringContainsString('accountab', strtolower($gov['statement']));
+        // It aims at the concrete failing items and carries expected impact.
+        $this->assertStringContainsString('governance board', strtolower($gov['statement']));
+        $this->assertSame('HIGH', $gov['expected_impact']);
+        $this->assertNotEmpty($gov['focus_items']);
     }
 
     public function test_intelligence_is_deterministic(): void

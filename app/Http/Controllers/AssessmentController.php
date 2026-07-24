@@ -16,6 +16,7 @@ use App\Services\Ai\AiNarrativeService;
 use App\Services\AssessmentCreationService;
 use App\Services\AuditService;
 use App\Services\PlanService;
+use App\Services\Reporting\LensCatalog;
 use App\Services\Reporting\ReportComposer;
 use App\Services\ReportSnapshotService;
 use App\Services\ScoringService;
@@ -229,8 +230,8 @@ class AssessmentController extends Controller
         // recomputed on the fly — the engine is pure, so the result is identical.
         $composer = app(ReportComposer::class);
         $intelligence = $report['intelligence'] ?? $composer->intelligence($report);
-        $lens = request()->query('lens', 'PERFORMANCE');
-        $lensView = $composer->throughLens($intelligence, is_string($lens) ? $lens : 'PERFORMANCE');
+        $lens = request()->query('lens', LensCatalog::DEFAULT);
+        $lensView = $composer->throughLens($intelligence, is_string($lens) ? $lens : LensCatalog::DEFAULT);
         $lensOptions = ReportComposer::lenses();
 
         // Optional AI narrative for the current lens — present only if generated, and only

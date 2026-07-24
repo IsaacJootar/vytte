@@ -55,8 +55,12 @@ class RecommendationService
             $recommendations[] = [
                 'statement' => $this->statementFor($finding),
                 'type' => $isUnscoredGap ? 'Data collection' : (self::DOMAIN_ACTION[$finding['measurement_domain'] ?? ''] ?? 'General'),
+                'measurement_domain' => $finding['measurement_domain'] ?? null,
                 'horizon' => ($finding['severity'] === 'HIGH' || $isUnscoredGap) ? 'IMMEDIATE' : 'MEDIUM_TERM',
                 'priority' => $isUnscoredGap ? 'MEDIUM' : $finding['severity'],
+                'expected_impact' => $finding['expected_impact'] ?? null,
+                // The concrete items this action should tackle first (up to three).
+                'focus_items' => collect($finding['failed_indicators'] ?? [])->take(3)->pluck('question_text')->all(),
                 // The citation. This is what makes the recommendation defensible.
                 'from_finding' => [
                     'subject' => $finding['subject'],
@@ -70,6 +74,10 @@ class RecommendationService
     }
 
     /**
+     * Build a specific, contextual recommendation: the governed intervention for this domain
+     * and severity, aimed at the concrete failing items where they exist. Falls back to a
+     * plain statement only when no library entry applies.
+     *
      * @param  array<string, mixed>  $finding
      */
     private function statementFor(array $finding): string
@@ -82,6 +90,14 @@ class RecommendationService
             return 'Collect the missing answers for '.$finding['subject'].'. It could not be scored, and a blank is not a pass — this is the first step before the area can be judged at all.';
         }
 
-        return 'Strengthen '.$finding['subject'].'. It is the weakest area measured and the one where improvement will move the overall result most.';
+        $intervention = InterventionLibrary::forDomain($finding['measurement_domain'] ?? null, $finding['severity'] ?? 'MEDIUM');
+        if ($intervention === null) {
+            return 'Strengthen '.$finding['subject'].'. It is a weak area, and improving it will move the overall result.';
+        }
+
+        $focus = collect($finding['failed_indicators'] ?? [])->take(2)->pluck('question_text')->all();
+        $suffix = $focus !== [] ? ' Start with the items scoring lowest: "'.implode('", "', $focus).'".' : '';
+
+        return $intervention.$suffix;
     }
 }
