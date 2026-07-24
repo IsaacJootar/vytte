@@ -36,6 +36,19 @@
                 </svg>
                 PDF
             </a>
+            {{-- Office exports over the same frozen payload --}}
+            <a href="{{ route('assessments.export.word', $assessment) }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                Word
+            </a>
+            <a href="{{ route('assessments.export.excel', $assessment) }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                Excel
+            </a>
+            <a href="{{ route('assessments.export.ppt', $assessment) }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                Slides
+            </a>
             {{-- Share link --}}
             <form method="POST" action="{{ route('assessments.share', $assessment) }}" class="inline">
                 @csrf

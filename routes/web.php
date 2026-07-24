@@ -89,6 +89,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('assessments/{assessment}/respondent-sessions/{responseSession}', [MultiRespondentAssessmentController::class, 'classify'])->name('assessments.respondent-sessions.classify');
     Route::post('assessments/{assessment}/respondent-collection/finalize', [MultiRespondentAssessmentController::class, 'finalize'])->name('assessments.respondent-collection.finalize');
     Route::get('assessments/{assessment}/export/pdf', [ExportController::class, 'assessmentPdf'])->name('assessments.export.pdf');
+    Route::get('assessments/{assessment}/export/word', [ExportController::class, 'assessmentWord'])->name('assessments.export.word');
+    Route::get('assessments/{assessment}/export/excel', [ExportController::class, 'assessmentExcel'])->name('assessments.export.excel');
+    Route::get('assessments/{assessment}/export/ppt', [ExportController::class, 'assessmentPpt'])->name('assessments.export.ppt');
     Route::post('assessments/{assessment}/share', [ExportController::class, 'createShareLink'])->name('assessments.share');
     Route::delete('assessments/{assessment}/share-links/{shareLink}', [ExportController::class, 'revokeShareLink'])->name('assessments.share.revoke');
     Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');

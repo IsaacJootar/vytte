@@ -8,6 +8,7 @@ use App\Models\PlatformSetting;
 use App\Models\Project;
 use App\Services\AuditService;
 use App\Services\PlanService;
+use App\Services\Reporting\ReportDocumentExporter;
 use App\Services\ReportSnapshotService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
@@ -32,6 +33,45 @@ class ExportController extends Controller
         $filename = 'assessment-report-'.substr($assessment->assessment_id, 0, 8).'.pdf';
 
         return $pdf->download($filename);
+    }
+
+    public function assessmentWord(Assessment $assessment, ReportSnapshotService $reports, ReportDocumentExporter $exporter): Response
+    {
+        return $this->officeExport($assessment, $reports, fn ($payload) => $exporter->word($payload),
+            'docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    }
+
+    public function assessmentExcel(Assessment $assessment, ReportSnapshotService $reports, ReportDocumentExporter $exporter): Response
+    {
+        return $this->officeExport($assessment, $reports, fn ($payload) => $exporter->excel($payload),
+            'xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    public function assessmentPpt(Assessment $assessment, ReportSnapshotService $reports, ReportDocumentExporter $exporter): Response
+    {
+        return $this->officeExport($assessment, $reports, fn ($payload) => $exporter->powerpoint($payload),
+            'pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    }
+
+    /**
+     * Shared office-export path: authorise, read the one frozen payload, render, download.
+     */
+    private function officeExport(Assessment $assessment, ReportSnapshotService $reports, callable $render, string $extension, string $mime): Response
+    {
+        $this->authorizeAssessmentAccess($assessment);
+
+        if ($assessment->status !== Assessment::STATUS_COMPLETE) {
+            abort(404);
+        }
+
+        $payload = $reports->payloadFor($assessment);
+        $body = $render($payload);
+        $filename = 'assessment-report-'.substr($assessment->assessment_id, 0, 8).'.'.$extension;
+
+        return response($body, 200, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
     }
 
     public function projectCsv(Project $project): StreamedResponse
