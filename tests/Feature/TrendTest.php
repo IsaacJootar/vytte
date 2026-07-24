@@ -212,14 +212,11 @@ class TrendTest extends TestCase
         $this->assertSame('BASELINE', $assessment->fresh()->assessment_type);
     }
 
-    public function test_benchmark_page_ranks_facilities(): void
+    public function test_benchmark_route_redirects_to_the_reports_hub(): void
     {
-        $this->runAssessment('best', '2026-01-01');
-
+        // Compare is folded into the Reports hub; the old benchmark URL still lands there.
         $this->actingAs($this->user)
             ->get(route('benchmark.index'))
-            ->assertOk()
-            ->assertSee('Facility comparison')
-            ->assertSee($this->project->name);
+            ->assertRedirect(route('reports.index'));
     }
 }

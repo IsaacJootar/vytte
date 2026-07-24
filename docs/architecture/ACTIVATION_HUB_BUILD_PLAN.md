@@ -57,4 +57,10 @@ committed, docs in lockstep, then work stops for approval.
   issue, top risk, do-next) plus open/overdue action counts. Stat cards stay present (zeros
   when empty). `DashboardController` computes activation state, action attention, and the
   latest-report preview via the reporting engine.
-- A3–A5: pending.
+- **A3 — Reports hub: ✅ built.** Reports is now the central data hub: each report card shows
+  its intelligence at a glance (biggest issue + top risk, read from the frozen snapshot) and
+  quick actions (View · PDF · Progress · Actions). **Compare is folded in** as a
+  "Compare your assessment targets" section (facility league table + per-area averages), shown
+  at 2+ completed targets. The Benchmark nav item is retired and `/benchmark` redirects to the
+  hub. Progress is reachable per report card.
+- A4–A5: pending.
