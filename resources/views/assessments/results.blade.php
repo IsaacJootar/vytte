@@ -306,10 +306,31 @@
                             <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clip-rule="evenodd"/>
                         </svg>
                         <div class="min-w-0">
-                            <span class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $label }}</span>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $label }}</span>
+                                @if (! empty($finding['expected_impact']))
+                                    <span class="text-[10px] font-semibold uppercase tracking-wide text-vytte-600 dark:text-vytte-400">{{ ucfirst(strtolower($finding['expected_impact'])) }} improvement potential</span>
+                                @endif
+                            </div>
                             <p class="mt-0.5 text-sm text-slate-700 dark:text-slate-300">{{ $finding['statement'] }}</p>
                             @if (! empty($finding['why']))
                                 <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ $finding['why'] }}</p>
+                            @endif
+                            @if (! empty($finding['failed_indicators']))
+                                <details class="mt-1.5">
+                                    <summary class="text-xs font-medium text-slate-500 dark:text-slate-400 cursor-pointer">{{ count($finding['failed_indicators']) }} failing item{{ count($finding['failed_indicators']) !== 1 ? 's' : '' }}</summary>
+                                    <ul class="mt-1 flex flex-col gap-1">
+                                        @foreach (array_slice($finding['failed_indicators'], 0, 6) as $ind)
+                                            <li class="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
+                                                <span class="text-red-500 dark:text-red-400 font-bold tabular-nums">{{ number_format($ind['score'], 0) }}</span>
+                                                <span>{{ $ind['question_text'] }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                </details>
+                            @endif
+                            @if (! empty($finding['consequence']))
+                                <p class="mt-1.5 text-xs italic text-red-600/80 dark:text-red-400/80">{{ $finding['consequence'] }}</p>
                             @endif
                         </div>
                     </li>
@@ -319,6 +340,50 @@
             <p class="mt-3 text-sm text-slate-400 dark:text-slate-500">Nothing stands out under this lens.</p>
         @endif
     </div>
+
+    {{-- Root causes — probable systemic causes inferred from the pattern of findings. --}}
+    @php $rootCauses = collect($intelligence['root_causes'] ?? []); $risks = collect($intelligence['risks'] ?? []); @endphp
+    @if ($rootCauses->isNotEmpty())
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Likely root causes</h2>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Inferred from the pattern of findings — a probable cause, not a diagnosis.</p>
+            <ul class="flex flex-col gap-3">
+                @foreach ($rootCauses as $cause)
+                    <li class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-700/40">
+                        @if (! empty($cause['is_upstream']))
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-vytte-600 dark:text-vytte-400">Upstream cause</span>
+                        @endif
+                        <p class="text-sm text-slate-700 dark:text-slate-300">{{ $cause['statement'] }}</p>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- Risks — likelihood × impact, and what happens if nothing changes. --}}
+    @if ($risks->isNotEmpty())
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Risks &amp; what happens if nothing changes</h2>
+            <ul class="flex flex-col gap-3">
+                @foreach ($risks as $risk)
+                    @php
+                        $lvl = $risk['level'];
+                        $lvlStyle = $lvl === 'HIGH' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : ($lvl === 'MEDIUM' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300');
+                    @endphp
+                    <li class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-700/40">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full {{ $lvlStyle }}">{{ $lvl }} risk</span>
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ $risk['subject'] }}</span>
+                            <span class="text-[11px] text-slate-400 dark:text-slate-500">{{ ucfirst(strtolower($risk['likelihood'])) }} likelihood · {{ ucfirst(strtolower($risk['impact'])) }} impact</span>
+                        </div>
+                        @if (! empty($risk['consequence']))
+                            <p class="mt-1.5 text-xs text-slate-600 dark:text-slate-400">{{ $risk['consequence'] }}</p>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     {{-- Recommendations — each one cites the finding it came from. --}}
     @if ($recommendations->isNotEmpty())

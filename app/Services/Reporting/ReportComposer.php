@@ -18,6 +18,8 @@ class ReportComposer
         private readonly DiagnosticsService $diagnostics,
         private readonly InsightService $insights,
         private readonly RecommendationService $recommendations,
+        private readonly RootCauseService $rootCauses,
+        private readonly RiskService $risks,
     ) {}
 
     /**
@@ -34,8 +36,10 @@ class ReportComposer
             'findings' => $findings,
             'insights' => $this->insights->insights($findings),
             'recommendations' => $this->recommendations->recommendations($findings),
+            'root_causes' => $this->rootCauses->rootCauses($findings),
+            'risks' => $this->risks->risks($findings),
             'generated_at' => now()->toIso8601String(),
-            'engine_version' => 'vytte-reporting-1.0',
+            'engine_version' => 'vytte-reporting-2.0',
         ];
     }
 

@@ -11,6 +11,9 @@ class ReportSnapshotService
 {
     public const SCHEMA_VERSION = 'vytte-report-1.0';
 
+    /** A contributing question scoring below this is treated as a failed indicator. */
+    private const WEAK_INDICATOR = 45.0;
+
     public function createFor(Assessment $assessment): AssessmentReportSnapshot
     {
         if ($assessment->status !== Assessment::STATUS_COMPLETE) {
@@ -73,6 +76,10 @@ class ReportSnapshotService
             ?? (count($modules) === 1 ? ($modules[0]['module_name'] ?? 'Assessment') : 'Comprehensive Health Assessment');
 
         [$subIndices, $domains] = $this->snapshotScoreBreakdown($assessment, $contentModules);
+
+        // Attach the specific failing questions (failed indicators) to each domain, so a
+        // weakness can point to the concrete items behind it rather than just a number.
+        $domains = $this->attachFailedIndicators($domains, $contentModules);
 
         $aggregation = $assessment->aggregationResult;
 
@@ -198,6 +205,41 @@ class ReportSnapshotService
         }
 
         return [$subIndices, $domains];
+    }
+
+    /**
+     * For each domain, list the contributing questions that scored below the weakness line —
+     * the failed indicators. Question text is looked up from the immutable snapshot, so the
+     * evidence is as frozen and reproducible as the score it explains.
+     *
+     * @param  array<int, array<string, mixed>>  $domains
+     * @param  array<int, mixed>  $contentModules
+     * @return array<int, array<string, mixed>>
+     */
+    private function attachFailedIndicators(array $domains, array $contentModules): array
+    {
+        $questionText = collect($contentModules)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->mapWithKeys(fn ($question) => [(string) $question['question_id'] => $question['question_text'] ?? 'Question'])
+            ->all();
+
+        return collect($domains)->map(function ($domain) use ($questionText) {
+            $failed = collect($domain['contributing_question_trace'] ?? [])
+                ->filter(fn ($item) => isset($item['score']) && $item['score'] !== null && (float) $item['score'] < self::WEAK_INDICATOR)
+                ->map(fn ($item) => [
+                    'question_id' => $item['question_id'] ?? null,
+                    'question_text' => $questionText[(string) ($item['question_id'] ?? '')] ?? 'Question',
+                    'score' => (float) $item['score'],
+                ])
+                ->sortBy('score')
+                ->values()
+                ->all();
+
+            $domain['failed_indicators'] = $failed;
+            $domain['failed_indicator_count'] = count($failed);
+
+            return $domain;
+        })->all();
     }
 
     private function domainMetadataFromContent(array $contentModules)

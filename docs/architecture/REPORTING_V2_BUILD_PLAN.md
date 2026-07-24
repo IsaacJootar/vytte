@@ -23,11 +23,19 @@ foundation this builds on).
 
 ---
 
+## Build status
+
+- **P1 — Diagnostics depth: ✅ built.** Failed indicators (frozen into the report payload per
+  domain), `RootCauseService`, `RiskService`, `DomainRiskProfile` (criticality + consequence),
+  and expected-impact / consequence fields on findings. Wired into `ReportComposer.intelligence()`
+  (`root_causes`, `risks`) and rendered on the results page. Engine version `vytte-reporting-2.0`.
+- P2–P7: pending.
+
 ## Phases
 
 | Phase | Module | Delivers | Depends on |
 |---|---|---|---|
-| **P1** | Diagnostics depth | Failed indicators, root-cause layer, risk objects, consequence ("what if nothing changes"), priority, light dependencies, expected impact | — |
+| **P1** ✅ | Diagnostics depth | Failed indicators, root-cause layer, risk objects, consequence ("what if nothing changes"), priority, light dependencies, expected impact | — |
 | **P2** | Insights engine | Real classification into the 21 seeded insight categories: strengths, weaknesses, priority areas, outliers, capacity gaps, bottlenecks, hidden risks | P1 |
 | **P3** | Lens engine + recommendations | 7 reinterpreting lenses; contextual recommendations + a seeded intervention library | P1, P2 |
 | **P4** | Trend & progress depth | Assessment typing (baseline/midline/endline/follow-up); resolved/persistent/new/regressed matching; target/goal tracking; in-tenant benchmarking | P1 |

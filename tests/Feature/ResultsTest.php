@@ -197,6 +197,19 @@ class ResultsTest extends TestCase
             ->assertSee('What to do next');
     }
 
+    public function test_weak_results_show_diagnostics_depth(): void
+    {
+
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupCompleteAssessment($workspace, $user, answerMode: 'worst');
+
+        $this->actingAs($user)
+            ->get(route('assessments.results', $assessment))
+            ->assertOk()
+            ->assertSee('Risks &amp; what happens if nothing changes', false)
+            ->assertSee('improvement potential');
+    }
+
     public function test_results_page_shows_lens_selector_and_methodology_note(): void
     {
 

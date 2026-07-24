@@ -6,6 +6,8 @@ use App\Services\Reporting\DiagnosticsService;
 use App\Services\Reporting\InsightService;
 use App\Services\Reporting\RecommendationService;
 use App\Services\Reporting\ReportComposer;
+use App\Services\Reporting\RiskService;
+use App\Services\Reporting\RootCauseService;
 use PHPUnit\Framework\TestCase;
 
 class ReportingEngineTest extends TestCase
@@ -20,7 +22,10 @@ class ReportingEngineTest extends TestCase
         return [
             'score' => ['overall_score' => 52.0, 'calibration_status' => $overallCalibration],
             'domain_scores' => [
-                ['domain_name' => 'Governance', 'domain_code' => 'GOV', 'score' => 22.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 10, 'questions_answered' => 10],
+                ['domain_name' => 'Governance', 'domain_code' => 'GOV', 'score' => 22.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 10, 'questions_answered' => 10, 'failed_indicators' => [
+                    ['question_id' => 'q1', 'question_text' => 'Is there a governance board?', 'score' => 0.0],
+                    ['question_id' => 'q2', 'question_text' => 'Are decisions documented?', 'score' => 20.0],
+                ]],
                 ['domain_name' => 'Workforce', 'domain_code' => 'WORK', 'score' => 84.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 8, 'questions_answered' => 8],
                 ['domain_name' => 'Financing', 'domain_code' => 'FIN', 'score' => null, 'calibration_status' => 'NOT_CALIBRATED', 'questions_expected' => 6, 'questions_answered' => 0],
             ],
@@ -37,6 +42,49 @@ class ReportingEngineTest extends TestCase
         $this->assertSame('HIGH', $byDomain['GOV']['severity']); // 22 is below the severe line
         $this->assertSame('STRENGTH', $byDomain['WORK']['category']);
         $this->assertSame('DATA_GAP', $byDomain['FIN']['category']);
+    }
+
+    public function test_weakness_carries_failed_indicators_consequence_and_expected_impact(): void
+    {
+        $findings = (new DiagnosticsService)->findings($this->payload());
+        $gov = collect($findings)->firstWhere('measurement_domain', 'GOV');
+
+        $this->assertCount(2, $gov['failed_indicators']);
+        $this->assertNotNull($gov['consequence']);
+        $this->assertStringContainsString('left as it is', $gov['consequence']);
+        // 22/100 in a high-criticality domain → high improvement potential.
+        $this->assertSame('HIGH', $gov['expected_impact']);
+    }
+
+    public function test_root_causes_detect_a_failing_cluster(): void
+    {
+        $findings = (new DiagnosticsService)->findings($this->payload());
+        $causes = (new RootCauseService)->rootCauses($findings);
+
+        $this->assertNotEmpty($causes);
+        $this->assertStringContainsString('systemic cause', $causes[0]['statement']);
+    }
+
+    public function test_risks_combine_likelihood_and_impact(): void
+    {
+        $findings = (new DiagnosticsService)->findings($this->payload());
+        $risks = (new RiskService)->risks($findings);
+
+        $gov = collect($risks)->firstWhere('measurement_domain', 'GOV');
+        $this->assertNotNull($gov);
+        // HIGH severity (likelihood HIGH) x GOV criticality (HIGH impact) => HIGH risk.
+        $this->assertSame('HIGH', $gov['level']);
+        $this->assertNotNull($gov['consequence']);
+    }
+
+    public function test_intelligence_carries_root_causes_and_risks(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $intelligence = $composer->intelligence($this->payload());
+
+        $this->assertArrayHasKey('root_causes', $intelligence);
+        $this->assertArrayHasKey('risks', $intelligence);
+        $this->assertNotEmpty($intelligence['risks']);
     }
 
     public function test_worst_news_leads(): void
@@ -105,7 +153,7 @@ class ReportingEngineTest extends TestCase
 
     public function test_risk_lens_leads_with_high_severity_only(): void
     {
-        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService);
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
         $intelligence = $composer->intelligence($this->payload());
 
         $risk = $composer->throughLens($intelligence, 'RISK');
@@ -118,7 +166,7 @@ class ReportingEngineTest extends TestCase
 
     public function test_unknown_lens_falls_back_to_performance(): void
     {
-        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService);
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
         $intelligence = $composer->intelligence($this->payload());
 
         $view = $composer->throughLens($intelligence, 'NONSENSE');
@@ -128,7 +176,7 @@ class ReportingEngineTest extends TestCase
 
     public function test_intelligence_is_deterministic(): void
     {
-        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService);
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
 
         $a = $composer->intelligence($this->payload());
         $b = $composer->intelligence($this->payload());

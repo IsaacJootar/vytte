@@ -43,6 +43,8 @@ class DiagnosticsService
                 statement: 'A critical failure was recorded. One or more answers indicate a problem serious enough to override the overall score.',
                 why: 'A critical failure is a single finding grave enough to matter regardless of how everything else scored.',
                 evidence: ['calibration' => 'CRITICAL_FAILURE'],
+                consequence: 'If the critical failure is left unaddressed, it undermines the trustworthiness of the entire result and exposes the facility to serious, immediate risk.',
+                expectedImpact: 'HIGH',
             );
         }
 
@@ -101,6 +103,10 @@ class DiagnosticsService
 
         if ($score < self::WEAK) {
             $severity = $score < self::SEVERE ? 'HIGH' : 'MEDIUM';
+            $failed = $domain['failed_indicators'] ?? [];
+            $why = $failed !== []
+                ? count($failed).' of its measured items are failing, which points to a systemic gap rather than one-off problems.'
+                : 'A low domain score points to a systemic gap that cuts across the questions feeding it.';
             $findings[] = $this->finding(
                 subject: $name,
                 domain: $code,
@@ -108,8 +114,11 @@ class DiagnosticsService
                 severity: $severity,
                 score: (float) $score,
                 statement: $name.' is weak, scoring '.round($score).' out of 100.',
-                why: 'A low domain score points to a systemic gap that cuts across the questions feeding it.',
-                evidence: ['score' => (float) $score, 'calibration' => $calibration],
+                why: $why,
+                evidence: ['score' => (float) $score, 'calibration' => $calibration, 'failed_indicator_count' => count($failed)],
+                failedIndicators: $failed,
+                consequence: DomainRiskProfile::consequence($code, $name),
+                expectedImpact: $this->expectedImpact((float) $score, $code),
             );
         } elseif ($score >= self::STRONG) {
             $findings[] = $this->finding(
@@ -132,6 +141,8 @@ class DiagnosticsService
                 statement: $name.' is moderate, scoring '.round($score).' out of 100, with room to improve.',
                 why: 'A middling score is neither a failure nor a strength; it is where reasonable effort moves the needle most.',
                 evidence: ['score' => (float) $score, 'calibration' => $calibration],
+                failedIndicators: $domain['failed_indicators'] ?? [],
+                expectedImpact: $this->expectedImpact((float) $score, $code),
             );
         }
 
@@ -150,6 +161,9 @@ class DiagnosticsService
         string $statement,
         string $why,
         array $evidence,
+        array $failedIndicators = [],
+        ?string $consequence = null,
+        ?string $expectedImpact = null,
     ): array {
         return [
             'subject' => $subject,
@@ -160,7 +174,29 @@ class DiagnosticsService
             'statement' => $statement,
             'why' => $why,
             'evidence' => $evidence,
+            // The concrete questions behind the finding, the plain consequence of leaving it,
+            // and how much improving it could move the result. Null where not applicable.
+            'failed_indicators' => $failedIndicators,
+            'consequence' => $consequence,
+            'expected_impact' => $expectedImpact,
         ];
+    }
+
+    /**
+     * How much headroom this domain has, weighted by how much the domain matters. A low score
+     * in a high-criticality domain is where effort pays off most.
+     */
+    private function expectedImpact(float $score, ?string $domainCode): string
+    {
+        $headroom = 100.0 - $score;
+        $base = $headroom >= 40 ? 'HIGH' : ($headroom >= 20 ? 'MEDIUM' : 'LOW');
+
+        // A high-criticality domain bumps the potential up a notch — fixing it matters more.
+        if (DomainRiskProfile::criticality($domainCode) === 'HIGH' && $base !== 'HIGH') {
+            return $base === 'LOW' ? 'MEDIUM' : 'HIGH';
+        }
+
+        return $base;
     }
 
     /**
