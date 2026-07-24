@@ -43,6 +43,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectProgressController;
+use App\Http\Controllers\ReportScheduleController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RespondentLinkController;
 use App\Http\Controllers\TeamController;
@@ -68,6 +69,8 @@ Route::middleware('auth')->group(function () {
     Route::post('projects/{project}/targets', [ProjectProgressController::class, 'setTarget'])->name('projects.targets.set');
     Route::delete('projects/{project}/targets/{target}', [ProjectProgressController::class, 'deleteTarget'])->name('projects.targets.delete');
     Route::get('benchmark', [BenchmarkController::class, 'index'])->name('benchmark.index');
+    Route::post('projects/{project}/report-schedules', [ReportScheduleController::class, 'store'])->name('report-schedules.store');
+    Route::delete('projects/{project}/report-schedules/{reportSchedule}', [ReportScheduleController::class, 'destroy'])->name('report-schedules.destroy');
 
     Route::get('modules', [ModuleLibraryController::class, 'index'])->name('modules.index');
     Route::get('modules/{module}', [ModuleLibraryController::class, 'show'])->name('modules.show');
@@ -98,6 +101,7 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/export/excel', [ExportController::class, 'assessmentExcel'])->name('assessments.export.excel');
     Route::get('assessments/{assessment}/export/ppt', [ExportController::class, 'assessmentPpt'])->name('assessments.export.ppt');
     Route::post('assessments/{assessment}/share', [ExportController::class, 'createShareLink'])->name('assessments.share');
+    Route::post('assessments/{assessment}/email', [ExportController::class, 'emailReport'])->name('assessments.email');
     Route::delete('assessments/{assessment}/share-links/{shareLink}', [ExportController::class, 'revokeShareLink'])->name('assessments.share.revoke');
     Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');
     Route::delete('assessments/{assessment}/respondent-links/{respondentToken}', [RespondentLinkController::class, 'destroy'])->name('assessments.respondent-link.destroy');

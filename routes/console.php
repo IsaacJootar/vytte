@@ -2,6 +2,11 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+
+// Email scheduled reports to recipients whose cadence is due. Runs hourly; the command
+// itself decides which schedules are due, so the exact tick does not matter.
+Schedule::command('reports:send-scheduled')->hourly();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

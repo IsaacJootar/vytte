@@ -65,7 +65,14 @@ foundation this builds on).
   structured findings. Provider is OpenAI behind `AiChatClient`. `assessment_ai_narratives`
   pivoted from `lens` to `product`; results page offers each product with generate/regenerate.
   Risk/Improvement forecasts stay deferred (predictive, need history).
-- P7: pending.
+- **P7 — Delivery: ✅ built.** `ReportDeliveryService` emails a read-only report link (never the
+  data) via `ReportSharedNotification`, routed to any address. On-demand from the results page
+  (`assessments.email`, plan-gated on `shareable_report_links`). `ReportSchedule` + the
+  `reports:send-scheduled` command (registered hourly in `routes/console.php`) email a project's
+  latest report to a recipient on a WEEKLY / MONTHLY / QUARTERLY cadence, advancing each schedule
+  after it fires; managed from the Progress page. Public API stays deferred (post-beta).
+
+**All phases P1–P7 complete.** The reporting module v2 is built as approved.
 
 ## Phases
 
@@ -77,7 +84,7 @@ foundation this builds on).
 | **P4** ✅ | Trend & progress depth | Assessment typing (baseline/midline/endline/follow-up); resolved/persistent/new/regressed matching; target/goal tracking; trend-only insights; in-tenant benchmarking | P1 |
 | **P5** ✅ | Visualisation | Radar, heat map, trend line, risk matrix, comparison tables, question drill-down (self-contained SVG/CSS) | P1–P4 |
 | **P6** ✅ | AI products | Executive briefing, diagnostic summary, root-cause narrative, donor/clinical/operational summaries (OpenAI, boundary-enforced) | P1–P3 |
-| **P7** | Delivery | Email report, scheduled reports | P5 |
+| **P7** ✅ | Delivery | Email report, scheduled reports | P5 |
 
 ---
 

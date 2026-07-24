@@ -103,6 +103,26 @@
         </div>
     @endif
 
+    {{-- Email this report to a recipient (a read-only link, not the data). --}}
+    <div class="no-print mb-5 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+        <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Email this report</p>
+        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Sends a read-only link to the recipient.</p>
+        <form method="POST" action="{{ route('assessments.email', $assessment) }}" class="mt-3 flex flex-wrap items-end gap-2">
+            @csrf
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                Recipient email
+                <input type="email" name="recipient_email" required placeholder="name@example.com"
+                       class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+            </label>
+            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 flex-1 min-w-[12rem]">
+                Message (optional)
+                <input type="text" name="message" maxlength="1000" placeholder="A short note"
+                       class="mt-1 block w-full rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+            </label>
+            <button type="submit" class="px-3 py-1.5 text-sm font-semibold text-white bg-vytte-600 rounded-lg hover:bg-vytte-700 transition-colors">Send</button>
+        </form>
+    </div>
+
     {{-- Header --}}
     <div class="mb-1">
         <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Assessment Results</p>

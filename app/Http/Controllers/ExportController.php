@@ -8,11 +8,13 @@ use App\Models\PlatformSetting;
 use App\Models\Project;
 use App\Services\AuditService;
 use App\Services\PlanService;
+use App\Services\ReportDeliveryService;
 use App\Services\Reporting\ReportDocumentExporter;
 use App\Services\ReportSnapshotService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -161,6 +163,37 @@ class ExportController extends Controller
         $link = route('reports.shared.token', $shareLink->token);
 
         return back()->with('share_link', $link);
+    }
+
+    /**
+     * Email a read-only report link to a recipient.
+     */
+    public function emailReport(Request $request, Assessment $assessment, ReportDeliveryService $delivery): RedirectResponse
+    {
+        $this->authorizeAssessmentAccess($assessment);
+
+        $workspace = app('current.workspace');
+        if (! PlanService::workspaceCanAccess($workspace, 'shareable_report_links')) {
+            return back()->with('error', 'Emailing reports is not available on your current plan. Upgrade to share assessment results.');
+        }
+
+        if ($assessment->status !== Assessment::STATUS_COMPLETE) {
+            return back()->with('error', 'Complete the assessment before emailing its report.');
+        }
+
+        $validated = $request->validate([
+            'recipient_email' => ['required', 'email', 'max:255'],
+            'message' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $delivery->sendForAssessment(
+            $assessment,
+            $validated['recipient_email'],
+            $validated['message'] ?? null,
+            creatorId: (string) $request->user()->user_id,
+        );
+
+        return back()->with('success', 'Report emailed to '.$validated['recipient_email'].'.');
     }
 
     public function revokeShareLink(Assessment $assessment, AssessmentShareLink $shareLink): RedirectResponse

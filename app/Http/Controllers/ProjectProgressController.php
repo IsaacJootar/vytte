@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Assessment;
 use App\Models\PerformanceTarget;
 use App\Models\Project;
+use App\Models\ReportSchedule;
 use App\Services\PlanService;
 use App\Services\Reporting\TrendService;
 use Illuminate\Contracts\View\View;
@@ -53,8 +54,9 @@ class ProjectProgressController extends Controller
         $trendInsights = $trends->trendInsights($project);
         $targetProgress = $trends->targetProgress($project);
         $targets = PerformanceTarget::where('project_id', $project->project_id)->get();
+        $schedules = ReportSchedule::where('project_id', $project->project_id)->get();
 
-        return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains', 'trend', 'followThrough', 'issues', 'trendInsights', 'targetProgress', 'targets'));
+        return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains', 'trend', 'followThrough', 'issues', 'trendInsights', 'targetProgress', 'targets', 'schedules'));
     }
 
     public function compare(Project $project, Request $request): View|RedirectResponse
