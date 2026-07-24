@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Models\AssessmentAiNarrative;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentShareLink;
@@ -11,6 +12,7 @@ use App\Models\Project;
 use App\Models\Response;
 use App\Models\WorkspaceMember;
 use App\Notifications\AssessmentCompletedNotification;
+use App\Services\Ai\AiNarrativeService;
 use App\Services\AssessmentCreationService;
 use App\Services\AuditService;
 use App\Services\PlanService;
@@ -230,6 +232,14 @@ class AssessmentController extends Controller
         $lens = request()->query('lens', 'PERFORMANCE');
         $lensView = $composer->throughLens($intelligence, is_string($lens) ? $lens : 'PERFORMANCE');
         $lensOptions = ReportComposer::lenses();
+
+        // Optional AI narrative for the current lens — present only if generated, and only
+        // offered if the integration is configured. The report never depends on it.
+        $aiAvailable = app(AiNarrativeService::class)->isAvailable();
+        $narrative = AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)
+            ->where('lens', $lensView['lens'])
+            ->first();
+
         if ($assessment->score) {
             $assessment->score->overall_score = $report['score']['overall_score'];
             $assessment->score->calibration_status = $report['score']['calibration_status'];
@@ -266,7 +276,56 @@ class AssessmentController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions'));
+        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions', 'aiAvailable', 'narrative'));
+    }
+
+    /**
+     * Generate (or regenerate) the AI narrative for the current lens.
+     *
+     * The narrative is a retelling of the already-frozen intelligence; it adds no new facts.
+     * A failure — no key, API down — degrades to a plain message and never breaks the report.
+     */
+    public function generateNarrative(Request $request, Assessment $assessment, ReportSnapshotService $reports, AiNarrativeService $narrator): RedirectResponse
+    {
+        $this->authorize('update', $assessment);
+
+        $lens = $request->input('lens', 'EXECUTIVE');
+        $lens = is_string($lens) && array_key_exists($lens, ReportComposer::lenses()) ? $lens : 'EXECUTIVE';
+
+        if ($assessment->status !== Assessment::STATUS_COMPLETE) {
+            return back()->with('error', 'Complete the assessment before generating a summary.');
+        }
+
+        if (! $narrator->isAvailable()) {
+            return back()->with('error', 'The AI summary is not available yet. It needs the Anthropic API key to be configured.');
+        }
+
+        try {
+            $result = $narrator->narrate($reports->payloadFor($assessment), $lens);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'The AI summary could not be generated right now. Please try again shortly.');
+        }
+
+        AssessmentAiNarrative::updateOrCreate(
+            ['assessment_id' => $assessment->assessment_id, 'lens' => $result['lens']],
+            [
+                'model' => $result['model'],
+                'source_hash' => $result['source_hash'],
+                'body' => $result['body'],
+                'generated_by' => $request->user()->user_id,
+                'created_at' => now(),
+            ],
+        );
+
+        app(AuditService::class)->record('assessment.ai_narrative.generated', $assessment, newValues: [
+            'lens' => $result['lens'],
+            'model' => $result['model'],
+        ]);
+
+        return back(fallback: route('assessments.results', $assessment).'?lens='.$result['lens'])
+            ->with('success', 'AI summary ready.');
     }
 
     /**

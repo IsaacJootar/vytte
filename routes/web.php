@@ -84,6 +84,7 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/run', [AssessmentController::class, 'run'])->name('assessments.run');
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
+    Route::post('assessments/{assessment}/narrative', [AssessmentController::class, 'generateNarrative'])->name('assessments.narrative');
     Route::get('assessments/{assessment}/respondent-collection', [MultiRespondentAssessmentController::class, 'show'])->name('assessments.respondent-collection');
     Route::patch('assessments/{assessment}/respondent-sessions/{responseSession}', [MultiRespondentAssessmentController::class, 'classify'])->name('assessments.respondent-sessions.classify');
     Route::post('assessments/{assessment}/respondent-collection/finalize', [MultiRespondentAssessmentController::class, 'finalize'])->name('assessments.respondent-collection.finalize');
