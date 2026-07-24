@@ -42,7 +42,7 @@ class AiNarrativeService
     do next. Lead with the most serious item. Be honest about anything that could not be scored.
     PROMPT;
 
-    public function __construct(private readonly AnthropicClient $client) {}
+    public function __construct(private readonly AiChatClient $client) {}
 
     public function isAvailable(): bool
     {

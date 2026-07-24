@@ -175,7 +175,7 @@ Outputs (narrative only): Executive Narrative, Diagnostic Summary, Root Cause ex
 **The boundary, stated as a rule:** AI may *rephrase, summarise and prioritise* structured findings; it may not *invent* a finding, a score, or a recommendation that has no underlying structured source. Every AI sentence must trace to a frozen finding — the same citation rule that governs recommendations. This makes AI output auditable and keeps the deterministic report as the source of truth.
 
 - **DEFER hard:** Risk Forecast, Improvement Forecast — these are *predictive* and need longitudinal depth the platform will not have for several cycles. Design the seam, build nothing.
-- Uses `claude-sonnet-4-5` per the stack; prompt-level, not model-level, work.
+- Uses the OpenAI (ChatGPT) API — model configurable via `OPENAI_MODEL` (default `gpt-4o`); prompt-level, not model-level, work. The provider sits behind the `AiChatClient` interface so it can be swapped without touching the engine.
 
 ---
 

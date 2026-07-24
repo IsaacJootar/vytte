@@ -297,7 +297,7 @@ class AssessmentController extends Controller
         }
 
         if (! $narrator->isAvailable()) {
-            return back()->with('error', 'The AI summary is not available yet. It needs the Anthropic API key to be configured.');
+            return back()->with('error', 'The AI summary is not available yet. It needs the OpenAI API key to be configured.');
         }
 
         try {

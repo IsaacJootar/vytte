@@ -11,7 +11,7 @@ use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\Services\Ai\AnthropicClient;
+use App\Services\Ai\AiChatClient;
 use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,10 +43,10 @@ class AiNarrativeTest extends TestCase
 
     private function configureAi(?string $key): void
     {
-        config()->set('services.anthropic.api_key', $key);
-        config()->set('services.anthropic.model', 'claude-sonnet-4-5');
+        config()->set('services.openai.api_key', $key);
+        config()->set('services.openai.model', 'gpt-4o');
         // The client is a singleton built from config; rebuild it so the new key takes hold.
-        app()->forgetInstance(AnthropicClient::class);
+        app()->forgetInstance(AiChatClient::class);
     }
 
     private function completedAssessment(): Assessment
@@ -83,8 +83,8 @@ class AiNarrativeTest extends TestCase
     public function test_narrative_is_generated_and_stored_when_configured(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'The assessment shows serious gaps in governance. Address them first.']],
+            'api.openai.com/*' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'The assessment shows serious gaps in governance. Address them first.']]],
             ]),
         ]);
         $this->configureAi('test-key');
@@ -97,15 +97,15 @@ class AiNarrativeTest extends TestCase
         $narrative = AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)->first();
         $this->assertNotNull($narrative);
         $this->assertSame('EXECUTIVE', $narrative->lens);
-        $this->assertSame('claude-sonnet-4-5', $narrative->model);
+        $this->assertSame('gpt-4o', $narrative->model);
         $this->assertStringContainsString('governance', $narrative->body);
     }
 
     public function test_only_frozen_findings_are_sent_to_the_model(): void
     {
         Http::fake([
-            'api.anthropic.com/*' => Http::response([
-                'content' => [['type' => 'text', 'text' => 'Summary text.']],
+            'api.openai.com/*' => Http::response([
+                'choices' => [['message' => ['role' => 'assistant', 'content' => 'Summary text.']]],
             ]),
         ]);
         $this->configureAi('test-key');
@@ -116,11 +116,13 @@ class AiNarrativeTest extends TestCase
         Http::assertSent(function ($request) {
             $body = $request->data();
 
-            // The rule must be present, and the model must be the one from the stack.
-            return str_contains($request->url(), '/v1/messages')
-                && $body['model'] === 'claude-sonnet-4-5'
-                && str_contains($body['system'], 'Never introduce a finding')
-                && str_contains($body['messages'][0]['content'], 'FINDINGS:');
+            // The rule must be present (system message), and only the frozen findings sent
+            // (user message). The model is the configured OpenAI model.
+            return str_contains($request->url(), '/v1/chat/completions')
+                && $body['model'] === 'gpt-4o'
+                && $body['messages'][0]['role'] === 'system'
+                && str_contains($body['messages'][0]['content'], 'Never introduce a finding')
+                && str_contains($body['messages'][1]['content'], 'FINDINGS:');
         });
     }
 
@@ -138,7 +140,7 @@ class AiNarrativeTest extends TestCase
 
     public function test_api_failure_does_not_break_the_report(): void
     {
-        Http::fake(['api.anthropic.com/*' => Http::response(['error' => 'overloaded'], 529)]);
+        Http::fake(['api.openai.com/*' => Http::response(['error' => 'overloaded'], 529)]);
         $this->configureAi('test-key');
         $assessment = $this->completedAssessment();
 
@@ -167,9 +169,9 @@ class AiNarrativeTest extends TestCase
 
     public function test_regeneration_replaces_the_existing_narrative_for_a_lens(): void
     {
-        Http::fake(['api.anthropic.com/*' => Http::sequence()
-            ->push(['content' => [['type' => 'text', 'text' => 'First version.']]])
-            ->push(['content' => [['type' => 'text', 'text' => 'Second version.']]]),
+        Http::fake(['api.openai.com/*' => Http::sequence()
+            ->push(['choices' => [['message' => ['role' => 'assistant', 'content' => 'First version.']]]])
+            ->push(['choices' => [['message' => ['role' => 'assistant', 'content' => 'Second version.']]]]),
         ]);
         $this->configureAi('test-key');
         $assessment = $this->completedAssessment();
