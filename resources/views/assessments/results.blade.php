@@ -310,9 +310,20 @@
     {{-- Recommendations — each one cites the finding it came from. --}}
     @if ($recommendations->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">What to do next</h2>
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">What to do next</h2>
+                <a href="{{ route('actions.index', $assessment->project_id) }}"
+                   class="no-print inline-flex items-center gap-1 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200 transition-colors flex-shrink-0">
+                    Action plan
+                    <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
+                    </svg>
+                </a>
+            </div>
             <ul class="flex flex-col gap-3">
                 @foreach ($recommendations as $rec)
+                    {{-- The index into the frozen recommendation list, so the action cites the real recommendation. --}}
+                    @php $recIndex = collect($intelligence['recommendations'] ?? [])->search($rec, true); @endphp
                     <li class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-600 dark:bg-slate-700/40">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-[10px] font-bold uppercase tracking-wide {{ $rec['horizon'] === 'IMMEDIATE' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400' }}">
@@ -324,6 +335,19 @@
                         <p class="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
                             Because: {{ $rec['from_finding']['statement'] }}
                         </p>
+                        @if ($recIndex !== false)
+                            <form method="POST" action="{{ route('actions.store', $assessment) }}" class="no-print mt-2">
+                                @csrf
+                                <input type="hidden" name="recommendation_index" value="{{ $recIndex }}">
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200 transition-colors">
+                                    <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                        <path d="M10 5a.75.75 0 01.75.75v3.5h3.5a.75.75 0 010 1.5h-3.5v3.5a.75.75 0 01-1.5 0v-3.5h-3.5a.75.75 0 010-1.5h3.5v-3.5A.75.75 0 0110 5z"/>
+                                    </svg>
+                                    Add to action plan
+                                </button>
+                            </form>
+                        @endif
                     </li>
                 @endforeach
             </ul>

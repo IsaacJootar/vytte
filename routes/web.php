@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActionController;
 use App\Http\Controllers\Admin\AssessmentBuilderController as AdminAssessmentBuilderController;
 use App\Http\Controllers\Admin\AssessmentOversightController as AdminAssessmentOversightController;
 use App\Http\Controllers\Admin\AssessmentQuestionController as AdminAssessmentQuestionController;
@@ -92,6 +93,12 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');
     Route::delete('assessments/{assessment}/respondent-links/{respondentToken}', [RespondentLinkController::class, 'destroy'])->name('assessments.respondent-link.destroy');
     Route::get('projects/{project}/export/csv', [ExportController::class, 'projectCsv'])->name('projects.export.csv');
+
+    // Action plan — the living domain drawn from frozen recommendations.
+    Route::get('projects/{project}/actions', [ActionController::class, 'index'])->name('actions.index');
+    Route::post('assessments/{assessment}/actions', [ActionController::class, 'store'])->name('actions.store');
+    Route::patch('actions/{action}', [ActionController::class, 'update'])->name('actions.update');
+    Route::delete('actions/{action}', [ActionController::class, 'destroy'])->name('actions.destroy');
 
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::post('/team/invite', [TeamController::class, 'store'])->name('team.invite');
