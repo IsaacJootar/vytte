@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Assessment;
 use App\Models\AssessmentAction;
 use App\Models\AssessmentCatalogueRelease;
+use App\Models\PerformanceTarget;
 use App\Models\Project;
 use App\Models\Response;
 use App\Models\Target;
@@ -151,5 +152,73 @@ class TrendTest extends TestCase
             ->assertOk()
             ->assertSee('Trend')
             ->assertSee('Action follow-through');
+    }
+
+    public function test_issue_matching_classifies_resolved_and_new(): void
+    {
+        // Worst then best — weaknesses that were present are resolved.
+        $this->runAssessment('worst', '2026-01-01');
+        $this->runAssessment('best', '2026-02-01');
+
+        $issues = app(TrendService::class)->issues($this->project);
+
+        $this->assertTrue($issues['comparable']);
+        $this->assertNotEmpty($issues['resolved']);
+        $this->assertEmpty($issues['new']);
+    }
+
+    public function test_regression_produces_trend_insights(): void
+    {
+        // Best then worst — areas slip, producing decline / emerging-issue insights.
+        $this->runAssessment('best', '2026-01-01');
+        $this->runAssessment('worst', '2026-02-01');
+
+        $insights = app(TrendService::class)->trendInsights($this->project);
+        $codes = collect($insights)->pluck('category_code')->unique();
+
+        $this->assertNotEmpty($insights);
+        // A previously-fine domain now weak is an emerging issue; slippage is a decline.
+        $this->assertTrue($codes->intersect(['EMERGING_ISSUE', 'DECLINE'])->isNotEmpty());
+    }
+
+    public function test_target_progress_measures_current_against_goal(): void
+    {
+        $this->runAssessment('best', '2026-01-01'); // overall 100
+
+        PerformanceTarget::create([
+            'project_id' => $this->project->project_id,
+            'domain_code' => null,
+            'target_score' => 80,
+            'created_by' => $this->user->user_id,
+        ]);
+
+        $progress = app(TrendService::class)->targetProgress($this->project);
+
+        $this->assertCount(1, $progress);
+        $this->assertSame('Overall', $progress[0]['scope']);
+        $this->assertTrue($progress[0]['met']); // 100 >= 80
+        $this->assertGreaterThanOrEqual(0, $progress[0]['gap']);
+    }
+
+    public function test_assessment_type_can_be_set(): void
+    {
+        $assessment = $this->runAssessment('best', '2026-01-01');
+
+        $this->actingAs($this->user)
+            ->patch(route('assessments.type', $assessment), ['assessment_type' => 'BASELINE'])
+            ->assertRedirect();
+
+        $this->assertSame('BASELINE', $assessment->fresh()->assessment_type);
+    }
+
+    public function test_benchmark_page_ranks_facilities(): void
+    {
+        $this->runAssessment('best', '2026-01-01');
+
+        $this->actingAs($this->user)
+            ->get(route('benchmark.index'))
+            ->assertOk()
+            ->assertSee('Facility comparison')
+            ->assertSee($this->project->name);
     }
 }

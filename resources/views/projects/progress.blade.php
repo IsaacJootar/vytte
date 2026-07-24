@@ -100,6 +100,100 @@
             </div>
         </div>
 
+        {{-- Progress: what was resolved, what persists, what is new, what slipped. --}}
+        @if ($issues['comparable'])
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Since the last assessment</h2>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">What changed, area by area.</p>
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                    @php
+                        $buckets = [
+                            'resolved' => ['Resolved', 'text-green-600 dark:text-green-400'],
+                            'improved' => ['Improved', 'text-green-600 dark:text-green-400'],
+                            'persistent' => ['Still weak', 'text-amber-600 dark:text-amber-400'],
+                            'new' => ['New issues', 'text-red-600 dark:text-red-400'],
+                            'regressed' => ['Slipped', 'text-red-600 dark:text-red-400'],
+                        ];
+                    @endphp
+                    @foreach ($buckets as $key => [$label, $color])
+                        <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-3">
+                            <p class="text-2xl font-black {{ $color }} tabular-nums">{{ count($issues[$key]) }}</p>
+                            <p class="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500 mt-0.5">{{ $label }}</p>
+                            @if (count($issues[$key]) > 0)
+                                <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">{{ collect($issues[$key])->pluck('domain_name')->take(3)->join(', ') }}</p>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+                @if (! empty($trendInsights))
+                    <ul class="mt-4 flex flex-col gap-1.5 border-t border-slate-100 dark:border-slate-700 pt-3">
+                        @foreach ($trendInsights as $ti)
+                            <li class="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wide {{ $ti['polarity'] === 'NEGATIVE' ? 'text-red-500 dark:text-red-400' : 'text-amber-500 dark:text-amber-400' }} flex-shrink-0 mt-0.5">{{ $ti['category_name'] }}</span>
+                                <span>{{ $ti['statement'] }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        @endif
+
+        {{-- Targets: current performance against the goals set for this project. --}}
+        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Targets</h2>
+            @if (! empty($targetProgress))
+                <div class="flex flex-col gap-2 mb-4">
+                    @foreach ($targetProgress as $tp)
+                        <div class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-600 px-3 py-2">
+                            <span class="text-sm text-slate-700 dark:text-slate-200">{{ $tp['scope'] }}</span>
+                            <div class="flex items-center gap-3 text-xs">
+                                <span class="text-slate-500 dark:text-slate-400">Target {{ number_format($tp['target'], 0) }}</span>
+                                <span class="font-bold tabular-nums {{ $tp['met'] ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400' }}">
+                                    {{ $tp['current'] !== null ? number_format($tp['current'], 1) : '—' }}
+                                    @if ($tp['gap'] !== null)
+                                        ({{ $tp['gap'] >= 0 ? '+' : '' }}{{ number_format($tp['gap'], 1) }})
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">No targets set yet. Set a goal score to track progress against it.</p>
+            @endif
+
+            <form method="POST" action="{{ route('projects.targets.set', $project) }}" class="flex flex-wrap items-end gap-2">
+                @csrf
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Area
+                    <select name="domain_code" class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                        <option value="">Overall</option>
+                        @foreach ($allDomains as $d)
+                            <option value="{{ $d->domain_code }}">{{ $d->domain_name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Target score
+                    <input type="number" name="target_score" min="0" max="100" step="1" required
+                           class="mt-1 block w-24 rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                </label>
+                <button type="submit" class="px-3 py-1.5 text-sm font-semibold text-white bg-vytte-600 rounded-lg hover:bg-vytte-700 transition-colors">Set target</button>
+            </form>
+            @if ($targets->isNotEmpty())
+                <div class="mt-2 flex flex-wrap gap-2">
+                    @foreach ($targets as $t)
+                        <form method="POST" action="{{ route('projects.targets.delete', [$project, $t]) }}" class="inline">
+                            @csrf @method('DELETE')
+                            <button class="text-[11px] text-slate-400 hover:text-red-600 dark:hover:text-red-400">
+                                Remove {{ $t->domain_code ?? 'Overall' }} target ✕
+                            </button>
+                        </form>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
         {{-- Assessment runs table --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
@@ -112,6 +206,7 @@
                         <tr class="border-b border-slate-100 dark:border-slate-700">
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">#</th>
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Date</th>
+                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Type</th>
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Module</th>
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Maturity Level</th>
                             <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Score</th>
@@ -130,6 +225,18 @@
                                 <td class="px-5 py-3 text-xs text-slate-400 dark:text-slate-500 tabular-nums">{{ $i + 1 }}</td>
                                 <td class="px-5 py-3 text-slate-700 dark:text-slate-200 whitespace-nowrap">
                                     {{ $a->completed_at?->format('d M Y') ?? '—' }}
+                                </td>
+                                <td class="px-5 py-3">
+                                    <form method="POST" action="{{ route('assessments.type', $a) }}">
+                                        @csrf @method('PATCH')
+                                        <select name="assessment_type" onchange="this.form.submit()"
+                                                class="text-xs rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 py-1">
+                                            <option value="" @selected(! $a->assessment_type)>—</option>
+                                            @foreach (\App\Models\Assessment::TYPES as $type)
+                                                <option value="{{ $type }}" @selected($a->assessment_type === $type)>{{ ucfirst(strtolower($type)) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </form>
                                 </td>
                                 <td class="px-5 py-3 text-slate-700 dark:text-slate-200">
                                     {{ $aModule?->module_name ?? '—' }}

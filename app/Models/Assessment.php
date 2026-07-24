@@ -21,6 +21,9 @@ class Assessment extends Model
 
     public const PUBLISH_PUBLISHED = 'PUBLISHED';
 
+    /** Longitudinal typing — where this run sits in the series. Null = an ordinary run. */
+    public const TYPES = ['BASELINE', 'MIDLINE', 'ENDLINE', 'FOLLOWUP'];
+
     protected $primaryKey = 'assessment_id';
 
     protected $attributes = [
@@ -33,6 +36,7 @@ class Assessment extends Model
         'project_id',
         'assessment_tier_id',
         'scope_type',
+        'assessment_type',
         'creation_path',
         'catalogue_release_id',
         'composition_hash',

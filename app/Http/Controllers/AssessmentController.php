@@ -424,6 +424,23 @@ class AssessmentController extends Controller
         ]);
     }
 
+    /**
+     * Tag where this run sits in the series (baseline / midline / endline / follow-up), so
+     * the trend can tell a story rather than just compare adjacent runs.
+     */
+    public function setType(Request $request, Assessment $assessment): RedirectResponse
+    {
+        $this->authorize('update', $assessment);
+
+        $validated = $request->validate([
+            'assessment_type' => ['nullable', 'in:'.implode(',', Assessment::TYPES)],
+        ]);
+
+        $assessment->update(['assessment_type' => $validated['assessment_type'] ?: null]);
+
+        return back()->with('success', 'Assessment type updated.');
+    }
+
     private function authorizeWorkspace(Assessment $assessment): void
     {
         $this->authorize('view', $assessment);

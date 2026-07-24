@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\ScoreController as AdminScoreController;
 use App\Http\Controllers\Admin\ScoringPolicyController as AdminScoringPolicyController;
 use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
+use App\Http\Controllers\BenchmarkController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
@@ -64,6 +65,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
     Route::get('projects/{project}/progress', [ProjectProgressController::class, 'index'])->name('projects.progress');
     Route::get('projects/{project}/compare', [ProjectProgressController::class, 'compare'])->name('projects.compare');
+    Route::post('projects/{project}/targets', [ProjectProgressController::class, 'setTarget'])->name('projects.targets.set');
+    Route::delete('projects/{project}/targets/{target}', [ProjectProgressController::class, 'deleteTarget'])->name('projects.targets.delete');
+    Route::get('benchmark', [BenchmarkController::class, 'index'])->name('benchmark.index');
 
     Route::get('modules', [ModuleLibraryController::class, 'index'])->name('modules.index');
     Route::get('modules/{module}', [ModuleLibraryController::class, 'show'])->name('modules.show');
@@ -85,6 +89,7 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
     Route::post('assessments/{assessment}/narrative', [AssessmentController::class, 'generateNarrative'])->name('assessments.narrative');
+    Route::patch('assessments/{assessment}/type', [AssessmentController::class, 'setType'])->name('assessments.type');
     Route::get('assessments/{assessment}/respondent-collection', [MultiRespondentAssessmentController::class, 'show'])->name('assessments.respondent-collection');
     Route::patch('assessments/{assessment}/respondent-sessions/{responseSession}', [MultiRespondentAssessmentController::class, 'classify'])->name('assessments.respondent-sessions.classify');
     Route::post('assessments/{assessment}/respondent-collection/finalize', [MultiRespondentAssessmentController::class, 'finalize'])->name('assessments.respondent-collection.finalize');

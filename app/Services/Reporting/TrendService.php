@@ -4,6 +4,7 @@ namespace App\Services\Reporting;
 
 use App\Models\Assessment;
 use App\Models\AssessmentAction;
+use App\Models\PerformanceTarget;
 use App\Models\Project;
 use Illuminate\Support\Facades\DB;
 
@@ -97,6 +98,195 @@ class TrendService
             'completed' => $completed,
             'completion_rate' => $total > 0 ? round($completed / $total * 100, 0) : null,
             'overdue' => $actions->filter->isOverdue()->count(),
+        ];
+    }
+
+    /**
+     * How each domain has moved between the latest two comparable runs, classified as the
+     * organisational-learning story: resolved, persistent, new, regressed, improved.
+     *
+     * This is the heart of progress tracking — not just "the score changed" but "this problem
+     * was fixed, that one is still with us, and a new one has appeared."
+     *
+     * @return array{comparable: bool, resolved: array<int, mixed>, persistent: array<int, mixed>, new: array<int, mixed>, regressed: array<int, mixed>, improved: array<int, mixed>}
+     */
+    public function issues(Project $project): array
+    {
+        [$latest, $previous] = $this->latestComparablePair($project);
+        $empty = ['comparable' => false, 'resolved' => [], 'persistent' => [], 'new' => [], 'regressed' => [], 'improved' => []];
+        if ($latest === null || $previous === null) {
+            return $empty;
+        }
+
+        $buckets = ['resolved' => [], 'persistent' => [], 'new' => [], 'regressed' => [], 'improved' => []];
+        foreach ($this->domainMovements($latest, $previous) as $move) {
+            if ($move['latest'] === null || $move['previous'] === null) {
+                continue;
+            }
+            $status = $this->issueStatus((float) $move['previous'], (float) $move['latest']);
+            if ($status !== null) {
+                $buckets[$status][] = $move;
+            }
+        }
+
+        return array_merge(['comparable' => true], $buckets);
+    }
+
+    /**
+     * Current performance against the goals set for this project — overall and per domain.
+     *
+     * @return array<int, array{scope: string, target: float, current: ?float, gap: ?float, met: bool}>
+     */
+    public function targetProgress(Project $project): array
+    {
+        $targets = PerformanceTarget::where('project_id', $project->project_id)->get();
+        if ($targets->isEmpty()) {
+            return [];
+        }
+
+        [$latest] = $this->latestComparablePair($project, requireTwo: false);
+        if ($latest === null) {
+            return [];
+        }
+
+        $overall = $this->overall($latest);
+        $domainScores = $this->domainScores($latest->assessment_id);
+        $domainNames = $this->domainNames();
+
+        return $targets->map(function ($target) use ($overall, $domainScores, $domainNames) {
+            if ($target->domain_code === null) {
+                $current = $overall;
+                $scope = 'Overall';
+            } else {
+                $domainId = array_search($target->domain_code, $domainNames['code_to_id'], true);
+                $current = $domainId !== false ? ($domainScores[$domainId] ?? null) : null;
+                $scope = $domainNames['code_to_name'][$target->domain_code] ?? $target->domain_code;
+            }
+
+            $gap = $current !== null ? round($current - (float) $target->target_score, 1) : null;
+
+            return [
+                'scope' => $scope,
+                'target' => (float) $target->target_score,
+                'current' => $current,
+                'gap' => $gap,
+                'met' => $gap !== null && $gap >= 0,
+            ];
+        })->all();
+    }
+
+    /**
+     * Trend-only insights — the categories that only exist across time: emerging issues (a
+     * new weakness), deterioration (a domain that slipped), and no change (a weakness that
+     * persists). Produced from the issue matching, using the governed insight categories.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function trendInsights(Project $project): array
+    {
+        $issues = $this->issues($project);
+        if (! $issues['comparable']) {
+            return [];
+        }
+
+        $insights = [];
+        foreach ($issues['new'] as $move) {
+            $insights[] = $this->trendInsight('EMERGING_ISSUE', $move, $move['domain_name'].' has emerged as a new weak area since the last assessment.');
+        }
+        foreach ($issues['regressed'] as $move) {
+            $insights[] = $this->trendInsight('DECLINE', $move, $move['domain_name'].' has slipped since the last assessment ('.$this->signed($move['delta']).').');
+        }
+        foreach ($issues['persistent'] as $move) {
+            $insights[] = $this->trendInsight('NO_CHANGE', $move, $move['domain_name'].' remains weak — it has not moved since the last assessment.');
+        }
+
+        return $insights;
+    }
+
+    /**
+     * @param  array<string, mixed>  $move
+     * @return array<string, mixed>
+     */
+    private function trendInsight(string $code, array $move, string $statement): array
+    {
+        return [
+            'category_code' => $code,
+            'category_name' => InsightCatalog::name($code),
+            'polarity' => InsightCatalog::polarity($code),
+            'subject' => $move['domain_name'],
+            'measurement_domain' => $move['domain_code'],
+            'statement' => $statement,
+        ];
+    }
+
+    private function issueStatus(float $previous, float $latest): ?string
+    {
+        $prevWeak = $previous < 45.0;
+        $nowWeak = $latest < 45.0;
+        $prevBand = $this->band($previous);
+        $nowBand = $this->band($latest);
+
+        return match (true) {
+            $prevWeak && ! $nowWeak => 'resolved',
+            ! $prevWeak && $nowWeak => 'new',
+            $prevWeak && $nowWeak => 'persistent',
+            $nowBand > $prevBand => 'improved',
+            $nowBand < $prevBand => 'regressed',
+            default => null, // stable — no story to tell
+        };
+    }
+
+    /** 0 weak, 1 moderate, 2 strong. */
+    private function band(float $score): int
+    {
+        return $score >= 70 ? 2 : ($score >= 45 ? 1 : 0);
+    }
+
+    private function signed(?float $delta): string
+    {
+        if ($delta === null) {
+            return 'no change';
+        }
+
+        return ($delta >= 0 ? '+' : '').round($delta, 1);
+    }
+
+    /**
+     * The latest two composition-matched complete runs, newest last.
+     *
+     * @return array{0: ?Assessment, 1: ?Assessment}
+     */
+    private function latestComparablePair(Project $project, bool $requireTwo = true): array
+    {
+        $history = Assessment::where('project_id', $project->project_id)
+            ->where('status', Assessment::STATUS_COMPLETE)
+            ->with('score')
+            ->orderBy('completed_at')
+            ->get();
+
+        $latest = $history->last();
+        if ($latest === null) {
+            return [null, null];
+        }
+
+        $comparable = $history->filter(fn ($a) => $a->composition_hash === $latest->composition_hash)->values();
+        if ($requireTwo && $comparable->count() < 2) {
+            return [null, null];
+        }
+
+        return [$comparable->last(), $comparable->count() >= 2 ? $comparable->get($comparable->count() - 2) : null];
+    }
+
+    /**
+     * @return array{code_to_id: array<int, string>, code_to_name: array<string, string>}
+     */
+    private function domainNames(): array
+    {
+        $rows = DB::table('domains')->get(['domain_id', 'domain_code', 'domain_name']);
+
+        return [
+            'code_to_id' => $rows->pluck('domain_code', 'domain_id')->all(),
+            'code_to_name' => $rows->pluck('domain_name', 'domain_code')->all(),
         ];
     }
 

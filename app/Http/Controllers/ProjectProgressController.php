@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assessment;
+use App\Models\PerformanceTarget;
 use App\Models\Project;
 use App\Services\PlanService;
 use App\Services\Reporting\TrendService;
@@ -48,8 +49,12 @@ class ProjectProgressController extends Controller
 
         $trend = $trends->summary($project);
         $followThrough = $trends->actionFollowThrough($project);
+        $issues = $trends->issues($project);
+        $trendInsights = $trends->trendInsights($project);
+        $targetProgress = $trends->targetProgress($project);
+        $targets = PerformanceTarget::where('project_id', $project->project_id)->get();
 
-        return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains', 'trend', 'followThrough'));
+        return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains', 'trend', 'followThrough', 'issues', 'trendInsights', 'targetProgress', 'targets'));
     }
 
     public function compare(Project $project, Request $request): View|RedirectResponse
@@ -100,6 +105,38 @@ class ProjectProgressController extends Controller
             ->pluck('score', 'domain_id');
 
         return view('projects.compare', compact('project', 'assessmentA', 'assessmentB', 'allDomains', 'domainsA', 'domainsB'));
+    }
+
+    /**
+     * Set (or update) a performance target for this project — overall or for one domain.
+     */
+    public function setTarget(Request $request, Project $project): RedirectResponse
+    {
+        $this->authorize('update', $project);
+
+        $validated = $request->validate([
+            'domain_code' => ['nullable', 'string', 'max:20'],
+            'target_score' => ['required', 'numeric', 'min:0', 'max:100'],
+        ]);
+
+        PerformanceTarget::updateOrCreate(
+            ['project_id' => $project->project_id, 'domain_code' => $validated['domain_code'] ?: null],
+            ['target_score' => $validated['target_score'], 'created_by' => $request->user()->user_id],
+        );
+
+        return back()->with('success', 'Target saved.');
+    }
+
+    public function deleteTarget(Project $project, PerformanceTarget $target): RedirectResponse
+    {
+        $this->authorize('update', $project);
+        if ($target->project_id !== $project->project_id) {
+            abort(404);
+        }
+
+        $target->delete();
+
+        return back()->with('success', 'Target removed.');
     }
 
     private function compositionFingerprint(Assessment $assessment): string
