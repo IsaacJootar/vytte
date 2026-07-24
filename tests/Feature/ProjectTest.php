@@ -57,7 +57,8 @@ class ProjectTest extends TestCase
         $this->actingAs($user)
             ->get(route('projects.index'))
             ->assertOk()
-            ->assertSee('No projects yet');
+            ->assertSee('Create your first project')
+            ->assertSee('Create a project'); // the guided empty-state CTA
     }
 
     // ---- Create / Store ----

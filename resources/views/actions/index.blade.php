@@ -23,17 +23,12 @@
     @endphp
 
     @if ($actions->isEmpty())
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-12 flex flex-col items-center text-center">
-            <div class="w-10 h-10 rounded-xl bg-vytte-50 dark:bg-vytte-900/30 flex items-center justify-center mb-3">
-                <svg class="w-5 h-5 text-vytte-500 dark:text-vytte-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <p class="text-sm font-semibold text-slate-900 dark:text-white">No actions yet</p>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
-                Open a completed assessment's results and add a recommendation to the plan. It will appear here to own, schedule, and verify.
-            </p>
-        </div>
+        <x-empty-state
+            icon="check-circle"
+            title="No actions yet"
+            message="Open a completed assessment's report, go to 'What to do', and add a recommendation to the plan. It appears here to own, schedule, and verify."
+            :action="route('projects.show', $project)"
+            action-label="Open this project" />
     @else
         {{-- Summary --}}
         <div class="grid grid-cols-3 gap-3 mb-5">

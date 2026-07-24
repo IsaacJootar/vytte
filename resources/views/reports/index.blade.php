@@ -86,10 +86,12 @@
                 @endif
             </section>
         @empty
-            <div class="rounded-2xl border border-slate-200 bg-white px-5 py-12 text-center dark:border-slate-700 dark:bg-slate-800">
-                <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">No final reports yet</p>
-                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Complete an assessment and its final report will appear here.</p>
-            </div>
+            <x-empty-state
+                icon="chart-bar"
+                title="No reports yet"
+                message="Run an assessment on one of your assessment targets. Its report — scores, findings, risks, and what to do — appears here."
+                :action="route('projects.index')"
+                action-label="Start an assessment" />
         @endforelse
     </div>
 

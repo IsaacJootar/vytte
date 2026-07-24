@@ -37,24 +37,16 @@
 
     {{-- Flash message --}}
     @if ($projects->isEmpty())
-        {{-- Empty state --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-6 py-16 flex flex-col items-center text-center">
-            <div class="w-12 h-12 rounded-2xl bg-vytte-50 dark:bg-vytte-900/30 border border-vytte-100 dark:border-vytte-800 flex items-center justify-center mb-4">
-                <x-heroicon-o-folder class="w-6 h-6 text-vytte-600 dark:text-vytte-400" />
-            </div>
-            <p class="text-sm font-semibold text-slate-900 dark:text-white">
-                {{ request('search') ? 'No projects match "' . request('search') . '"' : 'No projects yet' }}
-            </p>
-            <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
-                {{ request('search') ? 'Try a different search term.' : 'Create your first project to start diagnosing a health facility, or community, or health subject.' }}
-            </p>
-            @unless(request('search'))
-                <a href="{{ route('projects.create') }}"
-                   class="mt-5 inline-flex items-center gap-1.5 px-4 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors duration-150">
-                    Create first project
-                </a>
-            @endunless
-        </div>
+        @if (request('search'))
+            <x-empty-state icon="folder" title='No projects match "{{ request('search') }}"' message="Try a different search term." />
+        @else
+            <x-empty-state
+                icon="folder"
+                title="Create your first project"
+                message="A project holds one assessment target — a community, hospital, clinic, or programme — and every assessment you run on it over time."
+                :action="route('projects.create')"
+                action-label="Create a project" />
+        @endif
     @else
         {{-- Project grid --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">

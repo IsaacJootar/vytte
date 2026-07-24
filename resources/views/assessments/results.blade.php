@@ -10,11 +10,14 @@
 
     {{-- Print styles --}}
     <style>
+        [x-cloak] { display: none !important; }
         @media print {
             aside, nav, .no-print { display: none !important; }
             body { background: white !important; }
             .print-break-avoid { break-inside: avoid; }
             * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            /* Tabs are a screen affordance; print the whole report. */
+            .report-panel, [x-cloak] { display: block !important; }
         }
     </style>
 
@@ -135,8 +138,24 @@
         </p>
     </div>
 
+    {{-- Report in steps (progressive disclosure). Tabs are screen-only; print shows all.
+         Changing the lens reloads with ?lens=, so land back on the diagnosis tab. --}}
+    <div x-data="{ tab: '{{ request()->query('lens') ? 'diagnosis' : 'overview' }}' }" class="mt-5">
+        <nav class="no-print flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700 mb-4" aria-label="Report sections">
+            @foreach (['overview' => 'Overview', 'diagnosis' => 'What we found', 'actions' => 'What to do', 'ai' => 'AI summaries'] as $tabKey => $tabLabel)
+                <button type="button" @click="tab = '{{ $tabKey }}'"
+                        :class="tab === '{{ $tabKey }}' ? 'border-vytte-600 text-vytte-700 dark:text-vytte-400' : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'"
+                        class="whitespace-nowrap px-3 py-2 -mb-px border-b-2 text-sm font-semibold transition-colors">
+                    {{ $tabLabel }}
+                </button>
+            @endforeach
+        </nav>
+
+    {{-- ===== OVERVIEW ===== --}}
+    <div x-show="tab === 'overview'" x-cloak class="report-panel">
+
     {{-- Overall score hero --}}
-    <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 print-break-avoid">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 print-break-avoid">
         <div class="flex flex-col sm:flex-row items-center gap-6">
             {{-- Arc meter --}}
             <div class="flex-shrink-0">
@@ -290,6 +309,11 @@
             </div>
         </div>
     @endif
+
+    </div>{{-- ===== /OVERVIEW ===== --}}
+
+    {{-- ===== WHAT WE FOUND (diagnosis) ===== --}}
+    <div x-show="tab === 'diagnosis'" x-cloak class="report-panel">
 
     {{-- Question drill-down: the individual questions behind each domain score. --}}
     @php $drilldown = $domainScores->filter(fn ($r) => ! empty($r->question_breakdown ?? null)); @endphp
@@ -486,6 +510,11 @@
         </div>
     @endif
 
+    </div>{{-- ===== /WHAT WE FOUND ===== --}}
+
+    {{-- ===== WHAT TO DO ===== --}}
+    <div x-show="tab === 'actions'" x-cloak class="report-panel">
+
     {{-- Recommendations — each one cites the finding it came from. --}}
     @if ($recommendations->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
@@ -536,6 +565,11 @@
         </div>
     @endif
 
+    </div>{{-- ===== /WHAT TO DO ===== --}}
+
+    {{-- ===== AI SUMMARIES ===== --}}
+    <div x-show="tab === 'ai'" x-cloak class="report-panel">
+
     {{-- AI products — purpose-built summaries over the findings above. Optional; the report
          does not depend on them, and none adds a fact the engine did not find. --}}
     @if ($aiAvailable || $narratives->isNotEmpty())
@@ -577,8 +611,10 @@
         </div>
     @endif
 
-    <x-methodology-note />
+    </div>{{-- ===== /AI SUMMARIES ===== --}}
 
+    {{-- Score history belongs with the Overview. --}}
+    <div x-show="tab === 'overview'" x-cloak class="report-panel">
     {{-- Score history (only when ≥ 2 assessments for same module on this project) --}}
     @if ($history->count() >= 2)
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden print-break-avoid no-print">
@@ -643,5 +679,11 @@
             </div>
         </div>
     @endif
+    </div>{{-- ===== /history overview panel ===== --}}
+
+    </div>{{-- ===== /report tabs ===== --}}
+
+    {{-- The WHO-aware label always shows, whatever tab is open. --}}
+    <x-methodology-note />
 
 </x-app-layout>

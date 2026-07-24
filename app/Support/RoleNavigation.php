@@ -116,6 +116,7 @@ final class RoleNavigation
                         self::item('projects.index', 'Projects', 'folder', 'projects.*'),
                         self::item('assessments.index', 'Assessments', 'clipboard-document-list', 'assessments.*'),
                         self::item('reports.index', 'Reports', 'chart-bar', 'reports.*'),
+                        self::item('benchmark.index', 'Benchmark', 'scale', 'benchmark.*'),
                     ],
                 ],
                 [

@@ -14,19 +14,12 @@
     </div>
 
     @if ($assessments->isEmpty())
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-12 flex flex-col items-center text-center">
-            <div class="w-10 h-10 rounded-xl bg-vytte-50 dark:bg-vytte-900/30 flex items-center justify-center mb-3">
-                <svg class="w-5 h-5 text-vytte-500 dark:text-vytte-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-                </svg>
-            </div>
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">No completed assessments yet</p>
-            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500 max-w-xs">Submit at least one assessment to start tracking progress for this project.</p>
-            <a href="{{ route('assessments.create', $project) }}"
-               class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors">
-                Start Assessment
-            </a>
-        </div>
+        <x-empty-state
+            icon="chart-bar-square"
+            title="No completed assessments yet"
+            message="Run and submit an assessment on this project. Progress, trends, and targets start tracking from the first one, and comparisons appear from the second."
+            :action="route('assessments.create', $project)"
+            action-label="Start an assessment" />
     @else
 
         {{-- Trend at a glance + action follow-through --}}

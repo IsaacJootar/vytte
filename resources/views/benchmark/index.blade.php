@@ -9,10 +9,12 @@
     </div>
 
     @if (empty($facilities))
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 px-5 py-12 text-center">
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Nothing to compare yet</p>
-            <p class="mt-1 text-xs text-slate-400 dark:text-slate-500 max-w-sm mx-auto">Complete an assessment on at least one facility to see it here. Comparison gets more useful with more facilities.</p>
-        </div>
+        <x-empty-state
+            icon="scale"
+            title="Nothing to compare yet"
+            message="Comparison needs at least two assessment targets with completed assessments. Run an assessment to add your first."
+            :action="route('projects.index')"
+            action-label="Start an assessment" />
     @else
         {{-- Facility league table --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-5">
