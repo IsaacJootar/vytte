@@ -86,7 +86,7 @@
                                     No target
                                 </span>
                             @endif
-                            <x-score-pill :score="null" />
+                            <x-score-pill :score="$project->latest_score !== null ? (int) round($project->latest_score) : null" />
                         </div>
 
                         {{-- Names --}}
@@ -112,7 +112,7 @@
                     {{-- Card footer --}}
                     <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
                         <div class="flex items-center gap-3 text-[11px]">
-                            <span class="text-slate-400 dark:text-slate-500">0 assessments</span>
+                            <span class="text-slate-400 dark:text-slate-500">{{ $project->assessments_count }} {{ \Illuminate\Support\Str::plural('assessment', $project->assessments_count) }}</span>
                             @if ($project->isArchived())
                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-semibold text-[10px]">Archived</span>
                             @endif

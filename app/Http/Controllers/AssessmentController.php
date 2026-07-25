@@ -70,13 +70,25 @@ class AssessmentController extends Controller
             ->with(['facilityProfile', 'departmentFrameworkVersions.module'])
             ->orderBy('release_name')
             ->get();
-        $focusedReleases = AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
-            ->where('creation_path', 'FOCUSED')
-            ->with(['healthDomain', 'departmentFrameworkVersions.module'])
-            ->orderBy('release_name')
-            ->get();
 
-        return view('assessments.create', compact('project', 'target', 'usesDepartments', 'facilityProfiles', 'comprehensiveReleases', 'focusedReleases'));
+        // Focused releases are built on health domains, which today are a health-facility
+        // construct, so they are only offered to health-facility targets. Other setting types
+        // (NGO, community, school) get focused assessments once focused content is authored
+        // for them — until then, offering these here would be a dead end.
+        $focusedReleases = $settingTypeCode === 'HEALTH_FACILITY'
+            ? AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+                ->where('creation_path', 'FOCUSED')
+                ->with(['healthDomain', 'departmentFrameworkVersions.module'])
+                ->orderBy('release_name')
+                ->get()
+            : collect();
+
+        // The plain name of what is being assessed, used in copy instead of "facility profile".
+        $settingLabel = $target?->targetType?->target_type_name
+            ?? DB::table('setting_types')->where('setting_type_code', $settingTypeCode)->value('display_name')
+            ?? 'target';
+
+        return view('assessments.create', compact('project', 'target', 'usesDepartments', 'facilityProfiles', 'comprehensiveReleases', 'focusedReleases', 'settingLabel'));
     }
 
     public function store(Request $request, Project $project, AssessmentCreationService $creator): RedirectResponse

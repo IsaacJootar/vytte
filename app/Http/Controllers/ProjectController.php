@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Project;
+use App\Models\Assessment;
+use App\Models\AssessmentScore;
 use App\Models\FacilityProfile;
+use App\Models\Project;
 use App\Models\Target;
 use App\Models\TargetType;
 use App\Services\PlanService;
@@ -16,7 +18,22 @@ class ProjectController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Project::with(['targets.targetType'])->latest();
+        // The latest completed assessment's overall score, surfaced on each card so a
+        // project that has been assessed no longer reads as empty.
+        $latestScore = AssessmentScore::query()
+            ->select('assessment_scores.overall_score')
+            ->join('assessments', 'assessments.assessment_id', '=', 'assessment_scores.assessment_id')
+            ->whereColumn('assessments.project_id', 'projects.project_id')
+            ->where('assessments.status', Assessment::STATUS_COMPLETE)
+            ->orderByDesc('assessments.completed_at')
+            ->limit(1);
+
+        $query = Project::query()
+            ->select('projects.*')
+            ->with(['targets.targetType'])
+            ->withCount('assessments')
+            ->addSelect(['latest_score' => $latestScore])
+            ->latest();
 
         if ($request->filled('search')) {
             $query->whereRaw('LOWER(name) LIKE LOWER(?)', ['%'.$request->search.'%']);

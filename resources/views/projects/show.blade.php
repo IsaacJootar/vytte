@@ -54,8 +54,8 @@
 
         {{-- Target info card --}}
         @if ($target)
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-                <h2 class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-3">Assessment Target</h2>
+            <div class="bg-vytte-50/60 dark:bg-slate-800 rounded-2xl border border-vytte-100 dark:border-slate-700 p-5">
+                <h2 class="text-[11px] font-bold text-vytte-700 dark:text-slate-500 uppercase tracking-wide mb-3">Assessment Target</h2>
                 <div class="flex flex-col gap-2 text-sm">
                     <div>
                         <span class="text-slate-400 dark:text-slate-500 text-xs">Name</span>
@@ -243,15 +243,33 @@
 
     {{-- Actions --}}
     <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-        <h2 class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-3">Actions</h2>
-        <form method="POST" action="{{ route('projects.archive', $project) }}">
-            @csrf
-            @method('PATCH')
-            <button type="submit"
-                    class="text-sm font-medium {{ $project->isArchived() ? 'text-vytte-700 hover:text-vytte-900' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200' }} transition-colors">
-                {{ $project->isArchived() ? 'Reactivate this project' : 'Archive this project' }}
-            </button>
-        </form>
+        <h2 class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-1">Project settings</h2>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md">
+                {{ $project->isArchived()
+                    ? 'This project is archived and hidden from the active list. Reactivate it to run new assessments.'
+                    : 'Archiving hides this project from the active list. Its assessments and reports are kept and it can be reactivated any time.' }}
+            </p>
+            <form method="POST" action="{{ route('projects.archive', $project) }}" class="flex-shrink-0"
+                  @if (! $project->isArchived()) onsubmit="return confirm('Archive this project? It will be hidden from the active list but nothing is deleted.')" @endif>
+                @csrf
+                @method('PATCH')
+                @if ($project->isArchived())
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-vytte-700 rounded-lg hover:bg-vytte-800 transition-colors duration-150">
+                        Reactivate this project
+                    </button>
+                @else
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-red-700 dark:text-red-400 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-150">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2h8a2 2 0 012 2v1a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm2 4a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4 0a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm5-3a1 1 0 00-1 1v1h2V7a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        Archive this project
+                    </button>
+                @endif
+            </form>
+        </div>
     </div>
 
 </x-app-layout>

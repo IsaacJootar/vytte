@@ -26,7 +26,7 @@
 @endphp
 
 @if ($successMessage || $errorMessage || $infoMessage || $validationErrors)
-    <div class="pointer-events-none fixed inset-x-0 top-3 z-50 flex flex-col items-center gap-2 px-4 sm:top-5"
+    <div class="pointer-events-none fixed top-3 right-3 z-50 flex flex-col items-end gap-2 px-4 sm:top-5 sm:right-5"
          role="status" aria-live="polite">
 
         @if ($successMessage)
@@ -37,11 +37,11 @@
                  x-transition:enter-start="opacity-0 -translate-y-2"
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-end="opacity-0 -translate-y-2"
-                 class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-lg dark:border-emerald-800 dark:bg-emerald-950">
-                <span class="mt-0.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true">✓</span>
-                <p class="flex-1 text-sm font-medium text-emerald-900 dark:text-emerald-100">{{ $successMessage }}</p>
+                 class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl bg-vytte-700 px-4 py-3 shadow-lg">
+                <span class="mt-0.5 text-white" aria-hidden="true">✓</span>
+                <p class="flex-1 text-sm font-medium text-white">{{ $successMessage }}</p>
                 <button type="button" x-on:click="show = false"
-                        class="text-emerald-700 hover:text-emerald-900 dark:text-emerald-300"
+                        class="text-white/80 hover:text-white"
                         aria-label="Dismiss message">&times;</button>
             </div>
         @endif

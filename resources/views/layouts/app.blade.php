@@ -22,7 +22,7 @@
     Skip to content
 </a>
 
-<div class="min-h-screen lg:flex">
+<div class="min-h-screen lg:flex" x-data="{ mobileMenu: false }">
 
     {{-- ===== DESKTOP SIDEBAR ===== --}}
     <aside class="hidden lg:flex lg:flex-col fixed top-0 left-0 bottom-0 w-52 bg-navy z-20">
@@ -143,13 +143,65 @@
             </div>
         </main>
 
-        {{-- Mobile bottom navigation. Every role has one. --}}
+        {{-- Mobile bottom navigation. Every role has one. The last cell opens a drawer with
+             every link, so no destination is unreachable on a phone. --}}
         <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex pb-safe" aria-label="Main navigation">
             @foreach ($nav['mobile'] as $item)
-                <x-mobile-nav-item :href="route($item['route'])" :icon="$item['icon']" :label="$item['label']"
-                                   :active="request()->routeIs($item['active'])" />
+                @if ($item['label'] === 'More')
+                    <button type="button" @click="mobileMenu = true"
+                            class="flex-1 flex flex-col items-center gap-0.5 pt-2 pb-1 focus:outline-none focus-visible:bg-slate-50 dark:focus-visible:bg-slate-700">
+                        <span class="w-1 h-1 mb-0.5"></span>
+                        <x-dynamic-component :component="'heroicon-o-bars-3'" class="text-slate-400 dark:text-slate-500 w-5 h-5" />
+                        <span class="text-[9px] font-500 text-slate-400 dark:text-slate-500">More</span>
+                    </button>
+                @else
+                    <x-mobile-nav-item :href="route($item['route'])" :icon="$item['icon']" :label="$item['label']"
+                                       :active="request()->routeIs($item['active'])" />
+                @endif
             @endforeach
         </nav>
+
+        {{-- Mobile full-menu drawer. Lists every group and link from the role's navigation,
+             so the phone has the same reach as the desktop sidebar. --}}
+        <div class="lg:hidden" x-cloak>
+            <div x-show="mobileMenu" x-transition.opacity @click="mobileMenu = false"
+                 class="fixed inset-0 z-40 bg-slate-900/50"></div>
+            <div x-show="mobileMenu"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="translate-x-full"
+                 x-transition:enter-end="translate-x-0"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="translate-x-0"
+                 x-transition:leave-end="translate-x-full"
+                 class="fixed top-0 right-0 bottom-0 z-50 w-72 max-w-[85%] bg-white dark:bg-slate-800 shadow-xl flex flex-col"
+                 role="dialog" aria-modal="true" aria-label="All menu links">
+                <div class="flex items-center justify-between px-4 py-3.5 border-b border-slate-200 dark:border-slate-700">
+                    <span class="text-sm font-bold text-slate-900 dark:text-white">Menu</span>
+                    <button type="button" @click="mobileMenu = false" aria-label="Close menu"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <x-dynamic-component :component="'heroicon-o-x-mark'" class="w-5 h-5" />
+                    </button>
+                </div>
+                <nav class="flex-1 overflow-y-auto px-2 py-3 flex flex-col gap-1" aria-label="All links">
+                    @foreach ($nav['groups'] as $group)
+                        @if (! empty($group['label']))
+                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{{ $group['label'] }}</p>
+                        @endif
+                        @foreach ($group['items'] as $item)
+                            @php $isActive = request()->routeIs($item['active']); @endphp
+                            <a href="{{ route($item['route']) }}"
+                               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium {{ $isActive ? 'bg-vytte-50 text-vytte-700 dark:bg-vytte-900/30 dark:text-vytte-400' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
+                                <x-dynamic-component :component="'heroicon-o-' . $item['icon']" class="w-5 h-5 flex-shrink-0" />
+                                <span class="flex-1">{{ $item['label'] }}</span>
+                                @if (! empty($item['badge']))
+                                    <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">{{ $item['badge'] }}</span>
+                                @endif
+                            </a>
+                        @endforeach
+                    @endforeach
+                </nav>
+            </div>
+        </div>
     </div>
 
 </div>
