@@ -193,8 +193,10 @@ class AssessmentBuilderEndToEndTest extends TestCase
         app(ScoringService::class)->calculate($assessment->fresh(['snapshot']));
 
         $score = AssessmentScore::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        // The critical answer sets the status flag, but no longer zeroes the overall — the
+        // score reflects the real aggregate (a strong first answer + a critical second one).
         $this->assertSame('CRITICAL_FAILURE', $score->calibration_status);
-        $this->assertEquals(0.0, (float) $score->overall_score);
+        $this->assertGreaterThan(0.0, (float) $score->overall_score);
     }
 
     public function test_a_report_from_authored_content_is_immutable_and_carries_the_scores(): void

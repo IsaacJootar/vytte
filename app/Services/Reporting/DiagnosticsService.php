@@ -40,10 +40,10 @@ class DiagnosticsService
                 category: 'CRITICAL_FINDING',
                 severity: 'HIGH',
                 score: 0.0,
-                statement: 'A critical failure was recorded. One or more answers indicate a problem serious enough to override the overall score.',
+                statement: 'A critical failure was recorded. One or more answers indicate a problem serious enough to demand attention on its own, whatever the overall score.',
                 why: 'A critical failure is a single finding grave enough to matter regardless of how everything else scored.',
                 evidence: ['calibration' => 'CRITICAL_FAILURE'],
-                consequence: 'If the critical failure is left unaddressed, it undermines the trustworthiness of the entire result and exposes the facility to serious, immediate risk.',
+                consequence: 'If the critical failure is left unaddressed, it exposes the facility to serious, immediate risk regardless of how the other areas performed.',
                 expectedImpact: 'HIGH',
             );
         }

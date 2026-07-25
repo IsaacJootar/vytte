@@ -253,8 +253,11 @@ class ScoringService
                     : 'PARTIAL';
         }
 
-        if ($criticalFailureTriggered && ($criticalPolicy['overall_score'] ?? null) === 'ZERO') {
-            $overallScore = 0.0;
+        // A critical failure no longer zeroes the overall score. The aggregate stands — it is
+        // the honest sum of how the whole assessment performed — and the critical issue is
+        // surfaced separately (as its own finding and a badge on the report). The status still
+        // records that a critical failure occurred so nothing downstream loses that signal.
+        if ($criticalFailureTriggered) {
             $overallStatus = 'CRITICAL_FAILURE';
         }
 

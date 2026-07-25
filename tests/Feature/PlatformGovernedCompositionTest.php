@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
+use App\Models\AssessmentScore;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\FacilityProfile;
 use App\Models\LocalCustomSection;
@@ -278,11 +279,11 @@ class PlatformGovernedCompositionTest extends TestCase
 
         app(ScoringService::class)->calculate($assessment);
 
-        $this->assertDatabaseHas('assessment_scores', [
-            'assessment_id' => $assessment->assessment_id,
-            'overall_score' => 0,
-            'calibration_status' => 'CRITICAL_FAILURE',
-        ]);
+        // The critical answer raises the flag but no longer zeroes the overall — the score
+        // stands as the honest aggregate, with the critical failure surfaced by the status.
+        $score = AssessmentScore::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $this->assertSame('CRITICAL_FAILURE', $score->calibration_status);
+        $this->assertGreaterThan(0.0, (float) $score->overall_score);
     }
 
     public function test_platform_governed_demo_seeder_is_idempotent(): void

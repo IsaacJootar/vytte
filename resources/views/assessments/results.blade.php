@@ -139,8 +139,11 @@
     </div>
 
     {{-- Report in steps (progressive disclosure). Tabs are screen-only; print shows all.
-         Changing the lens reloads with ?lens=, so land back on the diagnosis tab. --}}
-    <div x-data="{ tab: '{{ request()->query('lens') ? 'diagnosis' : 'overview' }}' }" class="mt-5">
+         The active tab is mirrored in the URL (?tab=), so a form that posts and redirects back
+         (generate AI, add to action plan) returns the user to the same tab, not the top. --}}
+    <div x-data="{ tab: new URLSearchParams(window.location.search).get('tab') || '{{ request()->query('lens') ? 'diagnosis' : 'overview' }}' }"
+         x-init="$watch('tab', v => { const u = new URL(window.location); u.searchParams.set('tab', v); window.history.replaceState({}, '', u); })"
+         class="mt-5">
         <nav class="no-print flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700 mb-4" aria-label="Report sections">
             @foreach (['overview' => 'Overview', 'diagnosis' => 'What we found', 'actions' => 'What to do', 'ai' => 'AI summaries'] as $tabKey => $tabLabel)
                 <button type="button" @click="tab = '{{ $tabKey }}'"
@@ -159,13 +162,9 @@
         <div class="flex flex-col sm:flex-row items-center gap-6">
             {{-- Arc meter --}}
             <div class="flex-shrink-0">
-                <x-score-arc :score="$calibStatus === 'CRITICAL_FAILURE' ? 0 : ($overall !== null ? (int) round($overall) : null)" :size="160" :stroke="12">
+                <x-score-arc :score="$overall !== null ? (int) round($overall) : null" :size="160" :stroke="12">
                     <div class="text-center">
-                        @if ($calibStatus === 'CRITICAL_FAILURE')
-                            <div class="text-[13px] font-black uppercase leading-tight px-1" style="color: #B91C1C">
-                                Critical<br>failure
-                            </div>
-                        @elseif ($overall !== null)
+                        @if ($overall !== null)
                             <div class="text-3xl font-black" style="color: {{ $overall >= 70 ? '#15803D' : ($overall >= 45 ? '#B45309' : '#B91C1C') }}">
                                 {{ number_format($overall, 1) }}
                             </div>
@@ -191,7 +190,7 @@
                         <svg class="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
                         </svg>
-                        <p class="text-sm text-red-800 dark:text-red-300">A <strong>critical failure</strong> was recorded, so the overall score is held at zero to make sure it is not overlooked — regardless of how the areas scored. The individual area scores below still stand.</p>
+                        <p class="text-sm text-red-800 dark:text-red-300">A <strong>critical failure</strong> was recorded — see the critical finding below. It needs attention on its own, but the overall score above still reflects how the whole assessment performed.</p>
                     </div>
                 @elseif ($calibStatus === 'NOT_CALIBRATED')
                     <div class="mt-2 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
