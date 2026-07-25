@@ -34,18 +34,9 @@
     @else
         {{-- Summary --}}
         <div class="grid grid-cols-3 gap-3 mb-5">
-            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{{ $openCount }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Still open</p>
-            </div>
-            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-2xl font-black text-green-600 dark:text-green-400 tabular-nums">{{ $doneCount }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Done or verified</p>
-            </div>
-            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-2xl font-black {{ $overdue > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }} tabular-nums">{{ $overdue }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Overdue</p>
-            </div>
+            <x-stat-card tone="blue" label="Still open" :value="$openCount" sub="Not yet done" />
+            <x-stat-card tone="strong" label="Done or verified" :value="$doneCount" sub="Completed" />
+            <x-stat-card :tone="$overdue > 0 ? 'weak' : 'slate'" label="Overdue" :value="$overdue" sub="Past due date" />
         </div>
 
         <div class="flex flex-col gap-4">
@@ -120,7 +111,7 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                                     Status
-                                    <select name="status" class="mt-1 w-full rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                                    <select name="status" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                         @foreach (['OPEN' => 'Open', 'IN_PROGRESS' => 'In progress', 'DONE' => 'Done', 'VERIFIED' => 'Verified'] as $value => $label)
                                             <option value="{{ $value }}" @selected($action->status === $value)>{{ $label }}</option>
                                         @endforeach
@@ -128,7 +119,7 @@
                                 </label>
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                                     Owner
-                                    <select name="owner_user_id" class="mt-1 w-full rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                                    <select name="owner_user_id" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                         <option value="">Unassigned</option>
                                         @foreach ($members as $member)
                                             <option value="{{ $member->user_id }}" @selected($action->owner_user_id === $member->user_id)>{{ $member->name }}</option>
@@ -137,7 +128,7 @@
                                 </label>
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                                     Priority
-                                    <select name="priority" class="mt-1 w-full rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                                    <select name="priority" class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                         @foreach (['HIGH' => 'High', 'MEDIUM' => 'Medium', 'LOW' => 'Low'] as $value => $label)
                                             <option value="{{ $value }}" @selected($action->priority === $value)>{{ $label }}</option>
                                         @endforeach
@@ -146,18 +137,18 @@
                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                                     Due date
                                     <input type="date" name="due_date" value="{{ $action->due_date?->format('Y-m-d') }}"
-                                           class="mt-1 w-full rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                                           class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                 </label>
                             </div>
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                                 Progress note
                                 <textarea name="note" rows="2" placeholder="What changed?"
-                                          class="mt-1 w-full rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm"></textarea>
+                                          class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"></textarea>
                             </label>
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                                 Evidence (optional)
                                 <input type="text" name="evidence_note" placeholder="Link or reference to proof"
-                                       class="mt-1 w-full rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                                       class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                             </label>
                             <div class="flex items-center justify-between">
                                 <button type="submit"

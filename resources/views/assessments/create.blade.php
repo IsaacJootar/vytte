@@ -122,7 +122,7 @@
                                     <input x-show="!included" x-cloak :required="!included" type="text"
                                            name="exclusion_reasons[{{ $framework->module_id }}]"
                                            placeholder="Why does this default service not operate here?"
-                                           class="mt-3 w-full rounded-lg border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-700">
+                                           class="mt-3 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                 @endif
                             </div>
                         @endforeach

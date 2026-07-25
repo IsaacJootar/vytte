@@ -52,7 +52,7 @@
                             id="description"
                             name="description"
                             rows="3"
-                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition"
+                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition"
                             placeholder="Any notes about the scope or purpose of this project…"
                         >{{ old('description') }}</textarea>
                         <x-input-error :messages="$errors->get('description')" class="mt-1" />
@@ -72,7 +72,7 @@
                         <select
                             id="target_type_code"
                             name="target_type_code"
-                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
+                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition bg-white dark:bg-slate-700"
                             x-model="targetType"
                             required
                         >
@@ -111,7 +111,7 @@
                         <select
                             id="facility_profile_id"
                             name="facility_profile_id"
-                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
+                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition bg-white dark:bg-slate-700"
                             x-bind:required="targetType === 'HEALTH_FACILITY'"
                         >
                             <option value="" disabled {{ old('facility_profile_id') ? '' : 'selected' }}>Select facility profile...</option>
@@ -154,7 +154,7 @@
                                 <select
                                     id="country"
                                     name="country"
-                                    class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition bg-white dark:bg-slate-700"
+                                    class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition bg-white dark:bg-slate-700"
                                     required
                                 >
                                     <option value="" disabled {{ old('country') ? '' : 'selected' }}>Select country…</option>

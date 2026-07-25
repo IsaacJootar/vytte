@@ -16,29 +16,17 @@
     @else
         {{-- Summary --}}
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
-            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{{ $summary['total'] }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Total</p>
-            </div>
-            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{{ $summary['open'] }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Still open</p>
-            </div>
-            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-2xl font-black text-green-600 dark:text-green-400 tabular-nums">{{ $summary['done'] }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Done</p>
-            </div>
-            <div class="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
-                <p class="text-2xl font-black {{ $summary['overdue'] > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white' }} tabular-nums">{{ $summary['overdue'] }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Overdue</p>
-            </div>
+            <x-stat-card tone="slate" label="Total" :value="$summary['total']" sub="Actions in the plan" />
+            <x-stat-card tone="blue" label="Still open" :value="$summary['open']" sub="Not yet done" />
+            <x-stat-card tone="strong" label="Done" :value="$summary['done']" sub="Completed or verified" />
+            <x-stat-card :tone="$summary['overdue'] > 0 ? 'weak' : 'slate'" label="Overdue" :value="$summary['overdue']" sub="Past their due date" />
         </div>
 
         {{-- Filters --}}
         <form method="GET" action="{{ route('actions.hub') }}" class="mb-4 flex flex-wrap items-end gap-2">
             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                 Project
-                <select name="project" onchange="this.form.submit()" class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                <select name="project" onchange="this.form.submit()" class="mt-1 block rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                     <option value="">All projects</option>
                     @foreach ($projects as $p)
                         <option value="{{ $p->project_id }}" @selected($filters['project'] === $p->project_id)>{{ $p->name }}</option>
@@ -47,7 +35,7 @@
             </label>
             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                 Owner
-                <select name="owner" onchange="this.form.submit()" class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                <select name="owner" onchange="this.form.submit()" class="mt-1 block rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                     <option value="">Anyone</option>
                     @foreach ($members as $m)
                         <option value="{{ $m->user_id }}" @selected($filters['owner'] === $m->user_id)>{{ $m->name }}</option>
@@ -56,7 +44,7 @@
             </label>
             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                 Status
-                <select name="status" onchange="this.form.submit()" class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                <select name="status" onchange="this.form.submit()" class="mt-1 block rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                     <option value="">Any status</option>
                     @foreach (['OPEN' => 'Open', 'IN_PROGRESS' => 'In progress', 'DONE' => 'Done', 'VERIFIED' => 'Verified'] as $val => $lbl)
                         <option value="{{ $val }}" @selected($filters['status'] === $val)>{{ $lbl }}</option>

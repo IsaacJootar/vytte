@@ -11,7 +11,24 @@
         </a>
         <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Progress</p>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight mt-0.5">{{ $project->name }}</h1>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+            Whether this {{ $project->targets->first()?->targetType?->target_type_name ? strtolower($project->targets->first()->targetType->target_type_name) : 'target' }} is getting better over time. Each time you re-run the same assessment, its
+            score, the issues that were fixed or slipped, and the actions your team followed through on are tracked here.
+        </p>
     </div>
+
+    @unless ($assessments->isEmpty())
+        {{-- A short "how to read this" strip, so the page explains itself. --}}
+        <div class="mb-5 rounded-xl border border-vytte-100 bg-vytte-50/60 dark:border-slate-700 dark:bg-slate-800/60 px-4 py-3">
+            <p class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400 mb-1.5">How to use this page</p>
+            <ol class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-decimal list-inside">
+                <li><span class="font-semibold">Set a target score</span> below so you have a goal to move toward.</li>
+                <li><span class="font-semibold">Re-run the same assessment</span> periodically — comparisons appear from the second run.</li>
+                <li><span class="font-semibold">Work the action plan</span> and mark items done — follow-through is tracked here.</li>
+                <li>Optionally <span class="font-semibold">schedule the report by email</span> so stakeholders stay updated automatically.</li>
+            </ol>
+        </div>
+    @endunless
 
     @if ($assessments->isEmpty())
         <x-empty-state
@@ -111,21 +128,16 @@
                 <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
                     @php
                         $buckets = [
-                            'resolved' => ['Resolved', 'text-green-600 dark:text-green-400'],
-                            'improved' => ['Improved', 'text-green-600 dark:text-green-400'],
-                            'persistent' => ['Still weak', 'text-amber-600 dark:text-amber-400'],
-                            'new' => ['New issues', 'text-red-600 dark:text-red-400'],
-                            'regressed' => ['Slipped', 'text-red-600 dark:text-red-400'],
+                            'resolved' => ['Resolved', 'strong'],
+                            'improved' => ['Improved', 'blue'],
+                            'persistent' => ['Still weak', 'moderate'],
+                            'new' => ['New issues', 'weak'],
+                            'regressed' => ['Slipped', 'weak'],
                         ];
                     @endphp
-                    @foreach ($buckets as $key => [$label, $color])
-                        <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-3">
-                            <p class="text-2xl font-black {{ $color }} tabular-nums">{{ count($issues[$key]) }}</p>
-                            <p class="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500 mt-0.5">{{ $label }}</p>
-                            @if (count($issues[$key]) > 0)
-                                <p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">{{ collect($issues[$key])->pluck('domain_name')->take(3)->join(', ') }}</p>
-                            @endif
-                        </div>
+                    @foreach ($buckets as $key => [$label, $tone])
+                        <x-stat-card :tone="count($issues[$key]) > 0 ? $tone : 'slate'" :label="$label" :value="count($issues[$key])"
+                                     :sub="count($issues[$key]) > 0 ? collect($issues[$key])->pluck('domain_name')->take(3)->join(', ') : null" />
                     @endforeach
                 </div>
                 @if (! empty($trendInsights))
@@ -165,23 +177,23 @@
                 <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">No targets set yet. Set a goal score to track progress against it.</p>
             @endif
 
-            <form method="POST" action="{{ route('projects.targets.set', $project) }}" class="flex flex-wrap items-end gap-2">
+            <form method="POST" action="{{ route('projects.targets.set', $project) }}" class="flex flex-wrap items-end gap-3">
                 @csrf
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                    Area
-                    <select name="domain_code" class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">Area</span>
+                    <select name="domain_code" class="rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         <option value="">Overall</option>
                         @foreach ($allDomains as $d)
                             <option value="{{ $d->domain_code }}">{{ $d->domain_name }}</option>
                         @endforeach
                     </select>
                 </label>
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                    Target score
+                <label class="block">
+                    <span class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">Target score</span>
                     <input type="number" name="target_score" min="0" max="100" step="1" required
-                           class="mt-1 block w-24 rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                           class="w-28 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 </label>
-                <button type="submit" class="px-3 py-1.5 text-sm font-semibold text-white bg-vytte-600 rounded-lg hover:bg-vytte-700 transition-colors">Set target</button>
+                <button type="submit" class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-vytte-700 transition-colors">Set target</button>
             </form>
             @if ($targets->isNotEmpty())
                 <div class="mt-2 flex flex-wrap gap-2">
@@ -217,22 +229,22 @@
                     @endforeach
                 </div>
             @endif
-            <form method="POST" action="{{ route('report-schedules.store', $project) }}" class="flex flex-wrap items-end gap-2">
+            <form method="POST" action="{{ route('report-schedules.store', $project) }}" class="flex flex-wrap items-end gap-3">
                 @csrf
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                    Recipient email
+                <label class="block">
+                    <span class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">Recipient email</span>
                     <input type="email" name="recipient_email" required placeholder="name@example.com"
-                           class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                           class="rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 </label>
-                <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                    Frequency
-                    <select name="frequency" class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                <label class="block">
+                    <span class="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">Frequency</span>
+                    <select name="frequency" class="rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         @foreach (\App\Models\ReportSchedule::FREQUENCIES as $freq)
                             <option value="{{ $freq }}">{{ ucfirst(strtolower($freq)) }}</option>
                         @endforeach
                     </select>
                 </label>
-                <button type="submit" class="px-3 py-1.5 text-sm font-semibold text-white bg-vytte-600 rounded-lg hover:bg-vytte-700 transition-colors">Schedule</button>
+                <button type="submit" class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-vytte-700 transition-colors">Schedule</button>
             </form>
         </div>
 
@@ -379,7 +391,7 @@
                     <div class="flex-1 min-w-0">
                         <label for="compare_a" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">First assessment (baseline)</label>
                         <select name="a" id="compare_a"
-                                class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-400">
+                                class="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 shadow-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20">
                             @foreach ($assessments as $i => $a)
                                 <option value="{{ $a->assessment_id }}">
                                     Run {{ $i + 1 }} — {{ $a->completed_at?->format('d M Y') }}
@@ -394,7 +406,7 @@
                     <div class="flex-1 min-w-0">
                         <label for="compare_b" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Second assessment (latest)</label>
                         <select name="b" id="compare_b"
-                                class="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-400">
+                                class="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 shadow-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20">
                             @foreach ($assessments->reverse() as $i => $a)
                                 <option value="{{ $a->assessment_id }}">
                                     Run {{ $assessments->count() - $i }} — {{ $a->completed_at?->format('d M Y') }}

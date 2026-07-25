@@ -115,12 +115,12 @@
             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">
                 Recipient email
                 <input type="email" name="recipient_email" required placeholder="name@example.com"
-                       class="mt-1 block rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                       class="mt-1 block rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             </label>
             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 flex-1 min-w-[12rem]">
                 Message (optional)
                 <input type="text" name="message" maxlength="1000" placeholder="A short note"
-                       class="mt-1 block w-full rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 text-sm">
+                       class="mt-1 block w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm shadow-sm focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             </label>
             <button type="submit" class="px-3 py-1.5 text-sm font-semibold text-white bg-vytte-600 rounded-lg hover:bg-vytte-700 transition-colors">Send</button>
         </form>

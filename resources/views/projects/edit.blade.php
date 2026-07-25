@@ -40,7 +40,7 @@
                         id="description"
                         name="description"
                         rows="3"
-                        class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-vytte-700 focus:border-transparent transition"
+                        class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition"
                     >{{ old('description', $project->description) }}</textarea>
                     <x-input-error :messages="$errors->get('description')" class="mt-1" />
                 </div>
