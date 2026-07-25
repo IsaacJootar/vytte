@@ -86,6 +86,30 @@ class ResultsTest extends TestCase
         }
     }
 
+    // ---- Answer persistence (governed options live in the snapshot, not question_options) ----
+
+    public function test_answer_saves_even_when_option_is_not_in_question_options(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createGovernedAssessment($workspace, $user);
+        $question = collect($assessment->snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->firstWhere('is_scored', true);
+
+        // 999999 is deliberately not a question_options row. Governed content stores options
+        // inline in the frozen snapshot, so the answer must still save — the stale FK is gone.
+        Response::updateOrCreate(
+            ['assessment_id' => $assessment->assessment_id, 'question_id' => $question['question_id'], 'respondent_id' => null],
+            ['value_option_id' => 999999, 'value_text' => null, 'value_numeric' => null, 'answered_at' => now()]
+        );
+
+        $this->assertDatabaseHas('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question['question_id'],
+            'value_option_id' => 999999,
+        ]);
+    }
+
     // ---- Auth gate ----
 
     public function test_results_page_requires_auth(): void

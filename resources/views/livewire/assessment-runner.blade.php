@@ -248,7 +248,13 @@
 
         {{-- Question dot navigation (for review / jumping) --}}
         <div class="mt-5 pt-4 border-t border-slate-100 dark:border-slate-700/50">
-            <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-2">{{ __('runner.jump_to_question') }}</p>
+            <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">{{ __('runner.jump_to_question') }}</p>
+                <div class="flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
+                    <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-green-100 dark:bg-green-900/40"></span>Answered</span>
+                    <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-slate-100 dark:bg-slate-700"></span>Not yet</span>
+                </div>
+            </div>
             <div class="flex flex-wrap gap-1.5">
                 @foreach ($questionData as $idx => $item)
                     <button
@@ -256,10 +262,10 @@
                         title="Q{{ $idx + 1 }}"
                         class="w-7 h-7 rounded-lg text-[11px] font-bold transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-vytte-400
                             {{ $idx === $currentIndex
-                                ? 'bg-vytte-700 text-white'
+                                ? 'bg-vytte-700 text-white ring-2 ring-vytte-300 dark:ring-vytte-700'
                                 : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null) || array_key_exists($item['question_id'], $savedNumericResponses)
-                                    ? 'bg-vytte-100 dark:bg-vytte-900/30 text-vytte-700 dark:text-vytte-400'
-                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600') }}">
+                                    ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600') }}">
                         {{ $idx + 1 }}
                     </button>
                 @endforeach
