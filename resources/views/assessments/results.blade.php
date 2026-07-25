@@ -159,9 +159,13 @@
         <div class="flex flex-col sm:flex-row items-center gap-6">
             {{-- Arc meter --}}
             <div class="flex-shrink-0">
-                <x-score-arc :score="$overall !== null ? (int) round($overall) : null" :size="160" :stroke="12">
+                <x-score-arc :score="$calibStatus === 'CRITICAL_FAILURE' ? 0 : ($overall !== null ? (int) round($overall) : null)" :size="160" :stroke="12">
                     <div class="text-center">
-                        @if ($overall !== null)
+                        @if ($calibStatus === 'CRITICAL_FAILURE')
+                            <div class="text-[13px] font-black uppercase leading-tight px-1" style="color: #B91C1C">
+                                Critical<br>failure
+                            </div>
+                        @elseif ($overall !== null)
                             <div class="text-3xl font-black" style="color: {{ $overall >= 70 ? '#15803D' : ($overall >= 45 ? '#B45309' : '#B91C1C') }}">
                                 {{ number_format($overall, 1) }}
                             </div>
@@ -182,7 +186,14 @@
             <div class="flex-1 min-w-0">
                 <h2 class="text-base font-bold text-slate-900 dark:text-white">Overall Score</h2>
 
-                @if ($calibStatus === 'NOT_CALIBRATED')
+                @if ($calibStatus === 'CRITICAL_FAILURE')
+                    <div class="mt-2 flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                        <svg class="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                        </svg>
+                        <p class="text-sm text-red-800 dark:text-red-300">A <strong>critical failure</strong> was recorded, so the overall score is held at zero to make sure it is not overlooked — regardless of how the areas scored. The individual area scores below still stand.</p>
+                    </div>
+                @elseif ($calibStatus === 'NOT_CALIBRATED')
                     <div class="mt-2 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
                         <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
@@ -319,13 +330,19 @@
     @php $drilldown = $domainScores->filter(fn ($r) => ! empty($r->question_breakdown ?? null)); @endphp
     @if ($drilldown->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Question drill-down</h2>
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Question drill-down</h2>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Click any area to see the individual questions and scores behind it.</p>
             <div class="flex flex-col gap-2">
                 @foreach ($drilldown as $row)
-                    <details class="rounded-xl border border-slate-200 dark:border-slate-600">
-                        <summary class="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer">
+                    <details class="group rounded-xl border border-slate-200 dark:border-slate-600">
+                        <summary class="flex items-center justify-between gap-2 px-3 py-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/40 rounded-xl">
                             <span class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ $row->domain_name }}</span>
-                            <span class="text-xs text-slate-400 dark:text-slate-500">{{ count($row->question_breakdown) }} questions</span>
+                            <span class="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
+                                {{ count($row->question_breakdown) }} questions
+                                <svg class="w-4 h-4 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                                </svg>
+                            </span>
                         </summary>
                         <ul class="px-3 pb-3 pt-1 divide-y divide-slate-100 dark:divide-slate-700">
                             @foreach ($row->question_breakdown as $q)
@@ -452,11 +469,6 @@
     @if ($risks->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Risks &amp; what happens if nothing changes</h2>
-            @if ($risks->count() >= 2)
-                <div class="mb-4 overflow-x-auto">
-                    <x-viz.risk-matrix :risks="$risks->all()" />
-                </div>
-            @endif
             <ul class="flex flex-col gap-3">
                 @foreach ($risks as $risk)
                     @php
@@ -563,6 +575,12 @@
                 @endforeach
             </ul>
         </div>
+    @else
+        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 text-center">
+            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">No actions for this lens</p>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">This lens found nothing needing action. Switch the lens under "What we found", or open the full action plan.</p>
+            <a href="{{ route('actions.index', $assessment->project_id) }}" class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Open action plan →</a>
+        </div>
     @endif
 
     </div>{{-- ===== /WHAT TO DO ===== --}}
@@ -572,16 +590,21 @@
 
     {{-- AI products — purpose-built summaries over the findings above. Optional; the report
          does not depend on them, and none adds a fact the engine did not find. --}}
-    @if ($aiAvailable || $narratives->isNotEmpty())
-        <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
-            <div class="flex items-center gap-2 mb-1">
-                <svg class="w-4 h-4 text-vytte-600 dark:text-vytte-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path d="M10 2a1 1 0 01.94.66l1.3 3.5 3.5 1.3a1 1 0 010 1.88l-3.5 1.3-1.3 3.5a1 1 0 01-1.88 0l-1.3-3.5-3.5-1.3a1 1 0 010-1.88l3.5-1.3 1.3-3.5A1 1 0 0110 2z"/>
-                </svg>
-                <h2 class="text-sm font-bold text-slate-900 dark:text-white">AI summaries</h2>
-            </div>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Purpose-built retellings of the findings above — a summary, never a new assessment.</p>
+    <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+        <div class="flex items-center gap-2 mb-1">
+            <svg class="w-4 h-4 text-vytte-600 dark:text-vytte-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M10 2a1 1 0 01.94.66l1.3 3.5 3.5 1.3a1 1 0 010 1.88l-3.5 1.3-1.3 3.5a1 1 0 01-1.88 0l-1.3-3.5-3.5-1.3a1 1 0 010-1.88l3.5-1.3 1.3-3.5A1 1 0 0110 2z"/>
+            </svg>
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">AI summaries</h2>
+        </div>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Purpose-built retellings of the findings above — a summary, never a new assessment.</p>
 
+        @unless ($aiAvailable || $narratives->isNotEmpty())
+            <div class="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-4 text-center">
+                <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">AI summaries are not switched on yet</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">They need an OpenAI API key to be configured. The report above works without them.</p>
+            </div>
+        @else
             <div class="flex flex-col gap-3">
                 @foreach ($aiProducts as $key => $meta)
                     @php $existing = $narratives->get($key); @endphp
@@ -608,8 +631,16 @@
                     </div>
                 @endforeach
             </div>
+        @endunless
+
+        {{-- AI-specific label, distinct from the report's WHO-aware note. --}}
+        <div class="mt-4 rounded-lg bg-vytte-50/60 dark:bg-vytte-900/10 border border-vytte-100 dark:border-vytte-900/30 p-3">
+            <p class="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+                <span class="font-semibold text-slate-600 dark:text-slate-300">AI-generated.</span>
+                These summaries are written by AI purely to rephrase the findings above for a specific reader. They add nothing the assessment did not already find, may occasionally word things imperfectly, and should never be treated as a clinical diagnosis — always defer to the report itself.
+            </p>
         </div>
-    @endif
+    </div>
 
     </div>{{-- ===== /AI SUMMARIES ===== --}}
 

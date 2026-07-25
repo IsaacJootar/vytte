@@ -245,8 +245,8 @@ class ResultsTest extends TestCase
         $this->actingAs($user)
             ->get(route('assessments.results', $assessment))
             ->assertOk()
-            ->assertSee('Question drill-down')      // per-domain question breakdown
-            ->assertSee('Impact →', false);         // the risk-matrix visualisation
+            ->assertSee('Question drill-down')              // per-domain question breakdown
+            ->assertSee('Click any area to see');           // the drill-down affordance
     }
 
     public function test_results_page_shows_lens_selector_and_methodology_note(): void
