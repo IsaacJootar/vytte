@@ -25,12 +25,13 @@ committed, docs in lockstep, then work stops for approval.
 - The comparison view is **Compare** — "how your Assessment Targets score against each other" —
   **folded into the Reports hub**, not a lonely nav item. "Benchmark" and "facility" are retired.
 
-**Sidebar becomes five clear ideas, no orphans:**
-`Dashboard · Projects · Assessments · Reports · Actions`
+**Sidebar (revised per owner preference):**
+`Dashboard · Projects · Assessments · Reports · Compare · Actions`
 
-- **Reports** is the data hub: report previews + **Compare** + per-target **progress** previews.
-  (Progress stays contextual — a trend is one target over time — so it lives inside Reports and
-  the Dashboard, not as its own nav item, to avoid duplicating Reports/Compare.)
+- **Reports** is the data hub: report previews (score, biggest issue, top risk) + quick actions.
+- **Compare** is its own sidebar page (kept, per owner preference) — how the workspace's
+  assessment targets rank against each other — with a guided empty state, so it never dead-ends.
+  (Progress stays contextual — a trend is one target over time — surfaced inside Reports/Dashboard.)
 - **Actions** is promoted to a **workspace-level hub**: every action across all projects, with
   filters (project / owner / status / overdue). Per-project action lists still exist; the hub is
   the home. Rationale: "what do I need to do" naturally spans all projects.
@@ -59,8 +60,7 @@ committed, docs in lockstep, then work stops for approval.
   latest-report preview via the reporting engine.
 - **A3 — Reports hub: ✅ built.** Reports is now the central data hub: each report card shows
   its intelligence at a glance (biggest issue + top risk, read from the frozen snapshot) and
-  quick actions (View · PDF · Progress · Actions). **Compare is folded in** as a
-  "Compare your assessment targets" section (facility league table + per-area averages), shown
-  at 2+ completed targets. The Benchmark nav item is retired and `/benchmark` redirects to the
-  hub. Progress is reachable per report card.
+  quick actions (View · PDF · Progress · Actions). **Compare is its own sidebar page** (kept per
+  owner preference, renamed from "Benchmark" to "Compare", with a guided empty state) — showing
+  the ranked league table + per-area averages. Progress is reachable per report card.
 - A4–A5: pending.

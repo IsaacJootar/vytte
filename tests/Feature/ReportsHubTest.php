@@ -77,27 +77,4 @@ class ReportsHubTest extends TestCase
             ->assertSee('Biggest issue')   // the intelligence preview on the card
             ->assertSee('Top risk');
     }
-
-    public function test_hub_folds_in_compare_with_two_targets(): void
-    {
-        $this->scoredProject('Alheri Clinic', 'worst');
-        $this->scoredProject('Garki Hospital', 'best');
-
-        $this->actingAs($this->user)
-            ->get(route('reports.index'))
-            ->assertOk()
-            ->assertSee('Compare your assessment targets')
-            ->assertSee('Alheri Clinic')
-            ->assertSee('Garki Hospital');
-    }
-
-    public function test_compare_hidden_with_a_single_target(): void
-    {
-        $this->scoredProject('Only Clinic', 'best');
-
-        $this->actingAs($this->user)
-            ->get(route('reports.index'))
-            ->assertOk()
-            ->assertDontSee('Compare your assessment targets');
-    }
 }

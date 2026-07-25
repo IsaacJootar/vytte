@@ -10,60 +10,6 @@
         </div>
     @endif
 
-    {{-- Compare — folded into the Reports hub: how your assessment targets stack up. --}}
-    @if ($canCompare)
-        <div class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800" x-data="{ open: false }">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">Compare your assessment targets</h2>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Latest score for each, ranked. Workspace average: <span class="font-bold text-slate-600 dark:text-slate-300">{{ $workspaceAverage !== null ? number_format($workspaceAverage, 1) : '—' }}</span></p>
-                </div>
-                <button type="button" @click="open = !open" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">
-                    <span x-show="!open">Show</span><span x-show="open" x-cloak>Hide</span>
-                </button>
-            </div>
-            <div x-show="open" x-cloak class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-5">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead><tr class="border-b border-slate-100 dark:border-slate-700">
-                            <th class="py-2 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400">#</th>
-                            <th class="py-2 text-left text-[10px] font-bold uppercase tracking-wide text-slate-400">Target</th>
-                            <th class="py-2 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">Score</th>
-                            <th class="py-2 text-right text-[10px] font-bold uppercase tracking-wide text-slate-400">vs Avg</th>
-                        </tr></thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                            @foreach ($facilities as $f)
-                                <tr>
-                                    <td class="py-2 text-xs text-slate-400 tabular-nums">{{ $f['rank'] }}</td>
-                                    <td class="py-2"><a href="{{ route('projects.show', $f['project_id']) }}" class="font-medium text-slate-800 dark:text-slate-200 hover:text-vytte-700">{{ $f['project_name'] }}</a></td>
-                                    <td class="py-2 text-right font-bold tabular-nums text-slate-900 dark:text-white">{{ number_format($f['score'], 1) }}</td>
-                                    <td class="py-2 text-right font-semibold tabular-nums {{ $f['vs_average'] >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">{{ $f['vs_average'] >= 0 ? '+' : '' }}{{ number_format($f['vs_average'], 1) }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                @if (! empty($domainComparison))
-                    <div>
-                        <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-2">Across all targets, by area</p>
-                        <div class="flex flex-col gap-1.5">
-                            @foreach ($domainComparison as $dc)
-                                @php $avg = $dc['average']; $col = $avg >= 70 ? '#15803D' : ($avg >= 45 ? '#B45309' : '#B91C1C'); @endphp
-                                <div class="flex items-center gap-2">
-                                    <span class="text-xs text-slate-600 dark:text-slate-300 w-28 flex-shrink-0 truncate">{{ $dc['domain_name'] }}</span>
-                                    <div class="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                                        <div class="h-full rounded-full" style="width: {{ min(100, $avg) }}%; background: {{ $col }}"></div>
-                                    </div>
-                                    <span class="text-xs font-bold tabular-nums w-10 text-right" style="color: {{ $col }}">{{ number_format($avg, 1) }}</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-            </div>
-        </div>
-    @endif
-
     <div class="space-y-4">
         @forelse ($assessments as $assessment)
             @php

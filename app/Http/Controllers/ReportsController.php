@@ -4,12 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Assessment;
 use App\Models\Project;
-use App\Services\Reporting\BenchmarkService;
 use Illuminate\Contracts\View\View;
 
 class ReportsController extends Controller
 {
-    public function index(BenchmarkService $benchmarks): View
+    public function index(): View
     {
         $workspaceProjectIds = Project::select('project_id');
 
@@ -42,14 +41,6 @@ class ReportsController extends Controller
             ]];
         });
 
-        // Compare, folded into the hub: how the workspace's assessment targets stack up.
-        $facilities = $benchmarks->facilityComparison();
-        $workspaceAverage = $benchmarks->workspaceAverage();
-        $domainComparison = $benchmarks->domainComparison();
-        $canCompare = count($facilities) >= 2;
-
-        return view('reports.index', compact(
-            'assessments', 'previews', 'facilities', 'workspaceAverage', 'domainComparison', 'canCompare'
-        ));
+        return view('reports.index', compact('assessments', 'previews'));
     }
 }
