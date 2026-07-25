@@ -55,7 +55,7 @@
         {{-- Target info card --}}
         @if ($target)
             <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-                <h2 class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-3">Target</h2>
+                <h2 class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-3">Assessment Target</h2>
                 <div class="flex flex-col gap-2 text-sm">
                     <div>
                         <span class="text-slate-400 dark:text-slate-500 text-xs">Name</span>

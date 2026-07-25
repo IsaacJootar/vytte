@@ -68,4 +68,12 @@ committed, docs in lockstep, then work stops for approval.
   (total / open / done / overdue), filters (project · owner · status · overdue-only), inline
   status change, and a link to each action's project. Per-project action plans stay. Guided
   empty state. Sidebar is now `Dashboard · Projects · Assessments · Reports · Benchmark · Actions`.
-- A5: pending.
+- **A5 — Plain-language & naming pass: ✅ built.** Generic "facility" copy that meant the
+  assessed unit now reads "Assessment Target" (Projects subtitle, project page section label);
+  `HEALTH_FACILITY` as an actual target *type* and the `FacilityProfile` concept are left
+  correct. Buttons across the new flows are already action-first ("Start an assessment",
+  "Create a project", "Go to reports"). Admin views (technical users) left as-is.
+
+**All phases A1–A5 complete.** The Activation & Hub work is done: guided empty states, an
+adaptive dashboard, a Reports hub, a Benchmark page, and an Actions hub — the app guides
+whether or not there is data.
