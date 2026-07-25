@@ -83,10 +83,23 @@
     {{-- Latest report: the intelligence, previewed on the front door. --}}
     @if ($latestReport)
         @php $lr = $latestReport; $lrScore = $lr['score'] !== null ? (float) $lr['score'] : null; @endphp
-        <div class="mb-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+        <div class="mb-5" x-data="{ show: localStorage.getItem('vytte.hideLatestReport') !== '1' }">
+          {{-- Collapsed state: a small chip to bring the card back. --}}
+          <button type="button" x-show="!show" x-cloak
+                  @click="show = true; localStorage.removeItem('vytte.hideLatestReport')"
+                  class="inline-flex items-center gap-1.5 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+              Show your latest report
+          </button>
+
+          <div x-show="show" x-cloak class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
             <div class="flex items-center justify-between gap-3 mb-3">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Your latest report</h2>
-                <a href="{{ route('assessments.results', $lr['assessment']) }}" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Open full report →</a>
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('assessments.results', $lr['assessment']) }}" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Open full report →</a>
+                    <button type="button" @click="show = false; localStorage.setItem('vytte.hideLatestReport', '1')"
+                            class="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">Hide</button>
+                </div>
             </div>
             <div class="flex flex-col sm:flex-row gap-4">
                 <div class="flex-shrink-0 flex sm:flex-col items-center gap-2 sm:w-28">
@@ -113,6 +126,7 @@
                     @endif
                 </div>
             </div>
+          </div>
         </div>
     @endif
 

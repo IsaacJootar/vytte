@@ -1,5 +1,7 @@
 <x-app-layout :title="'Action plan · ' . $project->name">
 
+  <div class="max-w-4xl">
+
     {{-- Back + header --}}
     <div class="mb-6">
         <a href="{{ route('projects.show', $project) }}"
@@ -177,5 +179,7 @@
             @endforeach
         </div>
     @endif
+
+  </div>
 
 </x-app-layout>

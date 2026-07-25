@@ -114,7 +114,7 @@
     </aside>
 
     {{-- ===== MAIN COLUMN ===== --}}
-    <div class="flex-1 flex flex-col min-h-screen lg:ml-52">
+    <div class="flex-1 flex flex-col min-h-screen min-w-0 lg:ml-52">
 
         {{-- Mobile top bar --}}
         <header class="lg:hidden sticky top-0 z-30 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 py-3">

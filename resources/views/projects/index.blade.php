@@ -117,8 +117,8 @@
                                 <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-semibold text-[10px]">Archived</span>
                             @endif
                         </div>
-                        <a href="{{ route('projects.edit', $project) }}"
-                           class="text-[11px] font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">Edit ›</a>
+                        <a href="{{ route('projects.show', $project) }}"
+                           class="text-[11px] font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">Open ›</a>
                     </div>
                 </div>
             @endforeach

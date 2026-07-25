@@ -21,7 +21,9 @@
 
         /* Score hero */
         .score-hero { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 24px; }
-        .score-circle { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; flex-shrink: 0; }
+        /* DomPDF does not support flexbox, so the number is centred with line-height (vertical)
+           and text-align (horizontal) instead of align/justify, which left it off-centre. */
+        .score-circle { width: 70px; height: 70px; border-radius: 50%; text-align: center; line-height: 70px; font-size: 22px; font-weight: 900; }
         .score-meta { flex: 1; }
         .score-band-label { font-size: 11px; font-weight: 700; margin-bottom: 4px; }
         .score-maturity { font-size: 9px; color: #64748b; margin-top: 2px; }
@@ -215,9 +217,17 @@
     @php
         $intel = $report['intelligence'] ?? null;
         $lead = collect($intel['findings'] ?? [])
-            ->whereIn('category', ['CRITICAL_FINDING', 'WEAKNESS', 'STRENGTH'])
-            ->take(6);
+            ->whereIn('category', ['CRITICAL_FINDING', 'WEAKNESS', 'STRENGTH']);
         $recs = collect($intel['recommendations'] ?? []);
+
+        // Insights arrive grouped by governed category (a map of code => list of rows).
+        $insightGroups = collect($intel['insights'] ?? [])
+            ->map(fn ($rows) => array_values(is_array($rows) ? $rows : []))
+            ->filter(fn ($rows) => $rows !== [])
+            ->map(fn ($rows) => ['name' => $rows[0]['category_name'] ?? 'Insights', 'rows' => $rows])
+            ->values();
+        $rootCauses = collect($intel['root_causes'] ?? []);
+        $risks = collect($intel['risks'] ?? []);
     @endphp
 
     @if ($lead->isNotEmpty())
@@ -239,7 +249,86 @@
                                 {{ $finding['category'] === 'STRENGTH' ? 'Strength' : ($finding['category'] === 'CRITICAL_FINDING' ? 'Critical' : 'Weak') }}
                             </span>
                         </td>
-                        <td>{{ $finding['statement'] }}</td>
+                        <td>
+                            <div style="font-weight: 700;">{{ $finding['statement'] }}</div>
+                            @if (!empty($finding['why']))
+                                <div style="color: #64748b; margin-top: 2px;">Why it matters: {{ $finding['why'] }}</div>
+                            @endif
+                            @if (!empty($finding['consequence']))
+                                <div style="color: #64748b; margin-top: 1px;">If left unaddressed: {{ $finding['consequence'] }}</div>
+                            @endif
+                            @if (!empty($finding['expected_impact']))
+                                <div style="color: #64748b; margin-top: 1px;">Potential to improve: {{ ucfirst(strtolower($finding['expected_impact'])) }}</div>
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    {{-- Insights, grouped by governed category. --}}
+    @if ($insightGroups->isNotEmpty())
+        <div class="section-title">Insights</div>
+        @foreach ($insightGroups as $group)
+            <div style="font-size: 9px; font-weight: 700; color: #0f172a; margin-top: 8px; margin-bottom: 3px;">{{ $group['name'] }}</div>
+            <table>
+                <tbody>
+                    @foreach ($group['rows'] as $row)
+                        <tr>
+                            <td style="width: 70px;">
+                                <span class="pill pill-{{ ($row['polarity'] ?? '') === 'POSITIVE' ? 'strong' : (($row['polarity'] ?? '') === 'NEGATIVE' ? 'weak' : 'uncal') }}">
+                                    {{ ucfirst(strtolower($row['polarity'] ?? 'Note')) }}
+                                </span>
+                            </td>
+                            <td>{{ $row['statement'] ?? '' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endforeach
+    @endif
+
+    {{-- Likely root causes — the systemic patterns behind the findings. --}}
+    @if ($rootCauses->isNotEmpty())
+        <div class="section-title">Likely Root Causes</div>
+        <table>
+            <tbody>
+                @foreach ($rootCauses as $cause)
+                    <tr>
+                        <td>
+                            <div style="font-weight: 700;">{{ $cause['statement'] ?? '' }}</div>
+                            @php $items = collect($cause['contributing_indicators'] ?? [])->pluck('question_text')->filter(); @endphp
+                            @if ($items->isNotEmpty())
+                                <div style="color: #64748b; margin-top: 2px;">Contributing items: {{ $items->implode('; ') }}</div>
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    {{-- Risks if nothing changes. --}}
+    @if ($risks->isNotEmpty())
+        <div class="section-title">Risks If Nothing Changes</div>
+        <table>
+            <tbody>
+                @foreach ($risks as $risk)
+                    @php
+                        $rLevel = strtoupper($risk['level'] ?? '');
+                        $rBand = match ($rLevel) { 'HIGH' => 'weak', 'MEDIUM' => 'moderate', 'LOW' => 'strong', default => 'uncal' };
+                    @endphp
+                    <tr>
+                        <td style="width: 70px;">
+                            <span class="pill pill-{{ $rBand }}">{{ ucfirst(strtolower($rLevel ?: 'Risk')) }}</span>
+                        </td>
+                        <td>
+                            <div style="font-weight: 700;">{{ $risk['statement'] ?? '' }}</div>
+                            @if (!empty($risk['consequence']))
+                                <div style="color: #64748b; margin-top: 2px;">{{ $risk['consequence'] }}</div>
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
             </tbody>

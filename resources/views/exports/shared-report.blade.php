@@ -172,9 +172,15 @@
         @php
             $intel = $report['intelligence'] ?? null;
             $lead = collect($intel['findings'] ?? [])
-                ->whereIn('category', ['CRITICAL_FINDING', 'WEAKNESS', 'STRENGTH'])
-                ->take(6);
+                ->whereIn('category', ['CRITICAL_FINDING', 'WEAKNESS', 'STRENGTH']);
             $recs = collect($intel['recommendations'] ?? []);
+            $insightGroups = collect($intel['insights'] ?? [])
+                ->map(fn ($rows) => array_values(is_array($rows) ? $rows : []))
+                ->filter(fn ($rows) => $rows !== [])
+                ->map(fn ($rows) => ['name' => $rows[0]['category_name'] ?? 'Insights', 'rows' => $rows])
+                ->values();
+            $rootCauses = collect($intel['root_causes'] ?? []);
+            $risks = collect($intel['risks'] ?? []);
         @endphp
 
         @if ($lead->isNotEmpty())
@@ -194,7 +200,86 @@
                         @endphp
                         <li class="flex items-start gap-3 px-5 py-3">
                             <span class="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style="background: {{ $dot }}"></span>
-                            <p class="text-sm text-slate-700">{{ $finding['statement'] }}</p>
+                            <div>
+                                <p class="text-sm font-semibold text-slate-800">{{ $finding['statement'] }}</p>
+                                @if (!empty($finding['why']))
+                                    <p class="mt-0.5 text-xs text-slate-500">Why it matters: {{ $finding['why'] }}</p>
+                                @endif
+                                @if (!empty($finding['consequence']))
+                                    <p class="mt-0.5 text-xs text-slate-500">If left unaddressed: {{ $finding['consequence'] }}</p>
+                                @endif
+                                @if (!empty($finding['expected_impact']))
+                                    <p class="mt-0.5 text-xs text-slate-500">Potential to improve: {{ ucfirst(strtolower($finding['expected_impact'])) }}</p>
+                                @endif
+                            </div>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- Insights, grouped by governed category. --}}
+        @if ($insightGroups->isNotEmpty())
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">
+                <div class="px-5 py-3.5 border-b border-slate-100">
+                    <h2 class="text-sm font-bold text-slate-900">Insights</h2>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    @foreach ($insightGroups as $group)
+                        <div class="px-5 py-3">
+                            <p class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-1.5">{{ $group['name'] }}</p>
+                            <ul class="flex flex-col gap-1.5">
+                                @foreach ($group['rows'] as $row)
+                                    @php $pol = $row['polarity'] ?? ''; $c = $pol === 'POSITIVE' ? '#15803D' : ($pol === 'NEGATIVE' ? '#B91C1C' : '#94A3B8'); @endphp
+                                    <li class="flex items-start gap-3">
+                                        <span class="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full" style="background: {{ $c }}"></span>
+                                        <p class="text-sm text-slate-700">{{ $row['statement'] ?? '' }}</p>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        {{-- Likely root causes. --}}
+        @if ($rootCauses->isNotEmpty())
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">
+                <div class="px-5 py-3.5 border-b border-slate-100">
+                    <h2 class="text-sm font-bold text-slate-900">Likely root causes</h2>
+                </div>
+                <ul class="divide-y divide-slate-100">
+                    @foreach ($rootCauses as $cause)
+                        @php $items = collect($cause['contributing_indicators'] ?? [])->pluck('question_text')->filter(); @endphp
+                        <li class="px-5 py-3">
+                            <p class="text-sm font-semibold text-slate-800">{{ $cause['statement'] ?? '' }}</p>
+                            @if ($items->isNotEmpty())
+                                <p class="mt-0.5 text-xs text-slate-500">Contributing items: {{ $items->implode('; ') }}</p>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        {{-- Risks if nothing changes. --}}
+        @if ($risks->isNotEmpty())
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">
+                <div class="px-5 py-3.5 border-b border-slate-100">
+                    <h2 class="text-sm font-bold text-slate-900">Risks if nothing changes</h2>
+                </div>
+                <ul class="divide-y divide-slate-100">
+                    @foreach ($risks as $risk)
+                        @php $lvl = strtoupper($risk['level'] ?? ''); $c = $lvl === 'HIGH' ? '#B91C1C' : ($lvl === 'MEDIUM' ? '#B45309' : '#15803D'); @endphp
+                        <li class="px-5 py-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wide" style="color: {{ $c }}">{{ ucfirst(strtolower($lvl ?: 'Risk')) }} risk</span>
+                            </div>
+                            <p class="mt-1 text-sm font-semibold text-slate-800">{{ $risk['statement'] ?? '' }}</p>
+                            @if (!empty($risk['consequence']))
+                                <p class="mt-0.5 text-xs text-slate-500">{{ $risk['consequence'] }}</p>
+                            @endif
                         </li>
                     @endforeach
                 </ul>
