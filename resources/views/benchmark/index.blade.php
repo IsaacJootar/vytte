@@ -1,7 +1,7 @@
 <x-app-layout :title="'Compare'">
 
     <div class="mb-6">
-        <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Compare</p>
+        <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Benchmark</p>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight mt-0.5">Compare your assessment targets</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
             How your assessment targets score against each other, using each one's latest completed assessment. Only your own workspace is shown.

@@ -63,4 +63,9 @@ committed, docs in lockstep, then work stops for approval.
   quick actions (View · PDF · Progress · Actions). **Compare is its own sidebar page** (kept per
   owner preference, renamed from "Benchmark" to "Compare", with a guided empty state) — showing
   the ranked league table + per-area averages. Progress is reachable per report card.
-- A4–A5: pending.
+- **A4 — Actions hub: ✅ built.** Actions is promoted to a workspace-level sidebar page
+  (`actions.hub`, `/actions`) aggregating every action across all projects, with summary tiles
+  (total / open / done / overdue), filters (project · owner · status · overdue-only), inline
+  status change, and a link to each action's project. Per-project action plans stay. Guided
+  empty state. Sidebar is now `Dashboard · Projects · Assessments · Reports · Benchmark · Actions`.
+- A5: pending.

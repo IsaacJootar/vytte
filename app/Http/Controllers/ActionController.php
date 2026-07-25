@@ -17,6 +17,48 @@ class ActionController extends Controller
     public function __construct(private readonly ActionService $actions) {}
 
     /**
+     * The workspace action hub — every action across every project in one place, because
+     * "what do I need to do" spans the whole workspace, not one project. Filterable by project,
+     * owner, status, and overdue; open work leads.
+     */
+    public function hub(Request $request): View
+    {
+        $filters = [
+            'project' => $request->query('project'),
+            'owner' => $request->query('owner'),
+            'status' => $request->query('status'),
+            'overdue' => $request->query('overdue'),
+        ];
+
+        // AssessmentAction is workspace-scoped, so this is already limited to this workspace.
+        $actions = AssessmentAction::with(['owner', 'project', 'assessment.target'])
+            ->when($filters['project'], fn ($q, $p) => $q->where('project_id', $p))
+            ->when($filters['owner'], fn ($q, $o) => $q->where('owner_user_id', $o))
+            ->when($filters['status'], fn ($q, $s) => $q->where('status', $s))
+            ->when($filters['overdue'] === '1', fn ($q) => $q->whereNotNull('due_date')
+                ->whereDate('due_date', '<', today())
+                ->whereNotIn('status', [AssessmentAction::STATUS_DONE, AssessmentAction::STATUS_VERIFIED]))
+            ->orderByRaw("array_position(ARRAY['OPEN','IN_PROGRESS','DONE','VERIFIED']::text[], status)")
+            ->orderByRaw('due_date is null, due_date')
+            ->get();
+
+        $all = AssessmentAction::query()->get();
+        $summary = [
+            'total' => $all->count(),
+            'open' => $all->whereIn('status', [AssessmentAction::STATUS_OPEN, AssessmentAction::STATUS_IN_PROGRESS])->count(),
+            'done' => $all->whereIn('status', [AssessmentAction::STATUS_DONE, AssessmentAction::STATUS_VERIFIED])->count(),
+            'overdue' => $all->filter->isOverdue()->count(),
+        ];
+
+        // Filter options: only projects that actually have actions.
+        $projects = Project::whereIn('project_id', AssessmentAction::query()->select('project_id')->distinct())
+            ->orderBy('name')->get();
+        $members = $this->workspaceMembers();
+
+        return view('actions.hub', compact('actions', 'summary', 'projects', 'members', 'filters'));
+    }
+
+    /**
      * The action plan for a project — every action drawn from its assessments, grouped by
      * how finished it is so the open work leads.
      */

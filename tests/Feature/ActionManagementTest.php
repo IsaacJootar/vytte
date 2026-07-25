@@ -179,4 +179,51 @@ class ActionManagementTest extends TestCase
             ->get(route('actions.index', $projectId))
             ->assertNotFound();
     }
+
+    // ---- Workspace Actions hub ----
+
+    public function test_actions_hub_lists_actions_across_the_workspace(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->weakCompletedAssessment($workspace, $user);
+        $this->actingAs($user)->post(route('actions.store', $assessment), ['recommendation_index' => 0]);
+
+        $this->actingAs($user)
+            ->get(route('actions.hub'))
+            ->assertOk()
+            ->assertSee('Your action plan')
+            ->assertSee($assessment->project->name);
+    }
+
+    public function test_actions_hub_empty_state_guides_forward(): void
+    {
+        [$user] = $this->userWithWorkspace();
+
+        $this->actingAs($user)
+            ->get(route('actions.hub'))
+            ->assertOk()
+            ->assertSee('No actions yet')
+            ->assertSee('Go to reports');
+    }
+
+    public function test_actions_hub_overdue_filter(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->weakCompletedAssessment($workspace, $user);
+
+        AssessmentAction::factory()->create([
+            'assessment_id' => $assessment->assessment_id, 'project_id' => $assessment->project_id,
+            'created_by' => $user->user_id, 'status' => 'OPEN', 'title' => 'OVERDUE TASK', 'due_date' => now()->subWeek(),
+        ]);
+        AssessmentAction::factory()->create([
+            'assessment_id' => $assessment->assessment_id, 'project_id' => $assessment->project_id,
+            'created_by' => $user->user_id, 'status' => 'OPEN', 'title' => 'FUTURE TASK', 'due_date' => now()->addWeek(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('actions.hub', ['overdue' => '1']))
+            ->assertOk()
+            ->assertSee('OVERDUE TASK')
+            ->assertDontSee('FUTURE TASK');
+    }
 }

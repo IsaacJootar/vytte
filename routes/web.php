@@ -108,6 +108,7 @@ Route::middleware('auth')->group(function () {
     Route::get('projects/{project}/export/csv', [ExportController::class, 'projectCsv'])->name('projects.export.csv');
 
     // Action plan — the living domain drawn from frozen recommendations.
+    Route::get('actions', [ActionController::class, 'hub'])->name('actions.hub');
     Route::get('projects/{project}/actions', [ActionController::class, 'index'])->name('actions.index');
     Route::post('assessments/{assessment}/actions', [ActionController::class, 'store'])->name('actions.store');
     Route::patch('actions/{action}', [ActionController::class, 'update'])->name('actions.update');
