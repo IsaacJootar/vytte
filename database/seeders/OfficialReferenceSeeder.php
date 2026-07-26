@@ -93,6 +93,8 @@ class OfficialReferenceSeeder extends Seeder
             'DISTRICT_HOSPITAL' => ['District Hospital', 'HEALTH_FACILITY', 'First referral hospital for a district, with inpatient and surgical capacity.'],
             'GENERAL_HOSPITAL' => ['General Hospital', 'HEALTH_FACILITY', 'General inpatient and outpatient hospital services.'],
             'SPECIALIST_HOSPITAL' => ['Specialist Hospital', 'HEALTH_FACILITY', 'Concentrates on one clinical speciality.'],
+            'FEDERAL_MEDICAL_CENTRE' => ['Federal Medical Centre', 'HEALTH_FACILITY', 'Federal tertiary hospital offering specialist and referral services.'],
+            'COTTAGE_HOSPITAL' => ['Cottage or Rural Hospital', 'HEALTH_FACILITY', 'Small hospital serving a rural or remote catchment.'],
             'MATERNITY_HOSPITAL' => ['Maternity Hospital or Unit', 'HEALTH_FACILITY', 'Dedicated maternal and newborn care.'],
             'MENTAL_HEALTH_HOSPITAL' => ['Mental Health Facility', 'HEALTH_FACILITY', 'Dedicated mental health inpatient or outpatient care.'],
             'REHABILITATION_CENTRE' => ['Rehabilitation Centre', 'HEALTH_FACILITY', 'Physiotherapy, occupational therapy and assistive products.'],
@@ -100,6 +102,7 @@ class OfficialReferenceSeeder extends Seeder
             // Primary and community level.
             'PRIMARY_HEALTH_CENTRE' => ['Primary Health Centre', 'HEALTH_FACILITY', 'Primary care with basic maternal, child and outpatient services.'],
             'HEALTH_CENTRE' => ['Health Centre', 'HEALTH_FACILITY', 'Larger primary facility, sometimes with limited inpatient beds.'],
+            'COMPREHENSIVE_HEALTH_CENTRE' => ['Comprehensive Health Centre', 'HEALTH_FACILITY', 'Larger primary care centre with maternity, laboratory and outpatient services.'],
             'HEALTH_POST' => ['Health Post or Dispensary', 'HEALTH_FACILITY', 'Smallest fixed facility, often single-staffed.'],
             'CLINIC' => ['Clinic', 'HEALTH_FACILITY', 'Outpatient clinic, public or private.'],
             'MOBILE_CLINIC' => ['Mobile Clinic', 'HEALTH_FACILITY', 'Services delivered from a vehicle or temporary site.'],
@@ -121,6 +124,11 @@ class OfficialReferenceSeeder extends Seeder
             'OCCUPATIONAL_HEALTH_SERVICE' => ['Occupational Health Service', 'WORKPLACE', 'Workplace health and safety services.'],
             'MILITARY_HEALTH_SERVICE' => ['Military Health Service', 'GOVERNMENT_ORG', 'Health services for armed forces personnel.'],
             'CORRECTIONAL_HEALTH_SERVICE' => ['Correctional Health Service', 'CORRECTIONAL', 'Health services in a prison or detention setting.'],
+            'FAITH_BASED_HEALTH_PROGRAMME' => ['Faith-Based Health Programme', 'PLACE_OF_WORSHIP', 'Health services or outreach run by a faith organisation.'],
+            'WASH_PROGRAMME' => ['Water, Sanitation & Hygiene (WASH) Programme', 'WATER_POINT', 'Community water, sanitation and hygiene programme or water source.'],
+            'WORKPLACE_WELLNESS_PROGRAMME' => ['Workplace Wellness Programme', 'WORKPLACE', 'Employee health and wellness programme at a business or workplace.'],
+            'RESEARCH_STUDY' => ['Research Study or Survey', 'NGO_PROGRAMME', 'A health research study, survey or academic assessment.'],
+            'HEALTH_CAMPAIGN' => ['Health Campaign or Outreach', 'COMMUNITY', 'A time-bound campaign or outreach — immunisation, screening, awareness.'],
         ];
     }
 

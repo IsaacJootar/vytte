@@ -10,6 +10,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ProjectTest extends TestCase
@@ -72,9 +73,10 @@ class ProjectTest extends TestCase
             ->get(route('projects.create'))
             ->assertOk()
             ->assertSee('New Project')
-            ->assertSee('School')
-            ->assertDontSee('Primary School')
-            ->assertDontSee('Secondary School')
+            // The two-path model: a health facility (comprehensive) or a programme/subject (focused).
+            ->assertSee('A health facility')
+            ->assertSee('A programme, community or subject')
+            ->assertSee('Primary Health Centre')
             ->assertDontSee('Category');
     }
 
@@ -149,6 +151,33 @@ class ProjectTest extends TestCase
         $this->assertSame('CUSTOM', $target->target_type_code);
         $this->assertSame('Agricultural Cooperative', $target->custom_setting_label);
         $this->assertTrue($target->uses_departments);
+    }
+
+    public function test_store_saves_a_chosen_programme_profile(): void
+    {
+        [$user] = $this->userWithWorkspace();
+
+        // The programme path submits a non-facility profile; its kind must be stored.
+        $profile = FacilityProfile::create([
+            'facility_profile_id' => (string) Str::uuid(),
+            'profile_code' => 'TEST_NGO_PROGRAMME',
+            'profile_name' => 'Test NGO Programme',
+            'setting_type_code' => 'NGO_PROGRAMME',
+            'status' => FacilityProfile::STATUS_PUBLISHED,
+            'display_order' => 99,
+        ]);
+
+        $this->actingAs($user)->post(route('projects.store'), [
+            'name' => 'Malaria Programme',
+            'target_name' => 'Keffi Malaria Project',
+            'target_type_code' => 'NGO_PROGRAMME',
+            'facility_profile_id' => $profile->facility_profile_id,
+            'country' => 'Nigeria',
+        ])->assertRedirect();
+
+        $target = Target::where('name', 'Keffi Malaria Project')->firstOrFail();
+        $this->assertSame('NGO_PROGRAMME', $target->target_type_code);
+        $this->assertSame($profile->facility_profile_id, $target->facility_profile_id);
     }
 
     public function test_school_creation_needs_only_type_and_school_name(): void

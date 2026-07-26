@@ -54,12 +54,20 @@ class ProjectController extends Controller
             ->get();
 
         $countries = $this->countries();
+
+        // The catalogue splits cleanly into the two tools: health-facility profiles feed the
+        // whole-facility (comprehensive) path; everything else is a programme or subject for
+        // the focused path.
         $facilityProfiles = FacilityProfile::where('status', FacilityProfile::STATUS_PUBLISHED)
             ->where('setting_type_code', 'HEALTH_FACILITY')
             ->orderBy('display_order')
             ->get();
+        $programmeProfiles = FacilityProfile::where('status', FacilityProfile::STATUS_PUBLISHED)
+            ->where('setting_type_code', '!=', 'HEALTH_FACILITY')
+            ->orderBy('display_order')
+            ->get();
 
-        return view('projects.create', compact('targetTypes', 'countries', 'facilityProfiles'));
+        return view('projects.create', compact('targetTypes', 'countries', 'facilityProfiles', 'programmeProfiles'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -94,9 +102,9 @@ class ProjectController extends Controller
             $target = Target::create([
                 'target_type_code' => $validated['target_type_code'],
                 'name' => $validated['target_name'],
-                'facility_profile_id' => $validated['target_type_code'] === 'HEALTH_FACILITY'
-                    ? $validated['facility_profile_id']
-                    : null,
+                // Store whichever profile was chosen, whether a facility type or a programme
+                // setting — it is the descriptive kind of the target either way.
+                'facility_profile_id' => $validated['facility_profile_id'] ?? null,
                 'custom_setting_label' => $validated['custom_setting_label'] ?? null,
                 'uses_departments' => $validated['target_type_code'] === 'CUSTOM'
                     ? (bool) ($validated['uses_departments'] ?? false)

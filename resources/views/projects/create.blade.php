@@ -17,10 +17,30 @@
 
     <form method="POST" action="{{ route('projects.store') }}"
           x-data="{
-              targetType: '{{ old('target_type_code', '') }}',
-              loading: false
+              mode: '{{ old('target_type_code') === 'HEALTH_FACILITY' ? 'FACILITY' : (old('target_type_code') ? 'PROGRAMME' : '') }}',
+              facilityProfile: '{{ old('target_type_code') === 'HEALTH_FACILITY' ? old('facility_profile_id') : '' }}',
+              programmeChoice: '{{ old('target_type_code') && old('target_type_code') !== 'HEALTH_FACILITY' ? (old('target_type_code') === 'CUSTOM' ? '__custom__' : old('facility_profile_id')) : '' }}',
+              programmeSettings: {{ Illuminate\Support\Js::from($programmeProfiles->pluck('setting_type_code', 'facility_profile_id')) }},
+              loading: false,
+              get targetTypeCode() {
+                  if (this.mode === 'FACILITY') { return this.facilityProfile ? 'HEALTH_FACILITY' : ''; }
+                  if (this.mode === 'PROGRAMME') {
+                      if (this.programmeChoice === '__custom__') { return 'CUSTOM'; }
+                      return this.programmeSettings[this.programmeChoice] ?? '';
+                  }
+                  return '';
+              },
+              get profileId() {
+                  if (this.mode === 'FACILITY') { return this.facilityProfile; }
+                  if (this.mode === 'PROGRAMME' && this.programmeChoice !== '__custom__') { return this.programmeChoice; }
+                  return '';
+              }
           }">
         @csrf
+        {{-- Hidden fields carry the values the two paths resolve to. --}}
+        <input type="hidden" name="target_type_code" :value="targetTypeCode">
+        <input type="hidden" name="facility_profile_id" :value="profileId">
+        <x-input-error :messages="$errors->get('target_type_code')" class="mt-1" />
 
         <div class="flex flex-col gap-5">
 
@@ -66,70 +86,68 @@
                 <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Choose the kind of setting, then enter its name.</p>
 
                 <div class="flex flex-col gap-4">
-                    {{-- Target type --}}
-                    <div>
-                        <x-input-label for="target_type_code" value="Type" />
-                        <select
-                            id="target_type_code"
-                            name="target_type_code"
-                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition bg-white dark:bg-slate-700"
-                            x-model="targetType"
-                            required
-                        >
-                            <option value="" disabled>Select type…</option>
-                            @foreach ($targetTypes as $type)
-                                <option value="{{ $type->target_type_code }}"
-                                    {{ old('target_type_code') === $type->target_type_code ? 'selected' : '' }}>
-                                    {{ $type->target_type_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <x-input-error :messages="$errors->get('target_type_code')" class="mt-1" />
+                    {{-- Two paths, mapped to the two tools. --}}
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        <button type="button" @click="mode = 'FACILITY'; programmeChoice = ''"
+                                class="rounded-xl border p-4 text-left transition"
+                                :class="mode === 'FACILITY' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-100 dark:bg-vytte-900/20' : 'border-slate-200 bg-white hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800'">
+                            <span class="block text-sm font-bold text-slate-900 dark:text-white">A health facility</span>
+                            <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">A hospital, clinic or health centre. Runs a full facility diagnostic.</span>
+                        </button>
+                        <button type="button" @click="mode = 'PROGRAMME'; facilityProfile = ''"
+                                class="rounded-xl border p-4 text-left transition"
+                                :class="mode === 'PROGRAMME' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-100 dark:bg-vytte-900/20' : 'border-slate-200 bg-white hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800'">
+                            <span class="block text-sm font-bold text-slate-900 dark:text-white">A programme, community or subject</span>
+                            <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">An NGO, research study, community or campaign. Runs focused topic assessments.</span>
+                        </button>
                     </div>
 
-                    <div x-show="targetType === 'CUSTOM'" x-cloak>
-                        <x-input-label for="custom_setting_label" value="What kind of setting is this?" />
-                        <x-text-input
-                            id="custom_setting_label"
-                            name="custom_setting_label"
-                            type="text"
-                            class="mt-1 block w-full"
-                            :value="old('custom_setting_label')"
-                            placeholder="e.g. Agricultural cooperative"
-                            x-bind:required="targetType === 'CUSTOM'"
-                        />
-                        <x-input-error :messages="$errors->get('custom_setting_label')" class="mt-1" />
-
-                        <label class="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                            <input type="checkbox" name="uses_departments" value="1" class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500" {{ old('uses_departments') ? 'checked' : '' }}>
-                            This setting genuinely uses departments
-                        </label>
-                    </div>
-
-                    <div x-show="targetType === 'HEALTH_FACILITY'" x-cloak>
-                        <x-input-label for="facility_profile_id" value="Health facility profile" />
-                        <select
-                            id="facility_profile_id"
-                            name="facility_profile_id"
-                            class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition bg-white dark:bg-slate-700"
-                            x-bind:required="targetType === 'HEALTH_FACILITY'"
-                        >
-                            <option value="" disabled {{ old('facility_profile_id') ? '' : 'selected' }}>Select facility profile...</option>
+                    {{-- Facility path: pick the kind of facility. --}}
+                    <div x-show="mode === 'FACILITY'" x-cloak>
+                        <x-input-label for="facility_choice" value="What kind of health facility?" />
+                        <select id="facility_choice" x-model="facilityProfile"
+                                class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition bg-white dark:bg-slate-700">
+                            <option value="">Select facility type…</option>
                             @foreach ($facilityProfiles as $profile)
-                                <option value="{{ $profile->facility_profile_id }}" {{ old('facility_profile_id') === $profile->facility_profile_id ? 'selected' : '' }}>
-                                    {{ $profile->profile_name }}
-                                </option>
+                                <option value="{{ $profile->facility_profile_id }}">{{ $profile->profile_name }}</option>
                             @endforeach
                         </select>
-                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Vytte uses this to load the right governed catalogue release.</p>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Vytte uses this to load the right governed catalogue.</p>
                         <x-input-error :messages="$errors->get('facility_profile_id')" class="mt-1" />
+                    </div>
+
+                    {{-- Programme path: pick the kind of programme or subject. --}}
+                    <div x-show="mode === 'PROGRAMME'" x-cloak>
+                        <x-input-label for="programme_choice" value="What kind of programme or subject?" />
+                        <select id="programme_choice" x-model="programmeChoice"
+                                class="mt-1 block w-full border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 focus:border-vytte-500 transition bg-white dark:bg-slate-700">
+                            <option value="">Select…</option>
+                            @foreach ($programmeProfiles as $profile)
+                                <option value="{{ $profile->facility_profile_id }}">{{ $profile->profile_name }}</option>
+                            @endforeach
+                            <option value="__custom__">Other — describe it</option>
+                        </select>
+
+                        <div x-show="programmeChoice === '__custom__'" x-cloak class="mt-3">
+                            <x-input-label for="custom_setting_label" value="Describe the setting" />
+                            <x-text-input id="custom_setting_label" name="custom_setting_label" type="text"
+                                          class="mt-1 block w-full" :value="old('custom_setting_label')"
+                                          placeholder="e.g. Agricultural cooperative health scheme"
+                                          x-bind:required="programmeChoice === '__custom__'" />
+                            <x-input-error :messages="$errors->get('custom_setting_label')" class="mt-1" />
+                            <label class="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                <input type="checkbox" name="uses_departments" value="1" class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500" {{ old('uses_departments') ? 'checked' : '' }}>
+                                This setting genuinely uses departments
+                            </label>
+                        </div>
+                        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Focused topic assessments (malaria, TB, WASH, and more) are available for any programme or subject.</p>
                     </div>
 
                     {{-- Target name --}}
                     <div>
                         <label for="target_name" class="block text-sm font-medium text-slate-700 dark:text-slate-300"
-                               x-text="targetType === 'SCHOOL' ? 'School name' : (targetType === 'HEALTH_FACILITY' ? 'Health facility name' : 'Setting name')">
-                            Setting name
+                               x-text="mode === 'FACILITY' ? 'Health facility name' : (mode === 'PROGRAMME' ? 'Programme or subject name' : 'Name')">
+                            Name
                         </label>
                         <x-text-input
                             id="target_name"
@@ -137,7 +155,7 @@
                             type="text"
                             class="mt-1 block w-full"
                             :value="old('target_name')"
-                            x-bind:placeholder="targetType === 'SCHOOL' ? 'e.g. Sunrise Academy' : (targetType === 'HEALTH_FACILITY' ? 'e.g. Ikeja Health Centre' : 'Enter the official name')"
+                            x-bind:placeholder="mode === 'FACILITY' ? 'e.g. Ikeja Health Centre' : (mode === 'PROGRAMME' ? 'e.g. Keffi Malaria Programme' : 'Enter the official name')"
                             required
                         />
                         <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Use the official or commonly recognized name.</p>
