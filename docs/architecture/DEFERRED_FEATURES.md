@@ -61,15 +61,14 @@ The following features are intentionally deferred until after beta.
 - AI-assisted recommendations
 - Workflow automation
 
-## Custom-assessment depth (model agreed 2026-07-26 — see DEC-2026-07-26-037)
+## Custom-assessment depth — DELIVERED 2026-07-26 (see DEC-2026-07-26-037, DEC-2026-07-26-041)
 
-The three-layer model is agreed and the fully-custom (Layer 3) surface is folded into
-Assessments. The deeper engineering is deferred:
+The three-layer model is implemented. Custom "Tailored by your team" sections are built:
+a workspace adds its own questions (add-only; governed questions are never removed, so the
+official score stays comparable), answers them, and they are scored on the same 0-100 scale in
+a private lane via `CustomSectionScoringService`, shown as a "Tailored by your team" block on
+the results page, shared report and PDF. Answers and the private score live on
+`local_custom_sections`; the official snapshot and score are untouched.
 
-- **In-context question editor (Layer 2):** a UI to add your own questions/sections to a
-  governed assessment run, stored as `LocalCustomSection`, private to the workspace. The
-  data model exists; the interface does not.
-- **Separate custom scoring:** scoring those local sections in their own lane and rendering a
-  "Your custom section" block in the report, distinct from the official Vytte score. Touches
-  the scoring and report engines, so scheduled as its own focused build rather than bundled
-  with UI work.
+Possible later polish (not scheduled): per-question weighting (currently equal weight), and
+free-text/number response types (currently Yes/No and 1-5 scale).

@@ -297,6 +297,13 @@
 - **Context:** Creating an assessment dropped the user straight into the questions, assuming they were the assessor, with no path to share it for others to answer.
 - **Decision:** Creation lands on a start screen showing what the assessment covers and asking how answers will be collected — answer it yourself, or (where supported) share a link for others to answer.
 
+### DEC-2026-07-26-041: Tailored Questions Are Add-Only and Scored in Their Own Lane
+
+- **Status:** Accepted and implemented.
+- **Context:** Users — often experts — want to tailor an assessment to their context. Vytte's templates are a curated head-start, not the final authority. But comparability (Benchmark, Portfolio) only holds when facilities answer the same question set.
+- **Decision:** A workspace may **add** its own questions to an assessment ("Tailored by your team"), but may **never remove** governed questions — so the official score always measures the same standard set and stays comparable. Custom questions are answered in the same report, scored on the **same 0-100 scale** as the official engine (`CustomSectionScoringService`) but in a **separate lane** that never touches the official overall. The distinction is framed as *comparability*, not authority: two scores built from different questions cannot be compared, so the tailored score is shown on its own.
+- **Boundary:** Custom questions, answers and the private score live on the workspace's `local_custom_sections` table. No central content, no change to the immutable assessment snapshot, no change to the official `ScoringService`.
+
 ### DEC-2026-07-26-040: Harmonisation at Two Levels, One Chain
 
 - **Status:** Accepted and implemented.
