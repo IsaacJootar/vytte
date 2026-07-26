@@ -15,7 +15,7 @@
     $yFor = fn ($v) => round($padT + $plotH * (1 - max(0, min(100, (float) $v)) / 100), 1);
 @endphp
 @if ($n >= 2)
-<svg width="100%" viewBox="0 0 {{ $width }} {{ $height }}" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
+<svg width="{{ $width }}" height="{{ $height }}" viewBox="0 0 {{ $width }} {{ $height }}" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
     {{-- gridlines at 0/50/100 --}}
     @foreach ([0, 50, 100] as $g)
         @php $gy = $yFor($g); @endphp

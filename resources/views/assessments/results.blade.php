@@ -145,6 +145,40 @@
         </p>
     </div>
 
+    {{-- At a glance — the same visual summary carried by the PDF and shared report, so the
+         on-screen report and its print match the exports. --}}
+    @php
+        $vizRiskCounts = collect($intelligence['risks'] ?? [])->groupBy(fn ($r) => strtoupper($r['level'] ?? 'LOW'))->map->count();
+        $vizMaturity = $assessment->score?->maturityLevel?->level_number;
+        $vizTrend = collect($history ?? [])
+            ->filter(fn ($h) => $h->score?->overall_score !== null)
+            ->map(fn ($h) => ['label' => $h->completed_at?->format('d M') ?? '', 'value' => (float) $h->score->overall_score])
+            ->values()->all();
+        $vizRiskTotal = collect($vizRiskCounts)->sum();
+    @endphp
+    <div class="mb-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-4">At a glance</h2>
+        @if ($vizMaturity)
+            <div class="mb-4">@include('exports.charts.maturity-ladder', ['level' => $vizMaturity])</div>
+        @endif
+        @if ($domainScores->where('score', '!=', null)->count() > 0)
+            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Scores by area</p>
+            <div class="mb-4">@include('exports.charts.domain-bars', ['domains' => $domainScores])</div>
+        @endif
+        @if ($vizRiskTotal > 0)
+            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Risks by level</p>
+            <div class="mb-4">@include('exports.charts.risk-strip', ['riskCounts' => $vizRiskCounts])</div>
+        @endif
+        @if ($subIndexScores->where('score', '!=', null)->count() >= 3)
+            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Balance across sub-indices</p>
+            <div class="mb-4 max-w-sm">@include('exports.charts.subindex-radar', ['subIndices' => $subIndexScores])</div>
+        @endif
+        @if (count($vizTrend) >= 2)
+            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Score over time</p>
+            <div>@include('exports.charts.trend-line', ['points' => $vizTrend])</div>
+        @endif
+    </div>
+
     {{-- Report in steps (progressive disclosure). Tabs are screen-only; print shows all.
          The active tab is mirrored in the URL (?tab=), so a form that posts and redirects back
          (generate AI, add to action plan) returns the user to the same tab, not the top. --}}

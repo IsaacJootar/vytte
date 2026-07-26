@@ -19,7 +19,7 @@
     };
 @endphp
 @if ($n >= 3)
-<svg width="100%" viewBox="0 0 {{ $size }} {{ $size }}" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
+<svg width="{{ $size }}" height="{{ $size }}" viewBox="0 0 {{ $size }} {{ $size }}" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
     {{-- grid rings --}}
     @foreach ($rings as $ring)
         @php

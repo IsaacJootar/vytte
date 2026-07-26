@@ -12,7 +12,7 @@
     $gap = 8;
     $height = 66;
 @endphp
-<svg width="100%" viewBox="0 0 {{ $width }} {{ $height }}" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
+<svg width="{{ $width }}" height="{{ $height }}" viewBox="0 0 {{ $width }} {{ $height }}" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
     @foreach ($levels as $i => [$key, $label, $fg, $bg])
         @php $x = $i * ($blockW + $gap); $count = (int) ($counts[$key] ?? 0); @endphp
         <rect x="{{ $x }}" y="0" width="{{ $blockW }}" height="{{ $height }}" rx="8" fill="{{ $bg }}"/>
