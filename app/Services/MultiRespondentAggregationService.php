@@ -147,22 +147,18 @@ class MultiRespondentAggregationService
     private function config(Assessment $assessment): array
     {
         $config = $assessment->snapshot?->collection_config ?? [];
-        if (! ($config['allows_multi_respondent'] ?? false)) {
-            throw ValidationException::withMessages(['assessment' => 'This catalogue release does not allow multi-respondent collection.']);
-        }
-        if (($config['aggregation_method'] ?? null) !== self::METHOD_ARITHMETIC_MEAN) {
-            throw ValidationException::withMessages(['assessment' => 'This assessment uses an unsupported aggregation method.']);
-        }
-        if (($config['minimum_completed_respondents'] ?? 0) < 1) {
-            throw ValidationException::withMessages(['assessment' => 'This assessment has no valid respondent threshold.']);
-        }
+
+        // Multi-respondent collection is available for any assessment — the platform flag is a
+        // default, not a lock. Where a self-designed assessment carries no aggregation settings,
+        // sensible defaults apply: the arithmetic mean of at least one eligible respondent. Only
+        // the frozen scoring profile still has to be one the engine understands.
         if (! in_array($config['scoring_profile_version'] ?? null, ScoringService::SUPPORTED_ALGORITHM_VERSIONS, true)) {
             throw ValidationException::withMessages(['assessment' => 'This assessment uses an unsupported frozen scoring profile version.']);
         }
 
         return [
             'aggregation_method' => self::METHOD_ARITHMETIC_MEAN,
-            'minimum_completed_respondents' => (int) $config['minimum_completed_respondents'],
+            'minimum_completed_respondents' => max(1, (int) ($config['minimum_completed_respondents'] ?? 1)),
             'respondent_eligibility_rules' => $config['respondent_eligibility_rules'] ?? [],
             'scoring_profile_version' => $config['scoring_profile_version'],
         ];

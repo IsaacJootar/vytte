@@ -26,11 +26,6 @@ class RespondentLinkController extends Controller
             return back()->with('error', 'Publish this assessment before sharing it, and make sure collection is still open.');
         }
 
-        $snapshot = $assessment->snapshot()->first();
-        if ($snapshot && ! ($snapshot->collection_config['allows_multi_respondent'] ?? false)) {
-            return back()->with('error', 'This template does not allow multi-respondent collection.');
-        }
-
         $token = Str::random(32);
 
         $respondentToken = AssessmentRespondentToken::create([
