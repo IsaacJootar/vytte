@@ -39,6 +39,50 @@ class MultiRespondentAssessmentController extends Controller
         return view('assessments.respondent-collection', compact('assessment', 'preview', 'respondentTokens'));
     }
 
+    /**
+     * A read-only view of exactly what one respondent answered. Only submitted sessions can
+     * be opened — a half-finished session has nothing final to show.
+     */
+    public function session(Assessment $assessment, PublicResponseSession $responseSession): View|RedirectResponse
+    {
+        $this->authorize('view', $assessment);
+        abort_unless($responseSession->assessment_id === $assessment->assessment_id, 404);
+
+        if ($responseSession->submitted_at === null) {
+            return redirect()->route('assessments.monitor', $assessment)
+                ->with('error', 'That response is still in progress — there is nothing to view yet.');
+        }
+
+        // Map the frozen snapshot so each answer can be shown with its question and label.
+        $questions = collect($assessment->snapshot->payload ?? [])
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->keyBy('question_id');
+
+        $answers = collect($responseSession->response_snapshot ?? [])->map(function ($r) use ($questions) {
+            $question = $questions->get($r['question_id'] ?? null);
+            $label = '—';
+            if ($question) {
+                if (! empty($r['value_option_id'])) {
+                    $label = collect($question['options'] ?? [])->firstWhere('option_id', $r['value_option_id'])['option_label'] ?? '—';
+                } elseif (($r['value_text'] ?? null) !== null) {
+                    $label = $r['value_text'];
+                } elseif (($r['value_numeric'] ?? null) !== null) {
+                    $label = (string) $r['value_numeric'];
+                }
+            }
+
+            return [
+                'question' => $question['question_text'] ?? 'Question',
+                'section' => $question['section_name'] ?? null,
+                'answer' => $label,
+            ];
+        })->values();
+
+        $assessment->load(['project', 'target']);
+
+        return view('assessments.session', compact('assessment', 'responseSession', 'answers'));
+    }
+
     public function classify(
         Request $request,
         Assessment $assessment,

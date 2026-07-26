@@ -103,6 +103,7 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/narrative/{product}/pdf', [AssessmentController::class, 'narrativePdf'])->name('assessments.narrative.pdf');
     Route::patch('assessments/{assessment}/type', [AssessmentController::class, 'setType'])->name('assessments.type');
     Route::get('assessments/{assessment}/respondent-collection', [MultiRespondentAssessmentController::class, 'show'])->name('assessments.respondent-collection');
+    Route::get('assessments/{assessment}/respondent-sessions/{responseSession}', [MultiRespondentAssessmentController::class, 'session'])->name('assessments.respondent-sessions.show');
     Route::patch('assessments/{assessment}/respondent-sessions/{responseSession}', [MultiRespondentAssessmentController::class, 'classify'])->name('assessments.respondent-sessions.classify');
     Route::post('assessments/{assessment}/respondent-collection/finalize', [MultiRespondentAssessmentController::class, 'finalize'])->name('assessments.respondent-collection.finalize');
     Route::get('assessments/{assessment}/export/pdf', [ExportController::class, 'assessmentPdf'])->name('assessments.export.pdf');
