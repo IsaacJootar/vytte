@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\BenchmarkController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\CustomSectionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\HealthController;
@@ -95,6 +96,8 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/run', [AssessmentController::class, 'run'])->name('assessments.run');
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
+    Route::get('assessments/{assessment}/custom', [CustomSectionController::class, 'edit'])->name('assessments.custom.edit');
+    Route::post('assessments/{assessment}/custom', [CustomSectionController::class, 'save'])->name('assessments.custom.save');
     Route::post('assessments/{assessment}/narrative', [AssessmentController::class, 'generateNarrative'])->name('assessments.narrative');
     Route::get('assessments/{assessment}/narrative/{product}/pdf', [AssessmentController::class, 'narrativePdf'])->name('assessments.narrative.pdf');
     Route::patch('assessments/{assessment}/type', [AssessmentController::class, 'setType'])->name('assessments.type');
