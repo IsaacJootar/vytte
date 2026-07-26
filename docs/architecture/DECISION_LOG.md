@@ -297,6 +297,13 @@
 - **Context:** Creating an assessment dropped the user straight into the questions, assuming they were the assessor, with no path to share it for others to answer.
 - **Decision:** Creation lands on a start screen showing what the assessment covers and asking how answers will be collected — answer it yourself, or (where supported) share a link for others to answer.
 
+### DEC-2026-07-26-040: Harmonisation at Two Levels, One Chain
+
+- **Status:** Accepted and implemented.
+- **Context:** Assessments and their results were scattered — no single place showed the whole program, and the choice to collect from several respondents was locked to a platform flag.
+- **Decision:** Harmonisation runs at two levels that chain together. (1) *Within an assessment* — several respondents are scored individually then combined by arithmetic mean at overall, domain and sub-index level, frozen as the assessment's official result; the collection page now guides this as a four-step workflow (Share → Collect → Review → Finalise). The self/shared choice is the user's at the start screen, treating the platform flag as a default, not a lock, with aggregation defaults where a self-designed assessment carries none. (2) *Across the portfolio* — a new read-only **Portfolio** hub rolls every completed assessment into program averages, a target league table, a domain heatmap, a trajectory and coverage, reusing the frozen scores (never recomputing).
+- **Boundary:** The official, comparable score always lives at the assessment level; the portfolio numbers are a management indicator on top (plain average across targets). No central-system, infrastructure or snapshot changes. Benchmark is folded into the Portfolio hub as its comparison section.
+
 ### DEC-2026-07-26-039: Report Exports Carry Visual Summaries
 
 - **Status:** Accepted and implemented.

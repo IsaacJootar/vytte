@@ -41,6 +41,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\ModuleLibraryController;
 use App\Http\Controllers\MultiRespondentAssessmentController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectProgressController;
@@ -69,6 +70,7 @@ Route::middleware('auth')->group(function () {
     Route::get('projects/{project}/compare', [ProjectProgressController::class, 'compare'])->name('projects.compare');
     Route::post('projects/{project}/targets', [ProjectProgressController::class, 'setTarget'])->name('projects.targets.set');
     Route::delete('projects/{project}/targets/{target}', [ProjectProgressController::class, 'deleteTarget'])->name('projects.targets.delete');
+    Route::get('portfolio', [PortfolioController::class, 'index'])->name('portfolio.index');
     Route::get('benchmark', [BenchmarkController::class, 'index'])->name('benchmark.index');
     Route::post('projects/{project}/report-schedules', [ReportScheduleController::class, 'store'])->name('report-schedules.store');
     Route::delete('projects/{project}/report-schedules/{reportSchedule}', [ReportScheduleController::class, 'destroy'])->name('report-schedules.destroy');

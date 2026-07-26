@@ -4,6 +4,15 @@
         $isComplete = $assessment->isComplete();
         $eligible = $preview['eligible_respondent_count'];
         $minimum = $preview['minimum_completed_respondents'];
+
+        // Where the collection sits in its four-step workflow.
+        $step = $isComplete ? 4 : ($assessment->isDraft() ? 1 : ($eligible > 0 || $assessment->isClosed() ? 3 : 2));
+        $steps = [
+            1 => ['Share', 'Publish and send the link'],
+            2 => ['Collect', 'People answer independently'],
+            3 => ['Review', 'Check who counts'],
+            4 => ['Finalise', 'Combine into one result'],
+        ];
     @endphp
 
     <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -48,6 +57,22 @@
                 </form>
             </div>
         @endif
+    </div>
+
+    {{-- The four-step harmonisation workflow, so nobody is unsure what comes next. --}}
+    <div class="mb-6 grid grid-cols-4 gap-2">
+        @foreach ($steps as $n => [$label, $hint])
+            @php $done = $n < $step; $current = $n === $step; @endphp
+            <div class="rounded-xl border p-3 {{ $current ? 'border-vytte-300 bg-vytte-50 dark:border-vytte-700 dark:bg-vytte-900/20' : ($done ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800') }}">
+                <div class="flex items-center gap-2">
+                    <span class="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold {{ $current ? 'bg-vytte-600 text-white' : ($done ? 'bg-green-600 text-white' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400') }}">
+                        {{ $done ? '✓' : $n }}
+                    </span>
+                    <span class="text-xs font-bold {{ $current ? 'text-vytte-800 dark:text-vytte-300' : ($done ? 'text-green-800 dark:text-green-300' : 'text-slate-500 dark:text-slate-400') }}">{{ $label }}</span>
+                </div>
+                <p class="mt-1 text-[10px] leading-tight text-slate-400 dark:text-slate-500">{{ $hint }}</p>
+            </div>
+        @endforeach
     </div>
 
     @if ($respondentTokens->isNotEmpty())
