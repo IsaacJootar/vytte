@@ -50,6 +50,10 @@ return [
         'api_key' => env('OPENAI_API_KEY'),
         'model' => env('OPENAI_MODEL', 'gpt-4o'),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com'),
+        // Optional explicit path to a CA certificate bundle. Left unset, the client
+        // auto-detects one, which keeps SSL working on a dev machine whose php.ini has no
+        // curl.cainfo configured.
+        'ca_bundle' => env('OPENAI_CA_BUNDLE'),
     ],
 
 ];

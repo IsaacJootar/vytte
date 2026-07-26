@@ -41,6 +41,7 @@ class OpenAiClient implements AiChatClient
         }
 
         $response = Http::withToken($this->apiKey)
+            ->withOptions(['verify' => $this->caBundle()])
             ->timeout(30)
             ->post($this->baseUrl.'/v1/chat/completions', [
                 'model' => $this->model,
@@ -67,5 +68,42 @@ class OpenAiClient implements AiChatClient
     public function model(): string
     {
         return $this->model;
+    }
+
+    /**
+     * Resolve a CA certificate bundle for TLS verification.
+     *
+     * On a correctly configured host this returns true (use the system store). On a dev
+     * machine whose php.ini leaves curl.cainfo empty — the usual cause of "the AI summary
+     * could not be generated" — outbound TLS to the API fails before it leaves the machine.
+     * We look for a bundle explicitly configured, set in php.ini, or shipped with a common
+     * local PHP/XAMPP install, so the request succeeds without the user editing php.ini.
+     *
+     * @return string|bool a bundle path, or true for default verification
+     */
+    private function caBundle(): string|bool
+    {
+        $configured = config('services.openai.ca_bundle');
+        if (is_string($configured) && $configured !== '' && is_file($configured)) {
+            return $configured;
+        }
+
+        foreach (['curl.cainfo', 'openssl.cafile'] as $directive) {
+            $path = ini_get($directive);
+            if (is_string($path) && $path !== '' && is_file($path)) {
+                return $path;
+            }
+        }
+
+        foreach ([
+            'C:\\xampp\\apache\\bin\\curl-ca-bundle.crt',
+            'C:\\xampp\\php\\extras\\ssl\\cacert.pem',
+        ] as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        return true;
     }
 }

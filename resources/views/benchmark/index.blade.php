@@ -19,9 +19,9 @@
         {{-- What this page is for, in plain terms. Dismissible once learned. --}}
         <x-help-callout id="benchmark" title="How to read this page">
             <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-disc list-inside">
-                <li>Each row is one of your targets, ranked by its <span class="font-semibold">latest completed assessment</span> score.</li>
-                <li><span class="font-semibold">vs Average</span> shows how far above or below your workspace average that target sits — spot who is leading and who needs support.</li>
-                <li>Use it to <span class="font-semibold">decide where to focus</span>: the lowest-ranked targets are where attention pays off most.</li>
+                <li>Each row is one <span class="font-semibold">assessment target</span> — a facility or programme you assess — ranked by the score of its <span class="font-semibold">most recent completed assessment</span>.</li>
+                <li>The <span class="font-semibold">workspace average</span> is the average score of all your targets. <span class="font-semibold">vs Average</span> is simply this target's score minus that average: a <span class="text-green-600 dark:text-green-400 font-semibold">green +</span> means it scores above your average, a <span class="text-red-600 dark:text-red-400 font-semibold">red −</span> means below.</li>
+                <li>Use it to see which targets are doing well and which need attention — the lowest-ranked are usually where effort pays off most.</li>
             </ul>
         </x-help-callout>
 

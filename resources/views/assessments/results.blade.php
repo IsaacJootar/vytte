@@ -74,11 +74,17 @@
         </div>
     </div>
 
-    {{-- Every live share link for this report, not just the one most recently created. --}}
+    {{-- Every live share link for this report, not just the one most recently created.
+         Collapsible so a long list does not dominate the page. --}}
     @if ($shareLinks->isNotEmpty())
-        <div class="no-print mb-5 rounded-xl border border-vytte-200 bg-vytte-50 p-4 dark:border-vytte-800 dark:bg-vytte-900/20">
-            <p class="text-sm font-semibold text-vytte-900 dark:text-vytte-300">Shared report links</p>
-            <p class="mt-0.5 text-xs text-vytte-700 dark:text-vytte-400">
+        <div class="no-print mb-5 rounded-xl border border-vytte-200 bg-vytte-50 p-4 dark:border-vytte-800 dark:bg-vytte-900/20"
+             x-data="{ open: {{ $shareLinks->count() <= 2 ? 'true' : 'false' }} }">
+            <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-2 text-left">
+                <span class="text-sm font-semibold text-vytte-900 dark:text-vytte-300">Shared report links <span class="font-normal text-vytte-600 dark:text-vytte-400">({{ $shareLinks->count() }})</span></span>
+                <svg class="h-4 w-4 text-vytte-600 transition-transform" :class="open ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+            </button>
+            <div x-show="open" x-cloak>
+            <p class="mt-2 text-xs text-vytte-700 dark:text-vytte-400">
                 Anyone holding one of these can read this report without signing in.
             </p>
 
@@ -103,6 +109,7 @@
                     </div>
                 @endforeach
             </div>
+            </div>{{-- /x-show open --}}
         </div>
     @endif
 

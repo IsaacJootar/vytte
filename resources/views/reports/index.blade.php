@@ -29,8 +29,10 @@
                     </div>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-4">
-                    <div class="flex-shrink-0 flex sm:flex-col items-center gap-2 sm:w-28">
-                        <span class="text-3xl font-black tabular-nums" style="color: {{ $lrScore === null ? '#94A3B8' : ($lrScore >= 70 ? '#15803D' : ($lrScore >= 45 ? '#B45309' : '#B91C1C')) }}">{{ $lrScore !== null ? number_format($lrScore, 1) : '—' }}</span>
+                    <div class="flex-shrink-0 flex sm:flex-col items-center gap-2 sm:w-32">
+                        <x-score-arc :score="$lrScore !== null ? (int) round($lrScore) : null" :size="104" :stroke="10">
+                            <span class="text-xl font-black tabular-nums" style="color: {{ $lrScore === null ? '#94A3B8' : ($lrScore >= 70 ? '#15803D' : ($lrScore >= 45 ? '#B45309' : '#B91C1C')) }}">{{ $lrScore !== null ? number_format($lrScore, 1) : '—' }}</span>
+                        </x-score-arc>
                         <span class="text-[11px] text-slate-500 dark:text-slate-400 text-center">{{ $lr['title'] }}</span>
                     </div>
                     <div class="flex-1 min-w-0 flex flex-col gap-2 border-l border-slate-100 dark:border-slate-700 sm:pl-4">

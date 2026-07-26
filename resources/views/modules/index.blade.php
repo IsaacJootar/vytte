@@ -7,6 +7,15 @@
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Browse assessment modules available for each target type.</p>
     </div>
 
+    {{-- Plain-language primer on the building blocks. Dismissible once learned. --}}
+    <x-help-callout id="modules" title="How to read this page">
+        <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-disc list-inside">
+            <li>A <span class="font-semibold">module</span> is one area you can assess — for example Infection Prevention, Malaria, or WASH. Each module is a ready-made set of questions.</li>
+            <li>Inside a module, <span class="font-semibold">question groups</span> simply organise the questions into sections, so they are easier to answer (e.g. "Water quality", "Maintenance").</li>
+            <li><span class="font-semibold">Sub-indices</span> are the scores within a module. A module can produce more than one score — each sub-index measures a specific part (e.g. an Infection Prevention module might score both "Safety" and "Supplies") — and together they make up the module's result.</li>
+        </ul>
+    </x-help-callout>
+
     {{-- Live search --}}
     <div class="mb-6 relative max-w-md">
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
