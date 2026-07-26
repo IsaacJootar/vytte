@@ -134,6 +134,46 @@
         </div>
     </div>
 
+    {{-- Visual summary — the same intelligence, at a glance. --}}
+    <div class="section-title">At a Glance</div>
+    <table style="border-collapse: collapse;"><tr>
+        <td style="width: 150px; vertical-align: middle; border: none; padding: 0;">
+            @include('exports.charts.score-gauge', ['score' => $overall, 'size' => 130])
+        </td>
+        <td style="vertical-align: middle; border: none; padding: 0 0 0 12px;">
+            @include('exports.charts.maturity-ladder', ['level' => $maturityLevel])
+        </td>
+    </tr></table>
+
+    @if ($domainScores->where('score', '!=', null)->count() > 0)
+        <div style="margin-top: 14px;">
+            <p style="font-size: 9px; font-weight: 700; color: #475569; margin-bottom: 4px;">Scores by area</p>
+            @include('exports.charts.domain-bars', ['domains' => $domainScores])
+        </div>
+    @endif
+
+    @php $riskTotal = collect($riskCounts ?? [])->sum(); @endphp
+    @if ($riskTotal > 0)
+        <div style="margin-top: 14px;">
+            <p style="font-size: 9px; font-weight: 700; color: #475569; margin-bottom: 4px;">Risks by level</p>
+            @include('exports.charts.risk-strip', ['riskCounts' => $riskCounts])
+        </div>
+    @endif
+
+    @if ($subIndexScores->where('score', '!=', null)->count() >= 3)
+        <div style="margin-top: 14px;">
+            <p style="font-size: 9px; font-weight: 700; color: #475569; margin-bottom: 4px;">Balance across sub-indices</p>
+            @include('exports.charts.subindex-radar', ['subIndices' => $subIndexScores])
+        </div>
+    @endif
+
+    @if (count($trendPoints ?? []) >= 2)
+        <div style="margin-top: 14px;">
+            <p style="font-size: 9px; font-weight: 700; color: #475569; margin-bottom: 4px;">Score over time</p>
+            @include('exports.charts.trend-line', ['points' => $trendPoints])
+        </div>
+    @endif
+
     {{-- Domain scores --}}
     @if ($domainScores->isNotEmpty())
         <div class="section-title">Domain Scores</div>

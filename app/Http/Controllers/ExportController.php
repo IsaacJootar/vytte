@@ -248,7 +248,31 @@ class ExportController extends Controller
         $subIndexScores = collect($report['sub_index_scores'])->map(fn ($row) => (object) $row);
         $domainScores = collect($report['domain_scores'])->map(fn ($row) => (object) $row);
 
-        return compact('assessment', 'report', 'subIndexScores', 'domainScores');
+        // Risk counts by level, for the risk strip.
+        $riskCounts = collect($report['intelligence']['risks'] ?? [])
+            ->groupBy(fn ($risk) => strtoupper($risk['level'] ?? 'LOW'))
+            ->map->count();
+
+        // The maturity level (1-5) for the ladder.
+        $maturityLevel = $report['score']['maturity_level']['level_number']
+            ?? $report['score']['maturity_level']['number']
+            ?? null;
+
+        // Score over time across this project's completed assessments, for the trend line.
+        $trendPoints = Assessment::where('project_id', $assessment->project_id)
+            ->where('status', Assessment::STATUS_COMPLETE)
+            ->whereHas('score', fn ($q) => $q->whereNotNull('overall_score'))
+            ->with('score')
+            ->orderBy('completed_at')
+            ->get()
+            ->map(fn ($a) => [
+                'label' => $a->completed_at?->format('d M') ?? '',
+                'value' => (float) $a->score->overall_score,
+            ])
+            ->values()
+            ->all();
+
+        return compact('assessment', 'report', 'subIndexScores', 'domainScores', 'riskCounts', 'maturityLevel', 'trendPoints');
     }
 
     private function authorizeAssessmentAccess(Assessment $assessment): void

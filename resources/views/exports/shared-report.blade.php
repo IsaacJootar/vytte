@@ -97,6 +97,36 @@
             </div>
         @endif
 
+        {{-- At a glance — the same intelligence as visuals. --}}
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 mb-5">
+            <h2 class="text-sm font-bold text-slate-900 mb-4">At a glance</h2>
+            <div class="flex flex-col sm:flex-row items-center gap-6 mb-2">
+                <div class="flex-shrink-0" style="width: 130px;">@include('exports.charts.score-gauge', ['score' => $overall, 'size' => 130])</div>
+                <div class="flex-1 min-w-0 w-full">@include('exports.charts.maturity-ladder', ['level' => $maturityLevel])</div>
+            </div>
+
+            @if ($domainScores->where('score', '!=', null)->count() > 0)
+                <p class="mt-4 text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Scores by area</p>
+                @include('exports.charts.domain-bars', ['domains' => $domainScores])
+            @endif
+
+            @php $riskTotal = collect($riskCounts ?? [])->sum(); @endphp
+            @if ($riskTotal > 0)
+                <p class="mt-4 text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Risks by level</p>
+                @include('exports.charts.risk-strip', ['riskCounts' => $riskCounts])
+            @endif
+
+            @if ($subIndexScores->where('score', '!=', null)->count() >= 3)
+                <p class="mt-4 text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Balance across sub-indices</p>
+                <div class="max-w-sm mx-auto">@include('exports.charts.subindex-radar', ['subIndices' => $subIndexScores])</div>
+            @endif
+
+            @if (count($trendPoints ?? []) >= 2)
+                <p class="mt-4 text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Score over time</p>
+                @include('exports.charts.trend-line', ['points' => $trendPoints])
+            @endif
+        </div>
+
         {{-- Domain scores --}}
         @if ($domainScores->isNotEmpty())
             <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">
