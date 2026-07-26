@@ -89,6 +89,7 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/close', [AssessmentController::class, 'close'])->name('assessments.close');
     Route::post('assessments/{assessment}/reopen', [AssessmentController::class, 'reopen'])->name('assessments.reopen');
     Route::get('assessments/{assessment}/monitor', [AssessmentController::class, 'monitor'])->name('assessments.monitor');
+    Route::get('assessments/{assessment}/start', [AssessmentController::class, 'start'])->name('assessments.start');
     Route::get('assessments/{assessment}/run', [AssessmentController::class, 'run'])->name('assessments.run');
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');

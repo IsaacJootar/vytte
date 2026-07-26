@@ -162,7 +162,21 @@ class AssessmentTest extends TestCase
         $this->assertEquals($module->module_id, $scope->module_id);
         $this->assertTrue($scope->in_scope);
 
-        $response->assertRedirect(route('assessments.run', $assessment));
+        // Creation now lands on the decision screen, not straight into the questions.
+        $response->assertRedirect(route('assessments.start', $assessment));
+    }
+
+    public function test_start_page_shows_the_collection_choice(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $assessment = $this->createAssessment($project, $target);
+
+        $this->actingAs($user)->get(route('assessments.start', $assessment))
+            ->assertOk()
+            ->assertSee('How do you want to collect answers?')
+            ->assertSee('Answer it yourself')
+            ->assertSee('Share it for others to answer');
     }
 
     public function test_assessment_store_requires_path_and_published_template(): void

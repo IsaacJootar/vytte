@@ -134,11 +134,27 @@ class AssessmentController extends Controller
             auth()->id(),
         );
 
-        if ($assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false) {
-            return redirect()->route('assessments.respondent-collection', $assessment);
+        // Land on the decision screen rather than dropping the user straight into the
+        // questions — so they can see what they created and choose how to collect answers.
+        return redirect()->route('assessments.start', $assessment);
+    }
+
+    /**
+     * The decision screen shown right after an assessment is created: what it is, and how
+     * answers will be collected — self-assessment, or a shared link for others to answer.
+     */
+    public function start(Assessment $assessment): View|RedirectResponse
+    {
+        $this->authorizeWorkspace($assessment);
+
+        if ($assessment->status === Assessment::STATUS_COMPLETE) {
+            return redirect()->route('assessments.results', $assessment);
         }
 
-        return redirect()->route('assessments.run', $assessment);
+        $assessment->load(['project', 'target', 'moduleScope.module', 'snapshot']);
+        $allowsMultiRespondent = $assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false;
+
+        return view('assessments.start', compact('assessment', 'allowsMultiRespondent'));
     }
 
     public function run(Assessment $assessment): View
