@@ -134,16 +134,15 @@
         </div>
     </div>
 
-    {{-- Visual summary — the same intelligence, at a glance. --}}
+    {{-- Visual summary — the same intelligence, at a glance. HTML/CSS charts so they render. --}}
     <div class="section-title">At a Glance</div>
-    <table style="border-collapse: collapse;"><tr>
-        <td style="width: 150px; vertical-align: middle; border: none; padding: 0;">
-            @include('exports.charts.score-gauge', ['score' => $overall, 'size' => 130])
-        </td>
-        <td style="vertical-align: middle; border: none; padding: 0 0 0 12px;">
-            @include('exports.charts.maturity-ladder', ['level' => $maturityLevel])
-        </td>
-    </tr></table>
+    <div style="margin-bottom: 12px;">
+        @include('exports.charts.score-gauge', ['score' => $overall])
+    </div>
+    <div style="margin-bottom: 12px;">
+        <p style="font-size: 9px; font-weight: 700; color: #475569; margin-bottom: 4px;">Data-use maturity</p>
+        @include('exports.charts.maturity-ladder', ['level' => $maturityLevel])
+    </div>
 
     @if ($domainScores->where('score', '!=', null)->count() > 0)
         <div style="margin-top: 14px;">

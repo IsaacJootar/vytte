@@ -1,4 +1,4 @@
-{{-- Risk counts by level as colored blocks. Pure SVG for DomPDF + browser.
+{{-- Risk counts by level as three colored blocks. Pure HTML/CSS for DomPDF + browser.
      Props: $riskCounts (collection/array keyed HIGH/MEDIUM/LOW => count). --}}
 @php
     $counts = collect($riskCounts ?? []);
@@ -7,16 +7,15 @@
         ['MEDIUM', 'Medium', '#B45309', '#FEF3C7'],
         ['LOW', 'Low', '#15803D', '#DCFCE7'],
     ];
-    $width = 520;
-    $blockW = 168;
-    $gap = 8;
-    $height = 66;
 @endphp
-<svg width="{{ $width }}" height="{{ $height }}" viewBox="0 0 {{ $width }} {{ $height }}" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
-    @foreach ($levels as $i => [$key, $label, $fg, $bg])
-        @php $x = $i * ($blockW + $gap); $count = (int) ($counts[$key] ?? 0); @endphp
-        <rect x="{{ $x }}" y="0" width="{{ $blockW }}" height="{{ $height }}" rx="8" fill="{{ $bg }}"/>
-        <text x="{{ $x + 14 }}" y="30" font-size="24" font-weight="bold" fill="{{ $fg }}">{{ $count }}</text>
-        <text x="{{ $x + 14 }}" y="50" font-size="11" fill="{{ $fg }}">{{ $label }} risk{{ $count === 1 ? '' : 's' }}</text>
-    @endforeach
-</svg>
+<table style="width:100%;border-collapse:separate;border-spacing:6px 0;">
+    <tr>
+        @foreach ($levels as [$key, $label, $fg, $bg])
+            @php $count = (int) ($counts[$key] ?? 0); @endphp
+            <td style="width:33%;background:{{ $bg }};padding:8px 12px;vertical-align:middle;">
+                <div style="font-size:22px;font-weight:bold;color:{{ $fg }};">{{ $count }}</div>
+                <div style="font-size:10px;color:{{ $fg }};">{{ $label }} risk{{ $count === 1 ? '' : 's' }}</div>
+            </td>
+        @endforeach
+    </tr>
+</table>

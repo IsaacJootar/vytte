@@ -170,8 +170,8 @@
             <div class="mb-4">@include('exports.charts.risk-strip', ['riskCounts' => $vizRiskCounts])</div>
         @endif
         @if ($subIndexScores->where('score', '!=', null)->count() >= 3)
-            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Balance across sub-indices</p>
-            <div class="mb-4 max-w-sm">@include('exports.charts.subindex-radar', ['subIndices' => $subIndexScores])</div>
+            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Sub-index scores</p>
+            <div class="mb-4">@include('exports.charts.subindex-radar', ['subIndices' => $subIndexScores])</div>
         @endif
         @if (count($vizTrend) >= 2)
             <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Score over time</p>

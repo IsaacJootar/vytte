@@ -1,4 +1,4 @@
-{{-- Five-rung maturity ladder with the current level highlighted. Pure SVG.
+{{-- Five-rung maturity ladder with the current level highlighted. Pure HTML/CSS.
      Props: $level (int 1-5 or null). --}}
 @php
     $current = $level ? (int) $level : null;
@@ -9,22 +9,19 @@
         4 => 'Data-Driven Management',
         5 => 'Learning Health System',
     ];
-    $width = 520;
-    $rowH = 30;
-    $height = count($rungs) * $rowH + 6;
 @endphp
-<svg width="{{ $width }}" height="{{ $height }}" viewBox="0 0 {{ $width }} {{ $height }}" style="max-width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" font-family="DejaVu Sans, sans-serif">
+<table style="width:100%;border-collapse:collapse;">
     @foreach (array_reverse($rungs, true) as $num => $name)
-        @php
-            $i = 5 - $num; // level 5 on top
-            $y = $i * $rowH + 3;
-            $isCurrent = $current === $num;
-            $bg = $isCurrent ? '#0369A1' : '#F1F5F9';
-            $fg = $isCurrent ? '#FFFFFF' : '#64748B';
-        @endphp
-        <rect x="0" y="{{ $y }}" width="{{ $width }}" height="{{ $rowH - 6 }}" rx="6" fill="{{ $bg }}"/>
-        <circle cx="18" cy="{{ $y + ($rowH - 6) / 2 }}" r="9" fill="{{ $isCurrent ? '#FFFFFF' : '#E2E8F0' }}"/>
-        <text x="18" y="{{ $y + ($rowH - 6) / 2 + 4 }}" text-anchor="middle" font-size="11" font-weight="bold" fill="{{ $isCurrent ? '#0369A1' : '#64748B' }}">{{ $num }}</text>
-        <text x="36" y="{{ $y + ($rowH - 6) / 2 + 4 }}" font-size="12" font-weight="{{ $isCurrent ? 'bold' : 'normal' }}" fill="{{ $fg }}">{{ $name }}{{ $isCurrent ? '  — you are here' : '' }}</text>
+        @php $isCurrent = $current === $num; @endphp
+        <tr>
+            <td style="padding:2px 0;">
+                <table style="width:100%;border-collapse:collapse;background:{{ $isCurrent ? '#0369A1' : '#F1F5F9' }};"><tr>
+                    <td style="width:26px;text-align:center;padding:5px 0;font-size:11px;font-weight:bold;color:{{ $isCurrent ? '#FFFFFF' : '#64748B' }};">{{ $num }}</td>
+                    <td style="padding:5px 6px;font-size:11px;font-weight:{{ $isCurrent ? 'bold' : 'normal' }};color:{{ $isCurrent ? '#FFFFFF' : '#64748B' }};">
+                        {{ $name }}{{ $isCurrent ? '  — you are here' : '' }}
+                    </td>
+                </tr></table>
+            </td>
+        </tr>
     @endforeach
-</svg>
+</table>
