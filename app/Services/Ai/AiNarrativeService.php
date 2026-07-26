@@ -65,7 +65,17 @@ class AiNarrativeService
         }
 
         $structured = $this->structuredInput($payload, $config);
-        $system = self::BASE_RULES."\n\n".$config['instruction'];
+
+        // Force genuine tailoring: name the reader, and forbid an interchangeable summary.
+        // Two products over the same data must read differently because they serve different
+        // people who act on different things.
+        $audience = "You are writing the \"{$config['name']}\": {$config['blurb']}\n"
+            .'Write ONLY for that specific reader. A reader in a different role must receive a '
+            .'visibly different summary — different emphasis, different vocabulary, foregrounding '
+            .'what THIS reader decides or acts on. Never produce a generic, one-size-fits-all '
+            .'summary that could be handed to anyone.';
+
+        $system = self::BASE_RULES."\n\n".$audience."\n\n".$config['instruction'];
 
         $body = $this->client->message(system: $system, user: $structured, maxTokens: 1024);
 

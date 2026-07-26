@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/submit', [AssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
     Route::post('assessments/{assessment}/narrative', [AssessmentController::class, 'generateNarrative'])->name('assessments.narrative');
+    Route::get('assessments/{assessment}/narrative/{product}/pdf', [AssessmentController::class, 'narrativePdf'])->name('assessments.narrative.pdf');
     Route::patch('assessments/{assessment}/type', [AssessmentController::class, 'setType'])->name('assessments.type');
     Route::get('assessments/{assessment}/respondent-collection', [MultiRespondentAssessmentController::class, 'show'])->name('assessments.respondent-collection');
     Route::patch('assessments/{assessment}/respondent-sessions/{responseSession}', [MultiRespondentAssessmentController::class, 'classify'])->name('assessments.respondent-sessions.classify');

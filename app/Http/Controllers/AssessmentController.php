@@ -21,6 +21,7 @@ use App\Services\Reporting\LensCatalog;
 use App\Services\Reporting\ReportComposer;
 use App\Services\ReportSnapshotService;
 use App\Services\ScoringService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -371,7 +372,36 @@ class AssessmentController extends Controller
             'model' => $result['model'],
         ]);
 
-        return back()->with('success', AiProductCatalog::get($result['product'])['name'].' ready.');
+        // The freshly generated product is flagged so the results page opens only that one
+        // and leaves the others collapsed.
+        return back()
+            ->with('success', AiProductCatalog::get($result['product'])['name'].' ready.')
+            ->with('generated_product', $result['product']);
+    }
+
+    /**
+     * Download one AI summary as a PDF. Text only, so this renders reliably.
+     */
+    public function narrativePdf(Assessment $assessment, string $product): \Illuminate\Http\Response|RedirectResponse
+    {
+        $this->authorizeWorkspace($assessment);
+
+        $narrative = AssessmentAiNarrative::where('assessment_id', $assessment->assessment_id)
+            ->where('product', $product)
+            ->first();
+
+        if ($narrative === null || ! AiProductCatalog::exists($product)) {
+            return redirect()->route('assessments.results', $assessment);
+        }
+
+        $meta = AiProductCatalog::get($product);
+        $pdf = Pdf::loadView('exports.narrative-pdf', [
+            'title' => $meta['name'],
+            'subtitle' => $assessment->target?->name,
+            'body' => $narrative->body,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->download('summary-'.strtolower(str_replace('_', '-', $product)).'.pdf');
     }
 
     /**

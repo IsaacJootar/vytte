@@ -667,17 +667,23 @@
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">They need an OpenAI API key to be configured. The report above works without them.</p>
             </div>
         @else
-            <div class="flex flex-col gap-3">
+            {{-- Only one summary is expanded at a time: the one just generated, or the one clicked. --}}
+            <div class="flex flex-col gap-3" x-data="{ open: '{{ session('generated_product', '') }}' }">
                 @foreach ($aiProducts as $key => $meta)
                     @php $existing = $narratives->get($key); @endphp
                     <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-3">
                         <div class="flex items-center justify-between gap-2">
-                            <div>
-                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ $meta['name'] }}</p>
+                            <button type="button" class="min-w-0 text-left {{ $existing ? '' : 'pointer-events-none' }}"
+                                    @if ($existing) @click="open = (open === '{{ $key }}' ? '' : '{{ $key }}')" @endif>
+                                <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ $meta['name'] }}
+                                    @if ($existing)
+                                        <svg class="inline w-3.5 h-3.5 text-slate-400 transition-transform" :class="open === '{{ $key }}' ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+                                    @endif
+                                </p>
                                 <p class="text-[11px] text-slate-400 dark:text-slate-500">{{ $meta['blurb'] }}</p>
-                            </div>
+                            </button>
                             @if ($aiAvailable)
-                                <form method="POST" action="{{ route('assessments.narrative', $assessment) }}" class="no-print flex-shrink-0">
+                                <form method="POST" action="{{ route('assessments.narrative', $assessment) }}?tab=ai" class="no-print flex-shrink-0">
                                     @csrf
                                     <input type="hidden" name="product" value="{{ $key }}">
                                     <button type="submit" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">
@@ -687,12 +693,37 @@
                             @endif
                         </div>
                         @if ($existing)
-                            <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{{ $existing->body }}</div>
-                            <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">Written by {{ $existing->model }}.</p>
+                            <div x-show="open === '{{ $key }}'" x-cloak>
+                                <div id="ai-summary-{{ $key }}" class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{{ $existing->body }}</div>
+                                <div class="no-print mt-2 flex items-center gap-4">
+                                    <button type="button" onclick="printAiSummary('ai-summary-{{ $key }}', @js($meta['name']))"
+                                            class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-vytte-700 dark:text-slate-400 dark:hover:text-vytte-400">
+                                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5 4v3h10V4a1 1 0 00-1-1H6a1 1 0 00-1 1zm-2 4a2 2 0 012-2h10a2 2 0 012 2v4a2 2 0 01-2 2h-1v1a2 2 0 01-2 2H8a2 2 0 01-2-2v-1H5a2 2 0 01-2-2V8zm5 4a1 1 0 00-1 1v2h6v-2a1 1 0 00-1-1H8z" clip-rule="evenodd"/></svg>
+                                        Print
+                                    </button>
+                                    <a href="{{ route('assessments.narrative.pdf', [$assessment, $key]) }}"
+                                       class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-vytte-700 dark:text-slate-400 dark:hover:text-vytte-400">
+                                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+                                        Download PDF
+                                    </a>
+                                </div>
+                            </div>
                         @endif
                     </div>
                 @endforeach
             </div>
+
+            <script>
+                function printAiSummary(id, title) {
+                    var el = document.getElementById(id);
+                    if (!el) { return; }
+                    var w = window.open('', '_blank', 'width=720,height=800');
+                    w.document.write('<html><head><title>' + title + '</title><style>body{font-family:sans-serif;padding:32px;color:#1e293b;line-height:1.6;white-space:pre-line;font-size:14px}h1{font-size:18px;margin-bottom:12px}</style></head><body><h1>' + title + '</h1>' + el.textContent.replace(/</g,'&lt;') + '</body></html>');
+                    w.document.close();
+                    w.focus();
+                    setTimeout(function () { w.print(); }, 200);
+                }
+            </script>
         @endunless
 
         {{-- AI-specific label, distinct from the report's WHO-aware note. --}}
