@@ -392,6 +392,23 @@
         </table>
     @endif
 
+    {{-- Tailored by your team — the workspace's own questions, in their own lane. --}}
+    @if (($customSection ?? null) && ! empty($customScored['questions']) && $customScored['overall'] !== null)
+        @php $cs = (float) $customScored['overall']; $csColor = $cs >= 70 ? '#15803D' : ($cs >= 45 ? '#B45309' : '#B91C1C'); @endphp
+        <div class="section-title">{{ $customSection->section_title ?: 'Tailored by your team' }} — {{ number_format($cs, 1) }} / 100</div>
+        <p style="font-size: 8px; color: #64748b; margin-bottom: 6px;">The team's own questions — scored separately, not part of the official Vytte score.</p>
+        <table>
+            <tbody>
+                @foreach ($customScored['questions'] as $q)
+                    <tr>
+                        <td>{{ $q['text'] }}</td>
+                        <td style="width: 90px; text-align: right; font-weight: bold;">{{ $q['answer'] ?? '—' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     {{-- WHO-aware methodology label. --}}
     <div style="margin-top: 20px; border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 6px; padding: 10px 12px; font-size: 8px; color: #64748b; line-height: 1.6;">
         <strong style="color: #475569;">About this assessment.</strong>

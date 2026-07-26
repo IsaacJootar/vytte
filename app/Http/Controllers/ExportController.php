@@ -9,6 +9,7 @@ use App\Models\Project;
 use App\Services\AuditService;
 use App\Services\PlanService;
 use App\Services\ReportDeliveryService;
+use App\Services\Reporting\CustomSectionScoringService;
 use App\Services\Reporting\ReportDocumentExporter;
 use App\Services\ReportSnapshotService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -272,7 +273,13 @@ class ExportController extends Controller
             ->values()
             ->all();
 
-        return compact('assessment', 'report', 'subIndexScores', 'domainScores', 'riskCounts', 'maturityLevel', 'trendPoints');
+        // The workspace's tailored section, scored in its own lane.
+        $customSection = $assessment->localCustomSections()->first();
+        $customScored = $customSection
+            ? app(CustomSectionScoringService::class)->score($customSection->questions ?? [], $customSection->answers ?? [])
+            : null;
+
+        return compact('assessment', 'report', 'subIndexScores', 'domainScores', 'riskCounts', 'maturityLevel', 'trendPoints', 'customSection', 'customScored');
     }
 
     private function authorizeAssessmentAccess(Assessment $assessment): void

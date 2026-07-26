@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Assessment;
 use App\Models\LocalCustomSection;
+use App\Services\Reporting\CustomSectionScoringService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,7 +56,7 @@ class CustomSectionController extends Controller
             ['assessment_id' => $assessment->assessment_id],
             [
                 'workspace_id' => app('current.workspace')->workspace_id,
-                'section_title' => $validated['section_title'] ?: 'Tailored by your team',
+                'section_title' => ($validated['section_title'] ?? null) ?: 'Tailored by your team',
                 'instructions' => $validated['instructions'] ?? null,
                 'questions' => $questions,
                 'created_by' => auth()->id(),
@@ -64,5 +65,32 @@ class CustomSectionController extends Controller
 
         return redirect()->route('assessments.custom.edit', $assessment)
             ->with('success', 'Your questions were saved.');
+    }
+
+    /**
+     * Record answers to the tailored questions and compute their private 0-100 score.
+     */
+    public function saveAnswers(Request $request, Assessment $assessment, CustomSectionScoringService $scorer): RedirectResponse
+    {
+        $this->authorize('update', $assessment);
+
+        $section = $assessment->localCustomSections()->firstOrFail();
+
+        $validated = $request->validate([
+            'answers' => ['array'],
+            'answers.*' => ['nullable', 'string', 'max:10'],
+        ]);
+
+        $answers = collect($validated['answers'] ?? [])->filter(fn ($v) => $v !== null && $v !== '')->all();
+        $result = $scorer->score($section->questions ?? [], $answers);
+
+        $section->update([
+            'answers' => $answers,
+            'custom_score' => $result['overall'],
+            'scored_at' => now(),
+        ]);
+
+        return redirect()->route('assessments.results', ['assessment' => $assessment, 'tab' => 'overview'])
+            ->with('success', 'Your tailored section was scored.');
     }
 }

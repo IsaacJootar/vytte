@@ -18,11 +18,16 @@ class LocalCustomSection extends Model
         'section_title',
         'instructions',
         'questions',
+        'answers',
+        'custom_score',
+        'scored_at',
         'created_by',
     ];
 
     protected $casts = [
         'questions' => 'array',
+        'answers' => 'array',
+        'scored_at' => 'datetime',
     ];
 
     public function assessment(): BelongsTo

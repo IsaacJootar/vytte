@@ -66,6 +66,31 @@ class CustomSectionTest extends TestCase
         $this->assertNotEmpty($section->questions[0]['id']);
     }
 
+    public function test_answering_scores_the_section_in_its_own_0_to_100_lane(): void
+    {
+        [$user, $assessment] = $this->setup_assessment();
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'questions' => [
+                ['text' => 'Is there a vehicle?', 'type' => 'YES_NO', 'good' => 'YES'],
+                ['text' => 'Rate cleanliness', 'type' => 'SCALE_5'],
+            ],
+        ]);
+
+        $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $q1 = $section->questions[0]['id'];
+        $q2 = $section->questions[1]['id'];
+
+        // Yes (good) = 100; scale 3 = 50; average = 75.
+        $this->actingAs($user)->post(route('assessments.custom.answers', $assessment), [
+            'answers' => [$q1 => 'YES', $q2 => '3'],
+        ])->assertRedirect();
+
+        $section->refresh();
+        $this->assertEquals(75.0, (float) $section->custom_score);
+        $this->assertNotNull($section->scored_at);
+    }
+
     public function test_another_workspace_cannot_edit_the_custom_section(): void
     {
         [, $assessment] = $this->setup_assessment();

@@ -656,6 +656,66 @@
     {{-- ===== AI SUMMARIES ===== --}}
     <div x-show="tab === 'ai'" x-cloak class="report-panel">
 
+    {{-- Tailored by your team — the workspace's own questions, scored in their own lane. --}}
+    <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
+        <div class="flex items-center justify-between gap-3 mb-1">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Tailored by your team</h2>
+            <a href="{{ route('assessments.custom.edit', $assessment) }}" class="no-print text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Edit questions</a>
+        </div>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Your own questions — scored on their own, and kept out of the official Vytte score above so it stays comparable with other facilities.</p>
+
+        @if (! $customSection || empty($customScored['questions']))
+            <div class="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 p-4 text-center">
+                <p class="text-sm text-slate-600 dark:text-slate-300">No tailored questions yet.</p>
+                <a href="{{ route('assessments.custom.edit', $assessment) }}" class="mt-1 inline-block text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:underline">Add your own questions →</a>
+            </div>
+        @else
+            @if ($customScored['overall'] !== null)
+                @php $cs = (float) $customScored['overall']; $csColor = $cs >= 70 ? '#15803D' : ($cs >= 45 ? '#B45309' : '#B91C1C'); @endphp
+                <div class="mb-3 flex items-center gap-3">
+                    <span class="text-2xl font-black tabular-nums" style="color: {{ $csColor }}">{{ number_format($cs, 1) }}</span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400">/ 100 · {{ $customScored['answered'] }} of {{ $customScored['total'] }} answered</span>
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('assessments.custom.answers', $assessment) }}" class="no-print flex flex-col gap-3">
+                @csrf
+                @foreach ($customScored['questions'] as $q)
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-3">
+                        <p class="text-sm font-medium text-slate-800 dark:text-slate-200">{{ $q['text'] }}</p>
+                        <div class="mt-2 flex flex-wrap gap-3">
+                            @if ($q['response_type'] === 'YES_NO')
+                                @foreach (['YES' => 'Yes', 'NO' => 'No'] as $val => $lbl)
+                                    <label class="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                                        <input type="radio" name="answers[{{ $q['id'] }}]" value="{{ $val }}" @checked((string) $q['answer'] === $val) class="text-vytte-600 focus:ring-vytte-500">
+                                        {{ $lbl }}
+                                    </label>
+                                @endforeach
+                            @else
+                                @for ($n = 1; $n <= 5; $n++)
+                                    <label class="inline-flex items-center gap-1 text-sm text-slate-600 dark:text-slate-300">
+                                        <input type="radio" name="answers[{{ $q['id'] }}]" value="{{ $n }}" @checked((int) $q['answer'] === $n) class="text-vytte-600 focus:ring-vytte-500">
+                                        {{ $n }}
+                                    </label>
+                                @endfor
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+                <div>
+                    <button type="submit" class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">Save answers &amp; score</button>
+                </div>
+            </form>
+
+            {{-- Print/read view of the answered questions. --}}
+            <div class="hidden print:block">
+                @foreach ($customScored['questions'] as $q)
+                    <p class="text-sm text-slate-700">{{ $q['text'] }} — <span class="font-semibold">{{ $q['answer'] ?? 'Not answered' }}</span></p>
+                @endforeach
+            </div>
+        @endif
+    </div>
+
     {{-- AI products — purpose-built summaries over the findings above. Optional; the report
          does not depend on them, and none adds a fact the engine did not find. --}}
     <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">

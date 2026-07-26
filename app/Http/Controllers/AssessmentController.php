@@ -17,6 +17,7 @@ use App\Services\Ai\AiProductCatalog;
 use App\Services\AssessmentCreationService;
 use App\Services\AuditService;
 use App\Services\PlanService;
+use App\Services\Reporting\CustomSectionScoringService;
 use App\Services\Reporting\LensCatalog;
 use App\Services\Reporting\ReportComposer;
 use App\Services\ReportSnapshotService;
@@ -321,7 +322,13 @@ class AssessmentController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions', 'aiAvailable', 'aiProducts', 'narratives'));
+        // The workspace's own tailored section — scored in its own lane, never the official score.
+        $customSection = $assessment->localCustomSections()->first();
+        $customScored = $customSection
+            ? app(CustomSectionScoringService::class)->score($customSection->questions ?? [], $customSection->answers ?? [])
+            : null;
+
+        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions', 'aiAvailable', 'aiProducts', 'narratives', 'customSection', 'customScored'));
     }
 
     /**

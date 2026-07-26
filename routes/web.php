@@ -98,6 +98,7 @@ Route::middleware('auth')->group(function () {
     Route::get('assessments/{assessment}/results', [AssessmentController::class, 'results'])->name('assessments.results');
     Route::get('assessments/{assessment}/custom', [CustomSectionController::class, 'edit'])->name('assessments.custom.edit');
     Route::post('assessments/{assessment}/custom', [CustomSectionController::class, 'save'])->name('assessments.custom.save');
+    Route::post('assessments/{assessment}/custom/answers', [CustomSectionController::class, 'saveAnswers'])->name('assessments.custom.answers');
     Route::post('assessments/{assessment}/narrative', [AssessmentController::class, 'generateNarrative'])->name('assessments.narrative');
     Route::get('assessments/{assessment}/narrative/{product}/pdf', [AssessmentController::class, 'narrativePdf'])->name('assessments.narrative.pdf');
     Route::patch('assessments/{assessment}/type', [AssessmentController::class, 'setType'])->name('assessments.type');

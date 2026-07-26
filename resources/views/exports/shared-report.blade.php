@@ -336,6 +336,26 @@
             </div>
         @endif
 
+        {{-- Tailored by your team — the workspace's own questions, in their own lane. --}}
+        @if (($customSection ?? null) && ! empty($customScored['questions']) && $customScored['overall'] !== null)
+            @php $cs = (float) $customScored['overall']; $csColor = $cs >= 70 ? '#15803D' : ($cs >= 45 ? '#B45309' : '#B91C1C'); @endphp
+            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">
+                <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between gap-3">
+                    <h2 class="text-sm font-bold text-slate-900">{{ $customSection->section_title ?: 'Tailored by your team' }}</h2>
+                    <span class="text-sm font-bold" style="color: {{ $csColor }}">{{ number_format($cs, 1) }} / 100</span>
+                </div>
+                <p class="px-5 pt-3 text-xs text-slate-500">The team's own questions — scored separately, not part of the official Vytte score above.</p>
+                <ul class="divide-y divide-slate-100 mt-2">
+                    @foreach ($customScored['questions'] as $q)
+                        <li class="flex items-start justify-between gap-3 px-5 py-2.5">
+                            <span class="text-sm text-slate-700">{{ $q['text'] }}</span>
+                            <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">{{ $q['answer'] ?? '—' }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         {{-- WHO-aware methodology label. --}}
         <div class="rounded-xl border border-slate-200 bg-white p-4 text-xs leading-relaxed text-slate-500 mb-5">
             <span class="font-semibold text-slate-600">About this assessment.</span>
