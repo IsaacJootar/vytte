@@ -17,59 +17,53 @@
         @endphp
 
         <div class="grid gap-4 sm:grid-cols-2">
-            {{-- Comprehensive --}}
+            {{-- Comprehensive — a whole-facility diagnostic, for health facilities only. --}}
             @if ($hasComprehensive)
                 <button type="button" @click="path = 'COMPREHENSIVE'"
                         class="rounded-2xl border p-5 text-left transition"
                         :class="path === 'COMPREHENSIVE' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-100 dark:bg-vytte-900/20' : 'border-slate-200 bg-white hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800'">
                     <span class="text-base font-bold text-slate-900 dark:text-white">Comprehensive Health Assessment</span>
                     <span class="mt-2 block text-sm text-slate-500 dark:text-slate-400">
-                        Assess health across the entire {{ strtolower($settingLabel) }}.
+                        A full diagnostic across the whole facility and all its services.
                     </span>
                 </button>
-            @else
+            @elseif ($isHealthFacility)
                 <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50">
                     <div class="flex items-center gap-2">
                         <span class="text-base font-bold text-slate-400 dark:text-slate-500">Comprehensive Health Assessment</span>
                         <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-500 dark:bg-slate-700 dark:text-slate-400">Coming soon</span>
                     </div>
                     <span class="mt-2 block text-sm text-slate-400 dark:text-slate-500">
-                        No comprehensive assessment has been published for {{ strtolower($settingLabel) }} targets yet.
+                        No comprehensive assessment is published for this facility type yet.
+                    </span>
+                </div>
+            @else
+                {{-- Not a facility: comprehensive simply isn't the right tool. Informational, not a limitation. --}}
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50">
+                    <span class="text-base font-bold text-slate-500 dark:text-slate-400">Comprehensive Health Assessment</span>
+                    <span class="mt-2 block text-sm text-slate-500 dark:text-slate-400">
+                        This is a whole-facility diagnostic — for hospitals, clinics and health facilities. For a {{ strtolower($settingLabel) }}, run a <span class="font-semibold">Focused</span> assessment on a specific health topic →
                     </span>
                 </div>
             @endif
 
-            {{-- Focused --}}
+            {{-- Focused — a health topic, open to every target. --}}
             @if ($hasFocused)
                 <button type="button" @click="path = 'FOCUSED'"
                         class="rounded-2xl border p-5 text-left transition"
                         :class="path === 'FOCUSED' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-100 dark:bg-vytte-900/20' : 'border-slate-200 bg-white hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800'">
                     <span class="text-base font-bold text-slate-900 dark:text-white">Focused Health Assessment</span>
                     <span class="mt-2 block text-sm text-slate-500 dark:text-slate-400">
-                        Assess one health domain, programme, topic, or intervention.
+                        Assess one health topic or programme — malaria, TB, WASH, nutrition, and more.
                     </span>
                 </button>
             @else
                 <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/50">
-                    <div class="flex items-center gap-2">
-                        <span class="text-base font-bold text-slate-400 dark:text-slate-500">Focused Health Assessment</span>
-                        <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-500 dark:bg-slate-700 dark:text-slate-400">Coming soon</span>
-                    </div>
-                    <span class="mt-2 block text-sm text-slate-400 dark:text-slate-500">
-                        No focused assessment has been published for {{ strtolower($settingLabel) }} targets yet.
-                    </span>
+                    <span class="text-base font-bold text-slate-400 dark:text-slate-500">Focused Health Assessment</span>
+                    <span class="mt-2 block text-sm text-slate-400 dark:text-slate-500">No focused assessments are published yet.</span>
                 </div>
             @endif
         </div>
-
-        @if (! $hasComprehensive && ! $hasFocused)
-            <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900 dark:bg-amber-900/20">
-                <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">No assessments are available for {{ strtolower($settingLabel) }} targets yet.</p>
-                <p class="mt-1 text-sm text-amber-700 dark:text-amber-400">
-                    Vytte content for this target type is being prepared. Health-facility targets are fully covered today.
-                </p>
-            </div>
-        @endif
 
         <section x-show="path === 'COMPREHENSIVE'" x-cloak class="mt-7">
             <h2 class="text-lg font-bold text-slate-900 dark:text-white">Services included in this assessment</h2>

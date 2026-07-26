@@ -71,24 +71,25 @@ class AssessmentController extends Controller
             ->orderBy('release_name')
             ->get();
 
-        // Focused releases are built on health domains, which today are a health-facility
-        // construct, so they are only offered to health-facility targets. Other setting types
-        // (NGO, community, school) get focused assessments once focused content is authored
-        // for them — until then, offering these here would be a dead end.
-        $focusedReleases = $settingTypeCode === 'HEALTH_FACILITY'
-            ? AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
-                ->where('creation_path', 'FOCUSED')
-                ->with(['healthDomain', 'departmentFrameworkVersions.module'])
-                ->orderBy('release_name')
-                ->get()
-            : collect();
+        // Focused assessments are health *topics* (malaria, TB, WASH, nutrition), not
+        // facility diagnostics. A topic is not tied to a kind of place, so every target —
+        // a hospital, an NGO programme, a research study, a community — may run any focused
+        // assessment relevant to its work. They are therefore offered to all target types.
+        $focusedReleases = AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+            ->where('creation_path', 'FOCUSED')
+            ->with(['healthDomain', 'departmentFrameworkVersions.module'])
+            ->orderBy('release_name')
+            ->get();
+
+        // Comprehensive is a whole-facility diagnostic — it only applies to health facilities.
+        $isHealthFacility = $settingTypeCode === 'HEALTH_FACILITY';
 
         // The plain name of what is being assessed, used in copy instead of "facility profile".
         $settingLabel = $target?->targetType?->target_type_name
             ?? DB::table('setting_types')->where('setting_type_code', $settingTypeCode)->value('display_name')
             ?? 'target';
 
-        return view('assessments.create', compact('project', 'target', 'usesDepartments', 'facilityProfiles', 'comprehensiveReleases', 'focusedReleases', 'settingLabel'));
+        return view('assessments.create', compact('project', 'target', 'usesDepartments', 'facilityProfiles', 'comprehensiveReleases', 'focusedReleases', 'settingLabel', 'isHealthFacility'));
     }
 
     public function store(Request $request, Project $project, AssessmentCreationService $creator): RedirectResponse
