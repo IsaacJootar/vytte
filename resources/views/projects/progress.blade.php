@@ -18,16 +18,15 @@
     </div>
 
     @unless ($assessments->isEmpty())
-        {{-- A short "how to read this" strip, so the page explains itself. --}}
-        <div class="mb-5 rounded-xl border border-vytte-100 bg-vytte-50/60 dark:border-slate-700 dark:bg-slate-800/60 px-4 py-3">
-            <p class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400 mb-1.5">How to use this page</p>
+        {{-- A short "how to read this" strip, so the page explains itself. Dismissible once learned. --}}
+        <x-help-callout id="progress" title="How to use this page">
             <ol class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-decimal list-inside">
                 <li><span class="font-semibold">Set a target score</span> below so you have a goal to move toward.</li>
                 <li><span class="font-semibold">Re-run the same assessment</span> periodically — comparisons appear from the second run.</li>
                 <li><span class="font-semibold">Work the action plan</span> and mark items done — follow-through is tracked here.</li>
                 <li>Optionally <span class="font-semibold">schedule the report by email</span> so stakeholders stay updated automatically.</li>
             </ol>
-        </div>
+        </x-help-callout>
     @endunless
 
     @if ($assessments->isEmpty())

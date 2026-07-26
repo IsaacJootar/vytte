@@ -240,17 +240,27 @@ class DashboardTest extends TestCase
             ->assertSee('Create a project'); // the first step's call-to-action
     }
 
-    public function test_dashboard_previews_the_latest_report_intelligence(): void
+    public function test_dashboard_hides_the_getting_started_checklist_once_a_report_exists(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
         $this->createScoredAssessment($workspace, $user, bestAnswers: false); // weak → has findings
 
-        $response = $this->actingAs($user)->get(route('dashboard'));
+        $this->actingAs($user)->get(route('dashboard'))
+            ->assertOk()
+            ->assertDontSee('Get started in 3 steps'); // checklist gone once a report exists
+    }
+
+    public function test_reports_page_previews_the_latest_report_intelligence(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $this->createScoredAssessment($workspace, $user, bestAnswers: false);
+
+        // The latest-report hero moved from the dashboard to the reports hub.
+        $response = $this->actingAs($user)->get(route('reports.index'));
 
         $response->assertOk()
             ->assertSee('Your latest report')
-            ->assertSee('Open full report', false)
-            ->assertDontSee('Get started in 3 steps'); // checklist gone once a report exists
+            ->assertSee('Open full report', false);
 
         $this->assertNotNull($response->viewData('latestReport'));
     }

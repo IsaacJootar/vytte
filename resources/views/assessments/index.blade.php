@@ -1,18 +1,38 @@
 <x-app-layout title="Assessments">
 
     {{-- Header --}}
-    <div class="mb-6">
+    <div class="mb-5">
         <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Assessments</h1>
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">All assessments across your projects.</p>
     </div>
 
+    {{-- Search (server-side; the loader is suppressed so it just searches). --}}
+    @if (! $assessments->isEmpty() || $search !== '')
+        <form method="GET" action="{{ route('assessments.index') }}" class="mb-5 flex gap-2" data-no-loading>
+            <div class="relative flex-1">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 pointer-events-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
+                </svg>
+                <input type="text" name="search" value="{{ $search }}" placeholder="Search by target or project…"
+                       class="w-full pl-9 pr-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-vytte-700/20 focus:border-vytte-700 transition-shadow">
+            </div>
+            @if ($search !== '')
+                <a href="{{ route('assessments.index') }}" class="px-3 py-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 transition-colors">Clear</a>
+            @endif
+        </form>
+    @endif
+
     @if ($assessments->isEmpty())
-        <x-empty-state
-            icon="clipboard-document-list"
-            title="No assessments yet"
-            message="Open a project and run its first assessment. Answer the questions, and your report appears the moment it is submitted."
-            :action="route('projects.index')"
-            action-label="Go to projects" />
+        @if ($search !== '')
+            <x-empty-state icon="clipboard-document-list" title='No assessments match "{{ $search }}"' message="Try a different target or project name." />
+        @else
+            <x-empty-state
+                icon="clipboard-document-list"
+                title="No assessments yet"
+                message="Open a project and run its first assessment. Answer the questions, and your report appears the moment it is submitted."
+                :action="route('projects.index')"
+                action-label="Go to projects" />
+        @endif
     @else
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
             <div class="divide-y divide-slate-100 dark:divide-slate-700">

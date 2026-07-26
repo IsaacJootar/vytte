@@ -81,9 +81,10 @@
                             </div>
                         </div>
                         <button type="button" @click="open = !open"
-                                class="flex-shrink-0 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">
+                                class="flex-shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">
                             <span x-show="!open">Update</span>
                             <span x-show="open" x-cloak>Close</span>
+                            <svg class="w-3.5 h-3.5 transition-transform" :class="open ? 'rotate-90' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
                         </button>
                     </div>
 

@@ -110,7 +110,7 @@
     <div class="score-hero">
         <div class="score-circle" style="background: {{ $bandBg }}; color: {{ $bandColor }};">
             @if ($overall !== null)
-                {{ round($overall) }}
+                {{ number_format($overall, 1) }}
             @else
                 —
             @endif

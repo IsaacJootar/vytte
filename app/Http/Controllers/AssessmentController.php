@@ -29,17 +29,27 @@ use Illuminate\Support\Facades\Notification;
 
 class AssessmentController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $workspace = app('current.workspace');
         $workspaceProjectIds = Project::select('project_id');
 
+        $search = trim((string) $request->query('search', ''));
+
         $assessments = Assessment::whereIn('project_id', $workspaceProjectIds)
+            ->when($search !== '', function ($query) use ($search) {
+                // What a person remembers: the target or the project it belongs to.
+                $like = '%'.strtolower($search).'%';
+                $query->where(function ($inner) use ($like) {
+                    $inner->whereHas('target', fn ($t) => $t->whereRaw('LOWER(name) LIKE ?', [$like]))
+                        ->orWhereHas('project', fn ($p) => $p->whereRaw('LOWER(name) LIKE ?', [$like]));
+                });
+            })
             ->with(['project', 'target', 'score', 'moduleScope.module', 'snapshot'])
             ->latest('updated_at')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
-        return view('assessments.index', compact('assessments'));
+        return view('assessments.index', compact('assessments', 'search'));
     }
 
     public function create(Project $project): View

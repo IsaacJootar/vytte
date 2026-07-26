@@ -16,15 +16,14 @@
             :action="route('projects.index')"
             action-label="Start an assessment" />
     @else
-        {{-- What this page is for, in plain terms. --}}
-        <div class="mb-5 rounded-xl border border-vytte-100 bg-vytte-50/60 dark:border-slate-700 dark:bg-slate-800/60 px-4 py-3">
-            <p class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400 mb-1.5">How to read this page</p>
+        {{-- What this page is for, in plain terms. Dismissible once learned. --}}
+        <x-help-callout id="benchmark" title="How to read this page">
             <ul class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-disc list-inside">
                 <li>Each row is one of your targets, ranked by its <span class="font-semibold">latest completed assessment</span> score.</li>
                 <li><span class="font-semibold">vs Average</span> shows how far above or below your workspace average that target sits — spot who is leading and who needs support.</li>
                 <li>Use it to <span class="font-semibold">decide where to focus</span>: the lowest-ranked targets are where attention pays off most.</li>
             </ul>
-        </div>
+        </x-help-callout>
 
         {{-- Ranked league table --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden mb-5">

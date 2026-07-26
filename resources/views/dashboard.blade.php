@@ -80,56 +80,6 @@
         </div>
     @endunless
 
-    {{-- Latest report: the intelligence, previewed on the front door. --}}
-    @if ($latestReport)
-        @php $lr = $latestReport; $lrScore = $lr['score'] !== null ? (float) $lr['score'] : null; @endphp
-        <div class="mb-5" x-data="{ show: localStorage.getItem('vytte.hideLatestReport') !== '1' }">
-          {{-- Collapsed state: a small chip to bring the card back. --}}
-          <button type="button" x-show="!show" x-cloak
-                  @click="show = true; localStorage.removeItem('vytte.hideLatestReport')"
-                  class="inline-flex items-center gap-1.5 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">
-              <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
-              Show your latest report
-          </button>
-
-          <div x-show="show" x-cloak class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-            <div class="flex items-center justify-between gap-3 mb-3">
-                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Your latest report</h2>
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('assessments.results', $lr['assessment']) }}" class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Open full report →</a>
-                    <button type="button" @click="show = false; localStorage.setItem('vytte.hideLatestReport', '1')"
-                            class="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">Hide</button>
-                </div>
-            </div>
-            <div class="flex flex-col sm:flex-row gap-4">
-                <div class="flex-shrink-0 flex sm:flex-col items-center gap-2 sm:w-28">
-                    <span class="text-3xl font-black tabular-nums" style="color: {{ $lrScore === null ? '#94A3B8' : ($lrScore >= 70 ? '#15803D' : ($lrScore >= 45 ? '#B45309' : '#B91C1C')) }}">{{ $lrScore !== null ? number_format($lrScore, 1) : '—' }}</span>
-                    <span class="text-[11px] text-slate-500 dark:text-slate-400 text-center">{{ $lr['title'] }}</span>
-                </div>
-                <div class="flex-1 min-w-0 flex flex-col gap-2 border-l border-slate-100 dark:border-slate-700 sm:pl-4">
-                    @if ($lr['top_finding'])
-                        <div><span class="text-[10px] font-bold uppercase tracking-wide text-red-600 dark:text-red-400">Biggest issue</span>
-                            <p class="text-sm text-slate-700 dark:text-slate-300">{{ $lr['top_finding']['statement'] }}</p></div>
-                    @endif
-                    @if ($lr['top_risk'])
-                        <div><span class="text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">Top risk</span>
-                            <p class="text-sm text-slate-700 dark:text-slate-300">{{ $lr['top_risk']['statement'] }}</p></div>
-                    @endif
-                    @if ($lr['top_action'])
-                        <div><span class="text-[10px] font-bold uppercase tracking-wide text-vytte-600 dark:text-vytte-400">Do next</span>
-                            <p class="text-sm text-slate-700 dark:text-slate-300">{{ $lr['top_action']['statement'] }}</p></div>
-                    @endif
-                    @if ($openActions > 0)
-                        <a href="{{ route('actions.index', $lr['assessment']->project_id) }}" class="mt-1 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:underline">
-                            {{ $openActions }} open action{{ $openActions !== 1 ? 's' : '' }}@if ($overdueActions > 0) · <span class="text-red-600 dark:text-red-400">{{ $overdueActions }} overdue</span>@endif
-                        </a>
-                    @endif
-                </div>
-            </div>
-          </div>
-        </div>
-    @endif
-
     {{-- Operational row: the daily work — what is being set up, what is out collecting,
          and how many responses have arrived. --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">

@@ -68,7 +68,7 @@
         <div class="bg-white rounded-2xl border border-slate-200 p-6 mb-5 flex items-center gap-6">
             <div class="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-black flex-shrink-0"
                  style="background: {{ $band === 'strong' ? '#F0FDF4' : ($band === 'moderate' ? '#FFFBEB' : ($band === 'weak' ? '#FEF2F2' : '#F8FAFC')) }}; color: {{ $bandColor }}">
-                @if ($overall !== null){{ round($overall) }}@else —@endif
+                @if ($overall !== null){{ number_format($overall, 1) }}@else —@endif
             </div>
             <div>
                 <div class="text-lg font-black" style="color: {{ $bandColor }}">{{ $bandLabel }}</div>
