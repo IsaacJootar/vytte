@@ -233,11 +233,27 @@
                 <h2 class="text-base font-bold text-slate-900 dark:text-white">Overall Score</h2>
 
                 @if ($calibStatus === 'CRITICAL_FAILURE')
-                    <div class="mt-2 flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                        <svg class="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-                        </svg>
-                        <p class="text-sm text-red-800 dark:text-red-300">A <strong>critical failure</strong> was recorded — see the critical finding below. It needs attention on its own, but the overall score above still reflects how the whole assessment performed.</p>
+                    @php $criticalFinding = collect($intelligence['findings'] ?? [])->firstWhere('category', 'CRITICAL_FINDING'); @endphp
+                    <div class="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                        <div class="flex items-start gap-2">
+                            <svg class="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+                            </svg>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-red-800 dark:text-red-300">A critical failure was recorded — this needs attention on its own, whatever the overall score.</p>
+                                @if ($criticalFinding)
+                                    <p class="mt-1 text-sm text-red-800 dark:text-red-300">{{ $criticalFinding['statement'] }}</p>
+                                    @if (! empty($criticalFinding['consequence']))
+                                        <p class="mt-1 text-xs text-red-700 dark:text-red-400">If left unaddressed: {{ $criticalFinding['consequence'] }}</p>
+                                    @endif
+                                    <button type="button" @click="tab = 'diagnosis'"
+                                            class="no-print mt-2 inline-flex items-center gap-1 text-xs font-bold text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-200">
+                                        See it in “What we found”
+                                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd"/></svg>
+                                    </button>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 @elseif ($calibStatus === 'NOT_CALIBRATED')
                     <div class="mt-2 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
