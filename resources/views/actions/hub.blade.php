@@ -1,9 +1,20 @@
 <x-app-layout title="Actions">
 
-    <div class="mb-6">
+    <div class="mb-5">
         <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Actions</p>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight mt-0.5">Your action plan</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Everything to do across all your projects. Each action traces back to a report finding.</p>
+    </div>
+
+    {{-- How the workflow runs, so the plan explains itself. --}}
+    <div class="mb-5 rounded-xl border border-vytte-100 bg-vytte-50/60 dark:border-slate-700 dark:bg-slate-800/60 px-4 py-3">
+        <p class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400 mb-1.5">How the action plan works</p>
+        <ol class="text-xs text-slate-600 dark:text-slate-300 space-y-1 list-decimal list-inside">
+            <li>Open a completed report and, under <span class="font-semibold">What to do</span>, add a recommendation to the plan.</li>
+            <li>Give it an <span class="font-semibold">owner</span> (who is responsible) and a <span class="font-semibold">due date</span> (the deadline — it turns <span class="text-red-600 dark:text-red-400 font-semibold">Overdue</span> if the date passes).</li>
+            <li>As work happens, move it <span class="font-semibold">Open → In progress → Done</span>, adding a progress note or evidence.</li>
+            <li>Mark it <span class="font-semibold">Verified</span> once someone confirms it was actually done. Re-run the assessment to see the score move.</li>
+        </ol>
     </div>
 
     @if ($summary['total'] === 0)

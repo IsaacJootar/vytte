@@ -213,9 +213,31 @@
                 @endif
 
                 @if ($maturity)
-                    <div class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                        <span class="text-xs text-slate-500 dark:text-slate-400">Maturity level</span>
-                        <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $maturity->level_number }} — {{ $maturity->level_name }}</span>
+                    <div class="mt-3 inline-block relative" x-data="{ open: false }">
+                        <button type="button" @click="open = !open"
+                                class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                            <span class="text-xs text-slate-500 dark:text-slate-400">Maturity level</span>
+                            <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $maturity->level_number }} — {{ $maturity->level_name }}</span>
+                            <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"/></svg>
+                        </button>
+                        <div x-show="open" x-cloak @click.outside="open = false" x-transition
+                             class="absolute z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-4 text-left">
+                            <p class="text-xs font-bold text-slate-900 dark:text-white mb-1">What maturity level means</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">How well this target uses its data to improve — a ladder from collecting data to learning from it. Your level is highlighted.</p>
+                            <ul class="flex flex-col gap-1.5">
+                                @foreach (\App\Models\MaturityLevel::orderBy('level_number')->get() as $level)
+                                    <li class="flex items-start gap-2 rounded-lg px-2 py-1.5 {{ $level->level_number === $maturity->level_number ? 'bg-vytte-50 dark:bg-vytte-900/30 ring-1 ring-vytte-200 dark:ring-vytte-800' : '' }}">
+                                        <span class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold {{ $level->level_number === $maturity->level_number ? 'bg-vytte-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' }}">{{ $level->level_number }}</span>
+                                        <div class="min-w-0">
+                                            <p class="text-[11px] font-semibold text-slate-800 dark:text-slate-200">{{ $level->level_name }}</p>
+                                            @if ($level->description)
+                                                <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">{{ $level->description }}</p>
+                                            @endif
+                                        </div>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
                     </div>
                 @endif
             </div>

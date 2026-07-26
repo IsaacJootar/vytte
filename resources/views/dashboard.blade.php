@@ -138,8 +138,8 @@
                      sub="Set up, not yet opened for responses" />
         <x-stat-card tone="blue" label="Collecting now" :value="$operations['collecting']"
                      sub="Published and gathering responses" />
-        <x-stat-card tone="strong" label="Responses in" :value="$operations['responses']"
-                     sub="Completed responses across all assessments" />
+        <x-stat-card tone="strong" label="Respondent submissions" :value="$operations['responses']"
+                     sub="Submitted via a shared collection link (self-completed assessments aren't counted here)" />
     </div>
 
     {{-- Stat cards --}}

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActionController;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Admin\AssessmentBuilderController as AdminAssessmentBuilderController;
 use App\Http\Controllers\Admin\AssessmentOversightController as AdminAssessmentOversightController;
 use App\Http\Controllers\Admin\AssessmentQuestionController as AdminAssessmentQuestionController;
@@ -113,6 +114,9 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/actions', [ActionController::class, 'store'])->name('actions.store');
     Route::patch('actions/{action}', [ActionController::class, 'update'])->name('actions.update');
     Route::delete('actions/{action}', [ActionController::class, 'destroy'])->name('actions.destroy');
+
+    // Workspace activity feed — a plain-language view of the audit trail.
+    Route::get('activity', [ActivityController::class, 'index'])->name('activity.index');
 
     Route::get('/team', [TeamController::class, 'index'])->name('team.index');
     Route::post('/team/invite', [TeamController::class, 'store'])->name('team.invite');

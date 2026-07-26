@@ -171,6 +171,6 @@ class AssessmentLifecycleTest extends TestCase
             ->assertOk()
             ->assertSee('Awaiting publication')
             ->assertSee('Collecting now')
-            ->assertSee('Responses in');
+            ->assertSee('Respondent submissions');
     }
 }

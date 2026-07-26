@@ -143,6 +143,7 @@ final class RoleNavigation
                     'collapsible' => false,
                     'items' => [
                         self::item('team.index', 'Team', 'users', 'team.*'),
+                        self::item('activity.index', 'Activity', 'clock', 'activity.*'),
                         self::item('notifications.index', 'Notifications', 'inbox-stack', 'notifications.*', $user?->unreadNotifications()->count() ?: null),
                         self::item('profile.edit', 'Settings', 'cog-6-tooth', 'profile.*'),
                         self::item('billing.index', 'Plans', 'credit-card', 'billing.*'),
