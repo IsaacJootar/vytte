@@ -38,7 +38,7 @@
             <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Where your targets sit on the maturity ladder</h2>
             <div class="grid grid-cols-5 gap-2 text-center">
                 @foreach ($headline['maturity'] as $level => $m)
-                    <div class="rounded-xl border border-slate-200 dark:border-slate-600 p-2">
+                    <div class="rounded-xl border p-2 {{ $m['count'] > 0 ? 'border-vytte-100 bg-vytte-50/60 dark:border-vytte-900/40 dark:bg-vytte-900/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40' }}">
                         <p class="text-lg font-black text-slate-900 dark:text-white tabular-nums">{{ $m['count'] }}</p>
                         <p class="text-[10px] font-bold text-vytte-700 dark:text-vytte-400">L{{ $level }}</p>
                         <p class="text-[10px] text-slate-400 dark:text-slate-500 leading-tight">{{ $m['name'] }}</p>
@@ -116,7 +116,7 @@
                             <tr class="border-b border-slate-100 dark:border-slate-700">
                                 <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide sticky left-0 bg-white dark:bg-slate-800">Target</th>
                                 @foreach ($heatmap['domains'] as $d)
-                                    <th class="px-3 py-2.5 text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">{{ $d['code'] }}</th>
+                                    <th class="px-3 py-2.5 text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap" title="{{ $d['name'] }}">{{ $d['code'] }}</th>
                                 @endforeach
                             </tr>
                         </thead>
@@ -140,6 +140,12 @@
                         </tbody>
                     </table>
                 </div>
+                {{-- The column codes are area (domain) abbreviations; spell them out. --}}
+                <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-700 flex flex-wrap gap-x-4 gap-y-1">
+                    @foreach ($heatmap['domains'] as $d)
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400"><span class="font-bold text-slate-700 dark:text-slate-300">{{ $d['code'] }}</span> — {{ $d['name'] }}</span>
+                    @endforeach
+                </div>
             </div>
         @endif
 
@@ -154,7 +160,7 @@
 
         {{-- Coverage --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Coverage by target type</h2>
                 @forelse ($coverage['by_type'] as $type => $count)
                     <div class="flex items-center justify-between py-1.5 text-sm border-b border-slate-50 dark:border-slate-700/50 last:border-0">
@@ -165,7 +171,7 @@
                     <p class="text-sm text-slate-500 dark:text-slate-400">No targets yet.</p>
                 @endforelse
             </div>
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
+            <div class="bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Coverage by country</h2>
                 @forelse ($coverage['by_country'] as $country => $count)
                     <div class="flex items-center justify-between py-1.5 text-sm border-b border-slate-50 dark:border-slate-700/50 last:border-0">

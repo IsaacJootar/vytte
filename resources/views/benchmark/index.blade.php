@@ -1,6 +1,13 @@
 <x-app-layout :title="'Compare'">
 
     <div class="mb-6">
+        <a href="{{ route('portfolio.index') }}"
+           class="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors mb-2">
+            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clip-rule="evenodd"/>
+            </svg>
+            Portfolio
+        </a>
         <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Benchmark</p>
         <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight mt-0.5">Compare your assessment targets</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
