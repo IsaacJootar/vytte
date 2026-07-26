@@ -3,7 +3,7 @@
         <div>
             <a href="{{ route('custom-assessments.index') }}" class="text-xs font-semibold text-vytte-700 dark:text-vytte-300">← Custom assessments</a>
             <h1 class="mt-1 text-xl font-bold text-slate-900 dark:text-white">{{ $design->title }}</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400">{{ $design->status }} · Workspace-only content</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">{{ ucfirst(strtolower($design->status)) }} · Your own — not part of the official Vytte score</p>
         </div>
         <form method="POST" action="{{ route('custom-assessments.status', $design) }}" class="flex gap-2">
             @csrf

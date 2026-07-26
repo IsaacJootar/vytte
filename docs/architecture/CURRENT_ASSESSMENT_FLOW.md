@@ -21,8 +21,11 @@ flowchart TD
     FR --> COMP
 
     COMP --> SN[Freeze assessment snapshot]
-    SN --> RUN[Run assessment from snapshot]
+    SN --> START[Start screen: answer yourself or share for others]
+    START --> RUN[Run assessment from snapshot]
+    START --> COLLECT[Respondent collection via shared link]
     RUN --> RESP[Validated responses and optional evidence notes]
+    COLLECT --> RESP
     RESP --> SUB[Server validation and submit]
     SUB --> SCORE[Versioned scoring]
     SCORE --> REP[Immutable report snapshot]

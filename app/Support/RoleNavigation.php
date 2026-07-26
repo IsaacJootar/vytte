@@ -125,7 +125,6 @@ final class RoleNavigation
                     'collapsible' => false,
                     'items' => [
                         self::item('modules.index', 'Modules', 'squares-2x2', 'modules.*'),
-                        self::item('custom-assessments.index', 'Custom Assessments', 'document-text', 'custom-assessments.*'),
                     ],
                 ],
                 // A platform administrator holds both a workspace and platform authority,

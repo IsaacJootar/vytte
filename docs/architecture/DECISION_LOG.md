@@ -268,3 +268,36 @@
 - **Decision:** Every methodology entity must be reachable: directly selectable, recommended through a relationship, or a participant in the diagnostics pipeline. `php artisan methodology:validate` checks this and fails the build if anything is unreachable or any reference does not resolve.
 - **Found on first run:** Seven objectives suggested nothing and appeared in no starting point, so choosing one left the user at a blank page. Five templates were recommended by nothing, making them findable only by browsing the whole catalogue — the same as not existing, for most users. All twelve now have relationships.
 - **Rationale:** A catalogue entry nobody is routed to will eventually be found by an administrator, not understood, and not trusted.
+
+### DEC-2026-07-26-035: Two Tools, Two Paths at Creation
+
+- **Status:** Accepted and implemented.
+- **Context:** Project creation offered a single flat "Type" dropdown that mixed a health facility in with water points, schools and NGOs, so users could not tell which of Vytte's two tools they were about to use.
+- **Decision:** Creation asks "what are you assessing?" with two paths that map to the two tools: **a health facility** (pick a facility profile → the whole-facility comprehensive diagnostic) or **a programme, community or subject** (pick a context → focused topic assessments). The chosen profile carries the setting, so the target type is derived from it.
+- **Rationale:** The structure teaches the model. A comprehensive diagnostic only makes sense for a physical facility; a topic assessment suits anyone.
+- **Consequence:** The programme/subject catalogue was broadened (Federal Medical Centre, WASH, Research Study, Health Campaign, and more) so the paths cover the users Vytte serves.
+
+### DEC-2026-07-26-036: Focused Assessments Are Open to Every Target Type
+
+- **Status:** Accepted and implemented (corrects an earlier over-restriction).
+- **Context:** Focused assessments had been gated to health-facility targets, leaving NGOs and programmes with nothing to run even though the topics (malaria, TB, WASH) applied to their work.
+- **Decision:** Focused assessments are health *topics*, not facility diagnostics, so they are offered to every target type. Comprehensive stays facility-only; for a non-facility target it is explained as the facility tool (not framed as "coming soon").
+- **Rationale:** A topic is not tied to a kind of place. Blocking it contradicted the visible module library.
+
+### DEC-2026-07-26-037: Custom Content Is Scored in a Separate Private Lane
+
+- **Status:** Accepted; model agreed, in-context editor deferred (see DEFERRED_FEATURES).
+- **Context:** Users need to tailor assessments to their context without distorting the official, comparable Vytte score.
+- **Decision:** Three layers. (1) Governed templates are shared, immutable and locked; each run is a frozen snapshot. (2) A workspace may add its own questions/sections to its own run — private, and scored in a **separate lane that never touches the official Vytte score** (`claims_official_vytte_score: false`). (3) Fully custom assessments are workspace-private with no official score. Custom content is not discarded — it gets its own scored section in the report, clearly labelled "not part of the official Vytte score".
+- **Rationale:** The official score's value is that a "76" means the same thing everywhere; custom questions moving it would break comparability, benchmarking and trends. Decoupling the two ledgers means the official report is complete on its own and custom additions are an optional, private overlay.
+
+### DEC-2026-07-26-038: A Decision Screen Precedes the Questions
+
+- **Status:** Accepted and implemented.
+- **Context:** Creating an assessment dropped the user straight into the questions, assuming they were the assessor, with no path to share it for others to answer.
+- **Decision:** Creation lands on a start screen showing what the assessment covers and asking how answers will be collected — answer it yourself, or (where supported) share a link for others to answer.
+
+### DEC-2026-07-26-039: Report Exports Carry Visual Summaries
+
+- **Status:** Accepted and implemented.
+- **Decision:** The PDF and shared web report gain an "At a glance" section rendered as pure inline SVG (score ring, domain bars, sub-index radar, risk strip, maturity ladder, trend line), so a board member reading the file alone sees the diagnosis visually, with no JavaScript and identical output in DomPDF, the browser and print.
