@@ -14,7 +14,7 @@
 
             <div class="flex flex-wrap gap-2">
                 @if ($assessment->isCollecting())
-                    <a href="{{ route('assessments.respondent-collection', $assessment) }}" class="btn-secondary">Manage links</a>
+                    <a href="{{ route('assessments.respondent-collection', $assessment) }}" class="btn-secondary">Collect responses</a>
                     <form method="POST" action="{{ route('assessments.close', $assessment) }}"
                           onsubmit="return confirm('Close collection? No new responses will be accepted. You can reopen it later.')">
                         @csrf

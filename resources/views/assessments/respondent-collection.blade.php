@@ -1,4 +1,4 @@
-<x-app-layout title="Respondent collection">
+<x-app-layout title="Collect responses">
     @php
         $canFinalize = auth()->user()->can('finalizeMultiRespondent', $assessment);
         $isComplete = $assessment->isComplete();
@@ -77,7 +77,7 @@
 
     @unless ($isComplete)
         <div class="mb-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs text-slate-500 dark:text-slate-400">Have extra things you want to check? Add your own questions to this assessment. They're scored on their own in a separate “Tailored by your team” section, and never change the official score.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Have tailored questions you want to add to this assessment? Go ahead. They're scored on their own in a separate “Tailored by your team” section.</p>
             <a href="{{ route('assessments.custom.edit', $assessment) }}" class="flex-shrink-0 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Add your own questions →</a>
         </div>
     @endunless
