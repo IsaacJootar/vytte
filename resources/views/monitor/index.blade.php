@@ -17,7 +17,9 @@
             <ul class="divide-y divide-slate-100 dark:divide-slate-700">
                 @foreach ($assessments as $assessment)
                     @php
-                        $title = $assessment->target?->name ?? $assessment->project?->name ?? 'Assessment';
+                        // Lead with the subject (the assessment taken), then the target it is for,
+                        // so open collections are told apart at a glance.
+                        $subject = $assessment->catalogueRelease?->release_name ?? 'Assessment';
                         $done = $assessment->completed_sessions_count;
                         $total = $assessment->public_response_sessions_count;
                     @endphp
@@ -25,8 +27,8 @@
                         <a href="{{ route('assessments.monitor', $assessment) }}"
                            class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ $title }}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $assessment->project?->name }}{{ $assessment->isClosed() ? ' · collection closed' : ' · collecting' }}</p>
+                                <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ $subject }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ $assessment->target?->name ?? $assessment->project?->name }}{{ $assessment->isClosed() ? ' · collection closed' : ' · collecting' }}</p>
                             </div>
                             <div class="flex items-center gap-4 flex-shrink-0">
                                 <div class="text-right">

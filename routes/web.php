@@ -52,7 +52,6 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RespondentLinkController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserPreferenceController;
-use App\Http\Controllers\WorkspaceCustomAssessmentController;
 use App\Http\Controllers\WorkspaceSettingsController;
 use App\Http\Middleware\EnsurePlatformAdmin;
 use Illuminate\Support\Facades\Route;
@@ -80,11 +79,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('modules', [ModuleLibraryController::class, 'index'])->name('modules.index');
     Route::get('modules/{module}', [ModuleLibraryController::class, 'show'])->name('modules.show');
-    Route::get('custom-assessments', [WorkspaceCustomAssessmentController::class, 'index'])->name('custom-assessments.index');
-    Route::get('custom-assessments/create', [WorkspaceCustomAssessmentController::class, 'create'])->name('custom-assessments.create');
-    Route::post('custom-assessments', [WorkspaceCustomAssessmentController::class, 'store'])->name('custom-assessments.store');
-    Route::get('custom-assessments/{customAssessment}', [WorkspaceCustomAssessmentController::class, 'show'])->name('custom-assessments.show');
-    Route::patch('custom-assessments/{customAssessment}/status', [WorkspaceCustomAssessmentController::class, 'updateStatus'])->name('custom-assessments.status');
 
     Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
     Route::get('reports', [ReportsController::class, 'index'])->name('reports.index');

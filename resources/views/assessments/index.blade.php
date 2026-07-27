@@ -1,16 +1,9 @@
 <x-app-layout title="Assessments">
 
     {{-- Header --}}
-    <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-            <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Assessments</h1>
-            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">All assessments across your projects.</p>
-        </div>
-        <a href="{{ route('custom-assessments.index') }}"
-           class="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors self-start">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/></svg>
-            Custom / your own
-        </a>
+    <div class="mb-5">
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Assessments</h1>
+        <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">All assessments across your projects.</p>
     </div>
 
     {{-- Search (server-side; the loader is suppressed so it just searches). --}}
@@ -76,7 +69,9 @@
                             @endif
                         </div>
 
-                        {{-- Main info --}}
+                        {{-- Main info. The subject (the assessment taken, e.g. "Infection
+                             Prevention & Control") leads so each row is recognisable — including
+                             the same subject retaken later for progress, told apart by its date. --}}
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-[10px] font-bold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">
@@ -88,10 +83,13 @@
                                 </span>
                             </div>
                             <p class="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white truncate">
-                                {{ $assessment->target?->name ?? '—' }}
+                                {{ $assessment->catalogueRelease?->release_name ?? $module?->module_name ?? 'Assessment' }}
                             </p>
-                            <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                                {{ $assessment->project?->name }}
+                            <p class="mt-0.5 text-xs text-slate-400 dark:text-slate-500 truncate">
+                                {{ $assessment->target?->name ?? '—' }}
+                                @if ($assessment->project?->name)
+                                    · {{ $assessment->project->name }}
+                                @endif
                                 @if ($assessment->completed_at)
                                     · {{ $assessment->completed_at->format('d M Y') }}
                                 @elseif ($assessment->started_at)

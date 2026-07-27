@@ -65,7 +65,6 @@ class PlatformAdminRoleSeparationTest extends TestCase
 
         // Projects and running assessments belong to customers, not to the platform role.
         $response->assertDontSee(route('projects.index'));
-        $response->assertDontSee(route('custom-assessments.index'));
         $response->assertDontSee(route('billing.index'));
     }
 

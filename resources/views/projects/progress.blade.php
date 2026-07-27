@@ -260,7 +260,7 @@
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">#</th>
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Date</th>
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Type</th>
-                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Module</th>
+                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Assessment</th>
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Maturity Level</th>
                             <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Score</th>
                             <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Band</th>
@@ -272,7 +272,8 @@
                             @php
                                 $aScore = $a->score?->overall_score !== null ? (float) $a->score->overall_score : null;
                                 $aMaturity = $a->score?->maturityLevel;
-                                $aModule = $a->moduleScope->first()?->module;
+                                // The subject taken, so a target's repeated assessments are told apart.
+                                $aSubject = $a->catalogueRelease?->release_name ?? $a->moduleScope->first()?->module?->module_name ?? '—';
                             @endphp
                             <tr>
                                 <td class="px-5 py-3 text-xs text-slate-400 dark:text-slate-500 tabular-nums">{{ $i + 1 }}</td>
@@ -292,7 +293,7 @@
                                     </form>
                                 </td>
                                 <td class="px-5 py-3 text-slate-700 dark:text-slate-200">
-                                    {{ $aModule?->module_name ?? '—' }}
+                                    {{ $aSubject }}
                                 </td>
                                 <td class="px-5 py-3">
                                     @if ($aMaturity)

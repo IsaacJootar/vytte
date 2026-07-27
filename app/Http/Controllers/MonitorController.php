@@ -19,7 +19,7 @@ class MonitorController extends Controller
         $assessments = Assessment::whereIn('project_id', $workspaceProjectIds)
             ->where('publish_status', Assessment::PUBLISH_PUBLISHED)
             ->where('status', Assessment::STATUS_IN_PROGRESS)
-            ->with(['project', 'target'])
+            ->with(['project', 'target', 'catalogueRelease'])
             ->withCount([
                 'publicResponseSessions',
                 'publicResponseSessions as completed_sessions_count' => fn ($q) => $q->whereNotNull('submitted_at'),

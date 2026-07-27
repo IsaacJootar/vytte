@@ -135,14 +135,4 @@ class PlanFeatureTest extends TestCase
             'enabled' => 1,
         ]);
     }
-
-    public function test_disabled_custom_assessment_feature_is_enforced_server_side(): void
-    {
-        [$user] = $this->makeUserWithWorkspace('STARTER');
-        PlanFeature::where('plan', 'STARTER')->where('feature_key', 'workspace_custom_assessments')->update(['enabled' => false]);
-
-        $this->actingAs($user)
-            ->get(route('custom-assessments.index'))
-            ->assertForbidden();
-    }
 }

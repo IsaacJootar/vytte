@@ -42,7 +42,7 @@ class AssessmentController extends Controller
                         ->orWhereHas('project', fn ($p) => $p->whereRaw('LOWER(name) LIKE ?', [$like]));
                 });
             })
-            ->with(['project', 'target', 'score', 'moduleScope.module', 'snapshot'])
+            ->with(['project', 'target', 'score', 'moduleScope.module', 'snapshot', 'catalogueRelease'])
             ->latest('updated_at')
             ->paginate(20)
             ->withQueryString();
