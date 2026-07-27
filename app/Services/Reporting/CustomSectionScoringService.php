@@ -48,6 +48,55 @@ class CustomSectionScoringService
     }
 
     /**
+     * Aggregates a tailored section answered by many respondents. Each respondent's answer set
+     * is scored 0-100 on its own; the section score is the arithmetic mean of those private
+     * scores — the same method the official multi-respondent aggregation uses. Per question, the
+     * shown value is the mean of the respondents who answered it.
+     *
+     * @param  array<int, array<string, mixed>>  $questions
+     * @param  array<int, array<string, mixed>>  $answerSets  one answer map per respondent
+     * @return array{overall: ?float, questions: array<int, array<string, mixed>>, answered: int, total: int, respondents: int}
+     */
+    public function aggregate(array $questions, array $answerSets): array
+    {
+        $respondentOveralls = [];
+        foreach ($answerSets as $answers) {
+            $overall = $this->score($questions, is_array($answers) ? $answers : [])['overall'];
+            if ($overall !== null) {
+                $respondentOveralls[] = $overall;
+            }
+        }
+
+        $scored = [];
+        foreach ($questions as $q) {
+            $perQuestion = [];
+            foreach ($answerSets as $answers) {
+                $value = $this->questionScore($q, is_array($answers) ? ($answers[$q['id']] ?? null) : null);
+                if ($value !== null) {
+                    $perQuestion[] = $value;
+                }
+            }
+            $mean = $perQuestion === [] ? null : round(array_sum($perQuestion) / count($perQuestion), 1);
+            $scored[] = [
+                'id' => $q['id'],
+                'text' => $q['text'] ?? '',
+                'response_type' => $q['response_type'] ?? 'YES_NO',
+                // The report shows one value per row; for many respondents that is the mean score.
+                'answer' => $mean === null ? null : number_format($mean, 0).' / 100',
+                'score' => $mean,
+            ];
+        }
+
+        return [
+            'overall' => $respondentOveralls === [] ? null : round(array_sum($respondentOveralls) / count($respondentOveralls), 1),
+            'questions' => $scored,
+            'answered' => count($respondentOveralls),
+            'total' => count($questions),
+            'respondents' => count($respondentOveralls),
+        ];
+    }
+
+    /**
      * A single question's 0-100 score, or null when unanswered.
      *
      * @param  array<string, mixed>  $q

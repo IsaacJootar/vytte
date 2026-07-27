@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
+use App\Services\Reporting\CustomSectionScoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -118,6 +119,26 @@ class CustomSectionTest extends TestCase
         $this->actingAs($user)->post(route('assessments.submit', $assessment))
             ->assertRedirect(route('assessments.custom.answer', $assessment));
         $this->assertSame(Assessment::STATUS_IN_PROGRESS, $assessment->fresh()->status);
+    }
+
+    public function test_aggregate_averages_each_respondents_private_score(): void
+    {
+        $scorer = new CustomSectionScoringService;
+        $questions = [
+            ['id' => 'q1', 'text' => 'Vehicle?', 'response_type' => 'YES_NO', 'good_answer' => 'YES'],
+            ['id' => 'q2', 'text' => 'Cleanliness', 'response_type' => 'SCALE_5'],
+        ];
+
+        // R1: YES(100)+5(100)=100. R2: NO(0)+1(0)=0. R3: YES(100)+3(50)=75.
+        $result = $scorer->aggregate($questions, [
+            ['q1' => 'YES', 'q2' => '5'],
+            ['q1' => 'NO', 'q2' => '1'],
+            ['q1' => 'YES', 'q2' => '3'],
+        ]);
+
+        $this->assertEquals(58.3, $result['overall']);
+        $this->assertSame(3, $result['respondents']);
+        $this->assertEquals(66.7, $result['questions'][0]['score']); // q1 mean of 100,0,100
     }
 
     public function test_another_workspace_cannot_edit_the_custom_section(): void

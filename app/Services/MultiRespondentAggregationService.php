@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\Assessment;
 use App\Models\AssessmentAggregationResult;
 use App\Models\AssessmentModuleScope;
+use App\Models\LocalCustomSection;
 use App\Models\PublicResponseSession;
+use App\Services\Reporting\CustomSectionScoringService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -124,6 +126,7 @@ class MultiRespondentAggregationService
                     'status' => AssessmentModuleScope::STATUS_COMPLETED,
                     'completed_at' => $finalizedAt,
                 ]);
+            $this->aggregateCustomSection($assessment, collect($preview['eligible_session_references'])->pluck('session_id')->all());
             $this->reports->createFor($assessment->fresh());
             app(AuditService::class)->record(
                 'assessment.multi_respondent.finalized',
@@ -142,6 +145,34 @@ class MultiRespondentAggregationService
 
             return $aggregation;
         });
+    }
+
+    /**
+     * Score the tailored "Tailored by your team" section in its own private lane: the mean of
+     * each eligible respondent's 0-100 custom score. Kept entirely out of the official aggregate
+     * above. No-op when the assessment has no tailored section or nobody answered it.
+     *
+     * @param  array<int, string>  $eligibleSessionIds
+     */
+    private function aggregateCustomSection(Assessment $assessment, array $eligibleSessionIds): void
+    {
+        $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->first();
+        if (! $section || empty($section->questions)) {
+            return;
+        }
+
+        $stored = is_array($section->respondent_answers) ? $section->respondent_answers : [];
+        $answerSets = collect($stored)
+            ->only($eligibleSessionIds)
+            ->filter(fn ($answers) => is_array($answers) && $answers !== [])
+            ->values()
+            ->all();
+
+        $result = app(CustomSectionScoringService::class)->aggregate($section->questions, $answerSets);
+        $section->update([
+            'custom_score' => $result['overall'],
+            'scored_at' => now(),
+        ]);
     }
 
     private function config(Assessment $assessment): array

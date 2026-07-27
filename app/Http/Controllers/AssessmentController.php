@@ -303,10 +303,17 @@ class AssessmentController extends Controller
             ->get();
 
         // The workspace's own tailored section — scored in its own lane, never the official score.
+        // A shared-link assessment is answered by many respondents, so the section is aggregated
+        // across them; a self-assessment has a single answer set.
         $customSection = $assessment->localCustomSections()->first();
-        $customScored = $customSection
-            ? app(CustomSectionScoringService::class)->score($customSection->questions ?? [], $customSection->answers ?? [])
-            : null;
+        $customScorer = app(CustomSectionScoringService::class);
+        $customScored = null;
+        if ($customSection) {
+            $respondentAnswers = $customSection->respondent_answers ?? [];
+            $customScored = ! empty($respondentAnswers)
+                ? $customScorer->aggregate($customSection->questions ?? [], array_values($respondentAnswers))
+                : $customScorer->score($customSection->questions ?? [], $customSection->answers ?? []);
+        }
 
         return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions', 'aiAvailable', 'aiProducts', 'narratives', 'customSection', 'customScored'));
     }

@@ -8,6 +8,7 @@ use App\Models\AssessmentRespondentToken;
 use App\Models\AssessmentShareLink;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\HealthDomain;
+use App\Models\LocalCustomSection;
 use App\Models\Project;
 use App\Models\PublicResponseSession;
 use App\Models\Response;
@@ -97,6 +98,37 @@ class MultiRespondentScoringTest extends TestCase
         $this->assertSame(Assessment::STATUS_COMPLETE, $assessment->fresh()->status);
         $this->assertSame($expected, (float) $assessment->fresh()->score->overall_score);
         $this->assertNotNull($assessment->fresh()->reportSnapshot);
+    }
+
+    public function test_tailored_section_is_aggregated_across_respondents_in_its_own_lane(): void
+    {
+        [$owner, $assessment] = $this->context(minimum: 2);
+
+        $section = LocalCustomSection::create([
+            'assessment_id' => $assessment->assessment_id,
+            'workspace_id' => app('current.workspace')->workspace_id,
+            'section_title' => 'Team extras',
+            'questions' => [
+                ['id' => 'c1', 'text' => 'Working referral vehicle?', 'response_type' => 'YES_NO', 'good_answer' => 'YES'],
+            ],
+            'created_by' => $owner->user_id,
+        ]);
+
+        // Two eligible respondents answer the tailored question: one good (100), one bad (0).
+        $r1 = $this->submitRespondent($assessment, 'high');
+        $r2 = $this->submitRespondent($assessment, 'high');
+        $section->update(['respondent_answers' => [
+            $r1->public_response_session_id => ['c1' => 'YES'],
+            $r2->public_response_session_id => ['c1' => 'NO'],
+        ]]);
+
+        app(MultiRespondentAggregationService::class)->finalize($assessment, $owner->user_id);
+
+        // Private lane is the mean of the two respondents' 0-100 custom scores; the official
+        // aggregate is untouched by it.
+        $section->refresh();
+        $this->assertEquals(50.0, (float) $section->custom_score);
+        $this->assertNotNull($section->scored_at);
     }
 
     public function test_incomplete_test_revoked_and_unconfirmed_sessions_are_excluded_with_reasons(): void

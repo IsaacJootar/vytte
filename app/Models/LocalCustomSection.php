@@ -19,6 +19,7 @@ class LocalCustomSection extends Model
         'instructions',
         'questions',
         'answers',
+        'respondent_answers',
         'custom_score',
         'scored_at',
         'created_by',
@@ -27,6 +28,7 @@ class LocalCustomSection extends Model
     protected $casts = [
         'questions' => 'array',
         'answers' => 'array',
+        'respondent_answers' => 'array',
         'scored_at' => 'datetime',
     ];
 

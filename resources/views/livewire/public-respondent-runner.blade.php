@@ -100,6 +100,67 @@
             <p class="text-sm text-slate-500">No questions found for this assessment.</p>
         </div>
 
+    @elseif ($onCustomStep)
+
+        {{-- Tailored step: the workspace's own questions, answered last. Optional and scored on
+             their own — they never change the official score. --}}
+        <div class="mb-5">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-vytte-600">Last step</p>
+            <h2 class="mt-0.5 text-base font-bold text-slate-900">A few more questions from the team</h2>
+            <p class="mt-1 text-sm text-slate-500">These are optional. You can answer them or skip and submit.</p>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            @foreach ($customQuestions as $cq)
+                <div class="bg-white rounded-2xl border border-slate-200 p-5">
+                    <p class="text-sm font-semibold text-slate-900 leading-snug mb-3">{{ $cq['text'] }}</p>
+                    <div class="flex flex-wrap gap-2">
+                        @if (($cq['response_type'] ?? 'YES_NO') === 'YES_NO')
+                            @foreach (['YES' => 'Yes', 'NO' => 'No'] as $val => $lbl)
+                                @php $sel = ($customAnswers[$cq['id']] ?? null) === $val; @endphp
+                                <button
+                                    wire:click="selectCustomOption('{{ $cq['id'] }}', '{{ $val }}')"
+                                    class="px-5 py-2.5 rounded-xl border text-sm font-medium transition-all
+                                        {{ $sel ? 'bg-vytte-700 border-vytte-700 text-white' : 'bg-white border-slate-200 text-slate-800 hover:border-vytte-400 hover:bg-vytte-50' }}">
+                                    {{ $lbl }}
+                                </button>
+                            @endforeach
+                        @else
+                            @for ($n = 1; $n <= 5; $n++)
+                                @php $sel = ($customAnswers[$cq['id']] ?? null) === (string) $n; @endphp
+                                <button
+                                    wire:click="selectCustomOption('{{ $cq['id'] }}', '{{ $n }}')"
+                                    class="w-11 py-2.5 rounded-xl border text-sm font-semibold transition-all
+                                        {{ $sel ? 'bg-vytte-700 border-vytte-700 text-white' : 'bg-white border-slate-200 text-slate-800 hover:border-vytte-400 hover:bg-vytte-50' }}">
+                                    {{ $n }}
+                                </button>
+                            @endfor
+                            <span class="self-center text-[11px] text-slate-400">(1 = low, 5 = high)</span>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="mt-6 pt-5 border-t border-slate-200 flex items-center justify-between gap-3">
+            <button
+                wire:click="backToQuestions"
+                class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:border-slate-300">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd"/>
+                </svg>
+                Back
+            </button>
+            <button
+                wire:click="submit"
+                class="inline-flex items-center gap-2 px-5 py-2.5 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors">
+                Submit my answers
+                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
+                </svg>
+            </button>
+        </div>
+
     @else
 
         {{-- Progress bar --}}
@@ -223,16 +284,29 @@
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
                         <p class="text-sm font-semibold text-slate-800">All questions answered</p>
-                        <p class="text-xs text-slate-500 mt-0.5">You can submit your responses now.</p>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            {{ $customQuestions !== [] ? 'One more short step from the team, then you\'re done.' : 'You can submit your responses now.' }}
+                        </p>
                     </div>
-                    <button
-                        wire:click="submit"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors">
-                        Submit my answers
-                        <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
-                        </svg>
-                    </button>
+                    @if ($customQuestions !== [])
+                        <button
+                            wire:click="goToCustomStep"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors">
+                            Continue
+                            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    @else
+                        <button
+                            wire:click="submit"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors">
+                            Submit my answers
+                            <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    @endif
                 </div>
             </div>
         @endif

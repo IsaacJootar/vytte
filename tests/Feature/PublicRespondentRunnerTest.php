@@ -7,6 +7,7 @@ use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentRespondentToken;
 use App\Models\AssessmentSnapshot;
+use App\Models\LocalCustomSection;
 use App\Models\Project;
 use App\Models\PublicResponseSession;
 use App\Models\Question;
@@ -374,6 +375,43 @@ class PublicRespondentRunnerTest extends TestCase
 
         Livewire::test(PublicRespondentRunner::class, ['token' => $token])
             ->assertSet('isSubmitted', true);
+    }
+
+    public function test_respondent_tailored_answers_are_stored_on_submit_in_their_own_lane(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createPublicAssessment($workspace, $user);
+
+        // A tailored section, added by the workspace while collection is open.
+        LocalCustomSection::create([
+            'assessment_id' => $assessment->assessment_id,
+            'workspace_id' => $workspace->workspace_id,
+            'section_title' => 'Team extras',
+            'questions' => [
+                ['id' => 'c1', 'text' => 'Vehicle?', 'response_type' => 'YES_NO', 'good_answer' => 'YES'],
+            ],
+            'created_by' => $user->user_id,
+        ]);
+
+        $token = $this->createToken($assessment);
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $component->call('giveConsent');
+
+        foreach ($component->get('questionData') as $q) {
+            if ($q['is_scored']) {
+                $component->call('selectOption', $q['question_id'], $q['options'][0]['option_id']);
+            }
+        }
+
+        // A tailored section routes through the extra step, not straight to submit.
+        $component->call('goToCustomStep')
+            ->assertSet('onCustomStep', true)
+            ->call('selectCustomOption', 'c1', 'YES')
+            ->call('submit')
+            ->assertSet('isSubmitted', true);
+
+        $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $this->assertSame(['c1' => 'YES'], $section->respondent_answers[$component->get('respondentId')]);
     }
 
     public function test_submit_rechecks_completeness_from_stored_responses(): void

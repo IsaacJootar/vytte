@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Assessment;
 use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentRespondentToken;
+use App\Models\LocalCustomSection;
 use App\Models\PublicResponseSession;
 use App\Models\RespondentConsent;
 use App\Models\Response;
@@ -65,6 +66,14 @@ class PublicRespondentRunner extends Component
     public string $lastSavedAt = '';
 
     public int $currentIndex = 0;
+
+    /** @var array<int, array<string, mixed>> The workspace's own "Tailored by your team" questions. */
+    public array $customQuestions = [];
+
+    /** @var array<string, string> This respondent's tailored answers, question id => value. */
+    public array $customAnswers = [];
+
+    public bool $onCustomStep = false;
 
     public function mount(string $token): void
     {
@@ -384,13 +393,91 @@ class PublicRespondentRunner extends Component
             return;
         }
 
+        $this->persistCustomAnswers();
         $submission->submit($session);
         $this->isSubmitted = true;
+    }
+
+    /**
+     * Store this respondent's tailored answers on the section, keyed by their session id, so the
+     * private custom score can be averaged across respondents when the collection is finalised.
+     */
+    private function persistCustomAnswers(): void
+    {
+        if ($this->customQuestions === []) {
+            return;
+        }
+
+        $section = LocalCustomSection::where('assessment_id', $this->assessmentId)->first();
+        if (! $section) {
+            return;
+        }
+
+        $validIds = collect($this->customQuestions)->pluck('id')->all();
+        $answers = array_intersect_key($this->customAnswers, array_flip($validIds));
+
+        $all = is_array($section->respondent_answers) ? $section->respondent_answers : [];
+        $all[$this->respondentId] = $answers;
+        $section->update(['respondent_answers' => $all]);
     }
 
     private function loadQuestions(): void
     {
         $this->questionData = $this->questionDefinitions($this->currentLocale);
+        $this->loadCustomSection();
+    }
+
+    /**
+     * A tailored section is answered by the respondent as a final step, after the official
+     * questions. It is optional and only present when the workspace added one before sharing.
+     */
+    private function loadCustomSection(): void
+    {
+        $section = LocalCustomSection::where('assessment_id', $this->assessmentId)->first();
+        $this->customQuestions = $section && is_array($section->questions) ? $section->questions : [];
+
+        $existing = is_array($section?->respondent_answers) ? ($section->respondent_answers[$this->respondentId] ?? null) : null;
+        $this->customAnswers = is_array($existing) ? $existing : [];
+    }
+
+    public function selectCustomOption(string $questionId, string $value): void
+    {
+        if (! $this->hasValidPublicContext() || ! $this->consentGiven) {
+            return;
+        }
+
+        $question = collect($this->customQuestions)->firstWhere('id', $questionId);
+        if (! $question) {
+            return;
+        }
+
+        $type = $question['response_type'] ?? 'YES_NO';
+        $valid = $type === 'YES_NO'
+            ? in_array($value, ['YES', 'NO'], true)
+            : in_array($value, ['1', '2', '3', '4', '5'], true);
+        if (! $valid) {
+            return;
+        }
+
+        $this->customAnswers[$questionId] = $value;
+    }
+
+    /**
+     * Move from the official questions to the tailored step. Only reachable once every required
+     * official question is answered; if there is no tailored section, the caller submits instead.
+     */
+    public function goToCustomStep(): void
+    {
+        if (! $this->hasValidPublicContext() || ! $this->hasCompleteRequiredResponses() || $this->customQuestions === []) {
+            return;
+        }
+
+        $this->onCustomStep = true;
+    }
+
+    public function backToQuestions(): void
+    {
+        $this->onCustomStep = false;
     }
 
     private function questionDefinitions(string $locale): array

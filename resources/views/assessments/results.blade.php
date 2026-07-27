@@ -676,7 +676,9 @@
                     <span class="text-sm font-bold tabular-nums" style="color: {{ $csColor }}">{{ number_format($cs, 1) }} / 100</span>
                 @endif
             </div>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Your own questions — scored on their own, and kept out of the official Vytte score above so it stays comparable with other facilities.</p>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">
+                Your own questions — scored on their own, and kept out of the official Vytte score above so it stays comparable with other facilities.@if (! empty($customScored['respondents'])) Averaged across {{ $customScored['respondents'] }} {{ \Illuminate\Support\Str::plural('respondent', $customScored['respondents']) }}.@endif
+            </p>
             <ul class="divide-y divide-slate-100 dark:divide-slate-700">
                 @foreach ($customScored['questions'] as $q)
                     <li class="flex items-start justify-between gap-4 py-2.5">
