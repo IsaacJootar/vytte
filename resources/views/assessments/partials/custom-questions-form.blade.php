@@ -65,22 +65,24 @@
         </template>
     </div>
 
+    {{-- Add questions one at a time: fill the one above, then add another for each extra. --}}
     <button type="button" @click="add()"
             class="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-dashed border-vytte-300 px-4 py-2.5 text-sm font-semibold text-vytte-700 dark:border-vytte-800 dark:text-vytte-400 hover:bg-vytte-50 dark:hover:bg-vytte-900/20 transition-colors">
         <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z"/></svg>
-        Add a question
+        Add another question
     </button>
 
-    <div class="mt-6 flex items-center gap-3">
+    <div class="mt-6 flex items-center gap-3 border-t border-slate-100 dark:border-slate-700 pt-5">
         <button type="submit" class="rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">
-            {{ $wizard ? 'Save & continue →' : 'Save questions' }}
+            {{ ($wizard ?? false) ? 'Done — save & continue →' : 'Save questions' }}
         </button>
-        @if ($wizard)
-            <a href="{{ route('assessments.setup', ['assessment' => $assessment, 'step' => 3]) }}" class="text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">Skip — no extra questions</a>
-        @else
+        @unless ($wizard ?? false)
             <a href="{{ route('assessments.setup', $assessment) }}" class="text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">Cancel</a>
-        @endif
+        @endunless
     </div>
+    @if ($wizard ?? false)
+        <p class="mt-2 text-xs text-slate-400 dark:text-slate-500">Fill a question, then <span class="font-semibold">Add another</span> for each extra. Click <span class="font-semibold">Done</span> when you've finished.</p>
+    @endif
 </form>
 
 <script>

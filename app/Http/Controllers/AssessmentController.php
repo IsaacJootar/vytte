@@ -166,8 +166,9 @@ class AssessmentController extends Controller
         $assessment->load(['project', 'target', 'moduleScope.module', 'snapshot', 'catalogueRelease', 'localCustomSections']);
 
         $step = max(1, min(4, (int) $request->query('step', 1)));
-        $allowsMultiRespondent = $assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false;
-        $mode = ($request->query('mode') === 'share' && $allowsMultiRespondent) ? 'share' : 'self';
+        // Sharing for multiple respondents is available for every assessment — the template flag
+        // is only a default, not a lock (the aggregation service applies sensible defaults).
+        $mode = $request->query('mode') === 'share' ? 'share' : 'self';
 
         $areas = $assessment->moduleScope->where('in_scope', true)
             ->map(fn ($m) => $m->module?->module_name)->filter()->values();
@@ -179,18 +180,25 @@ class AssessmentController extends Controller
             ?? ($areas->count() === 1 ? $areas->first() : 'Health Assessment');
 
         return view('assessments.setup', compact(
-            'assessment', 'step', 'mode', 'allowsMultiRespondent', 'areas',
+            'assessment', 'step', 'mode', 'areas',
             'questionCount', 'section', 'customCount', 'hasResponses', 'subject'
         ));
     }
 
-    public function run(Assessment $assessment): View
+    public function run(Assessment $assessment): View|RedirectResponse
     {
         $this->authorizeWorkspace($assessment);
 
-        if ($assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false) {
+        if ($assessment->status === Assessment::STATUS_COMPLETE) {
+            return redirect()->route('assessments.results', $assessment);
+        }
+
+        // Once an assessment is published it is being collected by shared link and is managed
+        // from its collection page — self-answering no longer applies. While it is still a draft,
+        // anyone on the workspace may answer it themselves, whatever the template's default.
+        if ($assessment->isPublished()) {
             return redirect()->route('assessments.respondent-collection', $assessment)
-                ->with('error', 'Multi-respondent assessments must be finalized from the respondent collection review.');
+                ->with('info', 'This assessment is collecting responses by link. Review and finalize it here.');
         }
 
         $assessment->load(['project', 'target', 'moduleScope.module']);

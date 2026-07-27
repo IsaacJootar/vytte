@@ -62,16 +62,24 @@ class CustomSectionController extends Controller
             'reversed' => $q['type'] === 'SCALE_5' ? (bool) ($q['reversed'] ?? false) : false,
         ])->values()->all();
 
-        LocalCustomSection::updateOrCreate(
-            ['assessment_id' => $assessment->assessment_id],
-            [
-                'workspace_id' => app('current.workspace')->workspace_id,
-                'section_title' => ($validated['section_title'] ?? null) ?: 'Tailored by your team',
-                'instructions' => $validated['instructions'] ?? null,
-                'questions' => $questions,
-                'created_by' => auth()->id(),
-            ],
-        );
+        if ($questions === []) {
+            // The step is optional. Left blank, there is nothing to keep — drop any unanswered
+            // section so an empty one is never carried forward.
+            LocalCustomSection::where('assessment_id', $assessment->assessment_id)
+                ->whereNull('scored_at')
+                ->delete();
+        } else {
+            LocalCustomSection::updateOrCreate(
+                ['assessment_id' => $assessment->assessment_id],
+                [
+                    'workspace_id' => app('current.workspace')->workspace_id,
+                    'section_title' => ($validated['section_title'] ?? null) ?: 'Tailored by your team',
+                    'instructions' => $validated['instructions'] ?? null,
+                    'questions' => $questions,
+                    'created_by' => auth()->id(),
+                ],
+            );
+        }
 
         // When saving from the setup wizard, continue to the next step instead of the editor.
         if ($request->input('redirect_to') === 'setup') {

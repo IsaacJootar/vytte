@@ -71,18 +71,53 @@
                 These are the official Vytte questions. Next you can add your own — they're scored separately and never change the Vytte score.
             </p>
 
-            <div class="mt-6 flex items-center justify-end">
+            {{-- Preview the actual questions and segments, so the user can judge them before adding. --}}
+            @if ($assessment->snapshot)
+                <div class="mt-4 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" x-data="{ open: false }">
+                    <button type="button" @click="open = ! open" class="w-full flex items-center justify-between gap-3 px-5 py-3.5 text-left">
+                        <span class="text-sm font-semibold text-slate-900 dark:text-white">Preview the questions</span>
+                        <svg :class="open && 'rotate-180'" class="w-4 h-4 flex-shrink-0 text-slate-400 transition-transform" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+                    </button>
+                    <div x-show="open" x-cloak class="border-t border-slate-100 dark:border-slate-700 px-5 py-4 space-y-4">
+                        @foreach (collect($assessment->snapshot->payload)->sortBy('display_order') as $module)
+                            <div>
+                                <p class="text-[10px] font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400">{{ $module['module_name'] ?? $module['module_code'] }}</p>
+                                @php $lastSection = null; @endphp
+                                <ul class="mt-1.5 space-y-1">
+                                    @foreach (collect($module['questions'] ?? [])->sortBy('display_order') as $q)
+                                        @if (($q['section_label'] ?? '') !== '' && ($q['section_label'] ?? '') !== $lastSection)
+                                            <li class="pt-1.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">{{ $q['section_label'] }}</li>
+                                            @php $lastSection = $q['section_label']; @endphp
+                                        @endif
+                                        <li class="flex gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                            <span class="text-slate-300 dark:text-slate-600">•</span>
+                                            <span>{{ $q['question_text'] }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Two clear choices — nobody is pushed into adding questions. --}}
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+                <a href="{{ route('assessments.setup', ['assessment' => $assessment, 'step' => 3]) }}"
+                   class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                    Continue without adding →
+                </a>
                 <a href="{{ route('assessments.setup', ['assessment' => $assessment, 'step' => 2]) }}"
-                   class="inline-flex items-center gap-1.5 rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">
-                    Next: add your own questions →
+                   class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">
+                    Add my own questions →
                 </a>
             </div>
 
         {{-- ===================== STEP 2 — YOUR QUESTIONS ===================== --}}
         @elseif ($step === 2)
             <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
-                Optional. Add questions that matter to your context — scored on their own (0–100) in a separate
-                “Tailored by your team” section. @if ($customCount > 0)<span class="font-semibold text-slate-700 dark:text-slate-200">{{ $customCount }} added so far.</span>@endif
+                Add questions that matter to your context, one at a time — scored on their own (0–100) in a separate
+                “Tailored by your team” section. @if ($customCount > 0)<span class="font-semibold text-slate-700 dark:text-slate-200">{{ $customCount }} saved so far.</span>@endif
             </p>
 
             @include('assessments.partials.custom-questions-form', ['wizard' => true, 'redirectTo' => 'setup'])
@@ -105,22 +140,16 @@
                     <span class="mt-4 text-sm font-semibold text-vytte-700 dark:text-vytte-400">Choose this →</span>
                 </a>
 
-                {{-- Share --}}
-                @if ($allowsMultiRespondent)
-                    <a href="{{ route('assessments.setup', ['assessment' => $assessment, 'step' => 4, 'mode' => 'share']) }}"
-                       class="flex flex-col rounded-2xl border-2 border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 hover:border-vytte-500 dark:hover:border-vytte-500 transition-colors">
-                        <div class="w-10 h-10 rounded-xl bg-vytte-50 dark:bg-vytte-900/30 flex items-center justify-center mb-3">
-                            <svg class="w-5 h-5 text-vytte-600 dark:text-vytte-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>
-                        </div>
-                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Share a link for others</h3>
-                        <p class="mt-1 flex-1 text-xs text-slate-500 dark:text-slate-400">Send a link so several people answer independently. Their answers are combined into one result you review and finalise.</p>
-                        <span class="mt-4 text-sm font-semibold text-vytte-700 dark:text-vytte-400">Choose this →</span>
-                    </a>
-                @else
-                    <div class="flex flex-col rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 p-5 text-xs text-slate-400 dark:text-slate-500">
-                        This assessment is designed to be answered by one assessor, so sharing for multiple respondents isn't available for it.
+                {{-- Share — available for every assessment. --}}
+                <a href="{{ route('assessments.setup', ['assessment' => $assessment, 'step' => 4, 'mode' => 'share']) }}"
+                   class="flex flex-col rounded-2xl border-2 border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 hover:border-vytte-500 dark:hover:border-vytte-500 transition-colors">
+                    <div class="w-10 h-10 rounded-xl bg-vytte-50 dark:bg-vytte-900/30 flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-vytte-600 dark:text-vytte-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z"/></svg>
                     </div>
-                @endif
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">Share a link for others</h3>
+                    <p class="mt-1 flex-1 text-xs text-slate-500 dark:text-slate-400">Send a link so several people answer independently. Their answers are combined into one result you review and finalise.</p>
+                    <span class="mt-4 text-sm font-semibold text-vytte-700 dark:text-vytte-400">Choose this →</span>
+                </a>
             </div>
 
             <div class="mt-6 border-t border-slate-100 dark:border-slate-700 pt-4">
