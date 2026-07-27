@@ -132,27 +132,56 @@ class AssessmentController extends Controller
             auth()->id(),
         );
 
-        // Land on the decision screen rather than dropping the user straight into the
-        // questions — so they can see what they created and choose how to collect answers.
-        return redirect()->route('assessments.start', $assessment);
+        // Land on the setup wizard rather than dropping the user straight into the questions —
+        // so they review what they created, optionally add their own questions, then choose how
+        // answers are collected.
+        return redirect()->route('assessments.setup', $assessment);
     }
 
     /**
-     * The decision screen shown right after an assessment is created: what it is, and how
-     * answers will be collected — self-assessment, or a shared link for others to answer.
+     * Kept for older links: the standalone decision screen is now the first step of the setup
+     * wizard, so send anything pointing here into the wizard.
      */
-    public function start(Assessment $assessment): View|RedirectResponse
+    public function start(Assessment $assessment): RedirectResponse
+    {
+        return redirect()->route('assessments.setup', $assessment);
+    }
+
+    /**
+     * The step-by-step setup wizard for a draft assessment: review → add your own questions →
+     * choose how it is answered → finish. A completed assessment goes to its report; a published
+     * (shared) one is managed from its collection page.
+     */
+    public function setup(Request $request, Assessment $assessment): View|RedirectResponse
     {
         $this->authorizeWorkspace($assessment);
 
         if ($assessment->status === Assessment::STATUS_COMPLETE) {
             return redirect()->route('assessments.results', $assessment);
         }
+        if ($assessment->isPublished()) {
+            return redirect()->route('assessments.respondent-collection', $assessment);
+        }
 
-        $assessment->load(['project', 'target', 'moduleScope.module', 'snapshot']);
+        $assessment->load(['project', 'target', 'moduleScope.module', 'snapshot', 'catalogueRelease', 'localCustomSections']);
+
+        $step = max(1, min(4, (int) $request->query('step', 1)));
         $allowsMultiRespondent = $assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false;
+        $mode = ($request->query('mode') === 'share' && $allowsMultiRespondent) ? 'share' : 'self';
 
-        return view('assessments.start', compact('assessment', 'allowsMultiRespondent'));
+        $areas = $assessment->moduleScope->where('in_scope', true)
+            ->map(fn ($m) => $m->module?->module_name)->filter()->values();
+        $questionCount = collect($assessment->snapshot?->payload ?? [])->sum(fn ($m) => count($m['questions'] ?? []));
+        $section = $assessment->localCustomSections->first();
+        $customCount = $section && is_array($section->questions) ? count($section->questions) : 0;
+        $hasResponses = $assessment->responses()->exists();
+        $subject = $assessment->catalogueRelease?->release_name
+            ?? ($areas->count() === 1 ? $areas->first() : 'Health Assessment');
+
+        return view('assessments.setup', compact(
+            'assessment', 'step', 'mode', 'allowsMultiRespondent', 'areas',
+            'questionCount', 'section', 'customCount', 'hasResponses', 'subject'
+        ));
     }
 
     public function run(Assessment $assessment): View

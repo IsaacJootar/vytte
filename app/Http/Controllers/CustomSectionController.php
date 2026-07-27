@@ -73,6 +73,12 @@ class CustomSectionController extends Controller
             ],
         );
 
+        // When saving from the setup wizard, continue to the next step instead of the editor.
+        if ($request->input('redirect_to') === 'setup') {
+            return redirect()->route('assessments.setup', ['assessment' => $assessment, 'step' => 3])
+                ->with('success', 'Your questions were saved.');
+        }
+
         return redirect()->route('assessments.custom.edit', $assessment)
             ->with('success', 'Your questions were saved.');
     }

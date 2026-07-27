@@ -162,21 +162,31 @@ class AssessmentTest extends TestCase
         $this->assertEquals($module->module_id, $scope->module_id);
         $this->assertTrue($scope->in_scope);
 
-        // Creation now lands on the decision screen, not straight into the questions.
-        $response->assertRedirect(route('assessments.start', $assessment));
+        // Creation now lands on the setup wizard, not straight into the questions.
+        $response->assertRedirect(route('assessments.setup', $assessment));
     }
 
-    public function test_start_page_shows_the_collection_choice(): void
+    public function test_setup_wizard_reviews_then_offers_the_collection_choice(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
         $assessment = $this->createAssessment($project, $target);
 
-        $this->actingAs($user)->get(route('assessments.start', $assessment))
+        // Step 1 reviews the assessment.
+        $this->actingAs($user)->get(route('assessments.setup', $assessment))
             ->assertOk()
-            ->assertSee('How do you want to collect answers?')
-            ->assertSee('Answer it yourself')
-            ->assertSee('Share it for others to answer');
+            ->assertSee('Review this assessment')
+            ->assertSee('Vytte questions')
+            ->assertSee('Next: add your own questions');
+
+        // Step 3 offers how it is answered.
+        $this->actingAs($user)->get(route('assessments.setup', ['assessment' => $assessment, 'step' => 3]))
+            ->assertOk()
+            ->assertSee('Just me / my team');
+
+        // The old start route still works, redirecting into the wizard.
+        $this->actingAs($user)->get(route('assessments.start', $assessment))
+            ->assertRedirect(route('assessments.setup', $assessment));
     }
 
     public function test_assessment_store_requires_path_and_published_template(): void
