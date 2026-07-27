@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CompleteSelfAssessment;
 use App\Models\Assessment;
 use App\Models\LocalCustomSection;
 use App\Services\Reporting\CustomSectionScoringService;
@@ -17,12 +18,20 @@ use Illuminate\Support\Str;
  * are never mixed into the official Vytte score — they live in their own lane and are scored
  * and reported separately. Governed questions can never be removed, so the official score
  * always measures the same standard set and stays comparable.
+ *
+ * Questions are authored only while the assessment is still open; once it is complete the
+ * tailored section is frozen. They are answered as the last step of the same assessment,
+ * right before it is finished.
  */
 class CustomSectionController extends Controller
 {
-    public function edit(Assessment $assessment): View
+    public function edit(Assessment $assessment): View|RedirectResponse
     {
         $this->authorize('update', $assessment);
+        if ($assessment->status === Assessment::STATUS_COMPLETE) {
+            return redirect()->route('assessments.results', $assessment);
+        }
+
         $section = $assessment->localCustomSections()->first();
 
         return view('assessments.custom-section', compact('assessment', 'section'));
@@ -31,6 +40,7 @@ class CustomSectionController extends Controller
     public function save(Request $request, Assessment $assessment): RedirectResponse
     {
         $this->authorize('update', $assessment);
+        abort_if($assessment->status === Assessment::STATUS_COMPLETE, 403);
 
         $validated = $request->validate([
             'section_title' => ['nullable', 'string', 'max:180'],
@@ -68,9 +78,29 @@ class CustomSectionController extends Controller
     }
 
     /**
-     * Record answers to the tailored questions and compute their private 0-100 score.
+     * The last step of the run: answer the tailored questions before finishing.
      */
-    public function saveAnswers(Request $request, Assessment $assessment, CustomSectionScoringService $scorer): RedirectResponse
+    public function answer(Assessment $assessment): View|RedirectResponse
+    {
+        $this->authorize('update', $assessment);
+
+        if ($assessment->status === Assessment::STATUS_COMPLETE) {
+            return redirect()->route('assessments.results', $assessment);
+        }
+
+        $section = $assessment->localCustomSections()->first();
+        if (! $section || empty($section->questions)) {
+            return redirect()->route('assessments.run', $assessment);
+        }
+
+        return view('assessments.custom-answer', compact('assessment', 'section'));
+    }
+
+    /**
+     * Score the tailored answers (their own 0-100 lane), then finish the whole assessment.
+     * Skipping is allowed — the tailored section is optional.
+     */
+    public function finish(Request $request, Assessment $assessment, CustomSectionScoringService $scorer, CompleteSelfAssessment $complete): RedirectResponse
     {
         $this->authorize('update', $assessment);
 
@@ -90,7 +120,11 @@ class CustomSectionController extends Controller
             'scored_at' => now(),
         ]);
 
-        return redirect()->route('assessments.results', ['assessment' => $assessment, 'tab' => 'overview'])
-            ->with('success', 'Your tailored section was scored.');
+        if ($assessment->status !== Assessment::STATUS_COMPLETE) {
+            $complete->handle($assessment->fresh());
+        }
+
+        return redirect()->route('assessments.results', $assessment)
+            ->with('success', 'Assessment submitted.');
     }
 }

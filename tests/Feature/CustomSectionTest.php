@@ -2,9 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\LocalCustomSection;
 use App\Models\Project;
+use App\Models\Response;
 use App\Models\Target;
 use App\Models\User;
 use App\Models\Workspace;
@@ -81,14 +83,41 @@ class CustomSectionTest extends TestCase
         $q1 = $section->questions[0]['id'];
         $q2 = $section->questions[1]['id'];
 
-        // Yes (good) = 100; scale 3 = 50; average = 75.
-        $this->actingAs($user)->post(route('assessments.custom.answers', $assessment), [
+        // Yes (good) = 100; scale 3 = 50; average = 75. Finishing also completes the assessment.
+        $this->actingAs($user)->post(route('assessments.custom.finish', $assessment), [
             'answers' => [$q1 => 'YES', $q2 => '3'],
-        ])->assertRedirect();
+        ])->assertRedirect(route('assessments.results', $assessment));
 
         $section->refresh();
         $this->assertEquals(75.0, (float) $section->custom_score);
         $this->assertNotNull($section->scored_at);
+        $this->assertSame(Assessment::STATUS_COMPLETE, $assessment->fresh()->status);
+    }
+
+    public function test_submitting_with_tailored_questions_routes_to_the_answer_step(): void
+    {
+        [$user, $assessment] = $this->setup_assessment();
+
+        // Answer the governed questions so submit passes its own check.
+        $questions = collect($assessment->snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->where('is_scored', true);
+        foreach ($questions as $question) {
+            $optionId = collect($question['options'])->sortByDesc('score_weight')->first()['option_id'];
+            Response::updateOrCreate(
+                ['assessment_id' => $assessment->assessment_id, 'question_id' => $question['question_id'], 'respondent_id' => null],
+                ['value_option_id' => $optionId, 'answered_at' => now()]
+            );
+        }
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'questions' => [['text' => 'Extra?', 'type' => 'YES_NO', 'good' => 'YES']],
+        ]);
+
+        // With a tailored section attached, submit sends the user to the tailored answer step.
+        $this->actingAs($user)->post(route('assessments.submit', $assessment))
+            ->assertRedirect(route('assessments.custom.answer', $assessment));
+        $this->assertSame(Assessment::STATUS_IN_PROGRESS, $assessment->fresh()->status);
     }
 
     public function test_another_workspace_cannot_edit_the_custom_section(): void

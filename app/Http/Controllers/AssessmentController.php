@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CompleteSelfAssessment;
 use App\Models\Assessment;
 use App\Models\AssessmentAiNarrative;
 use App\Models\AssessmentCatalogueRelease;
-use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentShareLink;
 use App\Models\FacilityProfile;
 use App\Models\Project;
 use App\Models\Response;
-use App\Models\WorkspaceMember;
-use App\Notifications\AssessmentCompletedNotification;
 use App\Services\Ai\AiNarrativeService;
 use App\Services\Ai\AiProductCatalog;
 use App\Services\AssessmentCreationService;
@@ -21,13 +19,11 @@ use App\Services\Reporting\CustomSectionScoringService;
 use App\Services\Reporting\LensCatalog;
 use App\Services\Reporting\ReportComposer;
 use App\Services\ReportSnapshotService;
-use App\Services\ScoringService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
 
 class AssessmentController extends Controller
 {
@@ -221,30 +217,14 @@ class AssessmentController extends Controller
                 ->with('error', 'Please answer every required scored question before submitting.');
         }
 
-        DB::transaction(function () use ($assessment): void {
-            $completedAt = now();
-            $assessment->update(['status' => Assessment::STATUS_COMPLETE, 'completed_at' => $completedAt]);
-            AssessmentModuleScope::where('assessment_id', $assessment->assessment_id)
-                ->where('in_scope', true)
-                ->update(['status' => AssessmentModuleScope::STATUS_COMPLETED, 'completed_at' => $completedAt]);
-            app(ScoringService::class)->calculate($assessment);
-            app(ReportSnapshotService::class)->createFor($assessment->fresh());
-            app(AuditService::class)->record(
-                'assessment.completed',
-                $assessment,
-                ['status' => Assessment::STATUS_IN_PROGRESS],
-                ['status' => Assessment::STATUS_COMPLETE, 'completed_at' => $completedAt->toIso8601String()],
-            );
-        });
+        // The official questions are done. If a tailored section is attached and not yet
+        // answered, that is the last step of the same flow before the assessment is finished.
+        $tailored = $assessment->localCustomSections()->first();
+        if ($tailored && ! empty($tailored->questions) && $tailored->scored_at === null) {
+            return redirect()->route('assessments.custom.answer', $assessment);
+        }
 
-        $admins = WorkspaceMember::where('workspace_id', app('current.workspace')->workspace_id)
-            ->whereIn('role', ['OWNER', 'ADMIN'])
-            ->with('user')
-            ->get()
-            ->pluck('user')
-            ->filter();
-
-        Notification::send($admins, new AssessmentCompletedNotification($assessment));
+        app(CompleteSelfAssessment::class)->handle($assessment);
 
         return redirect()->route('projects.show', $assessment->project_id)
             ->with('success', 'Assessment submitted.');
