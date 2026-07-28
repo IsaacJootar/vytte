@@ -81,6 +81,7 @@ Route::middleware('auth')->group(function () {
     Route::get('modules/{module}', [ModuleLibraryController::class, 'show'])->name('modules.show');
 
     Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
+    Route::get('assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
     Route::get('reports', [ReportsController::class, 'index'])->name('reports.index');
     Route::get('projects/{project}/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('projects/{project}/assessments', [AssessmentController::class, 'store'])->name('assessments.store');

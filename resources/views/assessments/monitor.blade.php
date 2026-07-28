@@ -1,7 +1,7 @@
 <x-app-layout :title="'Monitoring · '.($assessment->target?->name ?? 'Assessment')">
     <div class="mb-5">
-        <a href="{{ route('projects.show', $assessment->project) }}" class="link-nav text-sm">
-            <span aria-hidden="true">&larr;</span> Back to {{ \Illuminate\Support\Str::limit($assessment->project?->name, 40) }}
+        <a href="{{ route('assessments.show', $assessment) }}" class="link-nav text-sm">
+            <span aria-hidden="true">&larr;</span> Back to assessment
         </a>
         <div class="mt-2 flex flex-wrap items-start justify-between gap-3">
             <div>

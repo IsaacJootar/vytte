@@ -3,10 +3,10 @@
     {{-- Back to the project this assessment belongs to. Leaving mid-assessment does not
          discard anything — answers are saved as they are given. --}}
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <a href="{{ $assessment->project ? route('projects.show', $assessment->project) : route('projects.index') }}"
+        <a href="{{ route('assessments.show', $assessment) }}"
            class="link-nav inline-flex items-center gap-1 text-sm">
             <span aria-hidden="true">&larr;</span>
-            {{ $assessment->project?->name ? 'Back to '.\Illuminate\Support\Str::limit($assessment->project->name, 40) : 'Back to projects' }}
+            Back to assessment
         </a>
 
         {{-- Locale switcher --}}

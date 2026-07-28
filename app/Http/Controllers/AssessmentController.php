@@ -6,6 +6,7 @@ use App\Actions\CompleteSelfAssessment;
 use App\Models\Assessment;
 use App\Models\AssessmentAiNarrative;
 use App\Models\AssessmentCatalogueRelease;
+use App\Models\AssessmentRespondentToken;
 use App\Models\AssessmentShareLink;
 use App\Models\FacilityProfile;
 use App\Models\Project;
@@ -30,10 +31,12 @@ class AssessmentController extends Controller
     public function index(Request $request): View
     {
         $workspaceProjectIds = Project::select('project_id');
-
         $search = trim((string) $request->query('search', ''));
+        $tab = in_array($request->query('tab'), ['draft', 'collecting', 'complete'], true)
+            ? $request->query('tab') : 'all';
 
-        $assessments = Assessment::whereIn('project_id', $workspaceProjectIds)
+        // A fresh base query each time, so counting each tab does not disturb the listing.
+        $base = fn () => Assessment::whereIn('project_id', $workspaceProjectIds)
             ->when($search !== '', function ($query) use ($search) {
                 // What a person remembers: the target or the project it belongs to.
                 $like = '%'.strtolower($search).'%';
@@ -41,13 +44,77 @@ class AssessmentController extends Controller
                     $inner->whereHas('target', fn ($t) => $t->whereRaw('LOWER(name) LIKE ?', [$like]))
                         ->orWhereHas('project', fn ($p) => $p->whereRaw('LOWER(name) LIKE ?', [$like]));
                 });
-            })
-            ->with(['project', 'target', 'score', 'moduleScope.module', 'snapshot', 'catalogueRelease'])
-            ->latest('updated_at')
-            ->paginate(20)
-            ->withQueryString();
+            });
 
-        return view('assessments.index', compact('assessments', 'search'));
+        // Drafts are unpublished and unfinished; collecting are published and open; complete are done.
+        $draft = fn ($q) => $q->where('publish_status', Assessment::PUBLISH_DRAFT)->where('status', Assessment::STATUS_IN_PROGRESS);
+        $collecting = fn ($q) => $q->where('publish_status', Assessment::PUBLISH_PUBLISHED)->where('status', Assessment::STATUS_IN_PROGRESS);
+        $complete = fn ($q) => $q->where('status', Assessment::STATUS_COMPLETE);
+
+        $counts = [
+            'all' => $base()->count(),
+            'draft' => $draft($base())->count(),
+            'collecting' => $collecting($base())->count(),
+            'complete' => $complete($base())->count(),
+        ];
+
+        $query = $base()->with(['project', 'target', 'score', 'moduleScope.module', 'snapshot', 'catalogueRelease'])
+            ->withCount('responses');
+        match ($tab) {
+            'draft' => $draft($query),
+            'collecting' => $collecting($query),
+            'complete' => $complete($query),
+            default => $query,
+        };
+
+        $assessments = $query->latest('updated_at')->paginate(20)->withQueryString();
+
+        return view('assessments.index', compact('assessments', 'search', 'tab', 'counts'));
+    }
+
+    /**
+     * The assessment hub — one home for everything about a single assessment: its status,
+     * questions, respondents and links, and its report. Every sub-page returns here so the
+     * assessment is never scattered across sibling URLs.
+     */
+    public function show(Request $request, Assessment $assessment): View
+    {
+        $this->authorizeWorkspace($assessment);
+
+        $assessment->load([
+            'project', 'target', 'moduleScope.module', 'snapshot', 'catalogueRelease',
+            'score.maturityLevel', 'localCustomSections', 'reportSnapshot',
+        ]);
+
+        if ($request->boolean('saved')) {
+            session()->now('success', 'Saved as draft. Find it any time under Assessments.');
+        }
+
+        $allowsMultiRespondent = $assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false;
+        $areas = $assessment->moduleScope->where('in_scope', true)
+            ->map(fn ($m) => $m->module?->module_name)->filter()->values();
+        $questionCount = collect($assessment->snapshot?->payload ?? [])->sum(fn ($m) => count($m['questions'] ?? []));
+        $section = $assessment->localCustomSections->first();
+        $customCount = $section && is_array($section->questions) ? count($section->questions) : 0;
+        $hasResponses = $assessment->responses()->exists();
+        $subject = $assessment->catalogueRelease?->release_name
+            ?? ($areas->count() === 1 ? $areas->first() : 'Health Assessment');
+
+        $respondentTotal = $assessment->publicResponseSessions()->count();
+        $respondentDone = $assessment->publicResponseSessions()->whereNotNull('submitted_at')->count();
+        $activeLinks = AssessmentRespondentToken::where('assessment_id', $assessment->assessment_id)
+            ->whereNull('revoked_at')->count();
+
+        // The single status the whole page reads from.
+        $status = $assessment->isComplete() ? 'complete'
+            : ($assessment->isPublished()
+                ? ($assessment->isClosed() ? 'closed' : 'collecting')
+                : ($hasResponses ? 'answering' : 'draft'));
+
+        return view('assessments.show', compact(
+            'assessment', 'subject', 'status', 'allowsMultiRespondent', 'questionCount',
+            'areas', 'customCount', 'respondentTotal', 'respondentDone', 'activeLinks'
+        ));
     }
 
     public function create(Project $project): View

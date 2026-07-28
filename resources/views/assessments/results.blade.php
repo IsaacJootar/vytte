@@ -23,12 +23,12 @@
 
     {{-- Back + actions --}}
     <div class="mb-6 flex items-start justify-between gap-4 no-print">
-        <a href="{{ route('projects.show', $assessment->project_id) }}"
+        <a href="{{ route('assessments.show', $assessment) }}"
            class="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
             <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fill-rule="evenodd" d="M11.78 5.22a.75.75 0 010 1.06L8.06 10l3.72 3.72a.75.75 0 11-1.06 1.06l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 011.06 0z" clip-rule="evenodd"/>
             </svg>
-            {{ $assessment->project?->name }}
+            Back to assessment
         </a>
         <div class="flex items-center gap-2 flex-wrap">
             {{-- PDF export --}}

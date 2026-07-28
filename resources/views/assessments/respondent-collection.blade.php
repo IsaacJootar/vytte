@@ -17,7 +17,7 @@
 
     <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-            <a href="{{ route('assessments.index') }}" class="text-sm font-medium text-vytte-700 hover:underline">Assessments</a>
+            <a href="{{ route('assessments.show', $assessment) }}" class="text-sm font-medium text-vytte-700 hover:underline">← Back to assessment</a>
             <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Respondent collection</h1>
             <p class="mt-1 text-sm text-slate-500">
                 {{ $assessment->project?->name }} · {{ $assessment->target?->name }}

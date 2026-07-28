@@ -190,6 +190,48 @@ class AssessmentTest extends TestCase
             ->assertRedirect(route('assessments.setup', $assessment));
     }
 
+    public function test_assessment_hub_shows_a_draft_and_links_into_setup(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $assessment = $this->createAssessment($project, $target);
+
+        $this->actingAs($user)->get(route('assessments.show', $assessment))
+            ->assertOk()
+            ->assertSee('Draft')
+            ->assertSee('Continue setup')
+            ->assertSee(route('assessments.setup', $assessment));
+    }
+
+    public function test_saving_as_draft_lands_on_the_hub_with_a_toast(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $assessment = $this->createAssessment($project, $target);
+
+        $this->actingAs($user)->get(route('assessments.show', ['assessment' => $assessment, 'saved' => 1]))
+            ->assertOk()
+            ->assertSee('Saved as draft');
+    }
+
+    public function test_assessments_list_filters_by_tab_and_offers_a_details_link(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $assessment = $this->createAssessment($project, $target); // a draft
+
+        // The Drafts tab shows it, with a Details link into the hub.
+        $this->actingAs($user)->get(route('assessments.index', ['tab' => 'draft']))
+            ->assertOk()
+            ->assertSee('Details')
+            ->assertSee(route('assessments.show', $assessment));
+
+        // The Complete tab does not.
+        $this->actingAs($user)->get(route('assessments.index', ['tab' => 'complete']))
+            ->assertOk()
+            ->assertDontSee(route('assessments.show', $assessment));
+    }
+
     public function test_assessment_store_requires_path_and_published_template(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
