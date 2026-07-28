@@ -1,9 +1,14 @@
+DirectoryIndex disabled
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
+
+    # Avoid a DirectoryIndex subrequest when public is mounted below a domain root.
+    RewriteRule ^$ %{REQUEST_URI}login [R=302,L,NE]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
