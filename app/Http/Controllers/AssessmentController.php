@@ -132,17 +132,17 @@ class AssessmentController extends Controller
             ->where('setting_type_code', $settingTypeCode)
             ->orderBy('display_order')
             ->get();
-        // A comprehensive assessment is offered for the whole setting type, not gated to the
-        // target's one specific facility profile. A target on any health-facility profile can
-        // therefore run any published comprehensive release for health facilities, rather than
-        // seeing "no release available" because its profile happens to differ from the one the
-        // release was composed against.
-        $profileIds = $facilityProfiles->pluck('facility_profile_id');
+        // Comprehensive releases are composed for one exact facility profile. When the
+        // project already identifies that profile, do not offer incompatible releases that
+        // the creation service would correctly reject.
+        $profileIds = $target?->facility_profile_id
+            ? collect([$target->facility_profile_id])
+            : $facilityProfiles->pluck('facility_profile_id');
 
         $comprehensiveReleases = AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
             ->where('creation_path', 'COMPREHENSIVE')
             ->whereIn('facility_profile_id', $profileIds)
-            ->with(['facilityProfile', 'departmentFrameworkVersions.module'])
+            ->with(['facilityProfile.departments', 'departmentFrameworkVersions.module'])
             ->orderBy('release_name')
             ->get();
 

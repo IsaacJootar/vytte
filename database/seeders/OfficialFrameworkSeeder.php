@@ -27,7 +27,7 @@ class OfficialFrameworkSeeder extends Seeder
         $skipped = 0;
         $allMissing = [];
 
-        foreach (self::frameworks() as $spec) {
+        foreach (array_merge(self::frameworks(), self::departmentFrameworks()) as $spec) {
             $result = $composer->compose($spec);
 
             if ($result['status'] === 'published') {
@@ -156,6 +156,110 @@ class OfficialFrameworkSeeder extends Seeder
                 'INFO.001', 'INFO.003', 'INFO.004', 'INFO.005', 'BURD.001', 'BURD.003',
             ]],
         ];
+    }
+
+    /**
+     * Reusable department-only frameworks used by comprehensive composition.
+     *
+     * Focused programme frameworks intentionally include shared governance, commodity,
+     * and reporting questions. Reusing those frameworks in one comprehensive assessment
+     * would duplicate question identities. These department frameworks place only the
+     * questions owned by that department, so they can be composed safely.
+     *
+     * @return array<int, array{module: string, code: string, name: string, description: string, type: string, sections: array<int, array{domain: string, name: string, questions: array<int, string>}>}>
+     */
+    private static function departmentFrameworks(): array
+    {
+        return [
+            self::departmentFramework('GOV', 'GOVERNANCE_DEPARTMENT', 'Leadership & Governance Department Framework', 'GOV', 'Leadership & Governance', 'GOV', 17),
+            [
+                'module' => 'INF',
+                'code' => 'INFRASTRUCTURE_IPC_DEPARTMENT',
+                'name' => 'Infrastructure, Utilities & Infection Prevention Department Framework',
+                'description' => 'Reusable department framework for infrastructure, utilities, equipment, supplies, and infection prevention.',
+                'type' => 'DEPARTMENT',
+                'sections' => [
+                    ['domain' => 'RES', 'name' => 'Infrastructure, Equipment & Supplies', 'questions' => self::questionCodes('INF', 20)],
+                    ['domain' => 'SAFE', 'name' => 'Infection Prevention & Control', 'questions' => self::questionCodes('IPC', 17)],
+                ],
+            ],
+            self::departmentFramework('WSHF', 'WASH_DEPARTMENT', 'Water, Sanitation & Hygiene Department Framework', 'RES', 'Water, Sanitation & Hygiene', 'WASH', 16),
+            self::departmentFramework('HRM', 'WORKFORCE_DEPARTMENT', 'Human Resource Management Department Framework', 'WORK', 'Workforce & Capability', 'WRK', 15),
+            [
+                'module' => 'REC',
+                'code' => 'RECORDS_DEPARTMENT',
+                'name' => 'Records & Health Information Management Department Framework',
+                'description' => 'Reusable department framework for records, reporting, information use, and data burden.',
+                'type' => 'DEPARTMENT',
+                'sections' => [
+                    ['domain' => 'INFO', 'name' => 'Information & Records', 'questions' => self::questionCodes('INFO', 13)],
+                    ['domain' => 'INFO', 'name' => 'Reporting Burden', 'questions' => self::questionCodes('BURD', 6)],
+                ],
+            ],
+            self::departmentFramework('QAS', 'QUALITY_SAFETY_DEPARTMENT', 'Quality & Patient Safety Department Framework', 'SAFE', 'Quality & Patient Safety', 'QAS', 16),
+            self::departmentFramework('ANC', 'ANTENATAL_DEPARTMENT', 'Antenatal Care Department Framework', 'SERV', 'Antenatal Care', 'MAT', 11),
+            [
+                'module' => 'IMM',
+                'code' => 'CHILD_IMMUNIZATION_DEPARTMENT',
+                'name' => 'Child Health & Immunization Department Framework',
+                'description' => 'Reusable department framework for child health and routine immunization services.',
+                'type' => 'DEPARTMENT',
+                'sections' => [
+                    ['domain' => 'SERV', 'name' => 'Child Health Services', 'questions' => self::questionCodes('CHD', 8)],
+                    ['domain' => 'SERV', 'name' => 'Immunization Services', 'questions' => self::questionCodes('IMM', 10)],
+                ],
+            ],
+            self::departmentFramework('NUT', 'NUTRITION_DEPARTMENT', 'Nutrition Services Department Framework', 'SERV', 'Nutrition Services', 'NUT', 7),
+            self::departmentFramework('PHM', 'PHARMACY_DEPARTMENT', 'Pharmacy Department Framework', 'RES', 'Pharmacy & Medicines', 'PHA', 8),
+            self::departmentFramework('COM', 'COMMUNITY_DEPARTMENT', 'Community Health & Outreach Department Framework', 'PCOM', 'Person-Centredness & Community', 'PCOM', 12),
+            self::departmentFramework('LAB', 'LABORATORY_DEPARTMENT', 'Laboratory Department Framework', 'SERV', 'Laboratory Services', 'LAB', 8),
+            [
+                'module' => 'HTB',
+                'code' => 'HIV_TB_PMTCT_DEPARTMENT',
+                'name' => 'HIV, TB & PMTCT Services Department Framework',
+                'description' => 'Reusable department framework for HIV, TB, and PMTCT services.',
+                'type' => 'DEPARTMENT',
+                'sections' => [
+                    ['domain' => 'SERV', 'name' => 'HIV & PMTCT Services', 'questions' => self::questionCodes('HIV', 11)],
+                    ['domain' => 'SERV', 'name' => 'TB Services', 'questions' => self::questionCodes('TB', 9)],
+                ],
+            ],
+            self::departmentFramework('MAL', 'MALARIA_DEPARTMENT', 'Malaria Services Department Framework', 'SERV', 'Malaria Services', 'MAL', 9),
+            self::departmentFramework('MNH', 'MENTAL_HEALTH_DEPARTMENT', 'Mental Health Services Department Framework', 'SERV', 'Mental Health Services', 'MEN', 7),
+        ];
+    }
+
+    /**
+     * @return array{module: string, code: string, name: string, description: string, type: string, sections: array<int, array{domain: string, name: string, questions: array<int, string>}>}
+     */
+    private static function departmentFramework(
+        string $module,
+        string $code,
+        string $name,
+        string $domain,
+        string $sectionName,
+        string $questionPrefix,
+        int $questionCount,
+    ): array {
+        return [
+            'module' => $module,
+            'code' => $code,
+            'name' => $name,
+            'description' => "Reusable department framework for {$sectionName}.",
+            'type' => 'DEPARTMENT',
+            'sections' => [
+                ['domain' => $domain, 'name' => $sectionName, 'questions' => self::questionCodes($questionPrefix, $questionCount)],
+            ],
+        ];
+    }
+
+    /** @return list<string> */
+    private static function questionCodes(string $prefix, int $count): array
+    {
+        return array_map(
+            fn (int $number): string => sprintf('%s.%03d', $prefix, $number),
+            range(1, $count),
+        );
     }
 
     /**

@@ -110,6 +110,7 @@
                                            @disabled($isRequired)
                                            class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500 disabled:opacity-50">
                                     <span class="flex-1">{{ $framework->pivot->area_label ?: $framework->module?->module_name }}</span>
+                                    <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{{ count($framework->published_payload['questions'] ?? []) }} questions</span>
                                     <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold uppercase text-slate-500 dark:bg-slate-700 dark:text-slate-400">{{ strtolower($applicability) }}</span>
                                 </label>
                                 @if ($applicability === 'DEFAULT')
@@ -121,6 +122,25 @@
                             </div>
                         @endforeach
                     </div>
+
+                    @php
+                        $availableModuleIds = $release->departmentFrameworkVersions->pluck('module_id');
+                        $departmentsAwaitingContent = $release->facilityProfile?->departments
+                            ?->whereNotIn('module_id', $availableModuleIds)
+                            ->reject(fn ($department) => $department->module_code === 'FAC')
+                            ->values() ?? collect();
+                    @endphp
+                    @if ($departmentsAwaitingContent->isNotEmpty())
+                        <div class="mt-4 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
+                            <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">Other {{ $release->facilityProfile?->profile_name }} departments</p>
+                            <p class="mt-1 text-xs text-amber-800 dark:text-amber-300">These belong to this facility structure, but their governed questions are not published yet.</p>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                @foreach ($departmentsAwaitingContent as $department)
+                                    <span class="rounded-full bg-white px-2.5 py-1 text-xs text-slate-600 ring-1 ring-amber-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-amber-800">{{ $department->module_name }} · coming soon</span>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
 
                     <button class="mt-5 rounded-lg bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800">
                         Start comprehensive assessment

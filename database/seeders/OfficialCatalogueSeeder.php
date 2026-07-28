@@ -15,11 +15,10 @@ use Illuminate\Support\Facades\DB;
  *
  * A published framework is not yet selectable by a customer. A catalogue release is what
  * makes it selectable — it pins an exact framework version, ties it to a facility type or
- * a health domain, and fixes the aggregation policy. This seeder turns the 15 published
- * official frameworks into 15 catalogue releases a customer can choose when creating an
- * assessment.
+ * a health domain, and fixes the aggregation policy. This seeder turns published official
+ * frameworks into catalogue releases a customer can choose when creating an assessment.
  *
- * Comprehensive releases pin a whole-facility framework against a facility profile.
+ * Comprehensive releases compose department frameworks against a facility profile.
  * Focused releases pin a single-subject framework against a health domain. Both publish
  * through CataloguePublishingService, so each receives the same validation and content
  * hash as one created by hand.
@@ -55,19 +54,8 @@ class OfficialCatalogueSeeder extends Seeder
     private function release(array $spec, CataloguePublishingService $publishing): bool
     {
         return DB::transaction(function () use ($spec, $publishing): bool {
-            if (AssessmentCatalogueRelease::where('release_code', $spec['code'])
-                ->where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)->exists()) {
-                return false;
-            }
-
-            $framework = DepartmentFrameworkVersion::where('display_name', $spec['framework'])
-                ->where('license_code', 'VYTTE-OFFICIAL')
-                ->where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)
-                ->first();
-
-            if (! $framework) {
-                $this->command?->warn("Framework not found for release {$spec['code']}: {$spec['framework']}.");
-
+            $existingRelease = AssessmentCatalogueRelease::where('release_code', $spec['code'])->first();
+            if ($existingRelease && $existingRelease->status !== AssessmentCatalogueRelease::STATUS_DRAFT) {
                 return false;
             }
 
@@ -79,8 +67,9 @@ class OfficialCatalogueSeeder extends Seeder
                 'composition_rules' => ['latest_resolution' => 'forbidden'],
             ];
 
+            $profile = null;
             if ($spec['path'] === 'COMPREHENSIVE') {
-                $profile = FacilityProfile::where('profile_code', $spec['profile'])->first();
+                $profile = FacilityProfile::where('profile_code', $spec['profile'])->with('departments')->first();
                 if (! $profile) {
                     return false;
                 }
@@ -93,21 +82,100 @@ class OfficialCatalogueSeeder extends Seeder
                 $attributes['health_domain_id'] = $domainId;
             }
 
+            $departmentSpecs = ($spec['compose_profile'] ?? false) && $profile
+                ? $this->departmentSpecsFor($profile)
+                : ($spec['departments'] ?? [[
+                    'framework' => $spec['framework'],
+                    'applicability' => 'REQUIRED',
+                    'label' => $spec['name'],
+                ]]);
+            $frameworks = collect($departmentSpecs)->map(function (array $department) use ($spec): array {
+                $framework = DepartmentFrameworkVersion::where('display_name', $department['framework'])
+                    ->where('license_code', 'VYTTE-OFFICIAL')
+                    ->where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)
+                    ->first();
+
+                if (! $framework) {
+                    throw new \RuntimeException("Framework not found for release {$spec['code']}: {$department['framework']}.");
+                }
+
+                return ['framework' => $framework, 'spec' => $department];
+            });
+
+            if (isset($spec['parent'])) {
+                $attributes['parent_release_id'] = AssessmentCatalogueRelease::where('release_code', $spec['parent'])
+                    ->value('catalogue_release_id');
+            }
+
             $release = AssessmentCatalogueRelease::firstOrCreate(['release_code' => $spec['code']], $attributes);
 
-            $release->departmentFrameworkVersions()->syncWithoutDetaching([
-                $framework->framework_version_id => [
+            $sync = [];
+            foreach ($frameworks->values() as $index => $row) {
+                $framework = $row['framework'];
+                $department = $row['spec'];
+                $sync[$framework->framework_version_id] = [
                     'module_id' => $framework->module_id,
-                    'applicability' => 'REQUIRED',
-                    'display_order' => 1,
-                    'area_label' => $spec['name'],
-                ],
-            ]);
+                    'applicability' => $department['applicability'],
+                    'display_order' => $index + 1,
+                    'area_label' => $department['label'],
+                ];
+            }
+            $release->departmentFrameworkVersions()->syncWithoutDetaching($sync);
 
             $publishing->publish($release->fresh());
 
+            if (isset($spec['parent'])) {
+                $parent = AssessmentCatalogueRelease::where('release_code', $spec['parent'])->first();
+                if ($parent?->status === AssessmentCatalogueRelease::STATUS_PUBLISHED) {
+                    $parent->update(['status' => AssessmentCatalogueRelease::STATUS_SUPERSEDED]);
+                }
+            }
+
             return true;
         });
+    }
+
+    /**
+     * Compose the content-ready intersection of a facility profile and the reusable
+     * official department-framework catalogue.
+     *
+     * @return list<array{framework: string, applicability: string, label: string}>
+     */
+    private function departmentSpecsFor(FacilityProfile $profile): array
+    {
+        $frameworkNames = self::departmentFrameworkNames();
+
+        return $profile->departments
+            ->filter(fn ($department) => isset($frameworkNames[$department->module_code]))
+            ->map(fn ($department) => [
+                'framework' => $frameworkNames[$department->module_code],
+                'applicability' => $department->pivot->applicability,
+                'label' => $department->module_name,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /** @return array<string, string> */
+    private static function departmentFrameworkNames(): array
+    {
+        return [
+            'GOV' => 'Leadership & Governance Department Framework',
+            'INF' => 'Infrastructure, Utilities & Infection Prevention Department Framework',
+            'WSHF' => 'Water, Sanitation & Hygiene Department Framework',
+            'HRM' => 'Human Resource Management Department Framework',
+            'REC' => 'Records & Health Information Management Department Framework',
+            'QAS' => 'Quality & Patient Safety Department Framework',
+            'ANC' => 'Antenatal Care Department Framework',
+            'IMM' => 'Child Health & Immunization Department Framework',
+            'NUT' => 'Nutrition Services Department Framework',
+            'PHM' => 'Pharmacy Department Framework',
+            'COM' => 'Community Health & Outreach Department Framework',
+            'LAB' => 'Laboratory Department Framework',
+            'HTB' => 'HIV, TB & PMTCT Services Department Framework',
+            'MAL' => 'Malaria Services Department Framework',
+            'MNH' => 'Mental Health Services Department Framework',
+        ];
     }
 
     /**
@@ -117,7 +185,33 @@ class OfficialCatalogueSeeder extends Seeder
     {
         return [
             ['code' => 'VYTTE_HOSPITAL_READINESS_V1', 'name' => 'Hospital Operational Readiness', 'description' => 'Whole-hospital readiness assessment.', 'path' => 'COMPREHENSIVE', 'profile' => 'GENERAL_HOSPITAL', 'framework' => 'Hospital Operational Readiness'],
+            [
+                'code' => 'VYTTE_HOSPITAL_READINESS_V2',
+                'parent' => 'VYTTE_HOSPITAL_READINESS_V1',
+                'name' => 'General Hospital Comprehensive Assessment',
+                'description' => 'Comprehensive hospital assessment composed from reusable department frameworks.',
+                'path' => 'COMPREHENSIVE',
+                'profile' => 'GENERAL_HOSPITAL',
+                'compose_profile' => true,
+            ],
             ['code' => 'VYTTE_PHC_ASSESSMENT_V1', 'name' => 'Primary Healthcare Facility Assessment', 'description' => 'General assessment of a primary healthcare facility.', 'path' => 'COMPREHENSIVE', 'profile' => 'PRIMARY_HEALTH_CENTRE', 'framework' => 'Primary Healthcare Facility Assessment'],
+            [
+                'code' => 'VYTTE_PHC_ASSESSMENT_V2',
+                'parent' => 'VYTTE_PHC_ASSESSMENT_V1',
+                'name' => 'Primary Healthcare Facility Assessment',
+                'description' => 'Comprehensive PHC assessment composed from reusable department frameworks.',
+                'path' => 'COMPREHENSIVE',
+                'profile' => 'PRIMARY_HEALTH_CENTRE',
+                'compose_profile' => true,
+            ],
+            [
+                'code' => 'VYTTE_CLINIC_ASSESSMENT_V1',
+                'name' => 'Clinic Comprehensive Assessment',
+                'description' => 'Comprehensive clinic assessment composed from reusable department frameworks.',
+                'path' => 'COMPREHENSIVE',
+                'profile' => 'CLINIC',
+                'compose_profile' => true,
+            ],
         ];
     }
 
