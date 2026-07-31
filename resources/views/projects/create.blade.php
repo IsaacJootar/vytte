@@ -21,6 +21,7 @@
               facilityProfile: '{{ old('target_type_code') === 'HEALTH_FACILITY' ? old('facility_profile_id') : '' }}',
               programmeChoice: '{{ old('target_type_code') && old('target_type_code') !== 'HEALTH_FACILITY' ? (old('target_type_code') === 'CUSTOM' ? '__custom__' : old('facility_profile_id')) : '' }}',
               programmeSettings: {{ Illuminate\Support\Js::from($programmeProfiles->pluck('setting_type_code', 'facility_profile_id')) }},
+              selectionError: {{ $errors->has('target_type_code') ? 'true' : 'false' }},
               loading: false,
               get targetTypeCode() {
                   if (this.mode === 'FACILITY') { return this.facilityProfile ? 'HEALTH_FACILITY' : ''; }
@@ -35,12 +36,12 @@
                   if (this.mode === 'PROGRAMME' && this.programmeChoice !== '__custom__') { return this.programmeChoice; }
                   return '';
               }
-          }">
+          }"
+          x-on:submit="if (!targetTypeCode) { $event.preventDefault(); selectionError = true; $nextTick(() => document.getElementById('setting-choice').scrollIntoView({ behavior: 'smooth', block: 'center' })) } else { loading = true }">
         @csrf
         {{-- Hidden fields carry the values the two paths resolve to. --}}
         <input type="hidden" name="target_type_code" :value="targetTypeCode">
         <input type="hidden" name="facility_profile_id" :value="profileId">
-        <x-input-error :messages="$errors->get('target_type_code')" class="mt-1" />
 
         <div class="flex flex-col gap-5">
 
@@ -81,26 +82,47 @@
             </div>
 
             {{-- ===== SECTION 2 — Target details ===== --}}
-            <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
-                <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">What are you assessing?</h2>
-                <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Choose the kind of setting, then enter its name.</p>
+            <div id="setting-choice"
+                 class="bg-white dark:bg-slate-800 rounded-2xl border p-6 transition"
+                 :class="selectionError ? 'border-red-400 ring-2 ring-red-100 dark:border-red-500 dark:ring-red-900/40' : 'border-slate-200 dark:border-slate-700'">
+                <div class="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">What are you assessing?</h2>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Select one of the two options below, then enter its details.</p>
+                    </div>
+                    <span class="shrink-0 rounded-full bg-vytte-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-vytte-700 ring-1 ring-vytte-200 dark:bg-vytte-900/30 dark:text-vytte-300 dark:ring-vytte-800">Select one</span>
+                </div>
 
                 <div class="flex flex-col gap-4">
                     {{-- Two paths, mapped to the two tools. --}}
                     <div class="grid gap-3 sm:grid-cols-2">
-                        <button type="button" @click="mode = 'FACILITY'; programmeChoice = ''"
-                                class="rounded-xl border p-4 text-left transition"
-                                :class="mode === 'FACILITY' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-100 dark:bg-vytte-900/20' : 'border-slate-200 bg-white hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800'">
-                            <span class="block text-sm font-bold text-slate-900 dark:text-white">A health facility</span>
+                        <button type="button" @click="mode = 'FACILITY'; programmeChoice = ''; selectionError = false"
+                                x-bind:aria-pressed="mode === 'FACILITY'"
+                                class="group cursor-pointer rounded-xl border p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                                :class="mode === 'FACILITY' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-200 dark:bg-vytte-900/30 dark:ring-vytte-800' : 'border-slate-200 bg-white hover:border-vytte-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-vytte-500'">
+                            <span class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-bold text-slate-900 dark:text-white">A health facility</span>
+                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold"
+                                      :class="mode === 'FACILITY' ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-slate-300 text-transparent group-hover:border-vytte-500 dark:border-slate-600'">✓</span>
+                            </span>
                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">A hospital, clinic or health centre. Runs a full facility diagnostic.</span>
+                            <span class="mt-3 block text-[11px] font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400" x-text="mode === 'FACILITY' ? 'Selected' : 'Click to select'"></span>
                         </button>
-                        <button type="button" @click="mode = 'PROGRAMME'; facilityProfile = ''"
-                                class="rounded-xl border p-4 text-left transition"
-                                :class="mode === 'PROGRAMME' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-100 dark:bg-vytte-900/20' : 'border-slate-200 bg-white hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800'">
-                            <span class="block text-sm font-bold text-slate-900 dark:text-white">A programme, community or subject</span>
+                        <button type="button" @click="mode = 'PROGRAMME'; facilityProfile = ''; selectionError = false"
+                                x-bind:aria-pressed="mode === 'PROGRAMME'"
+                                class="group cursor-pointer rounded-xl border p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                                :class="mode === 'PROGRAMME' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-200 dark:bg-vytte-900/30 dark:ring-vytte-800' : 'border-slate-200 bg-white hover:border-vytte-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-vytte-500'">
+                            <span class="flex items-center justify-between gap-3">
+                                <span class="text-sm font-bold text-slate-900 dark:text-white">A programme, community or subject</span>
+                                <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold"
+                                      :class="mode === 'PROGRAMME' ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-slate-300 text-transparent group-hover:border-vytte-500 dark:border-slate-600'">✓</span>
+                            </span>
                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">An NGO, research study, community or campaign. Runs focused topic assessments.</span>
+                            <span class="mt-3 block text-[11px] font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400" x-text="mode === 'PROGRAMME' ? 'Selected' : 'Click to select'"></span>
                         </button>
                     </div>
+                    <p x-show="selectionError" x-cloak class="-mt-1 text-sm font-semibold text-red-600 dark:text-red-400">Choose what you are assessing before creating the project.</p>
+                    <x-input-error :messages="$errors->get('target_type_code')" class="-mt-1" />
 
                     {{-- Facility path: pick the kind of facility. --}}
                     <div x-show="mode === 'FACILITY'" x-cloak>
@@ -224,7 +246,6 @@
                 <button
                     type="submit"
                     class="inline-flex items-center gap-2 px-5 py-2.5 bg-vytte-700 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-vytte-800 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-700 focus-visible:ring-offset-2"
-                    x-on:click="if ($el.closest('form').checkValidity()) $nextTick(() => loading = true)"
                     :disabled="loading"
                 >
                     <svg class="w-3.5 h-3.5 btn-spinner hidden" x-show="loading" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">

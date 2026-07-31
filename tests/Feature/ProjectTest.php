@@ -76,6 +76,8 @@ class ProjectTest extends TestCase
             // The two-path model: a health facility (comprehensive) or a programme/subject (focused).
             ->assertSee('A health facility')
             ->assertSee('A programme, community or subject')
+            ->assertSee('Select one of the two options below')
+            ->assertSee('Click to select')
             ->assertSee('Primary Health Centre')
             ->assertDontSee('Category');
     }
@@ -202,9 +204,22 @@ class ProjectTest extends TestCase
         [$user] = $this->userWithWorkspace();
         $this->seedReferenceData();
 
-        $this->actingAs($user)
+        $response = $this->actingAs($user)
             ->post(route('projects.store'), [])
-            ->assertSessionHasErrors(['name', 'target_name', 'target_type_code', 'country']);
+            ->assertSessionHasErrors([
+                'name',
+                'target_name',
+                'target_type_code' => 'Choose what you are assessing.',
+                'country',
+            ]);
+
+        $response->assertRedirect();
+
+        $this->get(route('projects.create'))
+            ->assertOk()
+            ->assertSee('fixed inset-x-4 top-4', false)
+            ->assertSee('bg-vytte-700', false)
+            ->assertSee('Choose what you are assessing.');
     }
 
     public function test_store_rejects_invalid_target_type(): void

@@ -26,7 +26,7 @@
 @endphp
 
 @if ($successMessage || $errorMessage || $infoMessage || $validationErrors)
-    <div class="pointer-events-none fixed top-3 right-3 z-50 flex flex-col items-end gap-2 px-4 sm:top-5 sm:right-5"
+    <div class="pointer-events-none fixed inset-x-4 top-4 z-50 flex flex-col items-end gap-2 sm:inset-x-auto sm:right-5 sm:top-5 sm:w-full sm:max-w-md"
          role="status" aria-live="polite">
 
         @if ($successMessage)
@@ -37,7 +37,7 @@
                  x-transition:enter-start="opacity-0 -translate-y-2"
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-end="opacity-0 -translate-y-2"
-                 class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl bg-vytte-700 px-4 py-3 shadow-lg">
+                 class="pointer-events-auto flex w-full items-start gap-3 rounded-xl border border-vytte-600 bg-vytte-700 px-4 py-3 text-white shadow-xl shadow-slate-900/15">
                 <span class="mt-0.5 text-white" aria-hidden="true">✓</span>
                 <p class="flex-1 text-sm font-medium text-white">{{ $successMessage }}</p>
                 <button type="button" x-on:click="show = false"
@@ -54,11 +54,11 @@
                  x-transition:enter-start="opacity-0 -translate-y-2"
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-end="opacity-0 -translate-y-2"
-                 class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 shadow-lg dark:border-sky-800 dark:bg-sky-950">
-                <span class="mt-0.5 text-sky-600 dark:text-sky-400" aria-hidden="true">i</span>
-                <p class="flex-1 text-sm font-medium text-sky-900 dark:text-sky-100">{{ $infoMessage }}</p>
+                 class="pointer-events-auto flex w-full items-start gap-3 rounded-xl border border-vytte-600 bg-vytte-700 px-4 py-3 text-white shadow-xl shadow-slate-900/15">
+                <span class="mt-0.5 text-white" aria-hidden="true">i</span>
+                <p class="flex-1 text-sm font-medium text-white">{{ $infoMessage }}</p>
                 <button type="button" x-on:click="show = false"
-                        class="text-sky-700 hover:text-sky-900 dark:text-sky-300"
+                        class="text-white/80 hover:text-white"
                         aria-label="Dismiss message">&times;</button>
             </div>
         @endif
@@ -70,9 +70,9 @@
                  x-transition:enter-start="opacity-0 -translate-y-2"
                  x-transition:leave="transition ease-in duration-150"
                  x-transition:leave-end="opacity-0 -translate-y-2"
-                 class="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 shadow-lg dark:border-red-800 dark:bg-red-950">
-                <span class="mt-0.5 text-red-600 dark:text-red-400" aria-hidden="true">!</span>
-                <div class="flex-1 text-sm text-red-900 dark:text-red-100">
+                 class="pointer-events-auto flex w-full items-start gap-3 rounded-xl border border-vytte-600 bg-vytte-700 px-4 py-3 text-white shadow-xl shadow-slate-900/15">
+                <span class="mt-0.5 text-white" aria-hidden="true">!</span>
+                <div class="flex-1 text-sm text-white">
                     @if ($errorMessage)
                         <p class="font-medium">{{ $errorMessage }}</p>
                     @endif
@@ -87,7 +87,7 @@
                     @endif
                 </div>
                 <button type="button" x-on:click="show = false"
-                        class="text-red-700 hover:text-red-900 dark:text-red-300"
+                        class="text-white/80 hover:text-white"
                         aria-label="Dismiss message">&times;</button>
             </div>
         @endif

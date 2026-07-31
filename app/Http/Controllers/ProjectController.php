@@ -90,6 +90,8 @@ class ProjectController extends Controller
             'country' => ['required', 'string', 'max:100'],
             'region' => ['nullable', 'string', 'max:100'],
             'sub_region' => ['nullable', 'string', 'max:100'],
+        ], [
+            'target_type_code.required' => 'Choose what you are assessing.',
         ]);
 
         $project = DB::transaction(function () use ($validated) {
