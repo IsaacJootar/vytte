@@ -83,8 +83,7 @@
 
             {{-- ===== SECTION 2 — Target details ===== --}}
             <div id="setting-choice"
-                 class="bg-white dark:bg-slate-800 rounded-2xl border p-6 transition"
-                 :class="selectionError ? 'border-red-400 ring-2 ring-red-100 dark:border-red-500 dark:ring-red-900/40' : 'border-slate-200 dark:border-slate-700'">
+                 class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
                 <div class="mb-4 flex items-start justify-between gap-3">
                     <div>
                         <h2 class="text-sm font-bold text-slate-700 dark:text-slate-200">What are you assessing?</h2>
@@ -98,31 +97,30 @@
                     <div class="grid gap-3 sm:grid-cols-2">
                         <button type="button" @click="mode = 'FACILITY'; programmeChoice = ''; selectionError = false"
                                 x-bind:aria-pressed="mode === 'FACILITY'"
-                                class="group cursor-pointer rounded-xl border p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                                :class="mode === 'FACILITY' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-200 dark:bg-vytte-900/30 dark:ring-vytte-800' : 'border-slate-200 bg-white hover:border-vytte-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-vytte-500'">
+                                class="group -rotate-[0.4deg] cursor-pointer rounded-xl border border-vytte-200 bg-vytte-50 p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:rotate-0 hover:border-vytte-500 hover:shadow-md dark:border-vytte-800 dark:bg-vytte-900/25"
+                                :class="mode === 'FACILITY' ? 'border-vytte-600 ring-2 ring-vytte-300 dark:border-vytte-500 dark:ring-vytte-800' : ''">
                             <span class="flex items-center justify-between gap-3">
                                 <span class="text-sm font-bold text-slate-900 dark:text-white">A health facility</span>
                                 <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold"
-                                      :class="mode === 'FACILITY' ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-slate-300 text-transparent group-hover:border-vytte-500 dark:border-slate-600'">✓</span>
+                                      :class="mode === 'FACILITY' ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-vytte-400 text-transparent group-hover:border-vytte-600 dark:border-vytte-700'">✓</span>
                             </span>
                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">A hospital, clinic or health centre. Runs a full facility diagnostic.</span>
                             <span class="mt-3 block text-[11px] font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400" x-text="mode === 'FACILITY' ? 'Selected' : 'Click to select'"></span>
                         </button>
                         <button type="button" @click="mode = 'PROGRAMME'; facilityProfile = ''; selectionError = false"
                                 x-bind:aria-pressed="mode === 'PROGRAMME'"
-                                class="group cursor-pointer rounded-xl border p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md"
-                                :class="mode === 'PROGRAMME' ? 'border-vytte-600 bg-vytte-50 ring-2 ring-vytte-200 dark:bg-vytte-900/30 dark:ring-vytte-800' : 'border-slate-200 bg-white hover:border-vytte-400 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-vytte-500'">
+                                class="group rotate-[0.4deg] cursor-pointer rounded-xl border border-amber-200 bg-amber-50 p-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:rotate-0 hover:border-vytte-500 hover:shadow-md dark:border-amber-800 dark:bg-amber-900/20"
+                                :class="mode === 'PROGRAMME' ? 'border-vytte-600 ring-2 ring-vytte-300 dark:border-vytte-500 dark:ring-vytte-800' : ''">
                             <span class="flex items-center justify-between gap-3">
                                 <span class="text-sm font-bold text-slate-900 dark:text-white">A programme, community or subject</span>
                                 <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold"
-                                      :class="mode === 'PROGRAMME' ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-slate-300 text-transparent group-hover:border-vytte-500 dark:border-slate-600'">✓</span>
+                                      :class="mode === 'PROGRAMME' ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-amber-400 text-transparent group-hover:border-vytte-600 dark:border-amber-700'">✓</span>
                             </span>
                             <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">An NGO, research study, community or campaign. Runs focused topic assessments.</span>
                             <span class="mt-3 block text-[11px] font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400" x-text="mode === 'PROGRAMME' ? 'Selected' : 'Click to select'"></span>
                         </button>
                     </div>
-                    <p x-show="selectionError" x-cloak class="-mt-1 text-sm font-semibold text-red-600 dark:text-red-400">Choose what you are assessing before creating the project.</p>
-                    <x-input-error :messages="$errors->get('target_type_code')" class="-mt-1" />
+                    <p x-show="selectionError" x-cloak class="-mt-1 text-sm font-semibold text-vytte-700 dark:text-vytte-300">Choose what you are assessing.</p>
 
                     {{-- Facility path: pick the kind of facility. --}}
                     <div x-show="mode === 'FACILITY'" x-cloak>

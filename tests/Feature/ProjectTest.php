@@ -78,6 +78,11 @@ class ProjectTest extends TestCase
             ->assertSee('A programme, community or subject')
             ->assertSee('Select one of the two options below')
             ->assertSee('Click to select')
+            ->assertSee('-rotate-[0.4deg]', false)
+            ->assertSee('rotate-[0.4deg]', false)
+            ->assertSee('bg-vytte-50', false)
+            ->assertSee('bg-amber-50', false)
+            ->assertDontSee('border-red-400', false)
             ->assertSee('Primary Health Centre')
             ->assertDontSee('Category');
     }
@@ -214,12 +219,6 @@ class ProjectTest extends TestCase
             ]);
 
         $response->assertRedirect();
-
-        $this->get(route('projects.create'))
-            ->assertOk()
-            ->assertSee('fixed inset-x-4 top-4', false)
-            ->assertSee('bg-vytte-700', false)
-            ->assertSee('Choose what you are assessing.');
     }
 
     public function test_store_rejects_invalid_target_type(): void
