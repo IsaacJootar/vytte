@@ -42,6 +42,7 @@ class DatabaseSeeder extends Seeder
             OfficialReferenceSeeder::class,      // facility profiles and departments
             MethodologyCatalogueSeeder::class,   // objectives, lenses, insight categories, templates
             OfficialQuestionLibrarySeeder::class,
+            OfficialDepartmentQuestionLibrarySeeder::class,
             OfficialFrameworkSeeder::class,
             OfficialCatalogueSeeder::class,
         ]);

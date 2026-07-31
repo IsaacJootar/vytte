@@ -6,23 +6,23 @@ each stage published through the governed lifecycle and verified against Postgre
 ## Headline
 
 A fresh database seeded from `DatabaseSeeder` is production-ready and contains **no
-demonstration content**. A beta customer signing in finds official starting points for a
-general hospital, a primary healthcare facility, and thirteen focused subjects.
+demonstration content**. A beta customer signing in finds a comprehensive assessment for
+every supported health-facility profile and thirteen focused subjects.
 
 | Entity | Count |
 | --- | --- |
-| Official questions | 238 |
-| Published question versions | 238 |
-| Official frameworks | 15 |
-| Catalogue releases (selectable) | 15 |
-| Facility profiles | 28 |
+| Official questions | 388 |
+| Published question versions | 388 |
+| Published official frameworks | 57 |
+| Catalogue releases | 41 total; 36 currently published |
+| Health-facility profiles with a comprehensive release | 23 of 23 |
 | Departments | 46 |
 | Measurement domains | 8 (published taxonomy) |
 | Methodology | Published |
 
-Scope was cut to roughly half the originally planned ~600 questions by instruction, to
-reach a shippable beta sooner. The remaining depth can be added post-seed through the same
-governed workflow, because questions and frameworks only ever add.
+The original 238-question cross-cutting library is extended by 150 human-approved,
+source-informed questions for 25 service departments. Emergency Care reuses eight
+existing questions and Finance reuses ten, avoiding duplicate identities.
 
 ## What ships
 
@@ -47,6 +47,9 @@ governed workflow, because questions and frameworks only ever add.
 - **Programmes:** HIV (27), TB (25), Malaria (25), Immunization (26)
 - **Population:** Maternal & Newborn (27), Child Health (24), Nutrition (23), Mental Health (23)
 - **Clinical services:** Laboratory (24), Pharmacy (24), Emergency Care (24)
+- **Reusable department frameworks:** 42 content-ready departments, including family
+  planning, labour and delivery, postnatal care, outpatient, inpatient, referral, theatre,
+  imaging, blood bank, critical care, NCD, rehabilitation and disability inclusion.
 
 The question count a customer sees exceeds the count authored, because frameworks reuse the
 cross-cutting core. Hospital Readiness presents 134 questions built almost entirely from the
@@ -54,9 +57,11 @@ cross-cutting core. Hospital Readiness presents 134 questions built almost entir
 
 ### Catalogue releases
 
-Fifteen, one per framework: two comprehensive (tied to a facility profile), thirteen
-focused (tied to a health domain). All aggregate through `MEAN_OF_SCORED_SUB_INDICES` with
-critical-failure handling, so a critical answer zeroes the overall score.
+There are 41 immutable historical releases: 23 currently published comprehensive releases,
+13 published focused releases, and five superseded comprehensive predecessors. General
+Hospital V3 has 33 departments and 334 available questions; PHC V3 has 25 and 280; Clinic
+V2 has 16 and 218. All aggregate through `MEAN_OF_SCORED_SUB_INDICES` with governed
+critical-failure handling.
 
 ## Governance
 
@@ -110,12 +115,15 @@ that needs a different seed. The freshly seeded official database is verified se
 ## Validation
 
 - `methodology:validate` — every entity reachable, every reference resolves, no orphans.
-- Full PostgreSQL suite — 593 tests, 593 passed.
+- Full PostgreSQL suite — 692 tests, 692 passed (2,423 assertions).
 - Fresh `migrate:fresh --seed` — clean official state, verified by the counts above.
 
 ## Remaining gaps and post-seed backlog
 
-- **Clinical review (PS-1).** The catalogue is curated from recognised international practice — WHO SARA, SPA, HHFA, WASH FIT, IPC minimum requirements, the health system building blocks — but has not been reviewed against source documents by a health methodologist. This should happen before it is presented to customers as authoritative.
-- **Half-scope depth.** Programme and clinical subjects carry a solid foundational library, not comprehensive coverage. Named departments above have no framework yet.
+- **National adaptation.** The V1 minimum-readiness package is source-informed and
+  product-owner approved. Country-specific regulation or clinical review should create
+  governed successor versions where a jurisdiction requires stronger or narrower wording.
+- **Depth.** Departments carry a concise minimum-readiness set. Deeper specialty content
+  can be added later through immutable successor versions.
 - **Lens preconditions, baseline-to-endline link, agreed-actions entity** — PS-2 to PS-4, unchanged, belong to the lens-driven reporting phase.
 - **Remaining PHSAI subject depth** — available for a later governed pass.

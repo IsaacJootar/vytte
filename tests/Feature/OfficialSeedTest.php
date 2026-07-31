@@ -33,6 +33,7 @@ class OfficialSeedTest extends TestCase
             'OfficialReferenceSeeder',
             'MethodologyCatalogueSeeder',
             'OfficialQuestionLibrarySeeder',
+            'OfficialDepartmentQuestionLibrarySeeder',
             'OfficialFrameworkSeeder',
             'OfficialCatalogueSeeder',
         ] as $seeder) {

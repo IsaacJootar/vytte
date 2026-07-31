@@ -128,7 +128,7 @@ Analytical domains are governed through `domain_taxonomies`, `domain_taxonomy_ve
 
 Official facility profiles live in `facility_profiles`.
 
-Examples in the demonstration seed:
+Examples in the official seed:
 
 - Clinic
 - Primary Health Centre
@@ -206,9 +206,9 @@ Current algorithm:
 - domain and overall means of non-null scored results
 - null means uncalibrated, never zero
 
-The demonstration aggregation method is `MEAN_OF_SCORED_SUB_INDICES`.
+The official aggregation method is `MEAN_OF_SCORED_SUB_INDICES`.
 
-Catalogue aggregation policy can enable critical failures. The current implementation supports an initial demo rule where a configured critical failure can force the overall score to zero and mark calibration as `CRITICAL_FAILURE`.
+Catalogue aggregation policy can enable critical failures. The current implementation supports a governed rule where a configured critical failure can force the overall score to zero and mark calibration as `CRITICAL_FAILURE`.
 
 ## Reporting
 
@@ -235,7 +235,7 @@ Workspace users may create local custom sections attached to an assessment. Thes
 
 ## Current Boundaries
 
-- The seeded governed catalogue is demonstration-only.
+- The seeded governed catalogue is official source-informed Vytte content. Corrections and additions require immutable successor versions.
 - A Platform Admin control center exists for official content, publication, roles, workspace oversight, share-link control, and audit review.
 - Facility profile selection exists during project creation; profile editing after project creation is not yet exposed.
 - PostgreSQL parity and concurrency verification remain release gates.

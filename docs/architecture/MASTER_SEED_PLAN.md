@@ -143,13 +143,14 @@ migrated wholesale. Two seams are harvested through the governed workflow:
 Everything else in PHSAI is either already covered better by the official library, is
 descriptive workflow of a different genre, or is respondent-profile boilerplate.
 
-## Executed, 2026-07-20
+## Executed, expanded 2026-07-31
 
 The Official Master Seed is built and live. `DatabaseSeeder` is now the official
 production chain and contains no demonstration content. A fresh `migrate:fresh --seed`
-produces 238 official questions, 15 frameworks, 15 catalogue releases, 28 facility
-profiles, a published methodology and a published 8-domain taxonomy — verified clean of
-demo frameworks, releases, departments, users and workspaces.
+produces 388 official questions, 57 published frameworks, 41 historical catalogue
+releases (36 currently published), 23 health-facility profiles with a published
+comprehensive release, a published methodology and a published 8-domain taxonomy. It is
+verified clean of demonstration frameworks, releases, users and workspaces.
 
 The demonstration seeders remain as test fixtures under `TestBaselineSeeder` only. The
 official measurement-domain taxonomy was extracted into `OfficialTaxonomySeeder` so the

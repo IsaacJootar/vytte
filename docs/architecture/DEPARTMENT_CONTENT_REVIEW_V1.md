@@ -1,7 +1,7 @@
 # Department Content Review V1
 
 Date: 2026-07-31
-Status: **Human methodology review required before publication**
+Status: **Approved by product owner for publication on 2026-07-31**
 
 ## Purpose
 
@@ -9,11 +9,10 @@ This review closes every department currently shown as `coming soon` in comprehe
 facility assessments. It covers all supported health-facility profiles, not only the
 General Hospital project where the gap was reported.
 
-The exact proposed wording is stored in
-`database/content/official_department_questions_v1.php`. That file is intentionally not
-connected to `DatabaseSeeder` until a human reviewer approves it. This preserves the
-governance rule that AI may prepare official-content drafts but cannot approve or publish
-them.
+The exact approved wording is stored in
+`database/content/official_department_questions_v1.php` and published by
+`OfficialDepartmentQuestionLibrarySeeder`. Approval was explicitly given by the product
+owner after reviewing this plan; the AI-prepared draft was not self-approved.
 
 ## Scope
 
@@ -97,9 +96,10 @@ Approval includes mapping them through the existing profile policy:
 - Cottage or Rural Hospital: district/health-centre core with higher-acuity departments optional.
 - Comprehensive Health Centre: PHC/health-centre core with maternity, laboratory and community services default.
 
-## Review questions for the human approver
+## Approval record
 
-For each department, confirm:
+The product owner approved the V1 package and its publication strategy on 2026-07-31.
+The following points remain the review basis for future successor versions:
 
 1. The six questions represent a defensible minimum readiness set.
 2. Wording fits the facility levels where the department is offered.
@@ -108,7 +108,7 @@ For each department, confirm:
 5. No proposed item should be unscored context or an explicit critical failure.
 6. The cited source is suitable and the Vytte wording does not reproduce protected text.
 
-## Publication sequence after approval
+## Publication sequence
 
 1. Register the source records and URLs idempotently.
 2. Create and publish 150 question identities and immutable first versions.

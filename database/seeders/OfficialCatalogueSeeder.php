@@ -175,6 +175,33 @@ class OfficialCatalogueSeeder extends Seeder
             'HTB' => 'HIV, TB & PMTCT Services Department Framework',
             'MAL' => 'Malaria Services Department Framework',
             'MNH' => 'Mental Health Services Department Framework',
+            'OPD' => 'Outpatient Department Framework',
+            'REF' => 'Referral Management Department Framework',
+            'IPD' => 'In-Patient Ward Department Framework',
+            'EMR' => 'Emergency & Accident Unit Department Framework',
+            'THR' => 'Theatre & Surgical Services Department Framework',
+            'ICU' => 'Intensive & High Dependency Care Department Framework',
+            'RAD' => 'Radiology & Imaging Department Framework',
+            'BLB' => 'Blood Bank & Transfusion Services Department Framework',
+            'LBD' => 'Labour & Delivery Department Framework',
+            'PNC' => 'Postnatal Care Department Framework',
+            'FP' => 'Family Planning Department Framework',
+            'SRH' => 'Sexual & Reproductive Health Department Framework',
+            'NCD' => 'Non-Communicable Disease Services Department Framework',
+            'ADO' => 'Adolescent & Youth Health Department Framework',
+            'OLD' => 'Older People & Geriatric Care Department Framework',
+            'REH' => 'Rehabilitation Services Department Framework',
+            'PAL' => 'Palliative & End-of-Life Care Department Framework',
+            'ORL' => 'Oral Health & Dental Services Department Framework',
+            'EYE' => 'Eye Health Services Department Framework',
+            'AMR' => 'Antimicrobial Stewardship Department Framework',
+            'OBR' => 'Outbreak Preparedness & Response Department Framework',
+            'NTD' => 'Neglected Tropical Disease Services Department Framework',
+            'DIS' => 'Disability & Inclusion Department Framework',
+            'HPR' => 'Health Promotion & Education Department Framework',
+            'ENV' => 'Environment & Climate Resilience Department Framework',
+            'OCC' => 'Staff Health & Safety Department Framework',
+            'FIN' => 'Finance, Billing & Insurance Claims Department Framework',
         ];
     }
 
@@ -183,7 +210,7 @@ class OfficialCatalogueSeeder extends Seeder
      */
     private static function comprehensive(): array
     {
-        return [
+        $releases = [
             ['code' => 'VYTTE_HOSPITAL_READINESS_V1', 'name' => 'Hospital Operational Readiness', 'description' => 'Whole-hospital readiness assessment.', 'path' => 'COMPREHENSIVE', 'profile' => 'GENERAL_HOSPITAL', 'framework' => 'Hospital Operational Readiness'],
             [
                 'code' => 'VYTTE_HOSPITAL_READINESS_V2',
@@ -212,7 +239,52 @@ class OfficialCatalogueSeeder extends Seeder
                 'profile' => 'CLINIC',
                 'compose_profile' => true,
             ],
+            [
+                'code' => 'VYTTE_HOSPITAL_READINESS_V3',
+                'parent' => 'VYTTE_HOSPITAL_READINESS_V2',
+                'name' => 'General Hospital Comprehensive Assessment',
+                'description' => 'Comprehensive hospital assessment with the complete approved department library.',
+                'path' => 'COMPREHENSIVE',
+                'profile' => 'GENERAL_HOSPITAL',
+                'compose_profile' => true,
+            ],
+            [
+                'code' => 'VYTTE_PHC_ASSESSMENT_V3',
+                'parent' => 'VYTTE_PHC_ASSESSMENT_V2',
+                'name' => 'Primary Healthcare Facility Assessment',
+                'description' => 'Comprehensive PHC assessment with the complete approved service library.',
+                'path' => 'COMPREHENSIVE',
+                'profile' => 'PRIMARY_HEALTH_CENTRE',
+                'compose_profile' => true,
+            ],
+            [
+                'code' => 'VYTTE_CLINIC_ASSESSMENT_V2',
+                'parent' => 'VYTTE_CLINIC_ASSESSMENT_V1',
+                'name' => 'Clinic Comprehensive Assessment',
+                'description' => 'Comprehensive clinic assessment with the complete approved service library.',
+                'path' => 'COMPREHENSIVE',
+                'profile' => 'CLINIC',
+                'compose_profile' => true,
+            ],
         ];
+
+        $existingProfiles = ['GENERAL_HOSPITAL', 'PRIMARY_HEALTH_CENTRE', 'CLINIC'];
+        foreach (OfficialReferenceSeeder::facilityProfiles() as $code => [$name, $settingType]) {
+            if ($settingType !== 'HEALTH_FACILITY' || in_array($code, $existingProfiles, true)) {
+                continue;
+            }
+
+            $releases[] = [
+                'code' => "VYTTE_{$code}_COMPREHENSIVE_V1",
+                'name' => "{$name} Comprehensive Assessment",
+                'description' => "Comprehensive assessment composed for a {$name} from approved reusable department frameworks.",
+                'path' => 'COMPREHENSIVE',
+                'profile' => $code,
+                'compose_profile' => true,
+            ];
+        }
+
+        return $releases;
     }
 
     /**

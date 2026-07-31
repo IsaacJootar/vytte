@@ -193,8 +193,10 @@ class OfficialReferenceSeeder extends Seeder
             'NATIONAL_REFERRAL_HOSPITAL' => [$universal, [...$clinicalCore, ...$inpatient, ...$maternal, ...$programmes], ['REH', 'PAL', 'ORL', 'EYE', 'OLD', 'AMR', 'OBR', 'NTD', 'DIS', 'OCC', 'ENV', 'FIN']],
             'TEACHING_HOSPITAL' => [$universal, [...$clinicalCore, ...$inpatient, ...$maternal, ...$programmes], ['REH', 'PAL', 'ORL', 'EYE', 'OLD', 'AMR', 'OBR', 'DIS', 'OCC', 'FIN']],
             'REGIONAL_HOSPITAL' => [$universal, [...$clinicalCore, ...$inpatient, ...$maternal, ...$programmes], ['REH', 'PAL', 'ORL', 'EYE', 'AMR', 'OBR', 'DIS', 'FIN']],
+            'FEDERAL_MEDICAL_CENTRE' => [$universal, [...$clinicalCore, ...$inpatient, ...$maternal, ...$programmes], ['REH', 'PAL', 'ORL', 'EYE', 'OLD', 'AMR', 'OBR', 'NTD', 'DIS', 'OCC', 'ENV', 'FIN']],
             'DISTRICT_HOSPITAL' => [$universal, [...$clinicalCore, 'IPD', 'EMR', 'THR', 'RAD', ...$maternal, 'HTB', 'MAL', 'NCD', 'MNH', 'COM'], ['ICU', 'BLB', 'REH', 'PAL', 'AMR', 'OBR', 'HPR', 'ADO', 'DIS', 'FIN']],
             'GENERAL_HOSPITAL' => [$universal, [...$clinicalCore, 'IPD', 'EMR', 'THR', 'RAD', ...$maternal, 'HTB', 'MAL', 'NCD'], ['ICU', 'BLB', 'MNH', 'REH', 'PAL', 'AMR', 'COM', 'DIS', 'FIN']],
+            'COTTAGE_HOSPITAL' => [$universal, ['OPD', 'PHM', 'REF', 'IPD', 'EMR', 'ANC', 'LBD', 'PNC', 'IMM', 'FP', 'NUT', 'COM'], ['LAB', 'THR', 'RAD', 'BLB', 'HTB', 'MAL', 'NCD', 'MNH', 'HPR']],
             'SPECIALIST_HOSPITAL' => [$universal, [...$clinicalCore, 'IPD', 'EMR'], ['THR', 'ICU', 'RAD', 'BLB', 'REH', 'PAL', 'AMR', 'NCD', 'MNH', 'FIN']],
             'MATERNITY_HOSPITAL' => [$universal, ['ANC', 'LBD', 'PNC', 'IMM', 'FP', 'NUT', 'SRH', 'OPD', 'PHM', 'LAB', 'REF'], ['THR', 'BLB', 'IPD', 'EMR', 'ADO', 'COM']],
             'MENTAL_HEALTH_HOSPITAL' => [$universal, ['MNH', 'OPD', 'PHM', 'IPD', 'REF'], ['LAB', 'COM', 'ADO', 'OLD', 'REH', 'DIS']],
@@ -202,6 +204,7 @@ class OfficialReferenceSeeder extends Seeder
 
             'PRIMARY_HEALTH_CENTRE' => [$universal, ['OPD', 'ANC', 'LBD', 'PNC', 'IMM', 'FP', 'NUT', 'PHM', 'REF', 'COM'], ['LAB', 'HTB', 'MAL', 'NCD', 'MNH', 'HPR', 'ADO', 'SRH', 'DIS']],
             'HEALTH_CENTRE' => [$universal, ['OPD', 'ANC', 'PNC', 'IMM', 'FP', 'NUT', 'PHM', 'REF', 'COM'], ['LBD', 'LAB', 'IPD', 'HTB', 'MAL', 'NCD', 'MNH', 'HPR', 'ADO', 'SRH']],
+            'COMPREHENSIVE_HEALTH_CENTRE' => [$universal, ['OPD', 'ANC', 'LBD', 'PNC', 'IMM', 'FP', 'NUT', 'PHM', 'LAB', 'REF', 'COM', 'HTB', 'MAL', 'NCD'], ['IPD', 'EMR', 'SRH', 'MNH', 'HPR', 'ADO', 'DIS']],
             'HEALTH_POST' => [$universal, ['OPD', 'IMM', 'FP', 'COM', 'REF'], ['ANC', 'PNC', 'NUT', 'PHM', 'MAL', 'HPR']],
             'CLINIC' => [$universal, ['OPD', 'PHM', 'REF'], ['LAB', 'ANC', 'FP', 'IMM', 'NCD', 'MAL', 'HTB']],
             'MOBILE_CLINIC' => [$universal, ['OPD', 'IMM', 'COM', 'REF'], ['ANC', 'FP', 'NUT', 'MAL', 'HPR']],

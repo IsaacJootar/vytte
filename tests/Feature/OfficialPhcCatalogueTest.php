@@ -23,30 +23,42 @@ class OfficialPhcCatalogueTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $release = AssessmentCatalogueRelease::where('release_code', 'VYTTE_PHC_ASSESSMENT_V2')
+        $release = AssessmentCatalogueRelease::where('release_code', 'VYTTE_PHC_ASSESSMENT_V3')
             ->with(['facilityProfile.departments', 'departmentFrameworkVersions.module'])
             ->firstOrFail();
 
         $this->assertSame(AssessmentCatalogueRelease::STATUS_PUBLISHED, $release->status);
         $this->assertDatabaseHas('assessment_catalogue_releases', [
-            'release_code' => 'VYTTE_PHC_ASSESSMENT_V1',
+            'release_code' => 'VYTTE_PHC_ASSESSMENT_V2',
             'status' => AssessmentCatalogueRelease::STATUS_SUPERSEDED,
         ]);
-        $this->assertCount(15, $release->departmentFrameworkVersions);
+        $this->assertCount(25, $release->departmentFrameworkVersions);
         $this->assertSame(6, $release->departmentFrameworkVersions->where('pivot.applicability', 'REQUIRED')->count());
-        $this->assertSame(5, $release->departmentFrameworkVersions->where('pivot.applicability', 'DEFAULT')->count());
-        $this->assertSame(4, $release->departmentFrameworkVersions->where('pivot.applicability', 'OPTIONAL')->count());
+        $this->assertSame(10, $release->departmentFrameworkVersions->where('pivot.applicability', 'DEFAULT')->count());
+        $this->assertSame(9, $release->departmentFrameworkVersions->where('pivot.applicability', 'OPTIONAL')->count());
 
         $frameworkIds = $release->departmentFrameworkVersions->pluck('framework_version_id');
         $questionCounts = DB::table('framework_question_placements')
             ->whereIn('framework_version_id', $frameworkIds)
             ->selectRaw('COUNT(*) AS placements, COUNT(DISTINCT question_id) AS questions')
             ->first();
-        $this->assertSame(220, (int) $questionCounts->placements);
-        $this->assertSame(220, (int) $questionCounts->questions);
+        $this->assertSame(280, (int) $questionCounts->placements);
+        $this->assertSame(280, (int) $questionCounts->questions);
+        $departmentsAwaitingContent = $release->facilityProfile->departments
+            ->whereNotIn('module_id', $release->departmentFrameworkVersions->pluck('module_id'))
+            ->reject(fn ($department) => $department->module_code === 'FAC');
+        // The shared test baseline adds four legacy demonstration-only department codes.
+        // A clean official seed does not contain them; keep the assertion explicit so no
+        // official profile department can quietly regress to awaiting content.
+        $this->assertEqualsCanonicalizing(
+            ['DLAB', 'DMNH', 'DOPD', 'DPHM'],
+            $departmentsAwaitingContent->pluck('module_code')->all(),
+        );
 
-        $clinicRelease = AssessmentCatalogueRelease::where('release_code', 'VYTTE_CLINIC_ASSESSMENT_V1')->firstOrFail();
-        $hospitalRelease = AssessmentCatalogueRelease::where('release_code', 'VYTTE_HOSPITAL_READINESS_V2')->firstOrFail();
+        $clinicRelease = AssessmentCatalogueRelease::where('release_code', 'VYTTE_CLINIC_ASSESSMENT_V2')->firstOrFail();
+        $hospitalRelease = AssessmentCatalogueRelease::where('release_code', 'VYTTE_HOSPITAL_READINESS_V3')->firstOrFail();
+        $this->assertSame(16, $clinicRelease->departmentFrameworkVersions()->count());
+        $this->assertSame(33, $hospitalRelease->departmentFrameworkVersions()->count());
         $pharmacyFrameworkIds = DB::table('assessment_catalogue_department_versions as composition')
             ->join('assessment_catalogue_releases as releases', 'releases.catalogue_release_id', '=', 'composition.catalogue_release_id')
             ->join('assessment_modules as departments', 'departments.module_id', '=', 'composition.module_id')
@@ -87,11 +99,10 @@ class OfficialPhcCatalogueTest extends TestCase
         $this->actingAs($user)
             ->get(route('assessments.create', $project))
             ->assertOk()
-            ->assertSee('15 services')
+            ->assertSee('25 services')
             ->assertSee('Antenatal Care')
             ->assertSee('Child Health &amp; Immunization', false)
-            ->assertSee('Family Planning')
-            ->assertSee('coming soon');
+            ->assertSee('Family Planning');
 
         $selectedIds = $release->departmentFrameworkVersions
             ->whereIn('pivot.applicability', ['REQUIRED', 'DEFAULT'])
@@ -104,9 +115,44 @@ class OfficialPhcCatalogueTest extends TestCase
             creatorId: $user->user_id,
         );
 
-        $this->assertCount(11, $assessment->snapshot->payload);
-        $this->assertSame(176, collect($assessment->snapshot->payload)->sum(
+        $this->assertCount(16, $assessment->snapshot->payload);
+        $this->assertSame(206, collect($assessment->snapshot->payload)->sum(
             fn (array $department): int => count($department['questions'])
         ));
+
+        $this->assertSame(150, DB::table('questions')
+            ->where('standard_alignment_status', 'SOURCE_INFORMED')
+            ->whereNotNull('standard_reference_id')
+            ->count());
+
+        $publishedFacilityProfiles = AssessmentCatalogueRelease::where('creation_path', 'COMPREHENSIVE')
+            ->where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+            ->where('release_code', 'like', 'VYTTE_%')
+            ->distinct()
+            ->count('facility_profile_id');
+        $this->assertSame(23, $publishedFacilityProfiles);
+        $this->assertSame(
+            FacilityProfile::where('setting_type_code', 'HEALTH_FACILITY')->count(),
+            $publishedFacilityProfiles,
+        );
+
+        AssessmentCatalogueRelease::where('creation_path', 'COMPREHENSIVE')
+            ->where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+            ->where('release_code', 'like', 'VYTTE_%')
+            ->with('departmentFrameworkVersions')
+            ->get()
+            ->each(function (AssessmentCatalogueRelease $catalogueRelease): void {
+                $frameworkIds = $catalogueRelease->departmentFrameworkVersions->pluck('framework_version_id');
+                $counts = DB::table('framework_question_placements')
+                    ->whereIn('framework_version_id', $frameworkIds)
+                    ->selectRaw('COUNT(*) AS placements, COUNT(DISTINCT question_id) AS questions')
+                    ->first();
+
+                $this->assertSame(
+                    (int) $counts->placements,
+                    (int) $counts->questions,
+                    "{$catalogueRelease->release_code} contains a duplicate question identity.",
+                );
+            });
     }
 }

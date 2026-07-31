@@ -1,11 +1,10 @@
 <?php
 
 /**
- * Human-review draft for the departments that do not yet have published frameworks.
+ * Human-approved V1 content for departments that previously lacked frameworks.
  *
  * The wording is Vytte-authored and source-informed; no source instrument is reproduced.
- * This file is deliberately not called by DatabaseSeeder until a human methodology
- * reviewer approves the content under OFFICIAL_ASSESSMENT_CONTENT_LIFECYCLE.md.
+ * Approved for publication on 31 July 2026 under the official content lifecycle.
  */
 return [
     'sources' => [
