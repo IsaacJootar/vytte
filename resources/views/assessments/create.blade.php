@@ -1,5 +1,5 @@
 <x-app-layout title="Create Assessment">
-    <div class="max-w-3xl mx-auto" x-data="{ path: '{{ old('creation_path', '') }}' }">
+    <div class="max-w-3xl mx-auto" x-data="{ path: '{{ old('creation_path', '') }}', serviceSearch: '' }">
         <a href="{{ route('projects.show', $project) }}" class="text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white">
             ← {{ $project->name }}
         </a>
@@ -77,17 +77,32 @@
                     <input type="hidden" name="creation_path" value="COMPREHENSIVE">
                     <input type="hidden" name="catalogue_release_id" value="{{ $release->catalogue_release_id }}">
 
-                    <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                            <span class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400">{{ $release->facilityProfile?->profile_name }}</span>
-                            <h3 class="mt-1 font-bold text-slate-900 dark:text-white">{{ $release->release_name }}</h3>
-                            @if ($release->description)
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $release->description }}</p>
-                            @endif
-                        </div>
-                        <span class="mt-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300 sm:mt-0">
-                            {{ $release->departmentFrameworkVersions->count() }} services
-                        </span>
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-400">{{ $release->facilityProfile?->profile_name }}</span>
+                        <h3 class="mt-1 font-bold text-slate-900 dark:text-white">{{ $release->release_name }}</h3>
+                        @if ($release->description)
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $release->description }}</p>
+                        @endif
+                    </div>
+
+                    <div class="relative mt-4">
+                        <label for="service-search-{{ $release->catalogue_release_id }}" class="sr-only">Search services</label>
+                        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35m2.1-5.4a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" />
+                        </svg>
+                        <input id="service-search-{{ $release->catalogue_release_id }}"
+                               type="search"
+                               x-model.debounce.100ms="serviceSearch"
+                               placeholder="Search services"
+                               autocomplete="off"
+                               class="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-10 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-vytte-500 focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                        <button type="button"
+                                x-show="serviceSearch"
+                                x-cloak
+                                @click="serviceSearch = ''"
+                                class="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white">
+                            Clear
+                        </button>
                     </div>
 
                     <div class="mt-4 space-y-2">
@@ -96,8 +111,13 @@
                                 $applicability = $framework->pivot->applicability;
                                 $isRequired = $applicability === 'REQUIRED';
                                 $isDefault = in_array($applicability, ['REQUIRED', 'DEFAULT'], true);
+                                $needsExclusionReason = $applicability === 'DEFAULT';
+                                $serviceName = $framework->pivot->area_label ?: $framework->module?->module_name;
                             @endphp
-                            <div x-data="{ included: {{ $isDefault ? 'true' : 'false' }} }" class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+                            <div x-data="{ included: {{ $isDefault ? 'true' : 'false' }} }"
+                                 data-service-name="{{ Illuminate\Support\Str::lower($serviceName) }}"
+                                 x-show="({{ $needsExclusionReason ? 'true' : 'false' }} && !included) || serviceSearch.trim() === '' || $el.dataset.serviceName.includes(serviceSearch.trim().toLowerCase())"
+                                 class="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
                                 @if ($isRequired)
                                     <input type="hidden" name="departments[]" value="{{ $framework->module_id }}">
                                 @endif
@@ -109,7 +129,7 @@
                                            @checked($isDefault)
                                            @disabled($isRequired)
                                            class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500 disabled:opacity-50">
-                                    <span class="flex-1">{{ $framework->pivot->area_label ?: $framework->module?->module_name }}</span>
+                                    <span class="flex-1">{{ $serviceName }}</span>
                                     <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{{ count($framework->published_payload['questions'] ?? []) }} questions</span>
                                     <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold uppercase text-slate-500 dark:bg-slate-700 dark:text-slate-400">{{ strtolower($applicability) }}</span>
                                 </label>

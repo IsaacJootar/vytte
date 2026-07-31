@@ -99,7 +99,9 @@ class OfficialPhcCatalogueTest extends TestCase
         $this->actingAs($user)
             ->get(route('assessments.create', $project))
             ->assertOk()
-            ->assertSee('25 services')
+            ->assertDontSee('25 services')
+            ->assertSee('Search services')
+            ->assertSee('x-model.debounce.100ms="serviceSearch"', false)
             ->assertSee('Antenatal Care')
             ->assertSee('Child Health &amp; Immunization', false)
             ->assertSee('Family Planning');
