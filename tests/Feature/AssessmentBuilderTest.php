@@ -49,7 +49,10 @@ class AssessmentBuilderTest extends TestCase
         $this->actingAs($this->platformAdmin())
             ->get(route('admin.assessments.index'))
             ->assertOk()
-            ->assertSee('Assessments')
+            ->assertSee('Governance Studio')
+            ->assertSee('Question Library')
+            ->assertSee('Expert contributions')
+            ->assertSee('Publishers and trust')
             ->assertSee('New Assessment');
     }
 

@@ -365,7 +365,7 @@ Each trust signal follows an audited `Assigned -> Submitted -> Approved / Change
 
 ### Module 7 — Governed AI assistance and ecosystem
 
-- **Status: partially implemented.** Source-grounded advisory lint is live; imports, interoperability, field-test analytics, and adaptive pools remain later bounded modules.
+- **Status: core assistance implemented; ecosystem expansions explicitly bounded.** Source-grounded advisory lint and frozen-finding report assistance are live. Imports, interoperability, field-test analytics, and adaptive pools require an approved consumer or sufficient governed production data and remain additive modules.
 - Add source-grounded drafting, linting, simulation, translation review, and report assistance.
 - Add signed import/export packages and health interoperability mappings.
 - Add field-test analytics and approved adaptive item pools only after stable response data exists.

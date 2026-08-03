@@ -2,6 +2,8 @@
 
 ## Status
 
+The implementation and user-access evidence for the fourteen-part assessment governance contract is recorded in `ASSESSMENT_GOVERNANCE_IMPLEMENTATION_AUDIT.md`.
+
 This document describes the implemented Vytte platform-governed composition architecture, including the reusable question-bank layer added after the original composition work.
 
 Verified locally:
