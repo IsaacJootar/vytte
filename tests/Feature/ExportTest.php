@@ -232,7 +232,7 @@ class ExportTest extends TestCase
         $this->assertStringContainsString('Completed At', $content);
         $this->assertStringContainsString('Overall Score', $content);
         $this->assertStringContainsString('Calibration Status', $content);
-        $this->assertStringContainsString('Maturity Level', $content);
+        $this->assertStringContainsString('Performance Stage', $content);
     }
 
     public function test_csv_lists_every_in_scope_module(): void

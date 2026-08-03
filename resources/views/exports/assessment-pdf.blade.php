@@ -170,7 +170,9 @@
         </div>
     @endif
 
-    @php($measurementViews = $report['measurement_views'] ?? [])
+    @php
+        $measurementViews = $report['measurement_views'] ?? [];
+    @endphp
     @if (! empty($measurementViews))
         <div class="section-title">Coverage and Interpretation</div>
         <p style="font-size:9px;color:#475569;line-height:1.5;">
