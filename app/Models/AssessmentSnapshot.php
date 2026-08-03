@@ -20,6 +20,7 @@ class AssessmentSnapshot extends Model
         'health_domain_id', 'content_hash', 'is_customized',
         'composition_manifest', 'aggregation_policy', 'payload',
         'collection_config', 'created_by', 'created_at',
+        'scoring_model_version_id', 'comparison_signature',
     ];
 
     protected $casts = [
@@ -43,5 +44,10 @@ class AssessmentSnapshot extends Model
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(Assessment::class, 'assessment_id', 'assessment_id');
+    }
+
+    public function scoringModelVersion(): BelongsTo
+    {
+        return $this->belongsTo(ScoringModelVersion::class, 'scoring_model_version_id', 'scoring_model_version_id');
     }
 }

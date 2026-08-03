@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class FrameworkQuestionPlacement extends Model
 {
@@ -73,5 +74,10 @@ class FrameworkQuestionPlacement extends Model
     public function domainOverrides(): HasMany
     {
         return $this->hasMany(FrameworkQuestionPlacementDomainOverride::class, 'framework_question_placement_id', 'framework_question_placement_id');
+    }
+
+    public function scoringItemRule(): HasOne
+    {
+        return $this->hasOne(ScoringItemRule::class, 'framework_question_placement_id', 'framework_question_placement_id');
     }
 }

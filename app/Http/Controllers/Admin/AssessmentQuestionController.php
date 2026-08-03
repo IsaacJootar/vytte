@@ -150,7 +150,9 @@ class AssessmentQuestionController extends Controller
     public function settings(DepartmentFrameworkVersion $assessment, FrameworkQuestionPlacement $placement): View
     {
         $this->assertPlacementBelongs($assessment, $placement);
-        $placement->load(['questionVersion.questionType', 'section']);
+        $placement->load(['questionVersion.questionType', 'section', 'scoringItemRule']);
+
+        $optionRules = collect($placement->scoringItemRule?->rule_config['option_scores'] ?? [])->keyBy('option_order');
 
         return view('admin.assessment-builder.question-settings', [
             'assessment' => $assessment,
@@ -160,7 +162,9 @@ class AssessmentQuestionController extends Controller
             'scoringGroups' => $this->builder->scoringGroupsFor($assessment),
             'domains' => Domain::orderBy('display_order')->get(['domain_id', 'domain_name']),
             'isEditable' => $assessment->status === DepartmentFrameworkVersion::STATUS_DRAFT,
-            'answerIsLocked' => $placement->questionVersion?->status === QuestionVersion::STATUS_PUBLISHED,
+            'answerIsLocked' => false,
+            'optionRules' => $optionRules,
+            'numericRuleBands' => $placement->scoringItemRule?->rule_config['numeric_bands'] ?? $placement->questionVersion?->numeric_bands ?? [],
         ]);
     }
 

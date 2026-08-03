@@ -34,6 +34,10 @@ The migration set is the schema source of truth. Current active assessment archi
 
 `responses`, `assessment_respondent_tokens`, `public_response_sessions`, `respondent_consents`, `respondent_score_results`, `assessment_aggregation_results`, `sub_index_scores`, `domain_scores`, `assessment_scores`, `assessment_report_snapshots`.
 
+### Versioned Scoring
+
+`scoring_models` provides stable scoring identities. `scoring_model_versions` freezes score purpose, construct, direction, missing policy, aggregation, algorithm, and content hash. `scoring_item_rules` binds instrument-specific scoring interpretations to exact framework placements and question versions. Frameworks, new snapshots, and new report snapshots pin the applicable version; comprehensive manifests may contain several pinned scoring models.
+
 ### Reserved Tables
 
 Respondent records, topic scope, multi-option response storage, observation records, topic/project score rollups, root-cause rows, recommendation rules, and recommendation rows are present but not current product authority.
@@ -83,6 +87,8 @@ An assessment snapshot is the runtime authority. Master content, future framewor
 - Numeric input configuration is frozen into published payloads and assessment snapshots.
 - Scored numeric questions require scoring bands.
 - Open-text questions are unscored contextual support.
+- Question semantics and instrument scoring interpretation are separately versioned for new governed content.
+- New assessment snapshots carry a deterministic comparison signature.
 - The default seed is repository-contained and includes demonstration governed content only.
 
 ## Current Counts

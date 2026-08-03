@@ -103,11 +103,11 @@
                                     <div class="grid items-center gap-3 sm:grid-cols-[1fr_110px_auto]">
                                         <span class="text-sm text-slate-700 dark:text-slate-200">{{ $option['option_label'] }}</span>
                                         <input type="number" min="0" max="100" step="1" name="points[{{ $option['option_order'] }}]"
-                                               value="{{ old('points.'.$option['option_order'], $option['score_weight'] ?? '') }}" placeholder="Points"
+                                               value="{{ old('points.'.$option['option_order'], $optionRules->get($option['option_order'])['score'] ?? $option['score_weight'] ?? '') }}" placeholder="Points"
                                                class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                                         <label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                                             <input type="checkbox" name="critical[{{ $option['option_order'] }}]" value="1"
-                                                   @checked(old('critical.'.$option['option_order'], $option['critical_failure'] ?? false))
+                                                   @checked(old('critical.'.$option['option_order'], $optionRules->get($option['option_order'])['critical_failure'] ?? $option['critical_failure'] ?? false))
                                                    class="rounded border-slate-300 dark:border-slate-600">
                                             Critical
                                         </label>
@@ -127,7 +127,7 @@
                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">A number needs ranges before it can be scored, for example 0–49 scores 0 and 50–100 scores 100.</p>
                         <div class="mt-2 space-y-2">
                             @for ($i = 0; $i < 4; $i++)
-                                @php $band = old('bands.'.$i, ($version->numeric_bands[$i] ?? null)); @endphp
+                                @php $band = old('bands.'.$i, ($numericRuleBands[$i] ?? null)); @endphp
                                 <div class="grid gap-2 sm:grid-cols-4">
                                     <input name="bands[{{ $i }}][min]" value="{{ $band['min'] ?? $band['min_value'] ?? '' }}" type="number" step="any" placeholder="From"
                                            class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">

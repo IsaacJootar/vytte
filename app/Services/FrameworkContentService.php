@@ -12,6 +12,7 @@ class FrameworkContentService
         $version->loadMissing([
             'module',
             'contentPublisher.governanceClaims',
+            'scoringModelVersion.itemRules',
             'sections',
             'indicators.section',
             'indicators.domainMappings.domainDefinition.taxonomyVersion.taxonomy',
@@ -29,9 +30,11 @@ class FrameworkContentService
         $placements = $version->questionPlacements
             ->sortBy('display_order')
             ->values();
+        $itemRules = collect($version->scoringModelVersion?->itemRules ?? [])->keyBy('framework_question_placement_id');
 
-        $questions = $placements->map(function ($placement) {
+        $questions = $placements->map(function ($placement) use ($itemRules) {
             $questionVersion = $placement->questionVersion;
+            $itemRule = $itemRules->get($placement->framework_question_placement_id);
             $responseType = $questionVersion->questionType?->type_code;
             $renderedText = $placement->local_display_text ?: $questionVersion->question_text;
             $analyticalDomains = $this->analyticalDomainsForPlacement($placement);
@@ -65,19 +68,20 @@ class FrameworkContentService
                 'section_label' => $placement->section?->section_name,
                 'section_number' => $placement->section?->display_order,
                 'is_required' => (bool) $placement->is_required,
-                'is_scored' => (bool) $placement->scoring_contribution,
+                'is_scored' => $itemRule ? $itemRule->method !== 'UNSCORED' : (bool) $placement->scoring_contribution,
+                'score_role' => $itemRule?->score_role ?? 'PRIMARY',
                 'requires_observation' => (bool) $questionVersion->requires_observation,
                 'evidence_expectation' => $placement->evidence_expectation,
                 'applicability' => $placement->applicability,
-                'weight' => (float) $placement->weight,
-                'criticality' => $placement->criticality,
+                'weight' => (float) ($itemRule?->weight ?? $placement->weight),
+                'criticality' => $itemRule?->criticality ?? $placement->criticality,
                 'help_text' => $placement->help_text,
                 'respondent_role_hint' => $questionVersion->respondent_role_hint,
                 'methodology_notes' => $questionVersion->methodology_notes,
                 'source_summary' => $questionVersion->source_summary,
                 'numeric_config' => $responseType === 'NUMERIC' ? $questionVersion->numeric_config : null,
-                'numeric_bands' => collect($questionVersion->numeric_bands ?? [])->values()->all(),
-                'options' => collect($questionVersion->options ?? [])->values()->all(),
+                'numeric_bands' => collect($itemRule?->rule_config['numeric_bands'] ?? $questionVersion->numeric_bands ?? [])->values()->all(),
+                'options' => $this->optionsWithScoringRule($questionVersion->options ?? [], $itemRule?->rule_config['option_scores'] ?? []),
             ];
         })->values();
 
@@ -114,6 +118,17 @@ class FrameworkContentService
             'framework_type' => $version->framework_type,
             'framework_version_number' => (int) $version->version_number,
             'framework_display_name' => $version->display_name,
+            'scoring_model' => $version->scoringModelVersion ? [
+                'scoring_model_id' => $version->scoringModelVersion->scoring_model_id,
+                'scoring_model_version_id' => $version->scoringModelVersion->scoring_model_version_id,
+                'version_number' => (int) $version->scoringModelVersion->version_number,
+                'content_hash' => $version->scoringModelVersion->content_hash,
+                'score_purpose' => $version->scoringModelVersion->score_purpose,
+                'construct' => $version->scoringModelVersion->construct,
+                'direction' => $version->scoringModelVersion->direction,
+                'algorithm_version' => $version->scoringModelVersion->algorithm_version,
+                'missing_policy' => $version->scoringModelVersion->missing_policy,
+            ] : null,
             'publisher' => [
                 'publisher_id' => $version->content_publisher_id,
                 'publisher_code' => $version->contentPublisher?->publisher_code,
@@ -210,5 +225,21 @@ class FrameworkContentService
     public function hash(array $payload): string
     {
         return hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR));
+    }
+
+    private function optionsWithScoringRule(array $options, array $scoreRules): array
+    {
+        $byId = collect($scoreRules)->filter(fn ($rule) => isset($rule['option_id']))->keyBy('option_id');
+        $byOrder = collect($scoreRules)->filter(fn ($rule) => isset($rule['option_order']))->keyBy('option_order');
+
+        return collect($options)->map(function (array $option) use ($byId, $byOrder): array {
+            $rule = $byId->get($option['option_id'] ?? null) ?? $byOrder->get($option['option_order'] ?? null);
+            if ($rule) {
+                $option['score_weight'] = $rule['score'] ?? null;
+                $option['critical_failure'] = (bool) ($rule['critical_failure'] ?? false);
+            }
+
+            return $option;
+        })->values()->all();
     }
 }

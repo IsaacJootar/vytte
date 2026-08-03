@@ -16,6 +16,7 @@ class AssessmentReportSnapshot extends Model
 
     protected $fillable = [
         'assessment_id', 'schema_version', 'content_hash', 'payload', 'created_at',
+        'scoring_model_version_id', 'comparison_signature',
     ];
 
     protected $casts = [
@@ -32,5 +33,10 @@ class AssessmentReportSnapshot extends Model
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(Assessment::class, 'assessment_id', 'assessment_id');
+    }
+
+    public function scoringModelVersion(): BelongsTo
+    {
+        return $this->belongsTo(ScoringModelVersion::class, 'scoring_model_version_id', 'scoring_model_version_id');
     }
 }

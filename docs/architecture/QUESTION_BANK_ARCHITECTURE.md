@@ -33,17 +33,20 @@ The initial publishing UI remains Platform Admin controlled. Publisher identity,
 | Concept | Table/model | Purpose |
 |---|---|---|
 | Question identity | `questions` / `Question` | Conceptual reusable question identity and stable response key |
-| Question version | `question_versions` / `QuestionVersion` | Immutable wording, response type, options, numeric config, numeric bands, methodology notes, and hash |
+| Question version | `question_versions` / `QuestionVersion` | Immutable wording, response type, semantic options, numeric input constraints, methodology notes, and hash. Legacy rows may retain embedded scoring values. |
 | Framework version | `department_framework_versions` / `DepartmentFrameworkVersion` | Official department or focused framework version |
 | Framework section | `framework_sections` / `FrameworkSection` | Purpose-led framework grouping |
 | Framework indicator | `framework_indicators` / `FrameworkIndicator` | Measurement objective inside a section |
 | Framework placement | `framework_question_placements` / `FrameworkQuestionPlacement` | Exact question-version use inside a framework, with order, evidence, weight, criticality, and scoring behavior |
+| Scoring model version | `scoring_model_versions` / `ScoringModelVersion` | Immutable instrument-level scoring purpose, construct, direction, missing policy, aggregation, algorithm, and hash |
+| Scoring item rule | `scoring_item_rules` / `ScoringItemRule` | Instrument-specific interpretation of one placement, independent of question origin |
 | Published framework payload | `department_framework_versions.published_payload` | Frozen rendered framework content |
 | Assessment snapshot | `assessment_snapshots.payload` | Frozen exact assessment content used at runtime |
 
 ## Versioning rules
 
-- Changing wording, response type, answer options, numeric config, or numeric bands creates a new `question_versions` row.
+- Changing wording, response type, semantic answer options, or numeric input constraints creates a new `question_versions` row.
+- Changing score mappings, numeric scoring bands, weights, score roles, missing policy, or aggregation creates a new scoring-model version.
 - Published question versions cannot be edited or deleted.
 - Published framework versions pin exact `question_version_id` values.
 - Published framework versions cannot be edited or deleted.

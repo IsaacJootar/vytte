@@ -202,7 +202,11 @@ External respondent collection remains in the same assessment architecture. It u
 
 ## Scoring
 
-Scoring reads only official snapshot payload. Local custom sections never enter official score calculation.
+New and backfilled framework versions pin an immutable `scoring_model_version`. Its `scoring_item_rules` separately define the interpretation of each placed question, including method, role, weight, score mapping, numeric bands, sub-index, and criticality. Published scoring-model versions and their rules are immutable.
+
+Legacy question-version weights and numeric bands remain readable for historical snapshots. Legacy-equivalent scoring models reproduce them exactly. New framework payloads render score values from the pinned scoring model, which allows the same immutable question version to be interpreted differently in another instrument without changing its semantics.
+
+New assessment snapshots freeze scoring-model identifiers and a comparison signature. A focused snapshot also stores its single scoring-model version directly; comprehensive composition records every contributing model in its manifest.
 
 Current algorithm:
 

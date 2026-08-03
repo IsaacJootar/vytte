@@ -4,10 +4,11 @@
 
 - Canonical output scale: 0-100.
 - Current algorithm: `vytte-4.0-numeric-bands`.
-- The assessment snapshot is the scoring authority.
+- The assessment snapshot is the runtime scoring authority.
+- New snapshots pin immutable scoring-model versions; historical snapshots retain their embedded legacy contract.
 - Final score rows and final report snapshots are historical records and are never silently recalculated.
 
-## Official Scoring Boundary
+## Scoring Boundary
 
 Official scoring uses only:
 
@@ -17,7 +18,11 @@ Official scoring uses only:
 - frozen snapshot aggregation policy;
 - authoritative response set.
 
-Local custom sections are excluded from official scoring.
+Existing local custom sections retain their frozen separate-lane behavior. New publisher-approved instruments may include questions of any origin in their primary scoring model. Origin is disclosed but does not determine scoring eligibility.
+
+## Versioned Interpretation
+
+Question versions define semantics. `scoring_model_versions` and `scoring_item_rules` define item mappings, numeric bands, weights, score roles, missing policy, criticality, aggregation, construct, and direction. Legacy-equivalent models are generated without rewriting existing question versions or published snapshots.
 
 ## Calculation
 

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Services\ContentPublisherService;
+use App\Services\ScoringModelService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -28,5 +29,6 @@ class TestBaselineSeeder extends Seeder
         ]);
 
         app(ContentPublisherService::class)->assignLegacyContent();
+        app(ScoringModelService::class)->backfillLegacyModels();
     }
 }

@@ -11,7 +11,7 @@ class CataloguePublishingService
 {
     public function publish(AssessmentCatalogueRelease $release, ?string $publisherId = null): AssessmentCatalogueRelease
     {
-        $release->load(['contentPublisher', 'facilityProfile.departments', 'departmentFrameworkVersions.module']);
+        $release->load(['contentPublisher', 'facilityProfile.departments', 'departmentFrameworkVersions.module', 'departmentFrameworkVersions.scoringModelVersion']);
         $errors = [];
         $versions = $release->departmentFrameworkVersions;
 
@@ -103,6 +103,8 @@ class CataloguePublishingService
                 'framework_version_id' => $version->framework_version_id,
                 'framework_version_number' => (int) $version->version_number,
                 'framework_content_hash' => $version->content_hash,
+                'scoring_model_version_id' => $version->scoring_model_version_id,
+                'scoring_model_content_hash' => $version->scoringModelVersion?->content_hash,
                 'applicability' => $version->pivot->applicability,
                 'display_order' => (int) $version->pivot->display_order,
             ])->values()->all(),

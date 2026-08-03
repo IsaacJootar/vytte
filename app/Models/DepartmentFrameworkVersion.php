@@ -59,6 +59,7 @@ class DepartmentFrameworkVersion extends Model
         'published_by',
         'content_publisher_id',
         'distribution_level',
+        'scoring_model_version_id',
     ];
 
     protected $casts = [
@@ -115,6 +116,11 @@ class DepartmentFrameworkVersion extends Model
     public function contentPublisher(): BelongsTo
     {
         return $this->belongsTo(ContentPublisher::class, 'content_publisher_id', 'content_publisher_id');
+    }
+
+    public function scoringModelVersion(): BelongsTo
+    {
+        return $this->belongsTo(ScoringModelVersion::class, 'scoring_model_version_id', 'scoring_model_version_id');
     }
 
     public function sections(): HasMany

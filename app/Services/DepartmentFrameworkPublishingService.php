@@ -9,7 +9,10 @@ use Illuminate\Validation\ValidationException;
 
 class DepartmentFrameworkPublishingService
 {
-    public function __construct(private readonly FrameworkContentService $content) {}
+    public function __construct(
+        private readonly FrameworkContentService $content,
+        private readonly ScoringModelService $scoringModels,
+    ) {}
 
     public function publish(DepartmentFrameworkVersion $version, ?string $publisherId = null): DepartmentFrameworkVersion
     {
@@ -17,6 +20,7 @@ class DepartmentFrameworkPublishingService
             'module',
             'contentPublisher',
             'questionPlacements.questionVersion.questionType',
+            'questionPlacements.scoringItemRule',
             'questionPlacements.section',
             'questionPlacements.indicator.domainMappings.domainDefinition.taxonomyVersion',
             'questionPlacements.domainOverrides.domainDefinition.taxonomyVersion',
@@ -29,6 +33,15 @@ class DepartmentFrameworkPublishingService
 
         if ($version->status !== DepartmentFrameworkVersion::STATUS_DRAFT) {
             $errors['status'][] = 'Only draft framework versions can be published.';
+        } else {
+            $this->scoringModels->ensureForFramework($version);
+            foreach ($placements as $placement) {
+                if (! $placement->scoringItemRule) {
+                    $this->scoringModels->syncRuleFromPlacement($version, $placement);
+                }
+            }
+            $version->load('questionPlacements.scoringItemRule');
+            $placements = $version->questionPlacements;
         }
 
         if (! $module || ! $module->is_active) {
@@ -95,8 +108,9 @@ class DepartmentFrameworkPublishingService
                 return false;
             }
 
-            return collect($placement->questionVersion?->options ?? [])
-                ->contains(fn ($option) => ! array_key_exists('score_weight', $option) || $option['score_weight'] === null);
+            $rules = collect($placement->scoringItemRule?->rule_config['option_scores'] ?? []);
+
+            return $rules->isEmpty() || $rules->contains(fn ($option) => ! array_key_exists('score', $option) || $option['score'] === null);
         });
         if ($scoredOptionsWithoutWeight) {
             $errors['scoring'][] = 'Every option on a scored placement must have a score weight.';
@@ -105,7 +119,7 @@ class DepartmentFrameworkPublishingService
         $invalidNumericBands = $placements->contains(function ($placement): bool {
             return $placement->scoring_contribution
                 && $placement->questionVersion?->questionType?->type_code === 'NUMERIC'
-                && collect($placement->questionVersion?->numeric_bands ?? [])->isEmpty();
+                && collect($placement->scoringItemRule?->rule_config['numeric_bands'] ?? [])->isEmpty();
         });
         if ($invalidNumericBands) {
             $errors['scoring'][] = 'Scored numeric placements must define frozen scoring bands.';
@@ -137,7 +151,9 @@ class DepartmentFrameworkPublishingService
             throw ValidationException::withMessages($errors);
         }
 
-        $payload = $this->content->frameworkPayload($version);
+        $scoringModel = $this->scoringModels->publishForFramework($version, $publisherId);
+        $version->forceFill(['scoring_model_version_id' => $scoringModel->scoring_model_version_id])->save();
+        $payload = $this->content->frameworkPayload($version->fresh());
 
         $version->update([
             'status' => DepartmentFrameworkVersion::STATUS_PUBLISHED,

@@ -326,19 +326,26 @@ class AssessmentBuilderService
                 : null;
 
             $criticalMarked = false;
+            $ruleConfig = null;
 
-            if ($isScored && $version?->status === QuestionVersion::STATUS_DRAFT) {
-                if (in_array($typeCode, ['SINGLE_SELECT', 'LIKERT'], true)) {
-                    $criticalMarked = $this->applyOptionPoints($version, $input['points'] ?? [], $input['critical'] ?? []);
-                }
-
-                if ($typeCode === 'NUMERIC') {
-                    $this->applyNumericBands($version, $input['bands'] ?? []);
-                }
+            if ($isScored && in_array($typeCode, ['SINGLE_SELECT', 'LIKERT'], true)) {
+                $optionRule = $this->applyOptionPoints(
+                    $version,
+                    $input['points'] ?? [],
+                    $input['critical'] ?? [],
+                    $version?->status === QuestionVersion::STATUS_DRAFT,
+                );
+                $criticalMarked = $optionRule['critical'];
+                $ruleConfig = ['option_scores' => $optionRule['options'], 'numeric_bands' => []];
             }
 
-            if ($isScored && $version?->status === QuestionVersion::STATUS_PUBLISHED) {
-                $criticalMarked = collect($version->options ?? [])->contains(fn ($option) => (bool) ($option['critical_failure'] ?? false));
+            if ($isScored && $typeCode === 'NUMERIC') {
+                $bands = $this->applyNumericBands(
+                    $version,
+                    $input['bands'] ?? [],
+                    $version?->status === QuestionVersion::STATUS_DRAFT,
+                );
+                $ruleConfig = ['option_scores' => [], 'numeric_bands' => $bands];
             }
 
             $placement->update([
@@ -350,18 +357,24 @@ class AssessmentBuilderService
                     ? (trim((string) ($input['evidence_prompt'] ?? '')) ?: 'Add a brief note describing what supports this answer.')
                     : null,
             ]);
+
+            app(ScoringModelService::class)->syncRuleFromPlacement(
+                $assessment,
+                $placement->fresh(['questionVersion.questionType']),
+                $ruleConfig,
+            );
         });
     }
 
     /**
      * @return bool whether any answer is marked as a critical failure
      */
-    private function applyOptionPoints(QuestionVersion $version, array $points, array $critical): bool
+    private function applyOptionPoints(QuestionVersion $version, array $points, array $critical, bool $persistOnQuestion): array
     {
         $options = collect($version->options ?? []);
 
         if ($options->isEmpty()) {
-            return false;
+            return ['critical' => false, 'options' => []];
         }
 
         $updated = $options->map(function (array $option) use ($points, $critical): array {
@@ -386,18 +399,28 @@ class AssessmentBuilderService
             return $option;
         })->all();
 
-        $version->update([
-            'options' => app(QuestionOptionSyncService::class)->sync($version->question, $updated),
-        ]);
+        if ($persistOnQuestion) {
+            $version->update([
+                'options' => app(QuestionOptionSyncService::class)->sync($version->question, $updated),
+            ]);
+        }
 
-        return collect($updated)->contains(fn ($option) => (bool) $option['critical_failure']);
+        return [
+            'critical' => collect($updated)->contains(fn ($option) => (bool) $option['critical_failure']),
+            'options' => collect($updated)->map(fn ($option) => [
+                'option_id' => $option['option_id'] ?? null,
+                'option_order' => $option['option_order'],
+                'score' => $option['score_weight'],
+                'critical_failure' => (bool) $option['critical_failure'],
+            ])->values()->all(),
+        ];
     }
 
     /**
      * Scored numeric questions cannot be published without frozen bands, so they are
      * required as soon as scoring is switched on.
      */
-    private function applyNumericBands(QuestionVersion $version, array $bands): void
+    private function applyNumericBands(QuestionVersion $version, array $bands, bool $persistOnQuestion): array
     {
         $normalised = collect($bands)
             ->filter(fn ($band) => filled($band['min'] ?? null) || filled($band['max'] ?? null) || filled($band['points'] ?? null))
@@ -433,7 +456,11 @@ class AssessmentBuilderService
             ]);
         }
 
-        $version->update(['numeric_bands' => $normalised]);
+        if ($persistOnQuestion) {
+            $version->update(['numeric_bands' => $normalised]);
+        }
+
+        return $normalised;
     }
 
     /**

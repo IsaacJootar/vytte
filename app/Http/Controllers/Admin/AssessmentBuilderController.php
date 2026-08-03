@@ -15,6 +15,7 @@ use App\Services\AuditService;
 use App\Services\ContentPublisherService;
 use App\Services\FrameworkContentService;
 use App\Services\GovernanceDependencyService;
+use App\Services\ScoringModelService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -91,7 +92,7 @@ class AssessmentBuilderController extends Controller
         ]);
     }
 
-    public function store(Request $request, AuditService $audit, ContentPublisherService $publishers): RedirectResponse
+    public function store(Request $request, AuditService $audit, ContentPublisherService $publishers, ScoringModelService $scoringModels): RedirectResponse
     {
         $validated = $this->validateBasics($request);
 
@@ -105,6 +106,7 @@ class AssessmentBuilderController extends Controller
             'content_publisher_id' => $publishers->vytte()->content_publisher_id,
             'distribution_level' => ContentPublisher::VISIBILITY_PUBLIC,
         ]);
+        $scoringModels->ensureForFramework($assessment);
 
         $audit->record('assessment.draft.created', $assessment, newValues: [
             'display_name' => $assessment->display_name,

@@ -33,6 +33,8 @@ class ReportSnapshotService
             'content_hash' => hash('sha256', json_encode($payload, JSON_THROW_ON_ERROR)),
             'payload' => $payload,
             'created_at' => now(),
+            'scoring_model_version_id' => $assessment->snapshot?->scoring_model_version_id,
+            'comparison_signature' => $assessment->snapshot?->comparison_signature,
         ]);
 
         app(AuditService::class)->record(
@@ -87,6 +89,10 @@ class ReportSnapshotService
             'schema_version' => self::SCHEMA_VERSION,
             'assessment_id' => $assessment->assessment_id,
             'composition_hash' => $assessment->composition_hash,
+            'comparison_signature' => $assessment->snapshot?->comparison_signature,
+            'publisher' => $assessment->snapshot?->composition_manifest['publisher']
+                ?? collect($contentModules)->pluck('publisher')->filter()->first(),
+            'scoring_models' => collect($contentModules)->pluck('scoring_model')->filter()->values()->all(),
             'creation_path' => $assessment->creation_path,
             'title' => $title,
             'modules' => $modules,

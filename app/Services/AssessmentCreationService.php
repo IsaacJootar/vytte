@@ -14,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class AssessmentCreationService
 {
-    public function __construct(private readonly FrameworkContentService $content) {}
+    public function __construct(
+        private readonly FrameworkContentService $content,
+        private readonly ScoringModelService $scoringModels,
+    ) {}
 
     public function createFromCatalogue(
         Project $project,
@@ -23,7 +26,7 @@ class AssessmentCreationService
         array $exclusionReasons = [],
         ?string $creatorId = null,
     ): Assessment {
-        $release->load(['contentPublisher', 'facilityProfile', 'departmentFrameworkVersions.module']);
+        $release->load(['contentPublisher', 'facilityProfile', 'departmentFrameworkVersions.module', 'departmentFrameworkVersions.scoringModelVersion']);
         $target = $project->targets()->first();
 
         if ($release->status !== AssessmentCatalogueRelease::STATUS_PUBLISHED) {
@@ -111,6 +114,17 @@ class AssessmentCreationService
             $modulePayload['framework_version_number'] = (int) $framework->version_number;
             $modulePayload['framework_content_hash'] = $framework->content_hash;
             $modulePayload['applicability'] = $framework->pivot->applicability;
+            $modulePayload['scoring_model'] ??= $framework->scoringModelVersion ? [
+                'scoring_model_id' => $framework->scoringModelVersion->scoring_model_id,
+                'scoring_model_version_id' => $framework->scoringModelVersion->scoring_model_version_id,
+                'version_number' => (int) $framework->scoringModelVersion->version_number,
+                'content_hash' => $framework->scoringModelVersion->content_hash,
+                'score_purpose' => $framework->scoringModelVersion->score_purpose,
+                'construct' => $framework->scoringModelVersion->construct,
+                'direction' => $framework->scoringModelVersion->direction,
+                'algorithm_version' => $framework->scoringModelVersion->algorithm_version,
+                'missing_policy' => $framework->scoringModelVersion->missing_policy,
+            ] : null;
 
             foreach ($modulePayload['questions'] ?? [] as $question) {
                 if (isset($questionIds[$question['question_id']])) {
@@ -126,6 +140,8 @@ class AssessmentCreationService
                 'framework_version_id' => $framework->framework_version_id,
                 'framework_version_number' => (int) $framework->version_number,
                 'framework_content_hash' => $framework->content_hash,
+                'scoring_model_version_id' => $modulePayload['scoring_model']['scoring_model_version_id'] ?? null,
+                'scoring_model_content_hash' => $modulePayload['scoring_model']['content_hash'] ?? null,
                 'applicability' => $framework->pivot->applicability,
                 'display_order' => (int) $framework->pivot->display_order,
             ];
@@ -167,6 +183,16 @@ class AssessmentCreationService
             'selected_department_versions' => $manifestDepartments,
             'excluded_department_versions' => $excludedManifest,
         ];
+        $comparisonSignature = $this->scoringModels->comparisonSignature([
+            'catalogue_release_id' => $release->catalogue_release_id,
+            'catalogue_content_hash' => $release->content_hash,
+            'facility_profile_id' => $release->facility_profile_id,
+            'health_domain_id' => $release->health_domain_id,
+            'selected_department_versions' => $manifestDepartments,
+            'collection_config' => $release->collection_config,
+        ]);
+        $manifest['comparison_signature'] = $comparisonSignature;
+        $scoringModelVersionIds = collect($manifestDepartments)->pluck('scoring_model_version_id')->filter()->unique()->values();
         $hash = $this->content->hash([
             'payload' => $payload,
             'composition_manifest' => $manifest,
@@ -176,7 +202,8 @@ class AssessmentCreationService
 
         return DB::transaction(function () use (
             $project, $target, $release, $selectedIds, $excludedIds, $exclusionReasons,
-            $payload, $manifest, $hash, $tierId, $creatorId, $frameworks
+            $payload, $manifest, $hash, $tierId, $creatorId, $frameworks,
+            $comparisonSignature, $scoringModelVersionIds
         ) {
             $assessment = Assessment::create([
                 'target_id' => $target->target_id,
@@ -229,6 +256,8 @@ class AssessmentCreationService
                     'allows_multi_respondent' => false,
                     'scoring_profile_version' => ScoringService::ALGORITHM_VERSION,
                 ],
+                'scoring_model_version_id' => $scoringModelVersionIds->count() === 1 ? $scoringModelVersionIds->first() : null,
+                'comparison_signature' => $comparisonSignature,
                 'created_by' => $creatorId,
                 'created_at' => now(),
             ]);
