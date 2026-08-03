@@ -328,7 +328,7 @@ class AssessmentBuilderService
             $criticalMarked = false;
             $ruleConfig = null;
 
-            if ($isScored && in_array($typeCode, ['SINGLE_SELECT', 'LIKERT'], true)) {
+            if ($isScored && in_array($typeCode, ['SINGLE_SELECT', 'MULTI_SELECT', 'LIKERT'], true)) {
                 $optionRule = $this->applyOptionPoints(
                     $version,
                     $input['points'] ?? [],
@@ -336,7 +336,13 @@ class AssessmentBuilderService
                     $version?->status === QuestionVersion::STATUS_DRAFT,
                 );
                 $criticalMarked = $optionRule['critical'];
-                $ruleConfig = ['option_scores' => $optionRule['options'], 'numeric_bands' => []];
+                $ruleConfig = [
+                    'option_scores' => $optionRule['options'],
+                    'numeric_bands' => [],
+                    'multi_select' => $typeCode === 'MULTI_SELECT'
+                        ? ['method' => 'MEAN_SELECTED', 'minimum_selections' => 1, 'maximum_selections' => null]
+                        : null,
+                ];
             }
 
             if ($isScored && $typeCode === 'NUMERIC') {

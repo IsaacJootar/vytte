@@ -40,7 +40,7 @@ The migration set is the schema source of truth. Current active assessment archi
 
 ### Reserved Tables
 
-Respondent records, topic scope, multi-option response storage, observation records, topic/project score rollups, root-cause rows, recommendation rules, and recommendation rows are present but not current product authority.
+Respondent records, topic scope, legacy multi-option response storage, observation records, topic/project score rollups, root-cause rows, recommendation rules, and recommendation rows are present but not current product authority. Active multi-select answers use the typed response envelope, not the reserved legacy table.
 
 The earlier assessment template tables are no longer present. They were dropped with the legacy template architecture and no code references them.
 
@@ -59,7 +59,7 @@ Reserved means present in the schema but not the authority for current assessmen
 - Assessment to immutable snapshot: `assessment_snapshots.assessment_id`.
 - Snapshot to catalogue/facility profile: `assessment_snapshots.catalogue_release_id` and `facility_profile_id`.
 - Assessment to included/excluded departments: `assessment_module_scope`.
-- Response to assessment/question/option/session: direct foreign keys plus nullable scalar answer columns.
+- Response to assessment/question/option/session: direct foreign keys, explicit response state, extensible typed-value envelope, and compatibility scalar answer columns.
 - Final report to assessment: one `assessment_report_snapshots` row.
 
 ## Snapshot Authority
@@ -87,6 +87,7 @@ An assessment snapshot is the runtime authority. Master content, future framewor
 - Numeric input configuration is frozen into published payloads and assessment snapshots.
 - Scored numeric questions require scoring bands.
 - Open-text questions are unscored contextual support.
+- Multi-select and explicit non-answer states have authenticated and external runtime contracts.
 - Question semantics and instrument scoring interpretation are separately versioned for new governed content.
 - New assessment snapshots carry a deterministic comparison signature.
 - The default seed is repository-contained and includes demonstration governed content only.

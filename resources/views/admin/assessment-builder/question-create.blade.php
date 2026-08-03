@@ -35,7 +35,7 @@
             </div>
         </fieldset>
 
-        <div x-show="format === 'multiple_choice'" x-cloak>
+        <div x-show="format === 'multiple_choice' || format === 'multi_select'" x-cloak>
             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Answer choices</label>
             <p class="text-xs text-slate-500 dark:text-slate-400">Add at least two. Leave unused boxes empty.</p>
             <div class="mt-2 space-y-2">

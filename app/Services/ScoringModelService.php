@@ -80,7 +80,12 @@ class ScoringModelService
             [
                 'question_version_id' => $placement->question_version_id,
                 'sub_index_id' => $placement->sub_index_id,
-                'method' => ! $placement->scoring_contribution ? 'UNSCORED' : ($type === 'NUMERIC' ? 'NUMERIC_BANDS' : 'OPTION_MAP'),
+                'method' => match (true) {
+                    ! $placement->scoring_contribution => 'UNSCORED',
+                    $type === 'NUMERIC' => 'NUMERIC_BANDS',
+                    $type === 'MULTI_SELECT' => 'MULTI_SELECT_MEAN',
+                    default => 'OPTION_MAP',
+                },
                 'score_role' => 'PRIMARY',
                 'weight' => $placement->weight,
                 'criticality' => $placement->criticality,
@@ -92,6 +97,7 @@ class ScoringModelService
                         'critical_failure' => (bool) ($option['critical_failure'] ?? false),
                     ])->values()->all(),
                     'numeric_bands' => collect($questionVersion?->numeric_bands ?? [])->values()->all(),
+                    'multi_select' => ['method' => 'MEAN_SELECTED', 'minimum_selections' => 1, 'maximum_selections' => null],
                 ],
             ],
         );

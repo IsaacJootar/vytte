@@ -224,6 +224,18 @@
                     wire:change="saveText('{{ $q['question_id'] }}', $event.target.value)"
                     class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 focus:border-vytte-500 focus:ring-vytte-500"
                     placeholder="Type your answer here...">{{ $savedTextResponses[$q['question_id']] ?? '' }}</textarea>
+            @elseif (($q['response_type'] ?? null) === 'MULTI_SELECT')
+                <p class="mb-3 text-xs font-semibold text-slate-500">Choose all that apply.</p>
+                <div class="space-y-2">
+                    @foreach ($q['options'] as $option)
+                        @php $isSelected = in_array($option['option_id'], $savedMultiResponses[$q['question_id']] ?? [], true); @endphp
+                        <button type="button" wire:click="toggleMultiOption('{{ $q['question_id'] }}', {{ $option['option_id'] }})"
+                                class="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition-all {{ $isSelected ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-slate-200 bg-white text-slate-800 hover:border-vytte-400' }}">
+                            <span class="flex h-5 w-5 items-center justify-center rounded border border-current">{{ $isSelected ? '✓' : '' }}</span>
+                            {{ $option['option_label'] }}
+                        </button>
+                    @endforeach
+                </div>
             @elseif (! empty($q['options']))
                 <div class="space-y-2">
                     @foreach ($q['options'] as $option)
@@ -239,6 +251,16 @@
                     @endforeach
                 </div>
             @endif
+
+            <details class="mt-4 border-t border-slate-100 pt-3">
+                <summary class="cursor-pointer text-xs font-semibold text-slate-500 hover:text-vytte-700">I cannot give a direct answer</summary>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    @foreach (['NOT_APPLICABLE' => 'Not applicable', 'UNKNOWN' => 'Unknown', 'NOT_ASSESSED' => 'Not assessed', 'NOT_OBSERVED' => 'Not observed', 'DECLINED' => 'Prefer not to answer'] as $state => $label)
+                        <button type="button" wire:click="setResponseState('{{ $q['question_id'] }}', '{{ $state }}')"
+                                class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ ($savedResponseStates[$q['question_id']] ?? null) === $state ? 'border-vytte-600 bg-vytte-50 text-vytte-800' : 'border-slate-200 text-slate-600' }}">{{ $label }}</button>
+                    @endforeach
+                </div>
+            </details>
         </div>
 
         {{-- Nav --}}
@@ -321,7 +343,7 @@
                         class="w-7 h-7 rounded-lg text-[11px] font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-400
                             {{ $idx === $currentIndex
                                 ? 'bg-vytte-700 text-white'
-                                : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null) || array_key_exists($item['question_id'], $savedNumericResponses)
+                                : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null) || array_key_exists($item['question_id'], $savedNumericResponses) || ! empty($savedMultiResponses[$item['question_id']] ?? []) || isset($savedResponseStates[$item['question_id']])
                                     ? 'bg-vytte-100 text-vytte-700'
                                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200') }}">
                         {{ $idx + 1 }}

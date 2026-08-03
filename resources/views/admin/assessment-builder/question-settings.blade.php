@@ -83,9 +83,12 @@
                     </div>
                 </div>
 
-                @if (in_array($typeCode, ['SINGLE_SELECT', 'LIKERT'], true))
+                @if (in_array($typeCode, ['SINGLE_SELECT', 'MULTI_SELECT', 'LIKERT'], true))
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Points for each answer</label>
+                        @if ($typeCode === 'MULTI_SELECT')
+                            <p class="mt-1 rounded-lg bg-vytte-50 px-3 py-2 text-xs text-vytte-800 dark:bg-vytte-900/30 dark:text-vytte-200">When several answers are selected, Vytte uses their mean score. This method is frozen with the scoring model.</p>
+                        @endif
                         @if ($answerIsLocked)
                             <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">This is an official library question, so its points are fixed.</p>
                             <ul class="mt-2 space-y-1 text-sm text-slate-600 dark:text-slate-300">

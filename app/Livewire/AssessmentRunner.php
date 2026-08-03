@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Assessment;
 use App\Models\RespondentConsent;
 use App\Models\Response;
+use App\Support\ResponseInputContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\App;
 use Livewire\Attributes\Locked;
@@ -26,6 +27,10 @@ class AssessmentRunner extends Component
     public array $savedTextResponses = [];
 
     public array $savedNumericResponses = [];
+
+    public array $savedMultiResponses = [];
+
+    public array $savedResponseStates = [];
 
     public array $savedEvidenceNotes = [];
 
@@ -79,6 +84,7 @@ class AssessmentRunner extends Component
                     'section_label' => $question['section_label'] ?? '',
                     'section_number' => $question['section_number'] ?? 0,
                     'numeric_config' => $question['numeric_config'] ?? null,
+                    'response_config' => $question['response_config'] ?? null,
                     // The author's evidence prompt, frozen into the snapshot at creation.
                     'evidence_expectation' => $question['evidence_expectation'] ?? null,
                     'options' => collect($question['options'])->map(fn ($option) => [
@@ -104,6 +110,12 @@ class AssessmentRunner extends Component
             }
             if ($response->value_numeric !== null) {
                 $this->savedNumericResponses[$response->question_id] = (float) $response->value_numeric;
+            }
+            if (($response->typed_value['type'] ?? null) === 'MULTI_SELECT') {
+                $this->savedMultiResponses[$response->question_id] = array_values($response->typed_value['option_ids'] ?? []);
+            }
+            if ($response->response_state !== 'ANSWERED') {
+                $this->savedResponseStates[$response->question_id] = $response->response_state;
             }
             if ($response->evidence_note !== null) {
                 $this->savedEvidenceNotes[$response->question_id] = $response->evidence_note;
@@ -158,6 +170,7 @@ class AssessmentRunner extends Component
 
         $snapshotQuestion = $this->snapshotQuestion($questionId);
         $validSelection = $snapshotQuestion
+            && ($snapshotQuestion['response_type'] ?? null) !== 'MULTI_SELECT'
             && collect($snapshotQuestion['options'] ?? [])->contains('option_id', $optionId);
 
         if (! $validSelection) {
@@ -184,18 +197,76 @@ class AssessmentRunner extends Component
                 'value_option_id' => $optionId,
                 'value_text' => null,
                 'value_numeric' => null,
+                'typed_value' => ['type' => 'OPTION', 'option_id' => $optionId],
+                'response_state' => 'ANSWERED',
                 'answered_at' => now(),
             ]
         );
 
         $this->savedResponses[$questionId] = $optionId;
-        unset($this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId]);
+        unset($this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
 
         // Auto-advance to next question
         if ($this->currentIndex < count($this->questionData) - 1) {
             $this->currentIndex++;
         }
+    }
+
+    public function toggleMultiOption(string $questionId, int $optionId): void
+    {
+        $this->authorizeAssessmentAccess();
+        if ($this->isComplete || ! $this->hasRequiredConsent()) {
+            return;
+        }
+
+        $question = $this->snapshotQuestion($questionId);
+        $valid = $question
+            && ($question['response_type'] ?? null) === 'MULTI_SELECT'
+            && collect($question['options'] ?? [])->contains('option_id', $optionId);
+        if (! $valid) {
+            return;
+        }
+
+        $selected = collect($this->savedMultiResponses[$questionId] ?? [])
+            ->map(fn ($id) => (int) $id);
+        $selected = $selected->contains($optionId) ? $selected->reject(fn ($id) => $id === $optionId) : $selected->push($optionId);
+        $selected = $selected->unique()->sort()->values()->all();
+
+        if ($selected === []) {
+            Response::where('assessment_id', $this->assessment->assessment_id)
+                ->where('question_id', $questionId)->whereNull('respondent_id')->whereNull('public_response_session_id')->delete();
+            unset($this->savedMultiResponses[$questionId]);
+
+            return;
+        }
+
+        Response::updateOrCreate(
+            ['assessment_id' => $this->assessment->assessment_id, 'question_id' => $questionId, 'respondent_id' => null, 'public_response_session_id' => null],
+            ['value_option_id' => null, 'value_text' => null, 'value_numeric' => null, 'typed_value' => ['type' => 'MULTI_SELECT', 'option_ids' => $selected], 'response_state' => 'ANSWERED', 'answered_at' => now()],
+        );
+        $this->savedMultiResponses[$questionId] = $selected;
+        unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedResponseStates[$questionId]);
+        $this->lastSavedAt = now()->format('g:i A');
+    }
+
+    public function setResponseState(string $questionId, string $state): void
+    {
+        $this->authorizeAssessmentAccess();
+        if ($this->isComplete || ! $this->hasRequiredConsent() || ! in_array($state, array_diff(ResponseInputContract::RESPONSE_STATES, ['ANSWERED', 'MISSING']), true)) {
+            return;
+        }
+        if (! $this->snapshotQuestion($questionId)) {
+            return;
+        }
+
+        Response::updateOrCreate(
+            ['assessment_id' => $this->assessment->assessment_id, 'question_id' => $questionId, 'respondent_id' => null, 'public_response_session_id' => null],
+            ['value_option_id' => null, 'value_text' => null, 'value_numeric' => null, 'typed_value' => null, 'response_state' => $state, 'answered_at' => now()],
+        );
+        $this->savedResponseStates[$questionId] = $state;
+        unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId]);
+        $this->lastSavedAt = now()->format('g:i A');
     }
 
     public function goToQuestion(int $index): void
@@ -235,7 +306,7 @@ class AssessmentRunner extends Component
                 if (blank($response->evidence_note)) {
                     $response->delete();
                 } else {
-                    $response->update(['value_text' => null]);
+                    $response->update(['value_text' => null, 'typed_value' => null, 'response_state' => 'MISSING']);
                 }
             }
             unset($this->savedTextResponses[$questionId]);
@@ -251,10 +322,10 @@ class AssessmentRunner extends Component
                 'respondent_id' => null,
                 'public_response_session_id' => null,
             ],
-            ['value_text' => $value, 'value_numeric' => null, 'value_option_id' => null, 'answered_at' => now()]
+            ['value_text' => $value, 'value_numeric' => null, 'value_option_id' => null, 'typed_value' => ['type' => 'TEXT', 'value' => $value], 'response_state' => 'ANSWERED', 'answered_at' => now()]
         );
         $this->savedTextResponses[$questionId] = $value;
-        unset($this->savedResponses[$questionId], $this->savedNumericResponses[$questionId]);
+        unset($this->savedResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
     }
 
@@ -283,7 +354,7 @@ class AssessmentRunner extends Component
                 if (blank($response->evidence_note)) {
                     $response->delete();
                 } else {
-                    $response->update(['value_numeric' => null]);
+                    $response->update(['value_numeric' => null, 'typed_value' => null, 'response_state' => 'MISSING']);
                 }
             }
             unset($this->savedNumericResponses[$questionId]);
@@ -328,10 +399,10 @@ class AssessmentRunner extends Component
                 'respondent_id' => null,
                 'public_response_session_id' => null,
             ],
-            ['value_numeric' => $number, 'value_text' => null, 'value_option_id' => null, 'answered_at' => now()]
+            ['value_numeric' => $number, 'value_text' => null, 'value_option_id' => null, 'typed_value' => ['type' => 'NUMBER', 'value' => $number, 'unit' => $config['unit'] ?? null], 'response_state' => 'ANSWERED', 'answered_at' => now()]
         );
         $this->savedNumericResponses[$questionId] = $number;
-        unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId]);
+        unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
     }
 
@@ -359,7 +430,8 @@ class AssessmentRunner extends Component
 
         if ($value === '') {
             if ($response) {
-                if ($response->value_option_id === null && blank($response->value_text) && $response->value_numeric === null) {
+                if ($response->value_option_id === null && blank($response->value_text) && $response->value_numeric === null
+                    && $response->typed_value === null && $response->response_state === 'ANSWERED') {
                     $response->delete();
                 } else {
                     $response->update(['evidence_note' => null]);
@@ -389,7 +461,9 @@ class AssessmentRunner extends Component
         foreach ($this->questionData as $q) {
             $answered = isset($this->savedResponses[$q['question_id']])
                 || filled($this->savedTextResponses[$q['question_id']] ?? null)
-                || array_key_exists($q['question_id'], $this->savedNumericResponses);
+                || array_key_exists($q['question_id'], $this->savedNumericResponses)
+                || ! empty($this->savedMultiResponses[$q['question_id']] ?? [])
+                || isset($this->savedResponseStates[$q['question_id']]);
             if ($q['is_scored'] && ! $answered) {
                 return false;
             }
@@ -405,6 +479,8 @@ class AssessmentRunner extends Component
             fn ($q) => isset($this->savedResponses[$q['question_id']])
                 || filled($this->savedTextResponses[$q['question_id']] ?? null)
                 || array_key_exists($q['question_id'], $this->savedNumericResponses)
+                || ! empty($this->savedMultiResponses[$q['question_id']] ?? [])
+                || isset($this->savedResponseStates[$q['question_id']])
         ));
     }
 

@@ -131,6 +131,54 @@ class ScoringTest extends TestCase
         $this->assertSame(50.0, $result['overall_score']);
     }
 
+    public function test_multi_select_response_uses_mean_selected_option_score(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupAssessment($workspace, $user);
+        $payload = $assessment->snapshot->payload;
+        $question = $payload[0]['questions'][0];
+        $payload[0]['questions'][0]['response_type'] = 'MULTI_SELECT';
+        $assessment = $this->replaceSnapshot($assessment, ['payload' => $payload]);
+        $options = collect($question['options'])->sortBy('score_weight')->values();
+        $selected = [$options->first()['option_id'], $options->last()['option_id']];
+        $response = Response::create([
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question['question_id'],
+            'typed_value' => ['type' => 'MULTI_SELECT', 'option_ids' => $selected],
+            'response_state' => 'ANSWERED',
+            'answered_at' => now(),
+        ]);
+
+        $result = app(ScoringService::class)->scoreResponseSet($assessment, collect([$response])->keyBy('question_id'));
+
+        $this->assertSame(50.0, $result['overall_score']);
+    }
+
+    public function test_not_applicable_scored_question_is_excluded_from_the_denominator(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupAssessment($workspace, $user);
+        $this->answerAllScoredQuestionsWithBestOption($assessment);
+        $questionId = collect($assessment->snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->firstWhere('is_scored', true)['question_id'];
+        Response::where('assessment_id', $assessment->assessment_id)
+            ->where('question_id', $questionId)
+            ->update([
+                'value_option_id' => null,
+                'typed_value' => null,
+                'response_state' => 'NOT_APPLICABLE',
+            ]);
+
+        $result = app(ScoringService::class)->scoreResponseSet(
+            $assessment,
+            Response::where('assessment_id', $assessment->assessment_id)->get()->keyBy('question_id'),
+        );
+
+        $this->assertSame(100.0, $result['overall_score']);
+        $this->assertSame('CALIBRATED', $result['calibration_status']);
+    }
+
     public function test_band_for_moderate_score(): void
     {
         $service = app(ScoringService::class);

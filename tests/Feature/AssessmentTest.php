@@ -7,6 +7,7 @@ use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
 use App\Models\AssessmentModuleScope;
+use App\Models\AssessmentSnapshot;
 use App\Models\FacilityProfile;
 use App\Models\Project;
 use App\Models\Question;
@@ -91,6 +92,19 @@ class AssessmentTest extends TestCase
         $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
 
         return app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
+    }
+
+    private function replaceSnapshot(Assessment $assessment, array $changes): Assessment
+    {
+        $attributes = collect($assessment->snapshot->toArray())
+            ->except('snapshot_id')
+            ->merge($changes)
+            ->all();
+
+        $assessment->snapshot->delete();
+        AssessmentSnapshot::create($attributes);
+
+        return $assessment->fresh(['snapshot']);
     }
 
     // ---- Auth gate ----
@@ -310,6 +324,59 @@ class AssessmentTest extends TestCase
             'assessment_id' => $assessment->assessment_id,
             'question_id' => $question->question_id,
         ]);
+    }
+
+    public function test_multi_select_question_saves_a_typed_answer(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $assessment = $this->createAssessment($project, $target);
+        $payload = $assessment->snapshot->payload;
+        $payload[0]['questions'][0]['response_type'] = 'MULTI_SELECT';
+        $assessment = $this->replaceSnapshot($assessment, ['payload' => $payload]);
+
+        $component = Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment])
+            ->call('giveConsent');
+        $question = $component->get('questionData')[0];
+        $optionIds = collect($question['options'])->take(2)->pluck('option_id')->sort()->values()->all();
+
+        $component
+            ->call('toggleMultiOption', $question['question_id'], $optionIds[0])
+            ->call('toggleMultiOption', $question['question_id'], $optionIds[1])
+            ->assertSet("savedMultiResponses.{$question['question_id']}", $optionIds);
+
+        $response = Response::where('assessment_id', $assessment->assessment_id)
+            ->where('question_id', $question['question_id'])
+            ->firstOrFail();
+        $this->assertSame('ANSWERED', $response->response_state);
+        $this->assertSame(['type' => 'MULTI_SELECT', 'option_ids' => $optionIds], $response->typed_value);
+        $this->assertNull($response->value_option_id);
+    }
+
+    public function test_explicit_non_answer_state_replaces_an_answer(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $assessment = $this->createAssessment($project, $target);
+
+        $component = Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment])
+            ->call('giveConsent');
+        $question = $component->get('questionData')[0];
+        $optionId = $question['options'][0]['option_id'];
+
+        $component
+            ->call('selectOption', $question['question_id'], $optionId)
+            ->call('setResponseState', $question['question_id'], 'NOT_APPLICABLE')
+            ->assertSet("savedResponseStates.{$question['question_id']}", 'NOT_APPLICABLE');
+
+        $response = Response::where('assessment_id', $assessment->assessment_id)
+            ->where('question_id', $question['question_id'])
+            ->firstOrFail();
+        $this->assertSame('NOT_APPLICABLE', $response->response_state);
+        $this->assertNull($response->typed_value);
+        $this->assertNull($response->value_option_id);
     }
 
     // ---- Workspace isolation ----

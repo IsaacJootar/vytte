@@ -153,6 +153,29 @@ class PublicRespondentRunnerTest extends TestCase
         ]);
     }
 
+    public function test_public_runner_saves_an_explicit_non_answer_state(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createPublicAssessment($workspace, $user);
+        $token = $this->createToken($assessment);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $component->call('giveConsent');
+        $question = $component->get('questionData')[0];
+
+        $component
+            ->call('setResponseState', $question['question_id'], 'UNKNOWN')
+            ->assertSet("savedResponseStates.{$question['question_id']}", 'UNKNOWN');
+
+        $this->assertDatabaseHas('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question['question_id'],
+            'public_response_session_id' => $component->get('respondentId'),
+            'response_state' => 'UNKNOWN',
+            'value_option_id' => null,
+        ]);
+    }
+
     public function test_revoked_token_is_rejected(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();

@@ -8,6 +8,7 @@ use App\Models\PublicResponseSession;
 use App\Models\Question;
 use App\Models\RespondentScoreResult;
 use App\Models\Response;
+use App\Support\ResponseInputContract;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -40,6 +41,8 @@ class RespondentSubmissionService
                 'value_option_id' => $response->value_option_id !== null ? (int) $response->value_option_id : null,
                 'value_text' => $response->value_text,
                 'value_numeric' => $response->value_numeric !== null ? (string) $response->value_numeric : null,
+                'response_state' => $response->response_state,
+                'typed_value' => $response->typed_value,
                 'answered_at' => $response->answered_at?->toIso8601String(),
             ])->values()->all();
             $inputHash = hash('sha256', json_encode($responseSnapshot, JSON_THROW_ON_ERROR));
@@ -86,10 +89,15 @@ class RespondentSubmissionService
                 if (! $response) {
                     return false;
                 }
+                if (in_array($response->response_state, array_diff(ResponseInputContract::RESPONSE_STATES, ['ANSWERED', 'MISSING']), true)) {
+                    return true;
+                }
 
                 return match ($question['response_type'] ?? null) {
                     'OPEN_ENDED' => filled($response->value_text),
                     'NUMERIC' => $response->value_numeric !== null,
+                    'MULTI_SELECT' => ($response->typed_value['type'] ?? null) === 'MULTI_SELECT'
+                        && ! empty($response->typed_value['option_ids'] ?? []),
                     default => collect($question['options'] ?? [])
                         ->contains('option_id', (int) $response->value_option_id),
                 };
@@ -117,10 +125,15 @@ class RespondentSubmissionService
             if (! $response) {
                 return false;
             }
+            if (in_array($response->response_state, array_diff(ResponseInputContract::RESPONSE_STATES, ['ANSWERED', 'MISSING']), true)) {
+                return true;
+            }
 
             return match ($question->questionType?->type_code) {
                 'OPEN_ENDED' => filled($response->value_text),
                 'NUMERIC' => $response->value_numeric !== null,
+                'MULTI_SELECT' => ($response->typed_value['type'] ?? null) === 'MULTI_SELECT'
+                    && ! empty($response->typed_value['option_ids'] ?? []),
                 default => $question->options->contains('option_id', (int) $response->value_option_id),
             };
         });

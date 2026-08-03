@@ -4,7 +4,7 @@ namespace App\Support;
 
 final class ResponseInputContract
 {
-    public const OPTION_TYPES = ['SINGLE_SELECT', 'LIKERT'];
+    public const OPTION_TYPES = ['SINGLE_SELECT', 'MULTI_SELECT', 'LIKERT'];
 
     public const TEXT_TYPES = ['OPEN_ENDED'];
 
@@ -14,6 +14,16 @@ final class ResponseInputContract
         ...self::OPTION_TYPES,
         ...self::TEXT_TYPES,
         ...self::NUMERIC_TYPES,
+    ];
+
+    public const RESPONSE_STATES = [
+        'ANSWERED',
+        'NOT_APPLICABLE',
+        'UNKNOWN',
+        'NOT_ASSESSED',
+        'NOT_OBSERVED',
+        'DECLINED',
+        'MISSING',
     ];
 
     public static function supports(?string $type): bool

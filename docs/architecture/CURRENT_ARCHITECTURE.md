@@ -192,8 +192,10 @@ The legacy assessment template tables were removed with the legacy template arch
 The authenticated runner reads the immutable assessment snapshot. It supports:
 
 - scalar option questions;
+- multi-select questions with frozen options and scoring rules;
 - open-text questions;
 - numeric questions with frozen unit, bounds, and step;
+- explicit non-answer states that distinguish not applicable, unknown, not assessed, not observed, and declined;
 - optional response-bound evidence notes.
 
 Unsupported response types cannot be published into official framework versions.

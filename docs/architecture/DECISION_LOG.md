@@ -350,3 +350,10 @@
 - **Status:** Accepted; implementation in progress.
 - **Decision:** AI may extract, draft, lint, map, translate, simulate, analyse field-test behavior, and explain frozen findings. AI cannot approve or publish, invent provenance, mutate historical results, or create arbitrary live scored questions. Adaptive delivery may select only from an approved versioned item pool under a frozen policy.
 - **Evidence rule:** AI report statements and recommendations must identify the frozen response, score, evidence, or trend that supports them.
+
+### DEC-2026-08-03-047: Responses Preserve Meaning Beyond A Scalar Value
+
+- **Status:** Accepted and implemented.
+- **Decision:** Every response carries an explicit state and may carry a typed-value envelope. Multi-select is a first-class publishable type stored as frozen option identifiers. `NOT_APPLICABLE` is excluded from the applicable scoring denominator; unknown, not assessed, not observed, declined, and missing are disclosed as missing rather than converted to zero.
+- **Compatibility:** Existing scalar columns remain populated and readable. A missing in-memory state on a legacy response is interpreted as `ANSWERED`; historical snapshots and completed reports are not rewritten.
+- **Rationale:** A premium assessment platform must distinguish absence, inapplicability, uncertainty, refusal, and genuine negative performance. Collapsing them into zero or blank corrupts both decisions and comparisons.

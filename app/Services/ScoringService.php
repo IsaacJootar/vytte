@@ -80,6 +80,11 @@ class ScoringService
                 $scoredTotal++;
                 $weight = (float) $question['weight'];
                 $response = $responses->get($question['question_id']);
+                if ($response?->response_state === 'NOT_APPLICABLE') {
+                    $scoredTotal--;
+
+                    continue;
+                }
                 $analyticalDomains = collect($question['analytical_domains'] ?? [])
                     ->filter(fn ($domain) => isset($domain['domain_id']) && ($domain['is_primary'] ?? true));
 
@@ -98,9 +103,24 @@ class ScoringService
                     $domainExpected[$domainId]['expected']++;
                 }
 
-                if ($response) {
+                // Responses created by older callers (and newly-created Eloquent
+                // instances before a refresh) may not carry the database default
+                // in memory. They are ordinary answered responses unless an
+                // explicit non-answer state says otherwise.
+                if ($response && ($response->response_state ?? 'ANSWERED') === 'ANSWERED') {
                     $selectedOption = null;
-                    if (($question['response_type'] ?? null) === 'NUMERIC') {
+                    $selectedOptions = collect();
+                    if (($question['response_type'] ?? null) === 'MULTI_SELECT') {
+                        $selectedIds = collect($response->typed_value['option_ids'] ?? [])->map(fn ($id) => (int) $id);
+                        $selectedOptions = collect($question['options'] ?? [])->filter(
+                            fn ($option) => $selectedIds->contains((int) $option['option_id']) && $option['score_weight'] !== null
+                        );
+                        if ($selectedOptions->isEmpty()) {
+                            continue;
+                        }
+                        $questionScore = round($selectedOptions->avg(fn ($option) => (float) $option['score_weight']), 4);
+                        $questionScaleMaximum = collect($question['options'])->whereNotNull('score_weight')->max(fn ($option) => (float) $option['score_weight']);
+                    } elseif (($question['response_type'] ?? null) === 'NUMERIC') {
                         if ($response->value_numeric === null) {
                             continue;
                         }
@@ -137,6 +157,7 @@ class ScoringService
 
                     if ($criticalFailuresEnabled && (
                         ($selectedOption['critical_failure'] ?? false)
+                        || $selectedOptions->contains(fn ($option) => (bool) ($option['critical_failure'] ?? false))
                         || ($criticalThreshold !== null && $questionScore <= $criticalThreshold)
                     )) {
                         $criticalFailureTriggered = true;

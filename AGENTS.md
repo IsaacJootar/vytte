@@ -71,7 +71,7 @@ Historical records are in `docs/architecture/archive/`. They describe past state
 12. Commit and push each completed module separately.
 13. Preserve unrelated worktree changes and never stage them accidentally.
 14. PostgreSQL is the database for local development, tests, and production.
-15. A response type may be published only when authenticated and public renderers, authoritative validation, storage, completeness, snapshot, and scoring or explicit unscored behavior are all implemented. Current types are `SINGLE_SELECT`, `LIKERT`, unscored `OPEN_ENDED`, and `NUMERIC`; scored numeric questions require frozen bands.
+15. A response type may be published only when authenticated and public renderers, authoritative validation, storage, completeness, snapshot, and scoring or explicit unscored behavior are all implemented. Current types are `SINGLE_SELECT`, `MULTI_SELECT`, `LIKERT`, unscored `OPEN_ENDED`, and `NUMERIC`; scored numeric questions require frozen bands.
 
 ## Scoring
 

@@ -70,6 +70,8 @@ class FrameworkContentService
                 'is_required' => (bool) $placement->is_required,
                 'is_scored' => $itemRule ? $itemRule->method !== 'UNSCORED' : (bool) $placement->scoring_contribution,
                 'score_role' => $itemRule?->score_role ?? 'PRIMARY',
+                'scoring_method' => $itemRule?->method ?? ($placement->scoring_contribution ? 'LEGACY' : 'UNSCORED'),
+                'response_config' => $itemRule?->rule_config['multi_select'] ?? null,
                 'requires_observation' => (bool) $questionVersion->requires_observation,
                 'evidence_expectation' => $placement->evidence_expectation,
                 'applicability' => $placement->applicability,

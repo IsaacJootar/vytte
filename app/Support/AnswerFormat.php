@@ -21,6 +21,8 @@ final class AnswerFormat
 
     public const MULTIPLE_CHOICE = 'multiple_choice';
 
+    public const MULTI_SELECT = 'multi_select';
+
     public const RATING = 'rating';
 
     public const NUMBER = 'number';
@@ -54,6 +56,14 @@ final class AnswerFormat
                 'label' => 'Multiple choice',
                 'description' => 'One answer chosen from a list you write.',
                 'type_code' => 'SINGLE_SELECT',
+                'choices' => [],
+                'author_defines_choices' => true,
+            ],
+            self::MULTI_SELECT => [
+                'key' => self::MULTI_SELECT,
+                'label' => 'Choose all that apply',
+                'description' => 'People may select more than one answer.',
+                'type_code' => 'MULTI_SELECT',
                 'choices' => [],
                 'author_defines_choices' => true,
             ],
@@ -149,6 +159,7 @@ final class AnswerFormat
                 default => 'Multiple choice',
             },
             'LIKERT' => 'Rating',
+            'MULTI_SELECT' => 'Choose all that apply',
             'NUMERIC' => 'Number',
             'OPEN_ENDED' => 'Written answer',
             default => $typeCode ?? 'Unknown',

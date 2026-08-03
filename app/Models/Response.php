@@ -24,11 +24,14 @@ class Response extends Model
         'value_option_id',
         'evidence_note',
         'answered_at',
+        'response_state',
+        'typed_value',
     ];
 
     protected $casts = [
         'answered_at' => 'datetime',
         'value_numeric' => 'decimal:4',
+        'typed_value' => 'array',
     ];
 
     public function assessment(): BelongsTo
