@@ -4,7 +4,7 @@
 
 The instrument publisher is accountable for the content purpose, methodology, and scoring claim. Vytte governs identity, provenance, declared review state, validation, immutable versions, audit, reproducibility, and comparison eligibility.
 
-The current publication controls remain available only to Vytte Platform Admin while the organization-publisher workflow is completed. Workspaces cannot directly publish into the public catalogue or claim review states they have not earned.
+The current publication controls remain available only to Vytte Platform Admin while the organization-publisher workflow is completed. Workspaces cannot directly publish into the public catalogue or claim review states they have not earned. Framework trust signals use an explicit three-stage control: one administrator assigns another Platform Admin, that reviewer submits a recommendation with evidence, and a different administrator approves it or requests changes. The assigned reviewer cannot approve their own review.
 
 - departments;
 - department framework versions;

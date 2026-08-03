@@ -181,6 +181,9 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::get('assessments/{assessment}/review', [AdminAssessmentBuilderController::class, 'review'])->name('assessments.review');
     Route::get('assessments/{assessment}/quality', [AdminAssessmentQualityController::class, 'show'])->name('assessments.quality');
     Route::put('assessments/{assessment}/quality/claims/{claimType}', [AdminAssessmentQualityController::class, 'updateClaim'])->name('assessments.quality.claim');
+    Route::post('assessments/{assessment}/quality/claims/{claimType}/assign', [AdminAssessmentQualityController::class, 'assignReview'])->name('assessments.quality.assign');
+    Route::put('assessments/{assessment}/quality/reviews/{assignment}/submit', [AdminAssessmentQualityController::class, 'submitReview'])->name('assessments.quality.submit');
+    Route::put('assessments/{assessment}/quality/reviews/{assignment}/decide', [AdminAssessmentQualityController::class, 'decideReview'])->name('assessments.quality.decide');
     Route::post('assessments/{assessment}/quality/lint', [AdminAssessmentQualityController::class, 'runLint'])->name('assessments.quality.lint');
     Route::post('assessments/{assessment}/quality/ai', [AdminAssessmentQualityController::class, 'runAi'])->name('assessments.quality.ai');
     Route::put('assessments/{assessment}/provenance', [AdminAssessmentBuilderController::class, 'saveProvenance'])->name('assessments.provenance');

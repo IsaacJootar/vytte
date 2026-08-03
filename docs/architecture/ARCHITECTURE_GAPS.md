@@ -38,7 +38,6 @@ Current verified local state:
 | GAP-06 | Recommendation/action planning remains inactive | Reports currently summarize scores rather than action workflows | Design only after the assessment/report core is stable |
 | GAP-07 | Generic external API is not implemented | Unapproved API surface can increase security burden | Add only for an approved consumer and versioned contract |
 | GAP-08 | Legacy question versions and snapshots still contain embedded scoring values | Old contracts cannot be rewritten, and advanced question-version UI still exposes legacy fields | Keep dual-read compatibility while routing all new instrument scoring through immutable scoring-model versions |
-| GAP-09 | Governance claims have a foundation but no review-assignment workflow | Trust states cannot yet be completed through the authoring wizard | Add reviewer assignment, evidence, decision, and separation-of-duties controls |
 
 ## Rule
 

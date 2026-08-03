@@ -394,3 +394,10 @@
 - **Decision:** Platform Admin authoring is named Governance Studio and exposes nine distinct clickable steps: Purpose, Publisher & source, Structure, Questions, Logic, Scoring, Review, Test, and Publish. Scoring and Publish have dedicated screens; Review precedes the no-save respondent simulation.
 - **Reason:** Backend capability and decorative step labels do not constitute a usable governance workflow. Authors must be able to locate, revisit, and understand every decision without navigating Advanced Tools or guessing which combined page contains it.
 - **Consequence:** Advanced Tools remains available for deep inspection, while the ordinary author path is complete, sequential, and discoverable from the sidebar.
+
+### DEC-2026-08-03-053: Trust Claims Require An Independent Review Chain
+
+- **Status:** Accepted and implemented.
+- **Decision:** A framework trust claim is produced through assignment, evidence submission, and an independent decision. The assigned reviewer cannot approve their own recommendation. Changes return to that reviewer without converting the claim into a pass or failure.
+- **Audit:** Assignment, submission, and decision are separate durable events. The accepted evidence and reviewer identity are then reflected in the independent governance claim.
+- **Reason:** Publisher identity, automated lint, and self-attestation cannot substitute for evidence-backed subject, source, methodology, scoring, field-test, translation, or benchmark review.

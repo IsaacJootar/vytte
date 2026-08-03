@@ -7,6 +7,7 @@ use App\Models\ContentAssistanceRun;
 use App\Models\ContentContribution;
 use App\Models\ContentGovernanceClaim;
 use App\Models\ContentPublisher;
+use App\Models\ContentReviewAssignment;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\QuestionVersion;
 use App\Models\User;
@@ -137,9 +138,10 @@ class ContentGovernanceWorkflowTest extends TestCase
         $this->assertNull($contribution->fresh()->promoted_question_version_id);
     }
 
-    public function test_quality_review_shows_ai_boundary_and_records_independent_claims(): void
+    public function test_quality_review_requires_assignment_evidence_and_an_independent_decision(): void
     {
         $admin = $this->admin();
+        $reviewer = $this->admin();
         $framework = $this->draftFramework();
 
         $this->actingAs($admin)->get(route('admin.assessments.quality', $framework))
@@ -150,14 +152,55 @@ class ContentGovernanceWorkflowTest extends TestCase
 
         $this->actingAs($admin)->put(route('admin.assessments.quality.claim', [$framework, 'SOURCE_VERIFIED']), [
             'status' => 'PASSED',
+            'evidence_summary' => 'A self-approved claim must be refused.',
+        ])->assertSessionHasErrors('review');
+
+        $this->actingAs($admin)->post(route('admin.assessments.quality.assign', [$framework, 'SOURCE_VERIFIED']), [
+            'reviewer_id' => $reviewer->user_id,
+        ])->assertSessionHasNoErrors();
+        $assignment = ContentReviewAssignment::where('framework_version_id', $framework->framework_version_id)->firstOrFail();
+        $this->assertSame('ASSIGNED', $assignment->status);
+
+        $this->actingAs($reviewer)->put(route('admin.assessments.quality.submit', [$framework, $assignment]), [
+            'recommendation' => 'PASSED',
             'evidence_summary' => 'The reviewer checked the cited source and retained a record.',
+        ])->assertSessionHasNoErrors();
+        $this->assertSame('SUBMITTED', $assignment->fresh()->status);
+
+        $this->actingAs($admin)->put(route('admin.assessments.quality.decide', [$framework, $assignment]), [
+            'decision' => 'APPROVE',
+            'decision_notes' => 'Evidence is sufficient and traceable.',
         ])->assertSessionHasNoErrors();
 
         $claim = ContentGovernanceClaim::where('content_id', $framework->framework_version_id)
             ->where('claim_type', 'SOURCE_VERIFIED')->firstOrFail();
         $this->assertSame('PASSED', $claim->status);
-        $this->assertSame($admin->user_id, $claim->reviewed_by);
-        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.governance_claim.reviewed']);
+        $this->assertSame($reviewer->user_id, $claim->reviewed_by);
+        $this->assertSame('APPROVED', $assignment->fresh()->status);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.governance_review.assigned']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.governance_review.submitted']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.governance_review.decided']);
+    }
+
+    public function test_assigned_reviewer_cannot_approve_their_own_review(): void
+    {
+        $admin = $this->admin();
+        $reviewer = $this->admin();
+        $framework = $this->draftFramework();
+
+        $this->actingAs($admin)->post(route('admin.assessments.quality.assign', [$framework, 'SCORING_REVIEWED']), [
+            'reviewer_id' => $reviewer->user_id,
+        ]);
+        $assignment = ContentReviewAssignment::firstOrFail();
+        $this->actingAs($reviewer)->put(route('admin.assessments.quality.submit', [$framework, $assignment]), [
+            'recommendation' => 'PASSED',
+            'evidence_summary' => 'Scoring rules were independently reproduced.',
+        ]);
+
+        $this->actingAs($reviewer)->put(route('admin.assessments.quality.decide', [$framework, $assignment]), [
+            'decision' => 'APPROVE',
+        ])->assertForbidden();
+        $this->assertSame('SUBMITTED', $assignment->fresh()->status);
     }
 
     public function test_deterministic_and_ai_checks_are_advisory_records_and_do_not_publish(): void

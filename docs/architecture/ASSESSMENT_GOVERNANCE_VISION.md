@@ -355,6 +355,8 @@ Basic authors see plain-language choices and safe defaults. Advanced controls ar
 
 The Platform Admin navigation names this surface **Governance Studio**. Every step has a real destination rather than a decorative progress label. Structure and Questions are distinct authoring screens; Scoring exposes the immutable model declarations and item rules; Review, Test, and Publish are separate decisions in that order.
 
+Each trust signal follows an audited `Assigned -> Submitted -> Approved / Changes requested` review. The assigned reviewer supplies evidence and a recommendation; a different Platform Admin records the decision. Direct self-attestation cannot create a passed claim.
+
 ### Module 6 — Unified score views and reporting
 
 - **Status: implemented.**
