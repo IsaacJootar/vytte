@@ -346,6 +346,7 @@ Basic authors see plain-language choices and safe defaults. Advanced controls ar
 
 ### Module 5 — Guided governance studio
 
+- **Status: implemented.**
 - Replace disconnected administrative screens with the nine labelled authoring steps.
 - Add review assignments, review evidence, approvals, contribution requests, and publisher views.
 - Preserve Advanced Tools for expert inspection.
@@ -357,6 +358,7 @@ Basic authors see plain-language choices and safe defaults. Advanced controls ar
 
 ### Module 7 — Governed AI assistance and ecosystem
 
+- **Status: partially implemented.** Source-grounded advisory lint is live; imports, interoperability, field-test analytics, and adaptive pools remain later bounded modules.
 - Add source-grounded drafting, linting, simulation, translation review, and report assistance.
 - Add signed import/export packages and health interoperability mappings.
 - Add field-test analytics and approved adaptive item pools only after stable response data exists.

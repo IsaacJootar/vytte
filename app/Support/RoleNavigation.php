@@ -40,6 +40,7 @@ final class RoleNavigation
                         self::item('admin.assessments.index', 'Assessments', 'clipboard-document-list', 'admin.assessments.*'),
                         self::item('admin.question-identities.index', 'Question Library', 'question-mark-circle', 'admin.question-identities.*'),
                         self::item('admin.catalogue-releases.index', 'Publishing', 'arrow-up-tray', 'admin.catalogue-releases.*'),
+                        self::item('admin.contributions.index', 'Contributions', 'light-bulb', 'admin.contributions.*'),
                     ],
                 ],
                 [
@@ -127,6 +128,7 @@ final class RoleNavigation
                     'collapsible' => false,
                     'items' => [
                         self::item('modules.index', 'Modules', 'squares-2x2', 'modules.*'),
+                        self::item('contributions.index', 'Contribute Questions', 'light-bulb', 'contributions.*'),
                     ],
                 ],
                 // A platform administrator holds both a workspace and platform authority,

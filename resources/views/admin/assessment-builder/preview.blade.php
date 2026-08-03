@@ -24,6 +24,6 @@
 
     <div class="mt-5 flex flex-wrap justify-between gap-3">
         <a href="{{ route('admin.assessments.logic', $assessment) }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">← Logic</a>
-        <a href="{{ route('admin.assessments.review', $assessment) }}" class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">Continue to review →</a>
+        <a href="{{ route('admin.assessments.quality', $assessment) }}" class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">Continue to quality review →</a>
     </div>
 </x-admin-layout>

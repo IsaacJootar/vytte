@@ -20,7 +20,7 @@ The migration set is the schema source of truth. Current active assessment archi
 
 ### Publishers and Content Trust
 
-`content_publishers` records accountable publisher identity, visibility, and verification. `content_governance_claims` records independent review claims against governed content. Questions, framework versions, and catalogue releases reference a publisher and distribution level.
+`content_publishers` records accountable publisher identity, visibility, and verification. `content_governance_claims` records independent review claims against governed content. `content_contributions` records tenant-scoped expert proposals and their review/promotion audit trail. `content_assistance_runs` records source-hashed deterministic and AI advisory checks against framework versions. Questions, framework versions, and catalogue releases reference a publisher and distribution level.
 
 ### Governed Composition
 

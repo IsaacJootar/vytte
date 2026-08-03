@@ -108,6 +108,10 @@ Placement applicability uses a versioned response-rule grammar. Rules may inspec
 
 Existing content is backfilled to the verified Vytte publisher. New assessment-builder drafts choose publisher and source in a dedicated guided step. Publisher metadata is frozen into newly published framework payloads and assessment composition manifests.
 
+Workspace experts may submit candidate questions through `content_contributions`. Submissions remain tenant-private and never enter a runner or catalogue directly. Platform review may return, reject, or accept a contribution; only an accepted contribution can be promoted, and promotion creates a private, unscored draft question version that must pass the ordinary governance and publication workflow.
+
+The assessment builder includes a quality-review step. Deterministic lint and optional AI review write source-hashed `content_assistance_runs`; both are advisory and neither can mutate, approve, score, or publish content. Independent evidence-backed claims are recorded against the framework version with their reviewer and optional expiry.
+
 Question versions move through `DRAFT`, `INTERNAL_REVIEW`, `APPROVED`, `PUBLISHED`, and then `SUPERSEDED` or `ARCHIVED`. Published, superseded, and archived versions are immutable and cannot be deleted. Supersession clones the content into a successor draft linked by `parent_version_id` and leaves the predecessor reproducible.
 
 ### Framework Versions

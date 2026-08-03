@@ -364,3 +364,11 @@
 - **Decision:** A placement may declare a versioned rule composed from earlier-question conditions joined by `ALL` or `ANY`. Forward references and cycles are rejected. One evaluator determines respondent visibility, required completeness, and the scoring denominator for staff, public respondents, and author simulation.
 - **Preservation:** A response made visible on an earlier path remains durable if a later answer hides it, but it cannot contribute while hidden. If the path becomes visible again, the answer reappears. Completed snapshots keep their frozen rule language.
 - **Author workflow:** Sections carry instructions, intended respondent, estimated time, and repeatable intent. The Test step is a no-save interactive simulator using the production rule evaluator.
+
+### DEC-2026-08-03-049: Contributions Enter Through A Governed Draft Boundary
+
+- **Status:** Accepted and implemented.
+- **Decision:** Workspace experts may submit candidate questions with intended use, response semantics, source, licence, and methodology. Submissions stay private to the workspace. Platform reviewers may request changes, reject, or accept; only accepted submissions can be promoted.
+- **Promotion boundary:** Promotion creates a private, unscored draft question version. It never publishes content or silently adds it to an assessment or scoring model. The promoted contribution becomes an immutable audit record and the draft proceeds through the ordinary review and publication contract.
+- **Quality workflow:** Assessment authors receive deterministic quality findings, optional source-grounded AI advice, and separate evidence-backed trust claims. Automated results are source-hashed advisory records. AI cannot edit, approve, score, or publish.
+- **Rationale:** Expert knowledge should enter Vytte without being bottlenecked by central authorship, while the executable question bank remains reproducible, accountable, and safe.

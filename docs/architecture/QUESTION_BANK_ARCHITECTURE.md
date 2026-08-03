@@ -40,6 +40,8 @@ The initial publishing UI remains Platform Admin controlled. Publisher identity,
 | Framework placement | `framework_question_placements` / `FrameworkQuestionPlacement` | Exact question-version use inside a framework, with order, frozen earlier-answer applicability, evidence, weight, criticality, and scoring behavior |
 | Scoring model version | `scoring_model_versions` / `ScoringModelVersion` | Immutable instrument-level scoring purpose, construct, direction, missing policy, aggregation, algorithm, and hash |
 | Scoring item rule | `scoring_item_rules` / `ScoringItemRule` | Instrument-specific interpretation of one placement, independent of question origin |
+| Expert contribution | `content_contributions` / `ContentContribution` | Workspace-private proposal and immutable review/promotion trail; never executable assessment content |
+| Assistance run | `content_assistance_runs` / `ContentAssistanceRun` | Source-hashed deterministic or AI advisory findings against one framework version |
 | Published framework payload | `department_framework_versions.published_payload` | Frozen rendered framework content |
 | Assessment snapshot | `assessment_snapshots.payload` | Frozen exact assessment content used at runtime |
 
@@ -52,6 +54,12 @@ The initial publishing UI remains Platform Admin controlled. Publisher identity,
 - Published framework versions cannot be edited or deleted.
 - Published catalogue releases pin exact framework-version IDs.
 - Historical assessment snapshots are never recalculated from newer question or framework versions.
+
+## Contribution and review boundary
+
+An expert contribution is a proposal, not a question-bank record. It carries intended use, response semantics, optional source and licence, and methodology notes. Reviewers may request changes, reject, or accept it. Promotion is permitted only after acceptance and creates a new private, unscored `DRAFT` question and question version. The contribution then becomes an immutable audit record; publishing and adding scoring remain separate governed decisions.
+
+Automated lint and AI assistance provide reviewer evidence only. Runs are tied to a hash of the framework content they inspected. AI cannot approve a governance claim or change the framework. Source, licence, subject, methodology, scoring, field-test, translation, and benchmark claims remain independent human decisions with explicit evidence.
 
 ## Placement behavior
 

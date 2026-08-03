@@ -1,7 +1,7 @@
 <x-admin-layout title="Review and publish">
     <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-            <a href="{{ route('admin.assessments.build', $assessment) }}" class="text-sm text-slate-500 hover:underline dark:text-slate-400">← Back to building</a>
+            <a href="{{ route('admin.assessments.quality', $assessment) }}" class="text-sm text-slate-500 hover:underline dark:text-slate-400">&larr; Back to quality review</a>
             <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Review and publish</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">{{ $assessment->display_name }}</p>
         </div>
@@ -123,6 +123,15 @@
         </div>
 
         <div class="space-y-4">
+            <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">Quality and trust</h2>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Review automated findings, AI advice, and independent evidence-backed trust claims.</p>
+                <a href="{{ route('admin.assessments.quality', $assessment) }}"
+                   class="mt-3 inline-block rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200">
+                    Open quality review
+                </a>
+            </div>
+
             <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Preview</h2>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">See exactly what the person answering will see.</p>

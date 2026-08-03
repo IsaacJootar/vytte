@@ -5,10 +5,12 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Admin\AssessmentBuilderController as AdminAssessmentBuilderController;
 use App\Http\Controllers\Admin\AssessmentLogicController as AdminAssessmentLogicController;
 use App\Http\Controllers\Admin\AssessmentOversightController as AdminAssessmentOversightController;
+use App\Http\Controllers\Admin\AssessmentQualityController as AdminAssessmentQualityController;
 use App\Http\Controllers\Admin\AssessmentQuestionController as AdminAssessmentQuestionController;
 use App\Http\Controllers\Admin\AssessmentSectionController as AdminAssessmentSectionController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\CatalogueReleaseController as AdminCatalogueReleaseController;
+use App\Http\Controllers\Admin\ContentContributionController as AdminContentContributionController;
 use App\Http\Controllers\Admin\ContentPublisherController as AdminContentPublisherController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DomainTaxonomyController as AdminDomainTaxonomyController;
@@ -35,6 +37,7 @@ use App\Http\Controllers\Admin\WorkspaceController as AdminWorkspaceController;
 use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\BenchmarkController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\ContentContributionController;
 use App\Http\Controllers\CustomSectionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExportController;
@@ -79,6 +82,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('modules', [ModuleLibraryController::class, 'index'])->name('modules.index');
     Route::get('modules/{module}', [ModuleLibraryController::class, 'show'])->name('modules.show');
+    Route::get('contributions', [ContentContributionController::class, 'index'])->name('contributions.index');
+    Route::get('contributions/create', [ContentContributionController::class, 'create'])->name('contributions.create');
+    Route::post('contributions', [ContentContributionController::class, 'store'])->name('contributions.store');
 
     Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
     Route::get('assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
@@ -170,6 +176,10 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::delete('assessments/{assessment}/questions/{placement}/logic', [AdminAssessmentLogicController::class, 'destroy'])->name('assessments.logic.destroy');
     Route::get('assessments/{assessment}/publisher', [AdminAssessmentBuilderController::class, 'governance'])->name('assessments.governance');
     Route::get('assessments/{assessment}/review', [AdminAssessmentBuilderController::class, 'review'])->name('assessments.review');
+    Route::get('assessments/{assessment}/quality', [AdminAssessmentQualityController::class, 'show'])->name('assessments.quality');
+    Route::put('assessments/{assessment}/quality/claims/{claimType}', [AdminAssessmentQualityController::class, 'updateClaim'])->name('assessments.quality.claim');
+    Route::post('assessments/{assessment}/quality/lint', [AdminAssessmentQualityController::class, 'runLint'])->name('assessments.quality.lint');
+    Route::post('assessments/{assessment}/quality/ai', [AdminAssessmentQualityController::class, 'runAi'])->name('assessments.quality.ai');
     Route::put('assessments/{assessment}/provenance', [AdminAssessmentBuilderController::class, 'saveProvenance'])->name('assessments.provenance');
     Route::post('assessments/{assessment}/publish', [AdminAssessmentBuilderController::class, 'publish'])->name('assessments.publish');
     Route::get('assessments/{assessment}/preview', [AdminAssessmentBuilderController::class, 'preview'])->name('assessments.preview');
@@ -198,6 +208,10 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::put('publishers/{publisher}', [AdminContentPublisherController::class, 'update'])->name('publishers.update');
     Route::patch('publishers/{publisher}/verify', [AdminContentPublisherController::class, 'verify'])->name('publishers.verify');
     Route::patch('publishers/{publisher}/suspend', [AdminContentPublisherController::class, 'suspend'])->name('publishers.suspend');
+    Route::get('contributions', [AdminContentContributionController::class, 'index'])->name('contributions.index');
+    Route::get('contributions/{contribution}', [AdminContentContributionController::class, 'show'])->name('contributions.show');
+    Route::patch('contributions/{contribution}', [AdminContentContributionController::class, 'review'])->name('contributions.review');
+    Route::post('contributions/{contribution}/promote', [AdminContentContributionController::class, 'promote'])->name('contributions.promote');
 
     Route::get('geographic-usage', [AdminGeographicUsageController::class, 'index'])->name('geographic-usage.index');
 

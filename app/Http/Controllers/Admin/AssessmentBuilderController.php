@@ -49,8 +49,8 @@ class AssessmentBuilderController extends Controller
         ['key' => 'questions', 'label' => 'Questions', 'available' => true],
         ['key' => 'logic', 'label' => 'Logic', 'available' => true],
         ['key' => 'scoring', 'label' => 'Scoring', 'available' => true],
-        ['key' => 'review', 'label' => 'Review', 'available' => true],
         ['key' => 'test', 'label' => 'Test', 'available' => true],
+        ['key' => 'review', 'label' => 'Review', 'available' => true],
         ['key' => 'publish', 'label' => 'Publish', 'available' => true],
     ];
 
