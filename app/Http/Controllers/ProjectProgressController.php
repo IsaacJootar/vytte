@@ -7,6 +7,7 @@ use App\Models\PerformanceTarget;
 use App\Models\Project;
 use App\Models\ReportSchedule;
 use App\Services\PlanService;
+use App\Services\Reporting\ComparisonEligibilityService;
 use App\Services\Reporting\TrendService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -59,7 +60,7 @@ class ProjectProgressController extends Controller
         return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains', 'trend', 'followThrough', 'issues', 'trendInsights', 'targetProgress', 'targets', 'schedules'));
     }
 
-    public function compare(Project $project, Request $request): View|RedirectResponse
+    public function compare(Project $project, Request $request, ComparisonEligibilityService $eligibility): View|RedirectResponse
     {
         $this->authorize('view', $project);
         $workspace = app('current.workspace');
@@ -74,13 +75,13 @@ class ProjectProgressController extends Controller
         $assessmentA = Assessment::where('project_id', $project->project_id)
             ->where('assessment_id', $idA)
             ->where('status', Assessment::STATUS_COMPLETE)
-            ->with(['score.maturityLevel', 'moduleScope.module'])
+            ->with(['score.maturityLevel', 'moduleScope.module', 'snapshot', 'reportSnapshot'])
             ->firstOrFail();
 
         $assessmentB = Assessment::where('project_id', $project->project_id)
             ->where('assessment_id', $idB)
             ->where('status', Assessment::STATUS_COMPLETE)
-            ->with(['score.maturityLevel', 'moduleScope.module'])
+            ->with(['score.maturityLevel', 'moduleScope.module', 'snapshot', 'reportSnapshot'])
             ->firstOrFail();
 
         if ($assessmentA->assessment_id === $assessmentB->assessment_id) {
@@ -88,10 +89,7 @@ class ProjectProgressController extends Controller
                 ->with('error', 'Choose two different assessment runs to compare.');
         }
 
-        if ($this->compositionFingerprint($assessmentA) !== $this->compositionFingerprint($assessmentB)) {
-            return redirect()->route('projects.progress', $project)
-                ->with('error', 'These assessments use different content or areas and cannot be compared reliably.');
-        }
+        $comparison = $eligibility->between($assessmentA, $assessmentB);
 
         $allDomains = DB::table('domains')
             ->where('is_operational', true)
@@ -106,7 +104,7 @@ class ProjectProgressController extends Controller
             ->where('assessment_id', $idB)
             ->pluck('score', 'domain_id');
 
-        return view('projects.compare', compact('project', 'assessmentA', 'assessmentB', 'allDomains', 'domainsA', 'domainsB'));
+        return view('projects.compare', compact('project', 'assessmentA', 'assessmentB', 'allDomains', 'domainsA', 'domainsB', 'comparison'));
     }
 
     /**
@@ -139,17 +137,5 @@ class ProjectProgressController extends Controller
         $target->delete();
 
         return back()->with('success', 'Target removed.');
-    }
-
-    private function compositionFingerprint(Assessment $assessment): string
-    {
-        if ($assessment->composition_hash) {
-            return $assessment->composition_hash;
-        }
-
-        $moduleIds = $assessment->moduleScope->where('in_scope', true)
-            ->pluck('module_id')->map(fn ($id) => (int) $id)->sort()->values()->all();
-
-        return hash('sha256', json_encode($moduleIds, JSON_THROW_ON_ERROR));
     }
 }

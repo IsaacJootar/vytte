@@ -145,40 +145,6 @@
         </p>
     </div>
 
-    {{-- At a glance — the same visual summary carried by the PDF and shared report, so the
-         on-screen report and its print match the exports. --}}
-    @php
-        $vizRiskCounts = collect($intelligence['risks'] ?? [])->groupBy(fn ($r) => strtoupper($r['level'] ?? 'LOW'))->map->count();
-        $vizMaturity = $assessment->score?->maturityLevel?->level_number;
-        $vizTrend = collect($history ?? [])
-            ->filter(fn ($h) => $h->score?->overall_score !== null)
-            ->map(fn ($h) => ['label' => $h->completed_at?->format('d M') ?? '', 'value' => (float) $h->score->overall_score])
-            ->values()->all();
-        $vizRiskTotal = collect($vizRiskCounts)->sum();
-    @endphp
-    <div class="mb-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
-        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-4">At a glance</h2>
-        @if ($vizMaturity)
-            <div class="mb-4">@include('exports.charts.maturity-ladder', ['level' => $vizMaturity])</div>
-        @endif
-        @if ($domainScores->where('score', '!=', null)->count() > 0)
-            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Scores by area</p>
-            <div class="mb-4">@include('exports.charts.domain-bars', ['domains' => $domainScores])</div>
-        @endif
-        @if ($vizRiskTotal > 0)
-            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Risks by level</p>
-            <div class="mb-4">@include('exports.charts.risk-strip', ['riskCounts' => $vizRiskCounts])</div>
-        @endif
-        @if ($subIndexScores->where('score', '!=', null)->count() >= 3)
-            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Sub-index scores</p>
-            <div class="mb-4">@include('exports.charts.subindex-radar', ['subIndices' => $subIndexScores])</div>
-        @endif
-        @if (count($vizTrend) >= 2)
-            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Score over time</p>
-            <div>@include('exports.charts.trend-line', ['points' => $vizTrend])</div>
-        @endif
-    </div>
-
     {{-- Report in steps (progressive disclosure). Tabs are screen-only; print shows all.
          The active tab is mirrored in the URL (?tab=), so a form that posts and redirects back
          (generate AI, add to action plan) returns the user to the same tab, not the top. --}}
@@ -273,14 +239,14 @@
                     <div class="mt-3 inline-block relative" x-data="{ open: false }">
                         <button type="button" @click="open = !open"
                                 class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                            <span class="text-xs text-slate-500 dark:text-slate-400">Maturity level</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">Performance stage</span>
                             <span class="text-xs font-bold text-slate-900 dark:text-white">{{ $maturity->level_number }} — {{ $maturity->level_name }}</span>
                             <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"/></svg>
                         </button>
                         <div x-show="open" x-cloak @click.outside="open = false" x-transition
                              class="absolute z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl p-4 text-left">
-                            <p class="text-xs font-bold text-slate-900 dark:text-white mb-1">What maturity level means</p>
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">How well this target uses its data to improve — a ladder from collecting data to learning from it. Your level is highlighted.</p>
+                            <p class="text-xs font-bold text-slate-900 dark:text-white mb-1">What performance stage means</p>
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-3">A plain-language interpretation of this assessment's overall score. It is not a second score or a claim about the organization's general maturity.</p>
                             <ul class="flex flex-col gap-1.5">
                                 @foreach (\App\Models\MaturityLevel::orderBy('level_number')->get() as $level)
                                     <li class="flex items-start gap-2 rounded-lg px-2 py-1.5 {{ $level->level_number === $maturity->level_number ? 'bg-vytte-50 dark:bg-vytte-900/30 ring-1 ring-vytte-200 dark:ring-vytte-800' : '' }}">
@@ -300,6 +266,56 @@
             </div>
         </div>
     </div>
+
+    @php
+        $decisionUrgent = collect($intelligence['findings'] ?? [])->first(fn ($item) => in_array($item['category'] ?? null, ['CRITICAL_FINDING', 'WEAKNESS'], true));
+        $decisionStrength = collect($intelligence['findings'] ?? [])->firstWhere('category', 'STRENGTH');
+        $decisionAction = collect($intelligence['recommendations'] ?? [])->first();
+    @endphp
+    @if ($decisionUrgent || $decisionStrength || $decisionAction)
+        <section class="mt-5 grid gap-3 md:grid-cols-3 print-break-avoid">
+            @foreach ([
+                ['label' => 'Attend to first', 'item' => $decisionUrgent, 'text' => $decisionUrgent['statement'] ?? null, 'tone' => 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30'],
+                ['label' => 'Protect and build on', 'item' => $decisionStrength, 'text' => $decisionStrength['statement'] ?? null, 'tone' => 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/30'],
+                ['label' => 'Best next move', 'item' => $decisionAction, 'text' => $decisionAction['statement'] ?? null, 'tone' => 'border-vytte-200 bg-vytte-50 dark:border-vytte-900 dark:bg-vytte-950/30'],
+            ] as $decision)
+                @if ($decision['item'])
+                    <div class="rounded-2xl border p-4 {{ $decision['tone'] }}">
+                        <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $decision['label'] }}</p>
+                        <p class="mt-2 text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">{{ $decision['text'] }}</p>
+                    </div>
+                @endif
+            @endforeach
+        </section>
+    @endif
+
+    @php
+        $overviewRiskCounts = collect($intelligence['risks'] ?? [])->groupBy(fn ($risk) => strtoupper($risk['level'] ?? 'LOW'))->map->count();
+        $overviewRiskTotal = $overviewRiskCounts->sum();
+        $overviewMaturity = $assessment->score?->maturityLevel?->level_number;
+    @endphp
+    @if ($overviewMaturity || $overviewRiskTotal > 0)
+        <section class="mt-5 grid gap-4 lg:grid-cols-2 print-break-avoid">
+            @if ($overviewMaturity)
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">Performance stage</h2>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">What this instrument's overall score means and the appropriate next posture.</p>
+                    <div class="mt-4">@include('exports.charts.maturity-ladder', ['level' => $overviewMaturity])</div>
+                </div>
+            @endif
+            @if ($overviewRiskTotal > 0)
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">Risk exposure</h2>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">The number and severity of risks supported by this assessment.</p>
+                    <div class="mt-4">@include('exports.charts.risk-strip', ['riskCounts' => $overviewRiskCounts])</div>
+                </div>
+            @endif
+        </section>
+    @endif
+
+    @if (! empty($report['measurement_views']))
+        <x-report-measurement-views :views="$report['measurement_views']" />
+    @endif
 
     {{-- Sub-index breakdown --}}
     @if ($subIndexScores->isNotEmpty())
@@ -404,9 +420,36 @@
     {{-- ===== WHAT WE FOUND (diagnosis) ===== --}}
     <div x-show="tab === 'diagnosis'" x-cloak class="report-panel">
 
+    @if (! empty($issueProgress['open']) || ! empty($issueProgress['resolved']))
+        <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 print-break-avoid">
+            <div class="border-b border-slate-100 p-5 dark:border-slate-700">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div><h2 class="text-sm font-bold text-slate-900 dark:text-white">Exact issues to track</h2><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Each issue keeps a stable key across comparable runs, so progress is based on the same assessed item—not similar wording.</p></div>
+                    <div class="flex gap-2 text-[10px] font-bold"><span class="rounded-full bg-red-100 px-2 py-1 text-red-700">{{ $issueProgress['counts']['new'] }} new</span><span class="rounded-full bg-amber-100 px-2 py-1 text-amber-700">{{ $issueProgress['counts']['persistent'] }} persistent</span><span class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">{{ $issueProgress['counts']['resolved'] }} resolved</span></div>
+                </div>
+            </div>
+            <div class="divide-y divide-slate-100 dark:divide-slate-700">
+                @foreach (array_merge($issueProgress['open'], $issueProgress['resolved']) as $issue)
+                    @php
+                        $issueTone = match ($issue['progress_status']) { 'NEW' => 'bg-red-100 text-red-700', 'PERSISTENT' => 'bg-amber-100 text-amber-700', default => 'bg-emerald-100 text-emerald-700' };
+                    @endphp
+                    <div class="p-5">
+                        <div class="flex flex-wrap items-center gap-2"><span class="rounded-full px-2 py-0.5 text-[10px] font-bold {{ $issueTone }}">{{ str($issue['progress_status'])->title() }}</span>@if ($issue['measurement_domain'])<span class="text-[10px] font-bold text-slate-400">{{ $issue['measurement_domain'] }}</span>@endif @if ($issue['critical_failure'])<span class="rounded-full bg-red-700 px-2 py-0.5 text-[10px] font-bold text-white">Critical</span>@endif</div>
+                        <p class="mt-2 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ $issue['question_text'] }}</p>
+                        <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                            @if ($issue['recorded_answer'])<span>Recorded answer: <strong class="text-slate-700 dark:text-slate-200">{{ $issue['recorded_answer'] }}</strong></span>@endif
+                            @if ($issue['item_score'] !== null)<span>Item score: <strong class="text-slate-700 dark:text-slate-200">{{ number_format((float) $issue['item_score'], 0) }}/100</strong></span>@endif
+                        </div>
+                        @if (! empty($issue['evidence_note']))<p class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-900/50 dark:text-slate-300">Evidence note: {{ $issue['evidence_note'] }}</p>@endif
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     {{-- Question drill-down: the individual questions behind each domain score. --}}
     @php $drilldown = $domainScores->filter(fn ($r) => ! empty($r->question_breakdown ?? null)); @endphp
-    @if ($drilldown->isNotEmpty())
+    @if (empty($issueProgress['open']) && $drilldown->isNotEmpty())
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Question drill-down</h2>
             <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Click any area to see the individual questions and scores behind it.</p>
@@ -456,13 +499,38 @@
 
     {{-- Lens selector — the same result, read for a different audience. --}}
     <div class="mt-5 no-print flex flex-wrap items-center gap-2">
-        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Read this report as:</span>
+        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Quick views:</span>
         @foreach ($lensOptions as $key => $meta)
             <a href="{{ route('assessments.results', $assessment) }}?lens={{ $key }}"
                class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors {{ $lensView['lens'] === $key ? 'border-vytte-600 bg-vytte-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700' }}">
                 {{ $meta['name'] }}
             </a>
         @endforeach
+        <details class="w-full rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800 sm:w-auto">
+            <summary class="cursor-pointer text-xs font-bold text-vytte-700 dark:text-vytte-400">Build my own view</summary>
+            <form method="GET" action="{{ route('assessments.results', $assessment) }}" class="mt-3 grid gap-2 sm:grid-cols-4">
+                <input type="hidden" name="view" value="custom">
+                <input type="hidden" name="tab" value="diagnosis">
+                <select name="focus" class="rounded-lg border-slate-300 text-xs dark:border-slate-700 dark:bg-slate-900">
+                    @foreach (['PRIORITIES' => 'Priorities', 'RISKS' => 'Risks and gaps', 'STRENGTHS' => 'Strengths and opportunities', 'ALL' => 'Everything'] as $value => $label)
+                        <option value="{{ $value }}" @selected(($lensView['custom']['focus'] ?? null) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <select name="domain" class="rounded-lg border-slate-300 text-xs dark:border-slate-700 dark:bg-slate-900">
+                    <option value="">All measurement areas</option>
+                    @foreach ($reportDomainOptions as $code => $name)
+                        <option value="{{ $code }}" @selected(($lensView['custom']['domain'] ?? null) === $code)>{{ $name }}</option>
+                    @endforeach
+                </select>
+                <select name="detail" class="rounded-lg border-slate-300 text-xs dark:border-slate-700 dark:bg-slate-900">
+                    @foreach (['BRIEF' => 'Brief', 'STANDARD' => 'Standard detail', 'DETAILED' => 'Detailed'] as $value => $label)
+                        <option value="{{ $value }}" @selected(($lensView['custom']['detail'] ?? null) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <button class="rounded-lg bg-vytte-600 px-3 py-2 text-xs font-bold text-white">Apply view</button>
+            </form>
+            <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">This changes emphasis and detail only. Scores, evidence, critical findings, and limitations remain locked.</p>
+        </details>
     </div>
 
     <div class="mt-3 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
@@ -795,13 +863,23 @@
                     </svg>
                 </a>
             </div>
+            @php
+                $historyPoints = $history->filter(fn ($run) => $run->score?->overall_score !== null)
+                    ->map(fn ($run) => ['label' => $run->completed_at?->format('d M') ?? '', 'value' => (float) $run->score->overall_score])
+                    ->values()->all();
+            @endphp
+            @if (count($historyPoints) >= 2)
+                <div class="border-b border-slate-100 p-5 dark:border-slate-700">
+                    @include('exports.charts.trend-line', ['points' => $historyPoints])
+                </div>
+            @endif
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-slate-100 dark:border-slate-700">
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">#</th>
                             <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Date</th>
-                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Maturity Level</th>
+                            <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Performance Stage</th>
                             <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Score</th>
                             <th class="px-5 py-2.5 text-right text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">Band</th>
                         </tr>

@@ -18,6 +18,7 @@ use App\Services\AssessmentLogicService;
 use App\Services\AuditService;
 use App\Services\PlanService;
 use App\Services\Reporting\CustomSectionScoringService;
+use App\Services\Reporting\IssueTrackingService;
 use App\Services\Reporting\LensCatalog;
 use App\Services\Reporting\ReportComposer;
 use App\Services\ReportSnapshotService;
@@ -371,8 +372,16 @@ class AssessmentController extends Controller
         $composer = app(ReportComposer::class);
         $intelligence = $report['intelligence'] ?? $composer->intelligence($report);
         $lens = request()->query('lens', LensCatalog::DEFAULT);
-        $lensView = $composer->throughLens($intelligence, is_string($lens) ? $lens : LensCatalog::DEFAULT);
+        $lensView = request()->query('view') === 'custom'
+            ? $composer->customView(
+                $intelligence,
+                (string) request()->query('focus', 'PRIORITIES'),
+                (string) request()->query('detail', 'STANDARD'),
+                filled(request()->query('domain')) ? (string) request()->query('domain') : null,
+            )
+            : $composer->throughLens($intelligence, is_string($lens) ? $lens : LensCatalog::DEFAULT);
         $lensOptions = ReportComposer::lenses();
+        $reportDomainOptions = $domainScores->pluck('domain_name', 'domain_code');
 
         // Optional AI products — offered only if the integration is configured; any already
         // generated are shown. The report never depends on them.
@@ -392,14 +401,18 @@ class AssessmentController extends Controller
         }
 
         // History is comparable only when the exact governed composition matches.
-        $history = Assessment::where('project_id', $assessment->project_id)
+        $historyQuery = Assessment::where('project_id', $assessment->project_id)
             ->where('status', Assessment::STATUS_COMPLETE)
-            ->when(
-                $assessment->composition_hash,
-                fn ($query, $hash) => $query->where('composition_hash', $hash),
-                fn ($query) => $query->where('assessment_id', $assessment->assessment_id)
-            )
-            ->with(['score.maturityLevel', 'reportSnapshot'])
+            ->with(['score.maturityLevel', 'reportSnapshot']);
+        $comparisonSignature = $report['comparison_signature'] ?? null;
+        if ($comparisonSignature) {
+            $historyQuery->whereHas('reportSnapshot', fn ($query) => $query->where('comparison_signature', $comparisonSignature));
+        } elseif ($assessment->composition_hash) {
+            $historyQuery->where('composition_hash', $assessment->composition_hash);
+        } else {
+            $historyQuery->where('assessment_id', $assessment->assessment_id);
+        }
+        $history = $historyQuery
             ->orderBy('completed_at')
             ->get();
         foreach ($history as $historicalAssessment) {
@@ -409,6 +422,11 @@ class AssessmentController extends Controller
                 $historicalAssessment->score->calibration_status = $historicalScore['calibration_status'];
             }
         }
+        $previousComparable = $history->where('assessment_id', '!=', $assessment->assessment_id)->last();
+        $issueProgress = app(IssueTrackingService::class)->compare(
+            $report['measurement_views'] ?? [],
+            $previousComparable?->reportSnapshot?->payload['measurement_views'] ?? null,
+        );
 
         // Share links were flashed once at creation and never shown again, so a link the
         // user did not copy in that moment was gone. They are listed now.
@@ -430,7 +448,7 @@ class AssessmentController extends Controller
                 : $customScorer->score($customSection->questions ?? [], $customSection->answers ?? []);
         }
 
-        return view('assessments.results', compact('assessment', 'assessmentTitle', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions', 'aiAvailable', 'aiProducts', 'narratives', 'customSection', 'customScored'));
+        return view('assessments.results', compact('assessment', 'assessmentTitle', 'report', 'subIndexScores', 'domainScores', 'history', 'shareLinks', 'intelligence', 'lensView', 'lensOptions', 'reportDomainOptions', 'issueProgress', 'aiAvailable', 'aiProducts', 'narratives', 'customSection', 'customScored'));
     }
 
     /**

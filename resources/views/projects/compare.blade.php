@@ -13,6 +13,11 @@
         <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight mt-0.5">{{ $project->name }}</h1>
     </div>
 
+    <div class="mb-5 rounded-2xl border p-4 {{ $comparison['comparable'] ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40' : 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40' }}">
+        <p class="text-xs font-bold uppercase tracking-wide {{ $comparison['comparable'] ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300' }}">{{ str($comparison['classification'])->replace('_', ' ')->title() }}</p>
+        <p class="mt-1 text-sm {{ $comparison['comparable'] ? 'text-emerald-800 dark:text-emerald-200' : 'text-amber-800 dark:text-amber-200' }}">{{ $comparison['reason'] }}</p>
+    </div>
+
     {{-- Side-by-side header cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
         @foreach ([['A', $assessmentA, $domainsA], ['B', $assessmentB, $domainsB]] as [$label, $assessment, $domains])
@@ -52,7 +57,7 @@
                     </div>
                     @if ($maturity)
                         <div class="mb-1">
-                            <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-0.5">Maturity</p>
+                            <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-0.5">Stage</p>
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                 <span class="text-vytte-700 dark:text-vytte-400 font-bold">L{{ $maturity->level_number }}</span>
                                 {{ $maturity->level_name }}
@@ -77,7 +82,7 @@
         $radarB = collect($allDomains)->filter(fn ($d) => isset($domainsB[$d->domain_id]))
             ->map(fn ($d) => ['label' => $d->domain_code, 'value' => (float) $domainsB[$d->domain_id]])->values()->all();
     @endphp
-    @if (count($radarB) >= 3)
+    @if ($comparison['show_deltas'] && count($radarB) >= 3)
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5 flex flex-col items-center">
             <div class="self-start flex items-center gap-3 mb-2">
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Domain profile</h2>
@@ -88,6 +93,7 @@
     @endif
 
     {{-- Domain delta table --}}
+    @if ($comparison['show_deltas'])
     <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Domain Comparison</h2>
@@ -167,6 +173,12 @@
             </table>
         </div>
     </div>
+    @else
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Descriptive view only</h2>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Both reports remain available above, but domain deltas and trend claims are hidden because the frozen methodologies do not match.</p>
+        </div>
+    @endif
 
     {{-- Run a new comparison link --}}
     <div class="mt-4 text-center">

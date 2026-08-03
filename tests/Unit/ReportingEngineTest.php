@@ -88,6 +88,19 @@ class ReportingEngineTest extends TestCase
         $this->assertNotEmpty($intelligence['risks']);
     }
 
+    public function test_custom_report_view_changes_emphasis_without_hiding_critical_findings(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $intelligence = $composer->intelligence($this->payload('CRITICAL_FAILURE'));
+
+        $view = $composer->customView($intelligence, 'STRENGTHS', 'BRIEF', 'WORK');
+
+        $this->assertSame('CUSTOM', $view['lens']);
+        $this->assertLessThanOrEqual(3, count($view['lead']));
+        $this->assertContains('CRITICAL_FINDING', collect($view['lead'])->pluck('category')->all());
+        $this->assertContains('STRENGTH', collect($view['lead'])->pluck('category')->all());
+    }
+
     public function test_worst_news_leads(): void
     {
         $findings = (new DiagnosticsService)->findings($this->payload());

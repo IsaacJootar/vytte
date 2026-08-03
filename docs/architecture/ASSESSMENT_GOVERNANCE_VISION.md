@@ -260,6 +260,8 @@ One immutable report contains:
 
 AI-generated narrative must cite exact frozen findings, responses, or evidence. It cannot introduce unsupported conclusions.
 
+The named lenses are quick starting points, not a fixed limit. Users may tailor the report's focus, measurement area, and level of detail. Vytte keeps the underlying score, exact issues, evidence, critical findings, limitations, and comparison rules immutable. Visuals are purposeful rather than decorative: the score gauge shows level, the domain profile shows balance, the risk strip shows exposure, the performance-stage ladder explains the score's action posture, and the trend line shows change.
+
 ## Governance Lifecycle
 
 The full lifecycle is:
@@ -353,6 +355,7 @@ Basic authors see plain-language choices and safe defaults. Advanced controls ar
 
 ### Module 6 — Unified score views and reporting
 
+- **Status: implemented.**
 - Compose primary, domain, common-core, context, qualitative, and critical results into one report snapshot.
 - Add comparison eligibility and methodology disclosure everywhere the result is shown or exported.
 

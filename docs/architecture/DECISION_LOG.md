@@ -341,7 +341,7 @@
 
 ### DEC-2026-08-03-045: One Report Carries Multiple Explicit Measurement Purposes
 
-- **Status:** Accepted; implementation in progress.
+- **Status:** Accepted and implemented.
 - **Decision:** The immutable report may contain a primary instrument score, domain/sub-index scores, a benchmark-eligible common-core score, context or need indicators, qualitative findings, critical findings, evidence, and limitations. These are views in one report, not parallel reporting systems.
 - **Guard:** Every metric declares its construct, direction, source items, formula, missing policy, calibration state, and comparison eligibility. Equal 0–100 scales never establish comparability by themselves.
 
@@ -372,3 +372,18 @@
 - **Promotion boundary:** Promotion creates a private, unscored draft question version. It never publishes content or silently adds it to an assessment or scoring model. The promoted contribution becomes an immutable audit record and the draft proceeds through the ordinary review and publication contract.
 - **Quality workflow:** Assessment authors receive deterministic quality findings, optional source-grounded AI advice, and separate evidence-backed trust claims. Automated results are source-hashed advisory records. AI cannot edit, approve, score, or publish.
 - **Rationale:** Expert knowledge should enter Vytte without being bottlenecked by central authorship, while the executable question bank remains reproducible, accountable, and safe.
+
+### DEC-2026-08-03-050: Reports Are Immutable In Fact And Flexible In Presentation
+
+- **Status:** Accepted and implemented.
+- **Decision:** One frozen report contains primary, common-core where defined, context, qualitative, critical, coverage, and limitation views. Named lenses are presets, not a fixed limit; users may tailor focus, measurement area, and detail without changing any fact or calculation.
+- **Issue tracking:** Pain points retain stable keys with the exact assessed question, recorded answer, item score, and severity. A later report with the same comparison signature can classify an issue as new, persistent, or resolved. Aggregate reports suppress individual item traces to protect respondents.
+- **Comparison guard:** Matching frozen comparison signatures permit deltas. Different or undocumented methodologies may be displayed side by side, but Vytte suppresses deltas, ranking, and improvement claims.
+- **Visual rule:** Each chart must answer a different decision question. Decorative or duplicate charts are removed; exact tables remain available where they add precision.
+
+### DEC-2026-08-03-051: Generic Scores Use Performance Stages, Not Data-Use Maturity Claims
+
+- **Status:** Accepted and implemented.
+- **Context:** Every assessment score was mapped to a ladder named Data Collection through Learning Health System. That language falsely implied that a PHC readiness, malaria, or menstrual-health assessment had measured data-use maturity.
+- **Decision:** The five bands are now presented as Urgent Action, Foundational, Developing, Established, and Leading. A performance stage is only a plain-language interpretation of the same 0–100 result and the action posture appropriate to that band. It is not a second score or proof of an organization's general maturity.
+- **Historical boundary:** Completed report snapshots retain their frozen historical label. New and live reference data use the corrected stages. A future publisher-specific maturity model must be separately versioned and validated rather than inferred from a generic score.

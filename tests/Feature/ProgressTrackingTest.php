@@ -14,6 +14,7 @@ use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
 use Database\Seeders\PlanFeatureSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProgressTrackingTest extends TestCase
@@ -250,7 +251,7 @@ class ProgressTrackingTest extends TestCase
             ->assertSee('100'); // score visible in both cards
     }
 
-    public function test_compare_rejects_different_composition_hashes(): void
+    public function test_matching_methodology_signatures_allow_comparison_even_when_record_hashes_differ(): void
     {
 
         [$user, $workspace] = $this->userWithWorkspace();
@@ -262,8 +263,28 @@ class ProgressTrackingTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('projects.compare', $project)."?a={$a->assessment_id}&b={$b->assessment_id}")
-            ->assertRedirect(route('projects.progress', $project))
-            ->assertSessionHas('error');
+            ->assertOk()
+            ->assertSee('Directly Comparable')
+            ->assertSee('Domain Comparison');
+    }
+
+    public function test_different_methodologies_are_shown_side_by_side_without_deltas(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $project = $this->makeProjectWithTarget($user, $workspace);
+        $a = $this->makeCompleteAssessment($workspace, $user, $project, withAnswers: true);
+        $b = $this->makeCompleteAssessment($workspace, $user, $project, withAnswers: true);
+        DB::table('assessment_snapshots')->where('assessment_id', $a->assessment_id)->update(['comparison_signature' => str_repeat('a', 64)]);
+        DB::table('assessment_snapshots')->where('assessment_id', $b->assessment_id)->update(['comparison_signature' => str_repeat('b', 64)]);
+        DB::table('assessment_report_snapshots')->where('assessment_id', $a->assessment_id)->update(['comparison_signature' => str_repeat('a', 64)]);
+        DB::table('assessment_report_snapshots')->where('assessment_id', $b->assessment_id)->update(['comparison_signature' => str_repeat('b', 64)]);
+
+        $this->actingAs($user)
+            ->get(route('projects.compare', $project)."?a={$a->assessment_id}&b={$b->assessment_id}")
+            ->assertOk()
+            ->assertSee('Not Comparable')
+            ->assertSee('Descriptive view only')
+            ->assertDontSee('Domain Comparison');
     }
 
     public function test_compare_page_404s_when_assessment_belongs_to_different_project(): void

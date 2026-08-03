@@ -124,7 +124,7 @@
                 @endif
             </div>
             @if ($score['maturity_level'])
-                <div class="score-maturity">Maturity Level: {{ $score['maturity_level']['name'] }}</div>
+                <div class="score-maturity">Performance stage: {{ $score['maturity_level']['name'] }}</div>
             @endif
             @if ($calibStatus === 'NOT_CALIBRATED')
                 <div class="score-calibration">Not enough responses to calculate a reliable score</div>
@@ -137,10 +137,7 @@
     {{-- Visual summary — the same intelligence, at a glance. HTML/CSS charts so they render. --}}
     <div class="section-title">At a Glance</div>
     <div style="margin-bottom: 12px;">
-        @include('exports.charts.score-gauge', ['score' => $overall])
-    </div>
-    <div style="margin-bottom: 12px;">
-        <p style="font-size: 9px; font-weight: 700; color: #475569; margin-bottom: 4px;">Data-use maturity</p>
+        <p style="font-size: 9px; font-weight: 700; color: #475569; margin-bottom: 4px;">Performance stage</p>
         @include('exports.charts.maturity-ladder', ['level' => $maturityLevel])
     </div>
 
@@ -171,6 +168,35 @@
             <p style="font-size: 9px; font-weight: 700; color: #475569; margin-bottom: 4px;">Score over time</p>
             @include('exports.charts.trend-line', ['points' => $trendPoints])
         </div>
+    @endif
+
+    @php($measurementViews = $report['measurement_views'] ?? [])
+    @if (! empty($measurementViews))
+        <div class="section-title">Coverage and Interpretation</div>
+        <p style="font-size:9px;color:#475569;line-height:1.5;">
+            Primary construct: {{ $measurementViews['primary']['construct'] ?? 'Readiness' }}.
+            Source items: {{ $measurementViews['primary']['source_items'] ?? '—' }}.
+            {{ $measurementViews['primary']['comparison_eligibility']['reason'] ?? '' }}
+        </p>
+        @foreach ($measurementViews['limitations'] ?? [] as $limitation)
+            <p style="font-size:9px;color:#92400e;margin-top:4px;">• {{ $limitation }}</p>
+        @endforeach
+    @endif
+
+    @if (! empty($measurementViews['issue_register']))
+        <div class="section-title">Exact Issues To Track</div>
+        <table>
+            <thead><tr><th>Issue</th><th>Recorded answer</th><th>Item score</th></tr></thead>
+            <tbody>
+                @foreach ($measurementViews['issue_register'] as $issue)
+                    <tr>
+                        <td>{{ $issue['question_text'] }}</td>
+                        <td>{{ $issue['recorded_answer'] ?: '—' }}</td>
+                        <td>{{ number_format((float) $issue['item_score'], 0) }}/100</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
     @endif
 
     {{-- Domain scores --}}

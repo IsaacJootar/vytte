@@ -107,6 +107,52 @@ class ReportComposer
     }
 
     /**
+     * Build a user-tailored reading without changing any frozen fact or calculation.
+     *
+     * @return array<string, mixed>
+     */
+    public function customView(array $intelligence, string $focus, string $detail, ?string $domain = null): array
+    {
+        $focus = in_array($focus, ['PRIORITIES', 'RISKS', 'STRENGTHS', 'ALL'], true) ? $focus : 'PRIORITIES';
+        $detail = in_array($detail, ['BRIEF', 'STANDARD', 'DETAILED'], true) ? $detail : 'STANDARD';
+        $domain = filled($domain) ? strtoupper(trim($domain)) : null;
+        $categories = match ($focus) {
+            'RISKS' => ['CRITICAL_FINDING', 'WEAKNESS', 'DATA_GAP'],
+            'STRENGTHS' => ['STRENGTH', 'OPPORTUNITY'],
+            'ALL' => [],
+            default => ['CRITICAL_FINDING', 'WEAKNESS', 'OPPORTUNITY'],
+        };
+        $limit = match ($detail) {
+            'BRIEF' => 3,
+            'DETAILED' => null,
+            default => 8,
+        };
+        $filter = fn ($item) => ($item['category'] ?? null) === 'CRITICAL_FINDING' || (
+            ($domain === null || ($item['measurement_domain'] ?? null) === $domain)
+            && ($categories === [] || in_array($item['category'] ?? null, $categories, true))
+        );
+        $findings = collect($intelligence['findings'] ?? [])->filter($filter)->sortBy(fn ($item) => $this->rank($item))->values();
+        $recommendations = collect($intelligence['recommendations'] ?? [])
+            ->filter(fn ($item) => $domain === null || ($item['measurement_domain'] ?? null) === $domain)
+            ->values();
+        if ($limit !== null) {
+            $findings = $findings->take($limit);
+            $recommendations = $recommendations->take($limit);
+        }
+
+        return [
+            'lens' => 'CUSTOM',
+            'lens_name' => 'Custom report view',
+            'lens_question' => str($focus)->lower()->replace('_', ' ')->ucfirst().' · '.str($detail)->lower()->ucfirst(),
+            'lead' => $findings->all(),
+            'lens_insights' => [],
+            'findings' => $intelligence['findings'] ?? [],
+            'recommendations' => $recommendations->all(),
+            'custom' => ['focus' => $focus, 'detail' => $detail, 'domain' => $domain],
+        ];
+    }
+
+    /**
      * Order the foregrounded findings the way this lens reads them.
      *
      * @param  Collection<int, array<string, mixed>>  $findings

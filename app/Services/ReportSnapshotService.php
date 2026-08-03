@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Assessment;
 use App\Models\AssessmentReportSnapshot;
 use App\Services\Reporting\ReportComposer;
+use App\Services\Reporting\UnifiedReportViewService;
 use Illuminate\Support\Facades\DB;
 
 class ReportSnapshotService
@@ -81,9 +82,8 @@ class ReportSnapshotService
 
         // Attach the specific failing questions (failed indicators) to each domain, so a
         // weakness can point to the concrete items behind it rather than just a number.
-        $domains = $this->attachFailedIndicators($domains, $contentModules);
-
         $aggregation = $assessment->aggregationResult;
+        $domains = $this->attachFailedIndicators($domains, $contentModules, $aggregation !== null);
 
         $payload = [
             'schema_version' => self::SCHEMA_VERSION,
@@ -142,6 +142,7 @@ class ReportSnapshotService
         // alongside the scores it was derived from. Frozen together, a report reads
         // identically forever, and the reader never sees numbers without their meaning.
         $payload['intelligence'] = app(ReportComposer::class)->intelligence($payload);
+        $payload['measurement_views'] = app(UnifiedReportViewService::class)->compose($assessment, $payload);
 
         return $payload;
     }
@@ -222,28 +223,51 @@ class ReportSnapshotService
      * @param  array<int, mixed>  $contentModules
      * @return array<int, array<string, mixed>>
      */
-    private function attachFailedIndicators(array $domains, array $contentModules): array
+    private function attachFailedIndicators(array $domains, array $contentModules, bool $isAggregate = false): array
     {
-        $questionText = collect($contentModules)
+        $questionMetadata = collect($contentModules)
             ->flatMap(fn ($module) => $module['questions'] ?? [])
-            ->mapWithKeys(fn ($question) => [(string) $question['question_id'] => $question['question_text'] ?? 'Question'])
+            ->mapWithKeys(fn ($question) => [(string) $question['question_id'] => [
+                'text' => $question['question_text'] ?? 'Question',
+                'version_id' => $question['question_version_id'] ?? null,
+            ]])
             ->all();
 
-        return collect($domains)->map(function ($domain) use ($questionText) {
+        return collect($domains)->map(function ($domain) use ($questionMetadata, $isAggregate) {
+            if ($isAggregate) {
+                $domain['contributing_question_trace'] = [];
+                $domain['question_breakdown'] = [];
+                $domain['failed_indicators'] = [];
+                $domain['failed_indicator_count'] = 0;
+
+                return $domain;
+            }
             // Every contributing question, worst first — the drill-down behind the domain score.
             $breakdown = collect($domain['contributing_question_trace'] ?? [])
                 ->filter(fn ($item) => isset($item['score']) && $item['score'] !== null)
-                ->map(fn ($item) => [
-                    'question_id' => $item['question_id'] ?? null,
-                    'question_text' => $questionText[(string) ($item['question_id'] ?? '')] ?? 'Question',
-                    'score' => (float) $item['score'],
-                ])
+                ->map(function ($item) use ($questionMetadata, $domain) {
+                    $metadata = $questionMetadata[(string) ($item['question_id'] ?? '')] ?? ['text' => 'Question', 'version_id' => null];
+
+                    return [
+                        'issue_key' => hash('sha256', implode('|', [
+                            $domain['domain_code'] ?? 'DOMAIN',
+                            $metadata['version_id'] ?? $item['question_id'] ?? 'QUESTION',
+                        ])),
+                        'question_id' => $item['question_id'] ?? null,
+                        'question_version_id' => $metadata['version_id'],
+                        'question_text' => $metadata['text'],
+                        'answer' => $item['answer'] ?? null,
+                        'evidence_note' => $item['evidence_note'] ?? null,
+                        'critical_failure' => (bool) ($item['critical_failure'] ?? false),
+                        'score' => (float) $item['score'],
+                    ];
+                })
                 ->sortBy('score')
                 ->values();
 
             $domain['question_breakdown'] = $breakdown->all();
             // The subset below the weakness line — the failed indicators diagnostics reads.
-            $failed = $breakdown->filter(fn ($q) => $q['score'] < self::WEAK_INDICATOR)->values()->all();
+            $failed = $breakdown->filter(fn ($q) => $q['score'] < self::WEAK_INDICATOR || $q['critical_failure'])->values()->all();
             $domain['failed_indicators'] = $failed;
             $domain['failed_indicator_count'] = count($failed);
 

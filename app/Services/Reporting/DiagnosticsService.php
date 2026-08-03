@@ -166,6 +166,7 @@ class DiagnosticsService
         ?string $expectedImpact = null,
     ): array {
         return [
+            'finding_key' => hash('sha256', implode('|', [$domain ?? 'OVERALL', $category, $subject])),
             'subject' => $subject,
             'measurement_domain' => $domain,
             'category' => $category,

@@ -73,7 +73,7 @@
             <div>
                 <div class="text-lg font-black" style="color: {{ $bandColor }}">{{ $bandLabel }}</div>
                 @if ($score['maturity_level'])
-                    <p class="text-sm text-slate-500 mt-0.5">Maturity: {{ $score['maturity_level']['name'] }}</p>
+                    <p class="text-sm text-slate-500 mt-0.5">Performance stage: {{ $score['maturity_level']['name'] }}</p>
                 @endif
                 @if ($calibStatus === 'NOT_CALIBRATED')
                     <p class="mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
@@ -97,11 +97,14 @@
             </div>
         @endif
 
+        @if (! empty($report['measurement_views']))
+            <x-report-measurement-views :views="$report['measurement_views']" :show-issues="true" />
+        @endif
+
         {{-- At a glance — the same intelligence as visuals. --}}
         <div class="bg-white rounded-2xl border border-slate-200 p-5 mb-5">
             <h2 class="text-sm font-bold text-slate-900 mb-4">At a glance</h2>
-            <div class="mb-4">@include('exports.charts.score-gauge', ['score' => $overall])</div>
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Data-use maturity</p>
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Performance stage</p>
             <div class="mb-4">@include('exports.charts.maturity-ladder', ['level' => $maturityLevel])</div>
 
             @if ($domainScores->where('score', '!=', null)->count() > 0)

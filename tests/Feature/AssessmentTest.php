@@ -678,6 +678,10 @@ class AssessmentTest extends TestCase
         $reportSnapshot = $assessment->fresh()->reportSnapshot;
         $this->assertNotNull($reportSnapshot);
         $this->assertSame('vytte-report-1.0', $reportSnapshot->schema_version);
+        $this->assertArrayHasKey('measurement_views', $reportSnapshot->payload);
+        $this->assertSame('Primary instrument result', $reportSnapshot->payload['measurement_views']['primary']['label']);
+        $this->assertArrayHasKey('comparison_eligibility', $reportSnapshot->payload['measurement_views']['primary']);
+        $this->assertArrayHasKey('limitations', $reportSnapshot->payload['measurement_views']);
         $this->assertSame(
             $reportSnapshot->content_hash,
             hash('sha256', json_encode($reportSnapshot->payload, JSON_THROW_ON_ERROR))

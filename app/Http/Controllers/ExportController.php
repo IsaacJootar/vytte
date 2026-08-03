@@ -105,7 +105,7 @@ class ExportController extends Controller
                 'Completed At',
                 'Overall Score',
                 'Calibration Status',
-                'Maturity Level',
+                'Performance Stage',
             ]);
 
             foreach ($assessments as $assessment) {

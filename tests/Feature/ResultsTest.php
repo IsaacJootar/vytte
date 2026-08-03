@@ -245,8 +245,9 @@ class ResultsTest extends TestCase
         $this->actingAs($user)
             ->get(route('assessments.results', $assessment))
             ->assertOk()
-            ->assertSee('Question drill-down')              // per-domain question breakdown
-            ->assertSee('Click any area to see');           // the drill-down affordance
+            ->assertSee('Exact issues to track')
+            ->assertSee('Recorded answer:')
+            ->assertSee('Urgent Action');
     }
 
     public function test_results_page_shows_lens_selector_and_methodology_note(): void
@@ -258,10 +259,26 @@ class ResultsTest extends TestCase
         $this->actingAs($user)
             ->get(route('assessments.results', $assessment))
             ->assertOk()
-            ->assertSee('Read this report as')
+            ->assertSee('Quick views:')
+            ->assertSee('Build my own view')
             ->assertSee('Executive')
             ->assertSee('not a World') // methodology note: WHO-aware label
             ->assertSee('clinical diagnosis');
+    }
+
+    public function test_user_can_build_a_custom_report_view_without_changing_the_result(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupCompleteAssessment($workspace, $user, answerMode: 'worst');
+        $score = $assessment->score->overall_score;
+
+        $this->actingAs($user)
+            ->get(route('assessments.results', $assessment).'?view=custom&focus=RISKS&detail=BRIEF&domain=GOV&tab=diagnosis')
+            ->assertOk()
+            ->assertSee('Custom report view')
+            ->assertSee('Risks · Brief');
+
+        $this->assertSame($score, $assessment->fresh()->score->overall_score);
     }
 
     public function test_risk_lens_changes_the_report_emphasis(): void

@@ -228,13 +228,19 @@ Current algorithm:
 
 The official aggregation method is `MEAN_OF_SCORED_SUB_INDICES`.
 
-Catalogue aggregation policy can enable critical failures. The current implementation supports a governed rule where a configured critical failure can force the overall score to zero and mark calibration as `CRITICAL_FAILURE`.
+Catalogue aggregation policy can enable critical failures. A configured critical failure marks calibration as `CRITICAL_FAILURE` and is surfaced independently; it does not replace the honestly calculated overall score with zero.
 
 ## Reporting
 
 Completion creates one immutable `assessment_report_snapshots` payload with a schema version and content hash.
 
 Results, PDF, reports index, shared reports, CSV, and progress views use the same report architecture. There is no separate community, respondent, or custom report subsystem.
+
+New report snapshots contain explicit measurement views for the primary result, optional common core, context/needs, qualitative findings, critical findings, response coverage, and limitations. Each scored metric declares its construct, direction, source-item count, formula, missing policy, calibration, and comparison eligibility. Item-level pain points retain stable issue keys, exact question text, recorded answer, and item score; comparable later runs classify them as new, persistent, or resolved.
+
+Executive, operational, quality, risk, compliance, programme, and value lenses are convenience presets. A user may instead tailor focus, measurement area, and detail. Presentation choices never alter frozen facts, scoring, critical findings, evidence, or limitations. Direct deltas are shown only for matching comparison signatures; non-matching reports remain available side by side without ranks or improvement claims.
+
+The legacy `maturity_levels` relation is presented as a **performance stage**: Urgent Action, Foundational, Developing, Established, or Leading. It is a plain-language interpretation of the same overall score, not another metric and not a universal claim about organizational maturity. Historical report snapshots retain the labels frozen when they were finalized.
 
 ## Local Custom Sections
 

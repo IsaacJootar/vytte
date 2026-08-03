@@ -69,13 +69,15 @@ class ReferenceDataSeeder extends Seeder
 
     private function seedMaturityLevels(): void
     {
-        DB::table('maturity_levels')->insertOrIgnore([
-            ['level_number' => 1, 'level_name' => 'Data Collection', 'description' => 'Collects routine data but rarely analyzes or uses it.', 'min_score' => 0, 'max_score' => 20],
-            ['level_number' => 2, 'level_name' => 'Data Reporting', 'description' => 'Submits reports consistently with limited internal use.', 'min_score' => 20, 'max_score' => 40],
-            ['level_number' => 3, 'level_name' => 'Data Analysis', 'description' => 'Reviews and interprets data for selected activities.', 'min_score' => 40, 'max_score' => 60],
-            ['level_number' => 4, 'level_name' => 'Data-Driven Management', 'description' => 'Uses data regularly to guide operational and clinical decisions.', 'min_score' => 60, 'max_score' => 80],
-            ['level_number' => 5, 'level_name' => 'Learning Health System', 'description' => 'Continuously improves through data, feedback, and innovation.', 'min_score' => 80, 'max_score' => 100],
-        ]);
+        foreach ([
+            ['level_number' => 1, 'level_name' => 'Urgent Action', 'description' => 'Severe gaps require immediate stabilization and follow-up.', 'min_score' => 0, 'max_score' => 20],
+            ['level_number' => 2, 'level_name' => 'Foundational', 'description' => 'Essential foundations exist in part but major gaps remain.', 'min_score' => 20, 'max_score' => 40],
+            ['level_number' => 3, 'level_name' => 'Developing', 'description' => 'Core capabilities are present but performance is inconsistent.', 'min_score' => 40, 'max_score' => 60],
+            ['level_number' => 4, 'level_name' => 'Established', 'description' => 'Most expected capabilities work reliably; targeted improvement remains.', 'min_score' => 60, 'max_score' => 80],
+            ['level_number' => 5, 'level_name' => 'Leading', 'description' => 'Performance is strong; sustain it, learn from it, and share what works.', 'min_score' => 80, 'max_score' => 100],
+        ] as $level) {
+            DB::table('maturity_levels')->updateOrInsert(['level_number' => $level['level_number']], $level);
+        }
     }
 
     private function seedAssessmentTiers(): void

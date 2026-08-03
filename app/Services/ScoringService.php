@@ -118,6 +118,7 @@ class ScoringService
                 if ($response && ($response->response_state ?? 'ANSWERED') === 'ANSWERED') {
                     $selectedOption = null;
                     $selectedOptions = collect();
+                    $answerSummary = null;
                     if (($question['response_type'] ?? null) === 'MULTI_SELECT') {
                         $selectedIds = collect($response->typed_value['option_ids'] ?? [])->map(fn ($id) => (int) $id);
                         $selectedOptions = collect($question['options'] ?? [])->filter(
@@ -128,6 +129,7 @@ class ScoringService
                         }
                         $questionScore = round($selectedOptions->avg(fn ($option) => (float) $option['score_weight']), 4);
                         $questionScaleMaximum = collect($question['options'])->whereNotNull('score_weight')->max(fn ($option) => (float) $option['score_weight']);
+                        $answerSummary = $selectedOptions->pluck('option_label')->join(', ');
                     } elseif (($question['response_type'] ?? null) === 'NUMERIC') {
                         if ($response->value_numeric === null) {
                             continue;
@@ -147,6 +149,7 @@ class ScoringService
                         }
                         $questionScore = (float) $selectedBand['score_weight'];
                         $questionScaleMaximum = $bands->max(fn ($band) => (float) $band['score_weight']);
+                        $answerSummary = trim((string) $response->value_numeric.' '.($question['numeric_config']['unit'] ?? ''));
                     } else {
                         $selectedOption = collect($question['options'])
                             ->firstWhere('option_id', (int) $response->value_option_id);
@@ -157,17 +160,19 @@ class ScoringService
                         $questionScaleMaximum = collect($question['options'])
                             ->whereNotNull('score_weight')
                             ->max(fn ($option) => (float) $option['score_weight']);
+                        $answerSummary = $selectedOption['option_label'] ?? null;
                     }
 
                     if ($questionScaleMaximum !== null && $questionScaleMaximum <= 1.0) {
                         $questionScore *= 100;
                     }
 
-                    if ($criticalFailuresEnabled && (
+                    $isCriticalFailure = $criticalFailuresEnabled && (
                         ($selectedOption['critical_failure'] ?? false)
                         || $selectedOptions->contains(fn ($option) => (bool) ($option['critical_failure'] ?? false))
                         || ($criticalThreshold !== null && $questionScore <= $criticalThreshold)
-                    )) {
+                    );
+                    if ($isCriticalFailure) {
                         $criticalFailureTriggered = true;
                     }
 
@@ -184,6 +189,9 @@ class ScoringService
                             'question_id' => $question['question_id'],
                             'sub_index_id' => (int) $subIndex['sub_index_id'],
                             'framework_question_placement_id' => $question['framework_question_placement_id'] ?? null,
+                            'answer' => $answerSummary,
+                            'evidence_note' => $response->evidence_note,
+                            'critical_failure' => $isCriticalFailure,
                         ];
                     }
                 }

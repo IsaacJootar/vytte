@@ -274,6 +274,8 @@ class MultiRespondentScoringTest extends TestCase
         $this->assertSame(2, $report['respondent_collection']['eligible_completed_respondents']);
         $this->assertCount(2, $report['respondent_collection']['contributing_session_references']);
         $this->assertSame($owner->user_id, $report['respondent_collection']['finalized_by']['user_id']);
+        $this->assertSame([], $report['measurement_views']['issue_register']);
+        $this->assertTrue(collect($report['domain_scores'])->every(fn ($domain) => empty($domain['contributing_question_trace'])));
     }
 
     public function test_multi_respondent_result_uses_ordinary_governed_share_link_without_exposing_sessions(): void
