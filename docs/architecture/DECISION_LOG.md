@@ -315,3 +315,38 @@
 
 - **Status:** Accepted and implemented.
 - **Decision:** The PDF and shared web report gain an "At a glance" section rendered as pure inline SVG (score ring, domain bars, sub-index radar, risk strip, maturity ladder, trend line), so a board member reading the file alone sees the diagnosis visually, with no JavaScript and identical output in DomPDF, the browser and print.
+
+### DEC-2026-08-03-042: Vytte Governs Integrity Rather Than Claiming Universal Content Authority
+
+- **Status:** Accepted; implementation in progress.
+- **Context:** The original composition architecture treated all official content as owned by Vytte. That is too narrow for credible instruments published by standards bodies, governments, hospitals, programmes, researchers, and experts.
+- **Decision:** The instrument publisher owns the content purpose, methodology, and scoring claim. Vytte governs publisher identity, provenance, review state, technical validation, immutable versions, audit, reproducibility, and comparison eligibility. “Vytte curated” describes completed governance checks and does not claim authorship of external guidance.
+- **Consequence:** Publisher identity and independent trust signals become first-class governed metadata. Workspaces may publish within declared visibility and review limits; public or curated distribution requires stronger review.
+- **Supersedes:** The ownership wording in DEC-001. Catalogue composition, immutable publication, and snapshot rules remain in force.
+
+### DEC-2026-08-03-043: Question Origin Does Not Define Its Scoring Lane
+
+- **Status:** Accepted; implementation in progress.
+- **Context:** DEC-037 and DEC-041 protected benchmarks by forcing tailored questions into a separate score. That preserves comparison but incorrectly couples content origin to scoring purpose.
+- **Decision:** Any question may contribute to an instrument's primary score when the accountable publisher deliberately includes it in a complete immutable scoring model. Content origin is disclosed separately. A common-core score contains only approved shared anchors and remains the comparison surface when a primary instrument is customized.
+- **Historical boundary:** Existing assessment snapshots and reports keep their frozen official and tailored lanes. They are not recalculated or relabelled.
+- **Supersedes:** The permanent separate-lane requirement in DEC-037 and DEC-041. Their add-only and historical-comparability protections remain valid for already-created assessments.
+
+### DEC-2026-08-03-044: Question Semantics And Scoring Interpretation Are Separately Versioned
+
+- **Status:** Accepted; implementation in progress.
+- **Decision:** A question version defines wording, response semantics, options, validation, applicability, evidence guidance, source, and translations. A separately versioned scoring model defines item values, numeric bands, weights, denominators, critical behavior, aggregation, calibration, and score purpose. An instrument version pins both.
+- **Rationale:** The same question can legitimately be unscored, weighted, critical, or contextual in different instruments without changing what it means.
+- **Compatibility:** Published legacy payloads continue to score from embedded option weights and numeric bands. New scoring models reproduce that behavior before new instruments adopt separated rules.
+
+### DEC-2026-08-03-045: One Report Carries Multiple Explicit Measurement Purposes
+
+- **Status:** Accepted; implementation in progress.
+- **Decision:** The immutable report may contain a primary instrument score, domain/sub-index scores, a benchmark-eligible common-core score, context or need indicators, qualitative findings, critical findings, evidence, and limitations. These are views in one report, not parallel reporting systems.
+- **Guard:** Every metric declares its construct, direction, source items, formula, missing policy, calibration state, and comparison eligibility. Equal 0–100 scales never establish comparability by themselves.
+
+### DEC-2026-08-03-046: AI Assists Inside A Human Publication Boundary
+
+- **Status:** Accepted; implementation in progress.
+- **Decision:** AI may extract, draft, lint, map, translate, simulate, analyse field-test behavior, and explain frozen findings. AI cannot approve or publish, invent provenance, mutate historical results, or create arbitrary live scored questions. Adaptive delivery may select only from an approved versioned item pool under a frozen policy.
+- **Evidence rule:** AI report statements and recommendations must identify the frozen response, score, evidence, or trend that supports them.
