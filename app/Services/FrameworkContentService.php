@@ -11,6 +11,7 @@ class FrameworkContentService
     {
         $version->loadMissing([
             'module',
+            'contentPublisher.governanceClaims',
             'sections',
             'indicators.section',
             'indicators.domainMappings.domainDefinition.taxonomyVersion.taxonomy',
@@ -20,7 +21,7 @@ class FrameworkContentService
             'questionPlacements.indicator.domainMappings.domainDefinition.domain',
             'questionPlacements.domainOverrides.domainDefinition.taxonomyVersion.taxonomy',
             'questionPlacements.domainOverrides.domainDefinition.domain',
-            'questionPlacements.question',
+            'questionPlacements.question.contentPublisher',
             'questionPlacements.questionVersion.questionType',
             'questionPlacements.subIndex.domain',
         ]);
@@ -39,6 +40,11 @@ class FrameworkContentService
                 'framework_question_placement_id' => $placement->framework_question_placement_id,
                 'question_id' => $placement->question_id,
                 'question_code' => $placement->question?->question_code,
+                'content_origin' => [
+                    'publisher_id' => $placement->question?->content_publisher_id,
+                    'publisher_name' => $placement->question?->contentPublisher?->name,
+                    'distribution_level' => $placement->question?->distribution_level,
+                ],
                 'question_version_id' => $placement->question_version_id,
                 'question_version_number' => (int) $questionVersion->version_number,
                 'question_version_hash' => $questionVersion->content_hash,
@@ -108,6 +114,24 @@ class FrameworkContentService
             'framework_type' => $version->framework_type,
             'framework_version_number' => (int) $version->version_number,
             'framework_display_name' => $version->display_name,
+            'publisher' => [
+                'publisher_id' => $version->content_publisher_id,
+                'publisher_code' => $version->contentPublisher?->publisher_code,
+                'publisher_name' => $version->contentPublisher?->name,
+                'publisher_type' => $version->contentPublisher?->publisher_type,
+                'identity_status' => $version->contentPublisher?->verification_status,
+                'distribution_level' => $version->distribution_level,
+                'attribution' => $version->contentPublisher?->attribution,
+            ],
+            'governance_claims' => collect($version->contentPublisher?->governanceClaims ?? [])
+                ->where('content_type', 'FRAMEWORK_VERSION')
+                ->where('content_id', $version->framework_version_id)
+                ->map(fn ($claim) => [
+                    'claim_type' => $claim->claim_type,
+                    'status' => $claim->status,
+                    'reviewed_at' => $claim->reviewed_at?->toIso8601String(),
+                    'expires_at' => $claim->expires_at?->toIso8601String(),
+                ])->values()->all() ?? [],
             'purpose' => $version->purpose,
             'methodology_notes' => $version->methodology_notes,
             'source_summary' => $version->source_summary,

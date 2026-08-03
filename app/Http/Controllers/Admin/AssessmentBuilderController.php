@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
+use App\Models\ContentPublisher;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\HealthDomain;
 use App\Services\AssessmentPublicationService;
 use App\Services\AssessmentReadinessService;
 use App\Services\AssessmentVersionService;
 use App\Services\AuditService;
+use App\Services\ContentPublisherService;
 use App\Services\FrameworkContentService;
 use App\Services\GovernanceDependencyService;
 use Illuminate\Contracts\View\View;
@@ -40,9 +42,14 @@ class AssessmentBuilderController extends Controller
      * @var list<array{key: string, label: string, available: bool}>
      */
     public const STEPS = [
-        ['key' => 'basics', 'label' => 'Basic Information', 'available' => true],
-        ['key' => 'build', 'label' => 'Build Assessment', 'available' => true],
+        ['key' => 'purpose', 'label' => 'Purpose', 'available' => true],
+        ['key' => 'publisher', 'label' => 'Publisher & source', 'available' => true],
+        ['key' => 'structure', 'label' => 'Structure', 'available' => true],
+        ['key' => 'questions', 'label' => 'Questions', 'available' => true],
+        ['key' => 'logic', 'label' => 'Logic', 'available' => true],
+        ['key' => 'scoring', 'label' => 'Scoring', 'available' => true],
         ['key' => 'review', 'label' => 'Review', 'available' => true],
+        ['key' => 'test', 'label' => 'Test', 'available' => true],
         ['key' => 'publish', 'label' => 'Publish', 'available' => true],
     ];
 
@@ -80,11 +87,11 @@ class AssessmentBuilderController extends Controller
         return view('admin.assessment-builder.create', [
             'departments' => $this->availableDepartments(),
             'steps' => self::STEPS,
-            'currentStep' => 'basics',
+            'currentStep' => 'purpose',
         ]);
     }
 
-    public function store(Request $request, AuditService $audit): RedirectResponse
+    public function store(Request $request, AuditService $audit, ContentPublisherService $publishers): RedirectResponse
     {
         $validated = $this->validateBasics($request);
 
@@ -95,6 +102,8 @@ class AssessmentBuilderController extends Controller
             'framework_type' => DepartmentFrameworkVersion::TYPE_FOCUSED,
             'version_number' => $nextVersion,
             'status' => DepartmentFrameworkVersion::STATUS_DRAFT,
+            'content_publisher_id' => $publishers->vytte()->content_publisher_id,
+            'distribution_level' => ContentPublisher::VISIBILITY_PUBLIC,
         ]);
 
         $audit->record('assessment.draft.created', $assessment, newValues: [
@@ -103,18 +112,18 @@ class AssessmentBuilderController extends Controller
             'version_number' => $assessment->version_number,
         ]);
 
-        return redirect()->route('admin.assessments.show', $assessment)
-            ->with('success', 'Draft saved. You can come back and continue building this assessment at any time.');
+        return redirect()->route('admin.assessments.governance', $assessment)
+            ->with('success', 'Purpose saved. Next, identify who publishes the assessment and where its source comes from.');
     }
 
     public function show(DepartmentFrameworkVersion $assessment): View
     {
-        $assessment->load('module')->loadCount(['sections', 'questionPlacements']);
+        $assessment->load(['module', 'contentPublisher'])->loadCount(['sections', 'questionPlacements']);
 
         return view('admin.assessment-builder.show', [
             'assessment' => $assessment,
             'steps' => self::STEPS,
-            'currentStep' => 'basics',
+            'currentStep' => 'purpose',
             'isEditable' => $this->isEditable($assessment),
         ]);
     }
@@ -133,7 +142,7 @@ class AssessmentBuilderController extends Controller
         return view('admin.assessment-builder.build', [
             'assessment' => $assessment,
             'steps' => self::STEPS,
-            'currentStep' => 'build',
+            'currentStep' => 'structure',
             'isEditable' => $this->isEditable($assessment),
             'questionCount' => $assessment->sections->sum(fn ($section) => $section->questionPlacements->count()),
         ]);
@@ -177,6 +186,13 @@ class AssessmentBuilderController extends Controller
         }
 
         $validated = $request->validate([
+            'content_publisher_id' => ['sometimes', 'required', 'uuid', Rule::exists('content_publishers', 'content_publisher_id')->whereNot('verification_status', ContentPublisher::STATUS_SUSPENDED)],
+            'distribution_level' => ['sometimes', 'required', Rule::in([
+                ContentPublisher::VISIBILITY_PRIVATE,
+                ContentPublisher::VISIBILITY_ORGANIZATION,
+                ContentPublisher::VISIBILITY_PARTNER,
+                ContentPublisher::VISIBILITY_PUBLIC,
+            ])],
             'source_authority' => ['required', 'string', 'max:180'],
             'license_code' => ['required', 'string', 'max:80'],
             'source_url' => ['nullable', 'url', 'max:2000'],
@@ -186,11 +202,23 @@ class AssessmentBuilderController extends Controller
             'source_url' => 'link',
         ]);
 
-        $old = $assessment->only(['source_authority', 'license_code', 'source_url']);
+        $old = $assessment->only(['content_publisher_id', 'distribution_level', 'source_authority', 'license_code', 'source_url']);
         $assessment->update($validated);
         $audit->record('assessment.provenance.recorded', $assessment->fresh(), $old, $validated);
 
-        return back()->with('success', 'Source and usage details saved.');
+        return redirect()->route('admin.assessments.build', $assessment)
+            ->with('success', 'Publisher and source saved. Next, organize the assessment into clear sections.');
+    }
+
+    public function governance(DepartmentFrameworkVersion $assessment): View
+    {
+        return view('admin.assessment-builder.governance', [
+            'assessment' => $assessment->load('contentPublisher'),
+            'publishers' => ContentPublisher::where('verification_status', '!=', ContentPublisher::STATUS_SUSPENDED)->orderBy('name')->get(),
+            'steps' => self::STEPS,
+            'currentStep' => 'publisher',
+            'isEditable' => $this->isEditable($assessment),
+        ]);
     }
 
     public function publish(Request $request, DepartmentFrameworkVersion $assessment, AssessmentPublicationService $publisher): RedirectResponse
@@ -287,7 +315,7 @@ class AssessmentBuilderController extends Controller
         return view('admin.assessment-builder.preview', [
             'assessment' => $assessment,
             'steps' => self::STEPS,
-            'currentStep' => 'review',
+            'currentStep' => 'test',
             'sections' => collect($payload['sections'] ?? [])->sortBy('display_order')->values(),
             'questionsBySection' => $questions->groupBy('section_id'),
             'isFrozen' => $assessment->status !== DepartmentFrameworkVersion::STATUS_DRAFT,
@@ -300,7 +328,7 @@ class AssessmentBuilderController extends Controller
             'assessment' => $assessment->load('module'),
             'departments' => $this->availableDepartments(),
             'steps' => self::STEPS,
-            'currentStep' => 'basics',
+            'currentStep' => 'purpose',
             'isEditable' => $this->isEditable($assessment),
         ]);
     }

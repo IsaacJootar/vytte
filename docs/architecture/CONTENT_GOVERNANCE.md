@@ -2,9 +2,9 @@
 
 ## Authority
 
-Vytte owns official assessment content.
+The instrument publisher is accountable for the content purpose, methodology, and scoring claim. Vytte governs identity, provenance, declared review state, validation, immutable versions, audit, reproducibility, and comparison eligibility.
 
-Workspaces cannot publish official:
+The current publication controls remain available only to Vytte Platform Admin while the organization-publisher workflow is completed. Workspaces cannot directly publish into the public catalogue or claim review states they have not earned.
 
 - departments;
 - department framework versions;
@@ -13,7 +13,7 @@ Workspaces cannot publish official:
 - catalogue releases;
 - official questions or indicators.
 
-Workspace users consume published Vytte content and may add local custom sections for local context only.
+Existing workspace tailoring remains available under its frozen legacy score-lane contract. The successor scoring-model architecture is defined in `ASSESSMENT_GOVERNANCE_VISION.md` and will permit publisher-approved content of any origin to enter the primary instrument score without changing historical assessments.
 
 ## Roles
 

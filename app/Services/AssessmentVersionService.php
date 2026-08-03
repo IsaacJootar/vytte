@@ -55,6 +55,8 @@ class AssessmentVersionService
                 'source_summary' => $framework->source_summary,
                 'review_notes' => $reviewNote ?: 'Successor draft created from v'.$framework->version_number.'.',
                 'parent_version_id' => $framework->framework_version_id,
+                'content_publisher_id' => $framework->content_publisher_id,
+                'distribution_level' => $framework->distribution_level,
             ]);
 
             $sectionMap = [];

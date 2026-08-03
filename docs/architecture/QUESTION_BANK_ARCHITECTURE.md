@@ -10,9 +10,9 @@ Assessment purpose → framework → sections → indicators → question placem
 
 Questions are not generated from universal domains. Domains remain downstream analysis and scoring groupings.
 
-## Official content ownership
+## Content accountability
 
-Vytte owns official:
+An accountable publisher owns the purpose and methodology claim for published content. Vytte governs:
 
 - reusable question identities;
 - immutable question versions;
@@ -26,7 +26,7 @@ Vytte owns official:
 - catalogue releases;
 - publication and provenance.
 
-Customer workspaces consume published official content. They cannot publish official questions, official framework versions, official focused assessments, or official catalogue releases.
+The initial publishing UI remains Platform Admin controlled. Publisher identity, distribution, and independent governance claims are now first-class, enabling governed organization and expert publishing without weakening the immutable publication contract.
 
 ## Data model
 
@@ -101,4 +101,3 @@ The demonstration dataset proves:
 - scoring and critical-failure behavior.
 
 Demo content is not validated production methodology.
-

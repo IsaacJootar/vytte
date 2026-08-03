@@ -23,7 +23,7 @@ class AssessmentCreationService
         array $exclusionReasons = [],
         ?string $creatorId = null,
     ): Assessment {
-        $release->load(['facilityProfile', 'departmentFrameworkVersions.module']);
+        $release->load(['contentPublisher', 'facilityProfile', 'departmentFrameworkVersions.module']);
         $target = $project->targets()->first();
 
         if ($release->status !== AssessmentCatalogueRelease::STATUS_PUBLISHED) {
@@ -145,6 +145,13 @@ class AssessmentCreationService
             'catalogue_release_id' => $release->catalogue_release_id,
             'catalogue_release_code' => $release->release_code,
             'catalogue_content_hash' => $release->content_hash,
+            'publisher' => [
+                'publisher_id' => $release->content_publisher_id,
+                'publisher_code' => $release->contentPublisher?->publisher_code,
+                'publisher_name' => $release->contentPublisher?->name,
+                'identity_status' => $release->contentPublisher?->verification_status,
+                'distribution_level' => $release->distribution_level,
+            ],
             'facility_profile_id' => $release->facility_profile_id,
             'facility_profile_code' => $release->facilityProfile?->profile_code,
             'domain_taxonomy_versions' => collect($payload)
@@ -240,5 +247,4 @@ class AssessmentCreationService
             return $assessment->fresh(['snapshot', 'moduleScope']);
         });
     }
-
 }

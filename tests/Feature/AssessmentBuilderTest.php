@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
+use App\Models\ContentPublisher;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\Domain;
 use App\Models\FrameworkIndicator;
@@ -93,7 +94,7 @@ class AssessmentBuilderTest extends TestCase
 
         $assessment = DepartmentFrameworkVersion::where('display_name', 'Outpatient Readiness Assessment')->firstOrFail();
 
-        $response->assertRedirect(route('admin.assessments.show', $assessment));
+        $response->assertRedirect(route('admin.assessments.governance', $assessment));
         $this->assertSame(DepartmentFrameworkVersion::STATUS_DRAFT, $assessment->status);
         $this->assertSame($module->module_id, $assessment->module_id);
         $this->assertSame('Quarterly facility review.', $assessment->purpose);
@@ -212,11 +213,49 @@ class AssessmentBuilderTest extends TestCase
         $this->actingAs($this->platformAdmin())
             ->get(route('admin.assessments.create'))
             ->assertOk()
-            ->assertSee('Basic Information')
-            ->assertSee('Build Assessment')
+            ->assertSee('Purpose')
+            ->assertSee('Publisher &amp; source', false)
+            ->assertSee('Structure')
+            ->assertSee('Questions')
+            ->assertSee('Logic')
+            ->assertSee('Scoring')
             ->assertSee('Review')
+            ->assertSee('Test')
             ->assertSee('Publish')
             ->assertDontSee('Coming next');
+    }
+
+    public function test_publisher_and_source_are_a_guided_step_after_purpose(): void
+    {
+        $admin = $this->platformAdmin();
+        $module = $this->activeModule();
+
+        $this->actingAs($admin)->post(route('admin.assessments.store'), [
+            'display_name' => 'Governed publisher assessment',
+            'module_id' => $module->module_id,
+        ]);
+
+        $assessment = DepartmentFrameworkVersion::where('display_name', 'Governed publisher assessment')->firstOrFail();
+        $publisher = ContentPublisher::where('publisher_code', 'VYTTE')->firstOrFail();
+
+        $this->get(route('admin.assessments.governance', $assessment))
+            ->assertOk()
+            ->assertSee('Who publishes this assessment?')
+            ->assertSee('Underlying source or authority')
+            ->assertSee('Save and continue to structure');
+
+        $this->put(route('admin.assessments.provenance', $assessment), [
+            'content_publisher_id' => $publisher->content_publisher_id,
+            'distribution_level' => 'PARTNER',
+            'source_authority' => 'National clinical guidance',
+            'license_code' => 'PERMISSION-HELD',
+            'source_url' => 'https://example.test/guidance',
+        ])->assertRedirect(route('admin.assessments.build', $assessment));
+
+        $assessment->refresh();
+        $this->assertSame($publisher->content_publisher_id, $assessment->content_publisher_id);
+        $this->assertSame('PARTNER', $assessment->distribution_level);
+        $this->assertSame('National clinical guidance', $assessment->source_authority);
     }
 
     public function test_the_builder_form_does_not_ask_for_governance_internals(): void

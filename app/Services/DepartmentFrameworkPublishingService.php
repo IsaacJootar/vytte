@@ -15,6 +15,7 @@ class DepartmentFrameworkPublishingService
     {
         $version->load([
             'module',
+            'contentPublisher',
             'questionPlacements.questionVersion.questionType',
             'questionPlacements.section',
             'questionPlacements.indicator.domainMappings.domainDefinition.taxonomyVersion',
@@ -36,6 +37,10 @@ class DepartmentFrameworkPublishingService
 
         if (! $version->source_authority || ! $version->license_code) {
             $errors['methodology'][] = 'Source authority and license metadata are required before publishing.';
+        }
+
+        if (! $version->contentPublisher || $version->contentPublisher->verification_status === 'SUSPENDED') {
+            $errors['publisher'][] = 'Choose an active accountable publisher before publishing.';
         }
 
         if ($placements->isEmpty()) {

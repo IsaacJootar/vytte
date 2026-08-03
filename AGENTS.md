@@ -32,12 +32,13 @@ Read, in order, for architecture or assessment work:
 
 1. `docs/architecture/CURRENT_ARCHITECTURE.md`
 2. `docs/architecture/CURRENT_ASSESSMENT_FLOW.md`
-3. `docs/architecture/QUESTION_BANK_ARCHITECTURE.md`
-4. `docs/architecture/DATA_MODEL_AUDIT.md`
-5. `docs/architecture/LIFECYCLE_STATE_MACHINE.md`
-6. `docs/architecture/PRESERVATION_REGISTER.md`
-7. `docs/architecture/ARCHITECTURE_GAPS.md`
-8. `docs/architecture/DECISION_LOG.md`
+3. `docs/architecture/ASSESSMENT_GOVERNANCE_VISION.md`
+4. `docs/architecture/QUESTION_BANK_ARCHITECTURE.md`
+5. `docs/architecture/DATA_MODEL_AUDIT.md`
+6. `docs/architecture/LIFECYCLE_STATE_MACHINE.md`
+7. `docs/architecture/PRESERVATION_REGISTER.md`
+8. `docs/architecture/ARCHITECTURE_GAPS.md`
+9. `docs/architecture/DECISION_LOG.md`
 
 Historical records are in `docs/architecture/archive/`. They describe past states and are not current.
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AssessmentQuestionController as AdminAssessmentQu
 use App\Http\Controllers\Admin\AssessmentSectionController as AdminAssessmentSectionController;
 use App\Http\Controllers\Admin\AuditLogController as AdminAuditLogController;
 use App\Http\Controllers\Admin\CatalogueReleaseController as AdminCatalogueReleaseController;
+use App\Http\Controllers\Admin\ContentPublisherController as AdminContentPublisherController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\DomainTaxonomyController as AdminDomainTaxonomyController;
 use App\Http\Controllers\Admin\FacilityProfileController as AdminFacilityProfileController;
@@ -163,6 +164,7 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::put('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'update'])->name('assessments.update');
     Route::delete('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'destroy'])->name('assessments.destroy');
     Route::get('assessments/{assessment}/build', [AdminAssessmentBuilderController::class, 'build'])->name('assessments.build');
+    Route::get('assessments/{assessment}/publisher', [AdminAssessmentBuilderController::class, 'governance'])->name('assessments.governance');
     Route::get('assessments/{assessment}/review', [AdminAssessmentBuilderController::class, 'review'])->name('assessments.review');
     Route::put('assessments/{assessment}/provenance', [AdminAssessmentBuilderController::class, 'saveProvenance'])->name('assessments.provenance');
     Route::post('assessments/{assessment}/publish', [AdminAssessmentBuilderController::class, 'publish'])->name('assessments.publish');
@@ -186,6 +188,12 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::delete('assessments/{assessment}/questions/{placement}', [AdminAssessmentQuestionController::class, 'destroy'])->name('assessments.questions.destroy');
 
     Route::get('official-content', [AdminOfficialContentController::class, 'index'])->name('official-content.index');
+
+    Route::get('publishers', [AdminContentPublisherController::class, 'index'])->name('publishers.index');
+    Route::post('publishers', [AdminContentPublisherController::class, 'store'])->name('publishers.store');
+    Route::put('publishers/{publisher}', [AdminContentPublisherController::class, 'update'])->name('publishers.update');
+    Route::patch('publishers/{publisher}/verify', [AdminContentPublisherController::class, 'verify'])->name('publishers.verify');
+    Route::patch('publishers/{publisher}/suspend', [AdminContentPublisherController::class, 'suspend'])->name('publishers.suspend');
 
     Route::get('geographic-usage', [AdminGeographicUsageController::class, 'index'])->name('geographic-usage.index');
 

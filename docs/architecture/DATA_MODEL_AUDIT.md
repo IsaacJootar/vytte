@@ -18,6 +18,10 @@ The migration set is the schema source of truth. Current active assessment archi
 
 `assessment_modules`, `question_groups`, `sub_indices`, `questions`, `question_options`, `question_numeric_bands`, `sub_index_questions`, `question_topics`, `question_drafts`, `question_translations`, `question_option_translations`.
 
+### Publishers and Content Trust
+
+`content_publishers` records accountable publisher identity, visibility, and verification. `content_governance_claims` records independent review claims against governed content. Questions, framework versions, and catalogue releases reference a publisher and distribution level.
+
 ### Governed Composition
 
 `department_framework_versions`, `facility_profiles`, `facility_profile_departments`, `assessment_catalogue_releases`, `assessment_catalogue_department_versions`.

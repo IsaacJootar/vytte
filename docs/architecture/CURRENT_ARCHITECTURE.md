@@ -28,7 +28,7 @@ PostgreSQL is the database authority for local development, automated tests, rel
 
 ## Core Product Rule
 
-Vytte is the authority for official assessment content. Workspaces consume published Vytte catalogue releases; they do not create official departments, official framework versions, official scoring rules, or official aggregation policy.
+Instrument publishers are accountable for content purpose, methodology, and scoring claims. Vytte is the authority for publisher identity, provenance, review state, technical validation, immutable versions, audit, reproducibility, secure delivery, and comparison eligibility. Existing Vytte catalogue content remains available through the same governed release architecture.
 
 There are exactly two assessment creation paths:
 
@@ -99,6 +99,12 @@ Official question content is separated into identity, immutable version, and fra
 | Framework placement | `framework_question_placements` | Binds one exact published question version into a section and indicator with order, required state, evidence expectation, weight, scoring contribution, criticality, and framework-specific display wording. |
 
 A question version may be placed in more than one framework, with different wording, weight, and analytical meaning per placement.
+
+### Publishers and governance claims
+
+`content_publishers` records the accountable publisher independently from the underlying source authority. Questions, framework versions, and catalogue releases carry a publisher and distribution level. `content_governance_claims` records independent source, licence, subject, methodology, scoring, field-test, translation, and benchmark review states. Publisher identity verification never implies those content reviews.
+
+Existing content is backfilled to the verified Vytte publisher. New assessment-builder drafts choose publisher and source in a dedicated guided step. Publisher metadata is frozen into newly published framework payloads and assessment composition manifests.
 
 Question versions move through `DRAFT`, `INTERNAL_REVIEW`, `APPROVED`, `PUBLISHED`, and then `SUPERSEDED` or `ARCHIVED`. Published, superseded, and archived versions are immutable and cannot be deleted. Supersession clones the content into a successor draft linked by `parent_version_id` and leaves the predecessor reproducible.
 

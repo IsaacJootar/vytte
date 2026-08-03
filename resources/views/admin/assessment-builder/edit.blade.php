@@ -1,7 +1,7 @@
 <x-admin-layout :title="$assessment->display_name">
     <div class="mb-5">
         <a href="{{ route('admin.assessments.show', $assessment) }}" class="text-sm text-slate-500 hover:underline dark:text-slate-400">← Back to assessment</a>
-        <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Basic Information</h1>
+        <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Purpose</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">{{ $assessment->display_name }}</p>
     </div>
 

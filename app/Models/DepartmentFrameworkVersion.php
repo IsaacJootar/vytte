@@ -57,6 +57,8 @@ class DepartmentFrameworkVersion extends Model
         'parent_version_id',
         'published_at',
         'published_by',
+        'content_publisher_id',
+        'distribution_level',
     ];
 
     protected $casts = [
@@ -70,6 +72,11 @@ class DepartmentFrameworkVersion extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $version): void {
+            $version->content_publisher_id ??= ContentPublisher::where('publisher_code', 'VYTTE')->value('content_publisher_id');
+            $version->distribution_level ??= ContentPublisher::VISIBILITY_PUBLIC;
+        });
+
         static::saving(function (self $version): void {
             if (! in_array($version->status, [self::STATUS_DRAFT, self::STATUS_PUBLISHED, self::STATUS_ARCHIVED, self::STATUS_SUPERSEDED], true)) {
                 throw new \LogicException("Unsupported framework-version status: {$version->status}.");
@@ -103,6 +110,11 @@ class DepartmentFrameworkVersion extends Model
     public function module(): BelongsTo
     {
         return $this->belongsTo(AssessmentModule::class, 'module_id', 'module_id');
+    }
+
+    public function contentPublisher(): BelongsTo
+    {
+        return $this->belongsTo(ContentPublisher::class, 'content_publisher_id', 'content_publisher_id');
     }
 
     public function sections(): HasMany

@@ -11,9 +11,13 @@ class CataloguePublishingService
 {
     public function publish(AssessmentCatalogueRelease $release, ?string $publisherId = null): AssessmentCatalogueRelease
     {
-        $release->load(['facilityProfile.departments', 'departmentFrameworkVersions.module']);
+        $release->load(['contentPublisher', 'facilityProfile.departments', 'departmentFrameworkVersions.module']);
         $errors = [];
         $versions = $release->departmentFrameworkVersions;
+
+        if (! $release->contentPublisher || $release->contentPublisher->verification_status === 'SUSPENDED') {
+            $errors['publisher'][] = 'Choose an active accountable publisher before publishing.';
+        }
 
         if ($versions->isEmpty()) {
             $errors['framework_versions'][] = 'A catalogue release must pin at least one department framework version.';
@@ -86,6 +90,13 @@ class CataloguePublishingService
             'aggregation_policy' => $release->aggregation_policy,
             'composition_rules' => $release->composition_rules ?? [],
             'collection_config' => $collectionConfig,
+            'publisher' => [
+                'publisher_id' => $release->content_publisher_id,
+                'publisher_code' => $release->contentPublisher?->publisher_code,
+                'publisher_name' => $release->contentPublisher?->name,
+                'identity_status' => $release->contentPublisher?->verification_status,
+                'distribution_level' => $release->distribution_level,
+            ],
             'department_versions' => $versions->map(fn ($version) => [
                 'module_id' => (int) $version->module_id,
                 'module_code' => $version->module?->module_code,

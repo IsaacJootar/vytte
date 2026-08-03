@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\MethodologyVersion;
+use App\Services\ContentPublisherService;
 use App\Services\MethodologyPublishingService;
 use Illuminate\Database\Seeder;
 use Illuminate\Validation\ValidationException;
@@ -48,6 +49,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->publishMethodology();
+        app(ContentPublisherService::class)->assignLegacyContent();
     }
 
     /**

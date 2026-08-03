@@ -169,6 +169,8 @@ class AssessmentBuilderService
 
             $question = Question::create([
                 'module_id' => $assessment->module_id,
+                'content_publisher_id' => $assessment->content_publisher_id,
+                'distribution_level' => $assessment->distribution_level,
                 'question_number' => ((int) Question::where('module_id', $assessment->module_id)->max('question_number')) + 1,
                 'question_code' => $this->uniqueQuestionCode($assessment),
                 'question_text' => $input['question_text'],

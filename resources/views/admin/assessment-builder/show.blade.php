@@ -16,6 +16,17 @@
         <div class="space-y-4 lg:col-span-2">
             <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
                 <div class="flex items-start justify-between gap-3">
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white">Publisher & source</h2>
+                    @if ($isEditable)
+                        <a href="{{ route('admin.assessments.governance', $assessment) }}" class="text-sm font-semibold text-vytte-700 hover:underline dark:text-vytte-300">Edit</a>
+                    @endif
+                </div>
+                <p class="mt-2 text-sm text-slate-700 dark:text-slate-200">{{ $assessment->contentPublisher?->name ?? 'Not set' }}</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $assessment->source_authority ?: 'Source not recorded' }} · {{ $assessment->license_code ?: 'Usage terms not recorded' }}</p>
+            </div>
+
+            <div class="section-card p-6 dark:border-slate-700 dark:bg-slate-800">
+                <div class="flex items-start justify-between gap-3">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Basic Information</h2>
                     @if ($isEditable)
                         <a href="{{ route('admin.assessments.edit', $assessment) }}" class="text-sm font-semibold text-vytte-700 hover:underline dark:text-vytte-300">Edit</a>

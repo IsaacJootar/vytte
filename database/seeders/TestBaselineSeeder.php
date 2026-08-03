@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Services\ContentPublisherService;
 use Illuminate\Database\Seeder;
 
 /**
@@ -25,5 +26,7 @@ class TestBaselineSeeder extends Seeder
             ReferenceDataSeeder::class,
             PlatformGovernedDemoSeeder::class,
         ]);
+
+        app(ContentPublisherService::class)->assignLegacyContent();
     }
 }

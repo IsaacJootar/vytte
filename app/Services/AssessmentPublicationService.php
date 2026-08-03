@@ -67,6 +67,8 @@ class AssessmentPublicationService
                 'creation_path' => 'FOCUSED',
                 'health_domain_id' => $healthDomainId,
                 'status' => AssessmentCatalogueRelease::STATUS_DRAFT,
+                'content_publisher_id' => $assessment->content_publisher_id,
+                'distribution_level' => $assessment->distribution_level,
                 'aggregation_policy' => [
                     'method' => 'MEAN_OF_SCORED_SUB_INDICES',
                     'critical_failures' => $this->criticalFailurePolicy($assessment),

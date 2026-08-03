@@ -10,7 +10,7 @@
     <form method="POST" action="{{ route('admin.assessments.store') }}" class="section-card max-w-2xl space-y-6 p-6">
         @csrf
 
-        <x-form-section title="Basic Information"
+        <x-form-section title="Purpose"
                         description="Only the name and department are required to save a draft.">
             <x-form-field label="Assessment name" for="display_name">
                 <input id="display_name" name="display_name" value="{{ old('display_name') }}" required maxlength="180"
@@ -45,7 +45,7 @@
 
         <div class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5 dark:border-slate-700">
             <button type="submit" class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-vytte-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-500">
-                Save and continue
+                Save and continue to publisher
             </button>
             <a href="{{ route('admin.assessments.index') }}" class="text-sm font-semibold text-slate-600 hover:underline dark:text-slate-300">Cancel</a>
         </div>

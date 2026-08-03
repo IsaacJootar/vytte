@@ -49,6 +49,7 @@ final class RoleNavigation
                         self::item('admin.modules.index', 'Departments', 'squares-2x2', 'admin.modules.*'),
                         self::item('admin.facility-profiles.index', 'Facility Types', 'building-office', 'admin.facility-profiles.*'),
                         self::item('admin.scores.index', 'Scores', 'chart-bar', 'admin.scores.*'),
+                        self::item('admin.publishers.index', 'Publishers', 'identification', 'admin.publishers.*'),
                     ],
                 ],
                 [

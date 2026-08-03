@@ -17,7 +17,7 @@ Current verified local state:
 | Assessment creation | Exactly two paths: Comprehensive Health Assessment and Focused Health Assessment |
 | Comprehensive assessment | Composition orchestrator over published catalogue releases |
 | Focused assessment | Single health domain/programme/topic/intervention |
-| Official content authority | Vytte owns departments, framework versions, facility profiles, catalogue releases, scoring, and aggregation |
+| Content accountability | Publishers own content and methodology claims; Vytte governs identity, validation, versioning, audit, reproducibility, and comparison eligibility |
 | Facility applicability | Facility profiles define required/default/optional departments |
 | Version resolution | Published catalogue releases pin exact framework versions; no automatic latest lookup |
 | Runtime content | Assessment snapshots freeze payload, manifest, policy, collection config, and hashes |
@@ -37,6 +37,8 @@ Current verified local state:
 | GAP-05 | Additional response types are declared but unavailable | Publishing unsupported types would break runners | Implement each type only with full contract and tests |
 | GAP-06 | Recommendation/action planning remains inactive | Reports currently summarize scores rather than action workflows | Design only after the assessment/report core is stable |
 | GAP-07 | Generic external API is not implemented | Unapproved API surface can increase security burden | Add only for an approved consumer and versioned contract |
+| GAP-08 | Scoring rules are still embedded in question/framework payloads | A question's meaning remains coupled to one interpretation | Add immutable scoring-model versions and legacy-equivalent profiles |
+| GAP-09 | Governance claims have a foundation but no review-assignment workflow | Trust states cannot yet be completed through the authoring wizard | Add reviewer assignment, evidence, decision, and separation-of-duties controls |
 
 ## Rule
 

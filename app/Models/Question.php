@@ -37,6 +37,8 @@ class Question extends Model
         'numeric_min',
         'numeric_max',
         'numeric_step',
+        'content_publisher_id',
+        'distribution_level',
     ];
 
     protected $casts = [
@@ -48,6 +50,14 @@ class Question extends Model
         'numeric_step' => 'decimal:4',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $question): void {
+            $question->content_publisher_id ??= ContentPublisher::where('publisher_code', 'VYTTE')->value('content_publisher_id');
+            $question->distribution_level ??= ContentPublisher::VISIBILITY_PUBLIC;
+        });
+    }
+
     public function module(): BelongsTo
     {
         return $this->belongsTo(AssessmentModule::class, 'module_id', 'module_id');
@@ -56,6 +66,11 @@ class Question extends Model
     public function questionType(): BelongsTo
     {
         return $this->belongsTo(QuestionType::class, 'type_id', 'type_id');
+    }
+
+    public function contentPublisher(): BelongsTo
+    {
+        return $this->belongsTo(ContentPublisher::class, 'content_publisher_id', 'content_publisher_id');
     }
 
     public function questionGroup(): BelongsTo

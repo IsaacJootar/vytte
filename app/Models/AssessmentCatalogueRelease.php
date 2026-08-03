@@ -40,6 +40,8 @@ class AssessmentCatalogueRelease extends Model
         'content_hash',
         'published_at',
         'published_by',
+        'content_publisher_id',
+        'distribution_level',
     ];
 
     protected $casts = [
@@ -51,6 +53,11 @@ class AssessmentCatalogueRelease extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $release): void {
+            $release->content_publisher_id ??= ContentPublisher::where('publisher_code', 'VYTTE')->value('content_publisher_id');
+            $release->distribution_level ??= ContentPublisher::VISIBILITY_PUBLIC;
+        });
+
         static::saving(function (self $release): void {
             if (! in_array($release->status, [self::STATUS_DRAFT, self::STATUS_PUBLISHED, self::STATUS_ARCHIVED, self::STATUS_SUPERSEDED], true)) {
                 throw new \LogicException("Unsupported catalogue-release status: {$release->status}.");
@@ -84,6 +91,11 @@ class AssessmentCatalogueRelease extends Model
     public function facilityProfile(): BelongsTo
     {
         return $this->belongsTo(FacilityProfile::class, 'facility_profile_id', 'facility_profile_id');
+    }
+
+    public function contentPublisher(): BelongsTo
+    {
+        return $this->belongsTo(ContentPublisher::class, 'content_publisher_id', 'content_publisher_id');
     }
 
     public function healthDomain(): BelongsTo
