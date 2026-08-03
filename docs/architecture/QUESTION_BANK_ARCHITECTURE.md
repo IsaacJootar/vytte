@@ -37,7 +37,7 @@ The initial publishing UI remains Platform Admin controlled. Publisher identity,
 | Framework version | `department_framework_versions` / `DepartmentFrameworkVersion` | Official department or focused framework version |
 | Framework section | `framework_sections` / `FrameworkSection` | Purpose-led framework grouping |
 | Framework indicator | `framework_indicators` / `FrameworkIndicator` | Measurement objective inside a section |
-| Framework placement | `framework_question_placements` / `FrameworkQuestionPlacement` | Exact question-version use inside a framework, with order, evidence, weight, criticality, and scoring behavior |
+| Framework placement | `framework_question_placements` / `FrameworkQuestionPlacement` | Exact question-version use inside a framework, with order, frozen earlier-answer applicability, evidence, weight, criticality, and scoring behavior |
 | Scoring model version | `scoring_model_versions` / `ScoringModelVersion` | Immutable instrument-level scoring purpose, construct, direction, missing policy, aggregation, algorithm, and hash |
 | Scoring item rule | `scoring_item_rules` / `ScoringItemRule` | Instrument-specific interpretation of one placement, independent of question origin |
 | Published framework payload | `department_framework_versions.published_payload` | Frozen rendered framework content |

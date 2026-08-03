@@ -94,11 +94,13 @@ Official question content is separated into identity, immutable version, and fra
 | Question group | `question_groups` | Organizes reusable question identities inside a department or focused scope. Replaced the removed `module_domains`. |
 | Question identity | `questions` | Stable reusable question concept and stable code. Not the assessment payload by itself. |
 | Question version | `question_versions` | Immutable wording, response type, options, numeric config, numeric bands, methodology metadata, and content hash. |
-| Framework section | `framework_sections` | Ordered grouping inside one framework version. |
+| Framework section | `framework_sections` | Ordered grouping with purpose, respondent instructions, estimated time, intended role, and repeatable-section metadata. |
 | Framework indicator | `framework_indicators` | Measurement objective inside a section. Carries analytical-domain mappings. |
 | Framework placement | `framework_question_placements` | Binds one exact published question version into a section and indicator with order, required state, evidence expectation, weight, scoring contribution, criticality, and framework-specific display wording. |
 
 A question version may be placed in more than one framework, with different wording, weight, and analytical meaning per placement.
+
+Placement applicability uses a versioned response-rule grammar. Rules may inspect only earlier questions and combine up to ten conditions with `ALL` or `ANY`; this prevents cycles and makes evaluation deterministic. The same evaluator controls authenticated and external rendering, submission completeness, and scoring. Hidden questions do not enter the applicable denominator, even if a previous path left a durable answer. Authors test branching in a no-save simulator before publication.
 
 ### Publishers and governance claims
 
@@ -196,6 +198,8 @@ The authenticated runner reads the immutable assessment snapshot. It supports:
 - open-text questions;
 - numeric questions with frozen unit, bounds, and step;
 - explicit non-answer states that distinguish not applicable, unknown, not assessed, not observed, and declined;
+- deterministic branching from frozen earlier-answer rules;
+- section-level instructions, intended respondent, and estimated time;
 - optional response-bound evidence notes.
 
 Unsupported response types cannot be published into official framework versions.

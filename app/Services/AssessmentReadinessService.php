@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\QuestionVersion;
 use App\Support\ResponseInputContract;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Explains, in the author's language, what still stands between a draft assessment and
@@ -21,6 +22,8 @@ use App\Support\ResponseInputContract;
  */
 class AssessmentReadinessService
 {
+    public function __construct(private readonly AssessmentLogicService $logic) {}
+
     /**
      * @return array{ready: bool, blockers: list<array{message: string, section?: string, placement_id?: string, kind: string}>, summary: array<string, int|float|null>}
      */
@@ -67,6 +70,18 @@ class AssessmentReadinessService
             $version = $placement->questionVersion;
             $label = $this->shortLabel($placement->local_display_text ?: $version?->question_text);
             $type = $version?->questionType?->type_code;
+
+            if (($placement->applicability['type'] ?? null) === 'response_rule') {
+                try {
+                    $this->logic->saveRule($assessment, $placement, $placement->applicability);
+                } catch (ValidationException $exception) {
+                    $blockers[] = [
+                        'kind' => 'logic',
+                        'placement_id' => $placement->framework_question_placement_id,
+                        'message' => 'The branching rule for "'.$label.'" is not valid. Open Logic and correct it.',
+                    ];
+                }
+            }
 
             if ($version?->status !== QuestionVersion::STATUS_PUBLISHED) {
                 $blockers[] = [

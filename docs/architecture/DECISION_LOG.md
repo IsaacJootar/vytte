@@ -357,3 +357,10 @@
 - **Decision:** Every response carries an explicit state and may carry a typed-value envelope. Multi-select is a first-class publishable type stored as frozen option identifiers. `NOT_APPLICABLE` is excluded from the applicable scoring denominator; unknown, not assessed, not observed, declined, and missing are disclosed as missing rather than converted to zero.
 - **Compatibility:** Existing scalar columns remain populated and readable. A missing in-memory state on a legacy response is interpreted as `ANSWERED`; historical snapshots and completed reports are not rewritten.
 - **Rationale:** A premium assessment platform must distinguish absence, inapplicability, uncertainty, refusal, and genuine negative performance. Collapsing them into zero or blank corrupts both decisions and comparisons.
+
+### DEC-2026-08-03-048: Branching Is Frozen, Acyclic, And Shared By Every Consumer
+
+- **Status:** Accepted and implemented.
+- **Decision:** A placement may declare a versioned rule composed from earlier-question conditions joined by `ALL` or `ANY`. Forward references and cycles are rejected. One evaluator determines respondent visibility, required completeness, and the scoring denominator for staff, public respondents, and author simulation.
+- **Preservation:** A response made visible on an earlier path remains durable if a later answer hides it, but it cannot contribute while hidden. If the path becomes visible again, the answer reappears. Completed snapshots keep their frozen rule language.
+- **Author workflow:** Sections carry instructions, intended respondent, estimated time, and repeatable intent. The Test step is a no-save interactive simulator using the production rule evaluator.

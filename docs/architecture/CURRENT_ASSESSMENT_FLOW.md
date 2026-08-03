@@ -1,5 +1,9 @@
 # Current Assessment Flow
 
+## Governed Authoring Flow
+
+The Assessment Builder uses nine labelled steps: Purpose, Publisher & source, Structure, Questions, Logic, Scoring, Review, Test, and Publish. Structure captures respondent-facing section instructions, estimated time, intended respondent, and repeatable intent. Logic accepts only frozen, earlier-question conditions, preventing circular or forward references. Test is an interactive no-save simulation powered by the same evaluator used during live collection, completeness checks, and scoring. Publish remains a human action after readiness and governance validation.
+
 ## Scope
 
 This document describes the implemented catalogue-composition assessment flow. The repository code is the technical source of truth.

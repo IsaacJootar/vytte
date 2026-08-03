@@ -14,12 +14,14 @@ use App\Models\Response;
 use App\Services\Ai\AiNarrativeService;
 use App\Services\Ai\AiProductCatalog;
 use App\Services\AssessmentCreationService;
+use App\Services\AssessmentLogicService;
 use App\Services\AuditService;
 use App\Services\PlanService;
 use App\Services\Reporting\CustomSectionScoringService;
 use App\Services\Reporting\LensCatalog;
 use App\Services\Reporting\ReportComposer;
 use App\Services\ReportSnapshotService;
+use App\Support\ResponseInputContract;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -293,24 +295,33 @@ class AssessmentController extends Controller
                 ->with('error', 'This assessment has no governed content snapshot and cannot be submitted.');
         }
 
-        $requiredQuestions = collect($snapshot->payload)
+        $allQuestions = collect($snapshot->payload)
             ->flatMap(fn ($module) => $module['questions'] ?? [])
-            ->where('is_scored', true)
             ->values();
-        $responses = Response::where('assessment_id', $assessment->assessment_id)
+        $allResponses = Response::where('assessment_id', $assessment->assessment_id)
             ->whereNull('respondent_id')
             ->whereNull('public_response_session_id')
-            ->whereIn('question_id', $requiredQuestions->pluck('question_id'))
-            ->get()->keyBy('question_id');
+            ->get();
+        $visibility = app(AssessmentLogicService::class)->visibilityMap($allQuestions, $allResponses);
+        $requiredQuestions = $allQuestions
+            ->filter(fn ($question) => $visibility[$question['question_id']] ?? true)
+            ->where('is_scored', true)
+            ->values();
+        $responses = $allResponses->keyBy('question_id');
         $hasMissingResponse = $requiredQuestions->contains(function ($question) use ($responses) {
             $response = $responses->get($question['question_id']);
             if (! $response) {
                 return true;
             }
+            if (in_array($response->response_state, array_diff(ResponseInputContract::RESPONSE_STATES, ['ANSWERED', 'MISSING']), true)) {
+                return false;
+            }
 
             return match ($question['response_type']) {
                 'OPEN_ENDED' => blank($response->value_text),
                 'NUMERIC' => $response->value_numeric === null,
+                'MULTI_SELECT' => ($response->typed_value['type'] ?? null) !== 'MULTI_SELECT'
+                    || empty($response->typed_value['option_ids'] ?? []),
                 default => ! collect($question['options'] ?? [])
                     ->contains('option_id', (int) $response->value_option_id),
             };

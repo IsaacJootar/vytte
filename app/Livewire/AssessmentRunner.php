@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Assessment;
 use App\Models\RespondentConsent;
 use App\Models\Response;
+use App\Services\AssessmentLogicService;
 use App\Support\ResponseInputContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\App;
@@ -21,6 +22,9 @@ class AssessmentRunner extends Component
     public int $currentIndex = 0;
 
     public array $questionData = [];
+
+    #[Locked]
+    public array $allQuestionData = [];
 
     public array $savedResponses = [];
 
@@ -69,7 +73,7 @@ class AssessmentRunner extends Component
 
         $locale = App::getLocale();
         $this->moduleCount = count($snapshot->payload);
-        $this->questionData = collect($snapshot->payload)
+        $this->allQuestionData = collect($snapshot->payload)
             ->sortBy('display_order')
             ->flatMap(fn ($module) => collect($module['questions'])
                 ->sortBy('display_order')
@@ -83,8 +87,13 @@ class AssessmentRunner extends Component
                     'module_code' => $module['module_code'],
                     'section_label' => $question['section_label'] ?? '',
                     'section_number' => $question['section_number'] ?? 0,
+                    'section_instructions' => $question['section_instructions'] ?? null,
+                    'section_estimated_minutes' => $question['section_estimated_minutes'] ?? null,
+                    'section_respondent_role' => $question['section_respondent_role'] ?? null,
+                    'section_is_repeatable' => (bool) ($question['section_is_repeatable'] ?? false),
                     'numeric_config' => $question['numeric_config'] ?? null,
                     'response_config' => $question['response_config'] ?? null,
+                    'applicability' => $question['applicability'] ?? null,
                     // The author's evidence prompt, frozen into the snapshot at creation.
                     'evidence_expectation' => $question['evidence_expectation'] ?? null,
                     'options' => collect($question['options'])->map(fn ($option) => [
@@ -94,6 +103,7 @@ class AssessmentRunner extends Component
                 ]))
             ->values()
             ->all();
+        $this->questionData = $this->allQuestionData;
     }
 
     private function loadExistingResponses(): void
@@ -121,6 +131,7 @@ class AssessmentRunner extends Component
                 $this->savedEvidenceNotes[$response->question_id] = $response->evidence_note;
             }
         }
+        $this->refreshVisibleQuestions();
     }
 
     private function checkConsentRequired(): void
@@ -206,6 +217,7 @@ class AssessmentRunner extends Component
         $this->savedResponses[$questionId] = $optionId;
         unset($this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
+        $this->refreshVisibleQuestions();
 
         // Auto-advance to next question
         if ($this->currentIndex < count($this->questionData) - 1) {
@@ -237,6 +249,7 @@ class AssessmentRunner extends Component
             Response::where('assessment_id', $this->assessment->assessment_id)
                 ->where('question_id', $questionId)->whereNull('respondent_id')->whereNull('public_response_session_id')->delete();
             unset($this->savedMultiResponses[$questionId]);
+            $this->refreshVisibleQuestions();
 
             return;
         }
@@ -248,6 +261,7 @@ class AssessmentRunner extends Component
         $this->savedMultiResponses[$questionId] = $selected;
         unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
+        $this->refreshVisibleQuestions();
     }
 
     public function setResponseState(string $questionId, string $state): void
@@ -267,6 +281,7 @@ class AssessmentRunner extends Component
         $this->savedResponseStates[$questionId] = $state;
         unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
+        $this->refreshVisibleQuestions();
     }
 
     public function goToQuestion(int $index): void
@@ -310,6 +325,7 @@ class AssessmentRunner extends Component
                 }
             }
             unset($this->savedTextResponses[$questionId]);
+            $this->refreshVisibleQuestions();
 
             return;
         }
@@ -327,6 +343,7 @@ class AssessmentRunner extends Component
         $this->savedTextResponses[$questionId] = $value;
         unset($this->savedResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
+        $this->refreshVisibleQuestions();
     }
 
     public function saveNumeric(string $questionId, mixed $value): void
@@ -358,6 +375,7 @@ class AssessmentRunner extends Component
                 }
             }
             unset($this->savedNumericResponses[$questionId]);
+            $this->refreshVisibleQuestions();
 
             return;
         }
@@ -404,6 +422,7 @@ class AssessmentRunner extends Component
         $this->savedNumericResponses[$questionId] = $number;
         unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
+        $this->refreshVisibleQuestions();
     }
 
     public function saveEvidenceNote(string $questionId, string $value): void
@@ -484,6 +503,32 @@ class AssessmentRunner extends Component
         ));
     }
 
+    private function refreshVisibleQuestions(): void
+    {
+        $this->questionData = app(AssessmentLogicService::class)->visibleQuestions($this->allQuestionData, $this->responseFacts());
+        $this->currentIndex = max(0, min($this->currentIndex, max(0, count($this->questionData) - 1)));
+    }
+
+    private function responseFacts(): array
+    {
+        return collect($this->allQuestionData)->mapWithKeys(function (array $question): array {
+            $questionId = $question['question_id'];
+            $optionIds = isset($this->savedResponses[$questionId]) && $this->savedResponses[$questionId] !== null
+                ? [(int) $this->savedResponses[$questionId]]
+                : array_map('intval', $this->savedMultiResponses[$questionId] ?? []);
+
+            return [$questionId => [
+                'state' => $this->savedResponseStates[$questionId] ?? 'ANSWERED',
+                'option_ids' => $optionIds,
+                'number' => $this->savedNumericResponses[$questionId] ?? null,
+                'text' => $this->savedTextResponses[$questionId] ?? null,
+                'has_answer' => $optionIds !== []
+                    || array_key_exists($questionId, $this->savedNumericResponses)
+                    || filled($this->savedTextResponses[$questionId] ?? null),
+            ]];
+        })->all();
+    }
+
     public function render(): View
     {
         return view('livewire.assessment-runner');
@@ -504,6 +549,10 @@ class AssessmentRunner extends Component
 
     private function snapshotQuestion(string $questionId): ?array
     {
+        if (! collect($this->questionData)->contains('question_id', $questionId)) {
+            return null;
+        }
+
         $snapshot = $this->assessment->snapshot()->first();
         if (! $snapshot) {
             return null;

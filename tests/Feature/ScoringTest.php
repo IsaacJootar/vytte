@@ -179,6 +179,57 @@ class ScoringTest extends TestCase
         $this->assertSame('CALIBRATED', $result['calibration_status']);
     }
 
+    public function test_hidden_conditional_question_is_excluded_even_if_it_has_a_stale_answer(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupAssessment($workspace, $user);
+        $payload = $assessment->snapshot->payload;
+        $scored = collect($payload[0]['questions'])->where('is_scored', true)->values();
+        $source = $scored[0];
+        $conditional = $scored[1];
+        $sourceOptions = collect($source['options']);
+        $trigger = $sourceOptions->sortBy('score_weight')->first();
+        $sourceBest = $sourceOptions->sortByDesc('score_weight')->first();
+        foreach ($payload[0]['questions'] as &$question) {
+            if ($question['question_id'] === $conditional['question_id']) {
+                $question['applicability'] = [
+                    'version' => 1,
+                    'type' => 'response_rule',
+                    'operator' => 'ALL',
+                    'conditions' => [[
+                        'source_question_id' => $source['question_id'],
+                        'comparison' => 'OPTION_SELECTED',
+                        'value' => $trigger['option_id'],
+                    ]],
+                ];
+            }
+        }
+        unset($question);
+        $assessment = $this->replaceSnapshot($assessment, ['payload' => $payload]);
+
+        foreach ($scored as $question) {
+            $option = $question['question_id'] === $conditional['question_id']
+                ? collect($question['options'])->sortBy('score_weight')->first()
+                : collect($question['options'])->sortByDesc('score_weight')->first();
+            if ($question['question_id'] === $source['question_id']) {
+                $option = $sourceBest;
+            }
+            Response::create([
+                'assessment_id' => $assessment->assessment_id,
+                'question_id' => $question['question_id'],
+                'value_option_id' => $option['option_id'],
+                'response_state' => 'ANSWERED',
+                'answered_at' => now(),
+            ]);
+        }
+
+        $responses = Response::where('assessment_id', $assessment->assessment_id)->get()->keyBy('question_id');
+        $result = app(ScoringService::class)->scoreResponseSet($assessment, $responses);
+
+        $this->assertSame(100.0, $result['overall_score']);
+        $this->assertSame('CALIBRATED', $result['calibration_status']);
+    }
+
     public function test_band_for_moderate_score(): void
     {
         $service = app(ScoringService::class);

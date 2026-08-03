@@ -28,6 +28,14 @@
                         @if ($section->purpose)
                             <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ $section->purpose }}</p>
                         @endif
+                        @if ($section->instructions)
+                            <p class="mt-2 rounded-lg bg-vytte-50 px-3 py-2 text-xs text-vytte-800 dark:bg-vytte-950/40 dark:text-vytte-200"><span class="font-semibold">Instructions:</span> {{ $section->instructions }}</p>
+                        @endif
+                        <p class="mt-1 flex flex-wrap gap-2 text-xs text-slate-400">
+                            @if ($section->estimated_minutes)<span>{{ $section->estimated_minutes }} min</span>@endif
+                            @if ($section->respondent_role)<span>For {{ $section->respondent_role }}</span>@endif
+                            @if ($section->is_repeatable)<span>Repeatable</span>@endif
+                        </p>
                         <p class="mt-1 text-xs text-slate-400">{{ $section->questionPlacements->count() }} {{ Str::plural('question', $section->questionPlacements->count()) }}</p>
                     </div>
 
@@ -126,6 +134,32 @@
                 </ul>
 
                 @if ($isEditable)
+                    <details class="border-t border-slate-100 p-4 dark:border-slate-700">
+                        <summary class="cursor-pointer text-sm font-semibold text-slate-600 dark:text-slate-300">Edit section guidance</summary>
+                        <form method="POST" action="{{ route('admin.assessments.sections.update', [$assessment, $section]) }}" class="mt-3 grid gap-3 sm:grid-cols-2">
+                            @csrf @method('PUT')
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Section name
+                                <input name="section_name" value="{{ $section->section_name }}" required maxlength="180" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                            </label>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Purpose
+                                <input name="purpose" value="{{ $section->purpose }}" maxlength="1000" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                            </label>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 sm:col-span-2">Instructions shown before this section
+                                <textarea name="instructions" rows="3" maxlength="3000" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ $section->instructions }}</textarea>
+                            </label>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Best answered by
+                                <input name="respondent_role" value="{{ $section->respondent_role }}" maxlength="120" placeholder="e.g. Facility manager" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                            </label>
+                            <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Estimated time (minutes)
+                                <input name="estimated_minutes" value="{{ $section->estimated_minutes }}" type="number" min="1" max="999" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 sm:col-span-2">
+                                <input type="checkbox" name="is_repeatable" value="1" @checked($section->is_repeatable) class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500">
+                                This section may be repeated for several wards, sites, services, or time periods
+                            </label>
+                            <div class="sm:col-span-2"><button class="rounded-xl bg-vytte-600 px-4 py-2 text-sm font-semibold text-white">Save section guidance</button></div>
+                        </form>
+                    </details>
                     <div class="flex flex-wrap gap-2 border-t border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
                         <a href="{{ route('admin.assessments.questions.library', [$assessment, $section]) }}"
                            class="rounded-xl bg-vytte-600 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-700">
@@ -147,9 +181,9 @@
     </div>
 
     <div class="mt-4 flex justify-end">
-        <a href="{{ route('admin.assessments.review', $assessment) }}"
+        <a href="{{ route('admin.assessments.logic', $assessment) }}"
            class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">
-            Review and publish →
+            Continue to logic →
         </a>
     </div>
 
@@ -158,11 +192,17 @@
               class="mt-4 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             @csrf
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Add a section</h2>
-            <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
                 <input name="section_name" value="{{ old('section_name') }}" required maxlength="180" placeholder="Section name, e.g. Infection Control"
                        class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                 <input name="purpose" value="{{ old('purpose') }}" maxlength="1000" placeholder="Short description (optional)"
                        class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                <textarea name="instructions" rows="2" maxlength="3000" placeholder="Instructions shown before this section (optional)" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+                <div class="grid grid-cols-2 gap-2">
+                    <input name="respondent_role" maxlength="120" placeholder="Best answered by" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                    <input name="estimated_minutes" type="number" min="1" max="999" placeholder="Minutes" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                </div>
+                <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"><input type="checkbox" name="is_repeatable" value="1" class="rounded border-slate-300 text-vytte-600"> Repeatable section</label>
                 <button class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">Add section</button>
             </div>
         </form>

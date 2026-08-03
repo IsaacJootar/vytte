@@ -12,6 +12,7 @@ class DepartmentFrameworkPublishingService
     public function __construct(
         private readonly FrameworkContentService $content,
         private readonly ScoringModelService $scoringModels,
+        private readonly AssessmentLogicService $logic,
     ) {}
 
     public function publish(DepartmentFrameworkVersion $version, ?string $publisherId = null): DepartmentFrameworkVersion
@@ -85,6 +86,14 @@ class DepartmentFrameworkPublishingService
         });
         if ($optionQuestionWithoutOptions) {
             $errors['response_inputs'][] = 'Every option-based question version must contain at least one selectable answer.';
+        }
+
+        foreach ($placements->filter(fn ($placement) => ($placement->applicability['type'] ?? null) === 'response_rule') as $placement) {
+            try {
+                $this->logic->saveRule($version, $placement, $placement->applicability);
+            } catch (ValidationException $exception) {
+                $errors['logic'][] = 'A question has invalid branching logic: '.collect($exception->errors())->flatten()->first();
+            }
         }
 
         $unscorableOpenText = $placements->contains(function ($placement): bool {

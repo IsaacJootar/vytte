@@ -37,11 +37,11 @@ class AssessmentBuilderService
      */
     private const DEFAULT_INDICATOR_SUFFIX = 'MAIN';
 
-    public function addSection(DepartmentFrameworkVersion $assessment, string $name, ?string $description = null): FrameworkSection
+    public function addSection(DepartmentFrameworkVersion $assessment, string $name, ?string $description = null, array $delivery = []): FrameworkSection
     {
         $this->assertDraft($assessment);
 
-        return DB::transaction(function () use ($assessment, $name, $description): FrameworkSection {
+        return DB::transaction(function () use ($assessment, $name, $description, $delivery): FrameworkSection {
             $order = ((int) $assessment->sections()->max('display_order')) + 1;
             $code = $this->uniqueSectionCode($assessment, $name);
 
@@ -50,6 +50,10 @@ class AssessmentBuilderService
                 'section_code' => $code,
                 'section_name' => $name,
                 'purpose' => $description,
+                'instructions' => $delivery['instructions'] ?? null,
+                'estimated_minutes' => $delivery['estimated_minutes'] ?? null,
+                'respondent_role' => $delivery['respondent_role'] ?? null,
+                'is_repeatable' => (bool) ($delivery['is_repeatable'] ?? false),
                 'display_order' => $order,
             ]);
 
@@ -65,11 +69,18 @@ class AssessmentBuilderService
         });
     }
 
-    public function renameSection(FrameworkSection $section, string $name, ?string $description = null): FrameworkSection
+    public function renameSection(FrameworkSection $section, string $name, ?string $description = null, array $delivery = []): FrameworkSection
     {
         $this->assertDraft($section->frameworkVersion);
 
-        $section->update(['section_name' => $name, 'purpose' => $description]);
+        $section->update([
+            'section_name' => $name,
+            'purpose' => $description,
+            'instructions' => $delivery['instructions'] ?? null,
+            'estimated_minutes' => $delivery['estimated_minutes'] ?? null,
+            'respondent_role' => $delivery['respondent_role'] ?? null,
+            'is_repeatable' => (bool) ($delivery['is_repeatable'] ?? false),
+        ]);
         $this->defaultIndicator($section)?->update(['indicator_name' => $name]);
 
         return $section->fresh();

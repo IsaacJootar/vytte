@@ -379,6 +379,45 @@ class AssessmentTest extends TestCase
         $this->assertNull($response->value_option_id);
     }
 
+    public function test_runner_reveals_a_conditional_question_when_its_rule_matches(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        [$project, $target] = $this->createProjectWithTarget($workspace, $user);
+        $assessment = $this->createAssessment($project, $target);
+        $payload = $assessment->snapshot->payload;
+        $source = $payload[0]['questions'][0];
+        $triggerOption = $source['options'][0]['option_id'];
+        $payload[0]['questions'][1]['applicability'] = [
+            'version' => 1,
+            'type' => 'response_rule',
+            'operator' => 'ALL',
+            'conditions' => [[
+                'source_question_id' => $source['question_id'],
+                'comparison' => 'OPTION_SELECTED',
+                'value' => $triggerOption,
+            ]],
+        ];
+        $assessment = $this->replaceSnapshot($assessment, ['payload' => $payload]);
+
+        $component = Livewire::actingAs($user)
+            ->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $conditional = $payload[0]['questions'][1];
+        $hiddenOption = $conditional['options'][0]['option_id'];
+
+        $component->assertCount('allQuestionData', 4)
+            ->assertCount('questionData', 3)
+            ->call('giveConsent')
+            ->call('selectOption', $conditional['question_id'], $hiddenOption);
+        $this->assertDatabaseMissing('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $conditional['question_id'],
+        ]);
+
+        $component
+            ->call('selectOption', $source['question_id'], $triggerOption)
+            ->assertCount('questionData', 4);
+    }
+
     // ---- Workspace isolation ----
 
     public function test_workspace_b_cannot_run_workspace_a_assessment(): void

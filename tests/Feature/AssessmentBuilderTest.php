@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\AssessmentPreviewSimulator;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
 use App\Models\ContentPublisher;
@@ -22,6 +23,7 @@ use App\Services\AssessmentCreationService;
 use App\Services\FrameworkContentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class AssessmentBuilderTest extends TestCase
@@ -303,6 +305,31 @@ class AssessmentBuilderTest extends TestCase
 
         $this->assertSame('Infection Control', $section->section_name);
         $this->assertSame(1, FrameworkIndicator::where('framework_section_id', $section->framework_section_id)->count());
+    }
+
+    public function test_section_delivery_guidance_is_saved_and_frozen_into_the_payload(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->draftAssessment();
+
+        $this->post(route('admin.assessments.sections.store', $assessment), [
+            'section_name' => 'Ward observation',
+            'purpose' => 'Review one clinical area.',
+            'instructions' => 'Walk through the ward before answering.',
+            'estimated_minutes' => 12,
+            'respondent_role' => 'Ward manager',
+            'is_repeatable' => 1,
+        ])->assertSessionHasNoErrors();
+
+        $section = FrameworkSection::where('framework_version_id', $assessment->framework_version_id)->firstOrFail();
+        $this->assertSame('Walk through the ward before answering.', $section->instructions);
+        $this->assertSame(12, $section->estimated_minutes);
+        $this->assertSame('Ward manager', $section->respondent_role);
+        $this->assertTrue($section->is_repeatable);
+
+        $payload = app(FrameworkContentService::class)->frameworkPayload($assessment->fresh());
+        $this->assertSame('Walk through the ward before answering.', $payload['sections'][0]['instructions']);
+        $this->assertTrue($payload['sections'][0]['is_repeatable']);
     }
 
     public function test_the_author_never_sees_or_names_the_indicator(): void
@@ -587,6 +614,93 @@ class AssessmentBuilderTest extends TestCase
         ]);
 
         return [$assessment, FrameworkQuestionPlacement::where('framework_version_id', $assessment->framework_version_id)->firstOrFail()];
+    }
+
+    public function test_author_can_add_compound_logic_using_only_earlier_questions(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $source] = $this->assessmentWithOneNewQuestion();
+        $section = $source->section;
+        $this->post(route('admin.assessments.questions.store', [$assessment, $section]), [
+            'question_text' => 'Follow-up question?',
+            'format' => 'yes_no',
+        ]);
+        $target = FrameworkQuestionPlacement::where('framework_version_id', $assessment->framework_version_id)
+            ->where('framework_question_placement_id', '!=', $source->framework_question_placement_id)->firstOrFail();
+        $yesOption = collect($source->questionVersion->options)->firstWhere('option_label', 'Yes');
+
+        $this->get(route('admin.assessments.logic', $assessment))
+            ->assertOk()
+            ->assertSee('Safe branching, without loops')
+            ->assertSee('Follow-up question?');
+
+        $this->put(route('admin.assessments.logic.update', [$assessment, $target]), [
+            'operator' => 'ALL',
+            'conditions' => [[
+                'source_question_id' => $source->question_id,
+                'comparison' => 'OPTION_SELECTED',
+                'option_value' => $yesOption['option_id'],
+            ]],
+        ])->assertSessionHasNoErrors();
+
+        $rule = $target->fresh()->applicability;
+        $this->assertSame('response_rule', $rule['type']);
+        $this->assertSame($source->question_id, $rule['conditions'][0]['source_question_id']);
+        $this->assertSame($yesOption['option_id'], $rule['conditions'][0]['value']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.logic.updated']);
+    }
+
+    public function test_branching_logic_rejects_a_later_source_question(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $first] = $this->assessmentWithOneNewQuestion();
+        $this->post(route('admin.assessments.questions.store', [$assessment, $first->section]), [
+            'question_text' => 'Later source?',
+            'format' => 'yes_no',
+        ]);
+        $later = FrameworkQuestionPlacement::where('framework_version_id', $assessment->framework_version_id)
+            ->orderByDesc('display_order')->firstOrFail();
+
+        $this->put(route('admin.assessments.logic.update', [$assessment, $first]), [
+            'operator' => 'ALL',
+            'conditions' => [[
+                'source_question_id' => $later->question_id,
+                'comparison' => 'IS_ANSWERED',
+            ]],
+        ])->assertSessionHasErrors('conditions');
+
+        $this->assertNull($first->fresh()->applicability);
+    }
+
+    public function test_preview_simulator_reveals_conditional_questions_without_saving_responses(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        [$assessment, $source] = $this->assessmentWithOneNewQuestion();
+        $this->post(route('admin.assessments.questions.store', [$assessment, $source->section]), [
+            'question_text' => 'Simulated follow-up?',
+            'format' => 'yes_no',
+        ]);
+        $target = FrameworkQuestionPlacement::where('framework_version_id', $assessment->framework_version_id)
+            ->where('framework_question_placement_id', '!=', $source->framework_question_placement_id)->firstOrFail();
+        $trigger = collect($source->questionVersion->options)->first();
+        $target->update(['applicability' => [
+            'version' => 1,
+            'type' => 'response_rule',
+            'operator' => 'ALL',
+            'conditions' => [[
+                'source_question_id' => $source->question_id,
+                'comparison' => 'OPTION_SELECTED',
+                'value' => $trigger['option_id'],
+            ]],
+        ]]);
+
+        Livewire::test(AssessmentPreviewSimulator::class, ['assessment' => $assessment])
+            ->assertCount('allQuestions', 2)
+            ->assertCount('visibleQuestions', 1)
+            ->call('selectOption', $source->question_id, $trigger['option_id'])
+            ->assertCount('visibleQuestions', 2);
+
+        $this->assertDatabaseCount('responses', 0);
     }
 
     /**
@@ -1166,27 +1280,21 @@ class AssessmentBuilderTest extends TestCase
         app(AssessmentCreationService::class)->createFromCatalogue($project, $oldRelease->fresh(), creatorId: $user->user_id);
     }
 
-    public function test_respondent_preview_shows_the_questions_without_any_way_to_answer(): void
+    public function test_respondent_preview_is_an_interactive_simulation_that_saves_nothing(): void
     {
         $this->actingAs($this->platformAdmin());
         [$assessment] = $this->assessmentWithOneNewQuestion();
 
         $response = $this->get(route('admin.assessments.preview', $assessment))->assertOk();
 
-        $response->assertSee('Respondent preview');
+        $response->assertSee('Test the respondent experience');
         $response->assertSee('Scoring fixture question?');
         $response->assertSee('Yes');
         $response->assertSee('No');
-        $response->assertSee('Nothing here can be answered or changed');
-
-        // Every input is disabled, and the preview offers no save or submit action.
-        $html = $response->getContent();
-        $this->assertSame(
-            substr_count($html, '<input type="radio"'),
-            substr_count($html, '<input type="radio" disabled'),
-            'A preview input was left enabled.'
-        );
-        $response->assertDontSee('wire:click');
+        $response->assertSee('temporary simulation');
+        $response->assertSee('wire:click', false);
+        $response->assertDontSee('Submit assessment');
+        $this->assertDatabaseCount('responses', 0);
     }
 
     public function test_respondent_preview_of_a_published_assessment_uses_the_frozen_payload(): void

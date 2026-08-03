@@ -88,6 +88,7 @@ An assessment snapshot is the runtime authority. Master content, future framewor
 - Scored numeric questions require scoring bands.
 - Open-text questions are unscored contextual support.
 - Multi-select and explicit non-answer states have authenticated and external runtime contracts.
+- Framework sections carry delivery guidance; placement applicability is a frozen, acyclic response-rule contract shared by rendering, completeness, and scoring.
 - Question semantics and instrument scoring interpretation are separately versioned for new governed content.
 - New assessment snapshots carry a deterministic comparison signature.
 - The default seed is repository-contained and includes demonstration governed content only.

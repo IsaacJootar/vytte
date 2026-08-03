@@ -80,8 +80,12 @@ class RespondentSubmissionService
     {
         $snapshot = $assessment->snapshot;
         if ($snapshot) {
-            $required = collect($snapshot->payload)
+            $allQuestions = collect($snapshot->payload)
                 ->flatMap(fn ($module) => $module['questions'] ?? [])
+                ->values();
+            $visibility = app(AssessmentLogicService::class)->visibilityMap($allQuestions, $responses);
+            $required = $allQuestions
+                ->filter(fn ($question) => $visibility[$question['question_id']] ?? true)
                 ->where('is_scored', true);
             $byQuestion = $responses->keyBy('question_id');
             $complete = $required->isNotEmpty() && $required->every(function ($question) use ($byQuestion): bool {

@@ -9,6 +9,7 @@ use App\Models\LocalCustomSection;
 use App\Models\PublicResponseSession;
 use App\Models\RespondentConsent;
 use App\Models\Response;
+use App\Services\AssessmentLogicService;
 use App\Services\RespondentSubmissionService;
 use App\Support\ResponseInputContract;
 use Illuminate\Contracts\View\View;
@@ -57,6 +58,9 @@ class PublicRespondentRunner extends Component
     public bool $consentGiven = false;
 
     public array $questionData = [];
+
+    #[Locked]
+    public array $allQuestionData = [];
 
     public array $savedResponses = [];
 
@@ -239,6 +243,7 @@ class PublicRespondentRunner extends Component
         $this->savedResponses[$questionId] = $optionId;
         unset($this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->markSaved();
+        $this->refreshVisibleQuestions();
         if ($this->currentIndex < count($this->questionData) - 1) {
             $this->currentIndex++;
         }
@@ -263,6 +268,7 @@ class PublicRespondentRunner extends Component
             Response::where('assessment_id', $this->assessmentId)->where('question_id', $questionId)
                 ->where('public_response_session_id', $this->respondentId)->delete();
             unset($this->savedMultiResponses[$questionId]);
+            $this->refreshVisibleQuestions();
 
             return;
         }
@@ -274,6 +280,7 @@ class PublicRespondentRunner extends Component
         $this->savedMultiResponses[$questionId] = $selected;
         unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->markSaved();
+        $this->refreshVisibleQuestions();
     }
 
     public function setResponseState(string $questionId, string $state): void
@@ -291,6 +298,7 @@ class PublicRespondentRunner extends Component
         $this->savedResponseStates[$questionId] = $state;
         unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId]);
         $this->markSaved();
+        $this->refreshVisibleQuestions();
     }
 
     public function goToQuestion(int $index): void
@@ -318,6 +326,7 @@ class PublicRespondentRunner extends Component
                 ->where('public_response_session_id', $this->respondentId)
                 ->delete();
             unset($this->savedTextResponses[$questionId]);
+            $this->refreshVisibleQuestions();
 
             return;
         }
@@ -342,6 +351,7 @@ class PublicRespondentRunner extends Component
         $this->savedTextResponses[$questionId] = $value;
         unset($this->savedResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->markSaved();
+        $this->refreshVisibleQuestions();
     }
 
     public function saveNumeric(string $questionId, mixed $value): void
@@ -361,6 +371,7 @@ class PublicRespondentRunner extends Component
                 ->where('public_response_session_id', $this->respondentId)
                 ->delete();
             unset($this->savedNumericResponses[$questionId]);
+            $this->refreshVisibleQuestions();
 
             return;
         }
@@ -414,6 +425,7 @@ class PublicRespondentRunner extends Component
         $this->savedNumericResponses[$questionId] = $number;
         unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->markSaved();
+        $this->refreshVisibleQuestions();
     }
 
     public function canSubmit(): bool
@@ -487,7 +499,8 @@ class PublicRespondentRunner extends Component
 
     private function loadQuestions(): void
     {
-        $this->questionData = $this->questionDefinitions($this->currentLocale);
+        $this->allQuestionData = $this->questionDefinitions($this->currentLocale);
+        $this->questionData = $this->allQuestionData;
         $this->loadCustomSection();
     }
 
@@ -567,8 +580,13 @@ class PublicRespondentRunner extends Component
                     'module_name' => $module['module_name'] ?? $module['module_code'],
                     'section_label' => $question['section_label'] ?? '',
                     'section_number' => $question['section_number'] ?? 0,
+                    'section_instructions' => $question['section_instructions'] ?? null,
+                    'section_estimated_minutes' => $question['section_estimated_minutes'] ?? null,
+                    'section_respondent_role' => $question['section_respondent_role'] ?? null,
+                    'section_is_repeatable' => (bool) ($question['section_is_repeatable'] ?? false),
                     'numeric_config' => $question['numeric_config'] ?? null,
                     'response_config' => $question['response_config'] ?? null,
+                    'applicability' => $question['applicability'] ?? null,
                     'options' => collect($question['options'] ?? [])->map(fn ($option) => [
                         'option_id' => (int) $option['option_id'],
                         'option_label' => Arr::get($option, "translations.{$locale}", $option['option_label']),
@@ -580,6 +598,10 @@ class PublicRespondentRunner extends Component
 
     private function authoritativeQuestion(string $questionId): ?array
     {
+        if (! collect($this->questionData)->contains('question_id', $questionId)) {
+            return null;
+        }
+
         return collect($this->questionDefinitions('en'))->firstWhere('question_id', $questionId);
     }
 
@@ -608,6 +630,7 @@ class PublicRespondentRunner extends Component
                 $this->savedResponseStates[$response->question_id] = $response->response_state;
             }
         }
+        $this->refreshVisibleQuestions();
     }
 
     private function resolveAvailableLocales(): array
@@ -681,7 +704,12 @@ class PublicRespondentRunner extends Component
 
     private function hasCompleteRequiredResponses(): bool
     {
-        $required = collect($this->questionDefinitions('en'))->where('is_scored', true);
+        $allQuestions = $this->questionDefinitions('en');
+        $allResponses = Response::where('public_response_session_id', $this->respondentId)->get();
+        $visibility = app(AssessmentLogicService::class)->visibilityMap($allQuestions, $allResponses);
+        $required = collect($allQuestions)
+            ->filter(fn ($question) => $visibility[$question['question_id']] ?? true)
+            ->where('is_scored', true);
         if ($required->isEmpty()) {
             return false;
         }
@@ -720,6 +748,32 @@ class PublicRespondentRunner extends Component
     {
         $this->lastSavedAt = now()->format('g:i A');
         $this->touchResponseSession();
+    }
+
+    private function refreshVisibleQuestions(): void
+    {
+        $this->questionData = app(AssessmentLogicService::class)->visibleQuestions($this->allQuestionData, $this->responseFacts());
+        $this->currentIndex = max(0, min($this->currentIndex, max(0, count($this->questionData) - 1)));
+    }
+
+    private function responseFacts(): array
+    {
+        return collect($this->allQuestionData)->mapWithKeys(function (array $question): array {
+            $questionId = $question['question_id'];
+            $optionIds = isset($this->savedResponses[$questionId])
+                ? [(int) $this->savedResponses[$questionId]]
+                : array_map('intval', $this->savedMultiResponses[$questionId] ?? []);
+
+            return [$questionId => [
+                'state' => $this->savedResponseStates[$questionId] ?? 'ANSWERED',
+                'option_ids' => $optionIds,
+                'number' => $this->savedNumericResponses[$questionId] ?? null,
+                'text' => $this->savedTextResponses[$questionId] ?? null,
+                'has_answer' => $optionIds !== []
+                    || array_key_exists($questionId, $this->savedNumericResponses)
+                    || filled($this->savedTextResponses[$questionId] ?? null),
+            ]];
+        })->all();
     }
 
     private function hasValidPublicContext(): bool

@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActionController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Admin\AssessmentBuilderController as AdminAssessmentBuilderController;
+use App\Http\Controllers\Admin\AssessmentLogicController as AdminAssessmentLogicController;
 use App\Http\Controllers\Admin\AssessmentOversightController as AdminAssessmentOversightController;
 use App\Http\Controllers\Admin\AssessmentQuestionController as AdminAssessmentQuestionController;
 use App\Http\Controllers\Admin\AssessmentSectionController as AdminAssessmentSectionController;
@@ -164,6 +165,9 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::put('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'update'])->name('assessments.update');
     Route::delete('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'destroy'])->name('assessments.destroy');
     Route::get('assessments/{assessment}/build', [AdminAssessmentBuilderController::class, 'build'])->name('assessments.build');
+    Route::get('assessments/{assessment}/logic', [AdminAssessmentLogicController::class, 'index'])->name('assessments.logic');
+    Route::put('assessments/{assessment}/questions/{placement}/logic', [AdminAssessmentLogicController::class, 'update'])->name('assessments.logic.update');
+    Route::delete('assessments/{assessment}/questions/{placement}/logic', [AdminAssessmentLogicController::class, 'destroy'])->name('assessments.logic.destroy');
     Route::get('assessments/{assessment}/publisher', [AdminAssessmentBuilderController::class, 'governance'])->name('assessments.governance');
     Route::get('assessments/{assessment}/review', [AdminAssessmentBuilderController::class, 'review'])->name('assessments.review');
     Route::put('assessments/{assessment}/provenance', [AdminAssessmentBuilderController::class, 'saveProvenance'])->name('assessments.provenance');

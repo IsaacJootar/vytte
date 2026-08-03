@@ -25,10 +25,14 @@ class AssessmentSectionController extends Controller
         $validated = $request->validate([
             'section_name' => ['required', 'string', 'max:180'],
             'purpose' => ['nullable', 'string', 'max:1000'],
+            'instructions' => ['nullable', 'string', 'max:3000'],
+            'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'respondent_role' => ['nullable', 'string', 'max:120'],
+            'is_repeatable' => ['nullable', 'boolean'],
         ], [], ['section_name' => 'section name']);
 
         try {
-            $section = $this->builder->addSection($assessment, $validated['section_name'], $validated['purpose'] ?? null);
+            $section = $this->builder->addSection($assessment, $validated['section_name'], $validated['purpose'] ?? null, $validated);
         } catch (ValidationException $exception) {
             return back()->withErrors($exception->errors())->withInput();
         }
@@ -48,12 +52,16 @@ class AssessmentSectionController extends Controller
         $validated = $request->validate([
             'section_name' => ['required', 'string', 'max:180'],
             'purpose' => ['nullable', 'string', 'max:1000'],
+            'instructions' => ['nullable', 'string', 'max:3000'],
+            'estimated_minutes' => ['nullable', 'integer', 'min:1', 'max:999'],
+            'respondent_role' => ['nullable', 'string', 'max:120'],
+            'is_repeatable' => ['nullable', 'boolean'],
         ], [], ['section_name' => 'section name']);
 
-        $old = $section->only(['section_name', 'purpose']);
+        $old = $section->only(['section_name', 'purpose', 'instructions', 'estimated_minutes', 'respondent_role', 'is_repeatable']);
 
         try {
-            $this->builder->renameSection($section, $validated['section_name'], $validated['purpose'] ?? null);
+            $this->builder->renameSection($section, $validated['section_name'], $validated['purpose'] ?? null, $validated);
         } catch (ValidationException $exception) {
             return back()->withErrors($exception->errors());
         }

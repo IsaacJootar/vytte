@@ -66,6 +66,11 @@ class AssessmentVersionService
                     'section_code' => $section->section_code,
                     'section_name' => $section->section_name,
                     'purpose' => $section->purpose,
+                    'instructions' => $section->instructions,
+                    'estimated_minutes' => $section->estimated_minutes,
+                    'respondent_role' => $section->respondent_role,
+                    'visibility_rules' => $section->visibility_rules,
+                    'is_repeatable' => $section->is_repeatable,
                     'display_order' => $section->display_order,
                 ])->framework_section_id;
             }

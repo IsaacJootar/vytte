@@ -18,7 +18,18 @@ class FrameworkSection extends Model
         'section_code',
         'section_name',
         'purpose',
+        'instructions',
+        'estimated_minutes',
+        'respondent_role',
+        'visibility_rules',
+        'is_repeatable',
         'display_order',
+    ];
+
+    protected $casts = [
+        'estimated_minutes' => 'integer',
+        'visibility_rules' => 'array',
+        'is_repeatable' => 'boolean',
     ];
 
     public function frameworkVersion(): BelongsTo

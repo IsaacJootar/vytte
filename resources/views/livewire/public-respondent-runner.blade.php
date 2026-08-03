@@ -187,9 +187,15 @@
         @endif
         @php $prevSection = $currentIndex > 0 ? $questionData[$currentIndex - 1]['section_number'] : null; @endphp
         @if (($currentIndex === 0 || $q['section_number'] !== $prevSection) && $q['section_label'])
-            <div class="mb-3 flex items-center gap-2">
-                <span class="w-5 h-5 rounded-full bg-vytte-100 text-vytte-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{{ $q['section_number'] }}</span>
-                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wide">{{ $q['section_label'] }}</span>
+            <div class="mb-3 rounded-xl border border-vytte-100 bg-vytte-50 p-3">
+                <div class="flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-vytte-100 text-vytte-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{{ $q['section_number'] }}</span>
+                    <span class="text-[11px] font-bold text-slate-600 uppercase tracking-wide">{{ $q['section_label'] }}</span>
+                </div>
+                @if ($q['section_instructions'])<p class="mt-2 text-sm text-vytte-900">{{ $q['section_instructions'] }}</p>@endif
+                @if ($q['section_estimated_minutes'] || $q['section_respondent_role'])
+                    <p class="mt-1 text-xs text-vytte-700">{{ $q['section_estimated_minutes'] ? $q['section_estimated_minutes'].' minutes' : '' }}{{ $q['section_estimated_minutes'] && $q['section_respondent_role'] ? ' · ' : '' }}{{ $q['section_respondent_role'] ? 'Best answered by '.$q['section_respondent_role'] : '' }}</p>
+                @endif
             </div>
         @endif
 

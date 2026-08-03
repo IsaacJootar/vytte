@@ -54,6 +54,11 @@ class ScoringService
         }
 
         $snapshot = $assessment->snapshot()->first();
+        $orderedQuestions = collect($snapshot?->payload ?? [])
+            ->sortBy('display_order')
+            ->flatMap(fn ($module) => collect($module['questions'] ?? [])->sortBy('display_order'))
+            ->values();
+        $visibility = app(AssessmentLogicService::class)->visibilityMap($orderedQuestions, $responses);
         $criticalPolicy = $snapshot?->aggregation_policy['critical_failures'] ?? [];
         $criticalFailuresEnabled = (bool) ($criticalPolicy['enabled'] ?? false);
         $criticalThreshold = array_key_exists('option_score_at_or_below', $criticalPolicy)
@@ -74,6 +79,9 @@ class ScoringService
 
             foreach ($subIndex['questions'] as $question) {
                 if (! $question['is_scored']) {
+                    continue;
+                }
+                if (! ($visibility[$question['question_id']] ?? true)) {
                     continue;
                 }
 
@@ -395,6 +403,7 @@ class ScoringService
                             'response_type' => $question['response_type'] ?? null,
                             'options' => $question['options'] ?? [],
                             'numeric_bands' => $question['numeric_bands'] ?? [],
+                            'applicability' => $question['applicability'] ?? null,
                         ];
                     })->all();
 
