@@ -2,7 +2,7 @@
 
 ## Governed Authoring Flow
 
-The Assessment Builder uses nine labelled steps: Purpose, Publisher & source, Structure, Questions, Logic, Scoring, Review, Test, and Publish. Structure captures respondent-facing section instructions, estimated time, intended respondent, and repeatable intent. Logic accepts only frozen, earlier-question conditions, preventing circular or forward references. Test is an interactive no-save simulation powered by the same evaluator used during live collection, completeness checks, and scoring. Publish remains a human action after readiness and governance validation.
+The Platform Admin sidebar exposes the Assessment Builder as **Governance Studio**. It uses nine distinct, clickable steps: Purpose, Publisher & source, Structure, Questions, Logic, Scoring, Review, Test, and Publish. Structure captures respondent-facing section instructions, estimated time, intended respondent, and repeatable intent. Questions separates original writing and governed-library reuse from section design. Logic accepts only frozen, earlier-question conditions, preventing circular or forward references. Scoring declares the measured construct, direction, missing-response policy, and every contributing item rule. Review keeps deterministic checks, AI advice, and independent trust claims visible before Test. Test is an interactive no-save simulation powered by the same evaluator used during live collection, completeness checks, and scoring. Publish is a separate final readiness and immutable-confirmation screen and remains a human action.
 
 ## Scope
 

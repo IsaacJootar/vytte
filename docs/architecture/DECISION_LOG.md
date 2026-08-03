@@ -387,3 +387,10 @@
 - **Context:** Every assessment score was mapped to a ladder named Data Collection through Learning Health System. That language falsely implied that a PHC readiness, malaria, or menstrual-health assessment had measured data-use maturity.
 - **Decision:** The five bands are now presented as Urgent Action, Foundational, Developing, Established, and Leading. A performance stage is only a plain-language interpretation of the same 0–100 result and the action posture appropriate to that band. It is not a second score or proof of an organization's general maturity.
 - **Historical boundary:** Completed report snapshots retain their frozen historical label. New and live reference data use the corrected stages. A future publisher-specific maturity model must be separately versioned and validated rather than inferred from a generic score.
+
+### DEC-2026-08-03-052: Governance Capabilities Must Be Exposed As A Real Guided Workflow
+
+- **Status:** Accepted and implemented.
+- **Decision:** Platform Admin authoring is named Governance Studio and exposes nine distinct clickable steps: Purpose, Publisher & source, Structure, Questions, Logic, Scoring, Review, Test, and Publish. Scoring and Publish have dedicated screens; Review precedes the no-save respondent simulation.
+- **Reason:** Backend capability and decorative step labels do not constitute a usable governance workflow. Authors must be able to locate, revisit, and understand every decision without navigating Advanced Tools or guessing which combined page contains it.
+- **Consequence:** Advanced Tools remains available for deep inspection, while the ordinary author path is complete, sequential, and discoverable from the sidebar.

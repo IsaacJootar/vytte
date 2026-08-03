@@ -10,7 +10,7 @@
         <x-assessment-status-badge :status="$assessment->status" />
     </div>
 
-    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" />
+    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" :assessment="$assessment" />
 
     <div class="grid gap-4 lg:grid-cols-3">
         <div class="space-y-4 lg:col-span-2">

@@ -1,14 +1,14 @@
-<x-admin-layout title="Review and publish">
+<x-admin-layout title="Publish assessment">
     <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-            <a href="{{ route('admin.assessments.quality', $assessment) }}" class="text-sm text-slate-500 hover:underline dark:text-slate-400">&larr; Back to quality review</a>
-            <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Review and publish</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400">{{ $assessment->display_name }}</p>
+            <a href="{{ route('admin.assessments.preview', $assessment) }}" class="text-sm text-slate-500 hover:underline dark:text-slate-400">&larr; Back to test</a>
+            <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Publish</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Final readiness check for {{ $assessment->display_name }}</p>
         </div>
         <x-assessment-status-badge :status="$assessment->status" />
     </div>
 
-    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" />
+    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" :assessment="$assessment" />
 
     @if ($publishedRelease)
         <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950">

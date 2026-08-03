@@ -8,7 +8,7 @@
         <x-assessment-status-badge :status="$assessment->status" />
     </div>
 
-    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" />
+    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" :assessment="$assessment" />
 
     <div class="mb-5 rounded-xl border border-vytte-200 bg-vytte-50 p-4 dark:border-vytte-900 dark:bg-vytte-950/40">
         <p class="text-sm font-semibold text-vytte-900 dark:text-vytte-100">Safe branching, without loops</p>
@@ -102,7 +102,7 @@
     </div>
 
     <div class="mt-5 flex flex-wrap justify-between gap-3">
-        <a href="{{ route('admin.assessments.build', $assessment) }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">← Questions</a>
-        <a href="{{ route('admin.assessments.preview', $assessment) }}" class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">Test respondent view →</a>
+        <a href="{{ route('admin.assessments.questions', $assessment) }}" class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">&larr; Questions</a>
+        <a href="{{ route('admin.assessments.scoring', $assessment) }}" class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">Continue to scoring &rarr;</a>
     </div>
 </x-admin-layout>

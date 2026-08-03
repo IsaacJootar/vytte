@@ -171,10 +171,13 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::put('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'update'])->name('assessments.update');
     Route::delete('assessments/{assessment}', [AdminAssessmentBuilderController::class, 'destroy'])->name('assessments.destroy');
     Route::get('assessments/{assessment}/build', [AdminAssessmentBuilderController::class, 'build'])->name('assessments.build');
+    Route::get('assessments/{assessment}/questions', [AdminAssessmentBuilderController::class, 'questions'])->name('assessments.questions');
     Route::get('assessments/{assessment}/logic', [AdminAssessmentLogicController::class, 'index'])->name('assessments.logic');
     Route::put('assessments/{assessment}/questions/{placement}/logic', [AdminAssessmentLogicController::class, 'update'])->name('assessments.logic.update');
     Route::delete('assessments/{assessment}/questions/{placement}/logic', [AdminAssessmentLogicController::class, 'destroy'])->name('assessments.logic.destroy');
     Route::get('assessments/{assessment}/publisher', [AdminAssessmentBuilderController::class, 'governance'])->name('assessments.governance');
+    Route::get('assessments/{assessment}/scoring', [AdminAssessmentBuilderController::class, 'scoring'])->name('assessments.scoring');
+    Route::put('assessments/{assessment}/scoring', [AdminAssessmentBuilderController::class, 'updateScoring'])->name('assessments.scoring.update');
     Route::get('assessments/{assessment}/review', [AdminAssessmentBuilderController::class, 'review'])->name('assessments.review');
     Route::get('assessments/{assessment}/quality', [AdminAssessmentQualityController::class, 'show'])->name('assessments.quality');
     Route::put('assessments/{assessment}/quality/claims/{claimType}', [AdminAssessmentQualityController::class, 'updateClaim'])->name('assessments.quality.claim');
@@ -182,6 +185,7 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::post('assessments/{assessment}/quality/ai', [AdminAssessmentQualityController::class, 'runAi'])->name('assessments.quality.ai');
     Route::put('assessments/{assessment}/provenance', [AdminAssessmentBuilderController::class, 'saveProvenance'])->name('assessments.provenance');
     Route::post('assessments/{assessment}/publish', [AdminAssessmentBuilderController::class, 'publish'])->name('assessments.publish');
+    Route::get('assessments/{assessment}/publish', [AdminAssessmentBuilderController::class, 'publishPage'])->name('assessments.publish-page');
     Route::get('assessments/{assessment}/preview', [AdminAssessmentBuilderController::class, 'preview'])->name('assessments.preview');
     Route::post('assessments/{assessment}/versions', [AdminAssessmentBuilderController::class, 'createVersion'])->name('assessments.versions.store');
 

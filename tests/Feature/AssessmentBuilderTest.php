@@ -227,6 +227,72 @@ class AssessmentBuilderTest extends TestCase
             ->assertDontSee('Coming next');
     }
 
+    public function test_the_governance_studio_has_nine_clickable_step_destinations(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->draftAssessment();
+
+        $this->get(route('admin.assessments.show', $assessment))
+            ->assertOk()
+            ->assertSee(route('admin.assessments.edit', $assessment), false)
+            ->assertSee(route('admin.assessments.governance', $assessment), false)
+            ->assertSee(route('admin.assessments.build', $assessment), false)
+            ->assertSee(route('admin.assessments.questions', $assessment), false)
+            ->assertSee(route('admin.assessments.logic', $assessment), false)
+            ->assertSee(route('admin.assessments.scoring', $assessment), false)
+            ->assertSee(route('admin.assessments.quality', $assessment), false)
+            ->assertSee(route('admin.assessments.preview', $assessment), false)
+            ->assertSee(route('admin.assessments.publish-page', $assessment), false)
+            ->assertSee('Governance Studio');
+    }
+
+    public function test_structure_questions_scoring_and_publish_are_distinct_guided_screens(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->draftAssessment();
+
+        $this->get(route('admin.assessments.build', $assessment))
+            ->assertOk()
+            ->assertSee('<h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Structure</h1>', false)
+            ->assertSee('Continue to questions');
+        $this->get(route('admin.assessments.questions', $assessment))
+            ->assertOk()
+            ->assertSee('<h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Questions</h1>', false)
+            ->assertSee('Continue to logic');
+        $this->get(route('admin.assessments.scoring', $assessment))
+            ->assertOk()
+            ->assertSee('What does the score measure?')
+            ->assertSee('One score, disclosed clearly');
+        $this->get(route('admin.assessments.publish-page', $assessment))
+            ->assertOk()
+            ->assertSee('Final readiness check');
+    }
+
+    public function test_scoring_meaning_can_be_configured_only_while_draft(): void
+    {
+        $this->actingAs($this->platformAdmin());
+        $assessment = $this->draftAssessment();
+
+        $this->put(route('admin.assessments.scoring.update', $assessment), [
+            'construct' => 'NEED',
+            'direction' => 'HIGHER_IS_MORE_NEED',
+            'missing_policy' => 'REQUIRE_RESPONSE',
+        ])->assertSessionHasNoErrors();
+
+        $model = $assessment->fresh()->scoringModelVersion;
+        $this->assertSame('NEED', $model->construct);
+        $this->assertSame('HIGHER_IS_MORE_NEED', $model->direction);
+        $this->assertSame('REQUIRE_RESPONSE', $model->missing_policy['MISSING']);
+        $this->assertSame('EXCLUDE_FROM_DENOMINATOR', $model->missing_policy['NOT_APPLICABLE']);
+
+        $published = DepartmentFrameworkVersion::where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)->firstOrFail();
+        $this->put(route('admin.assessments.scoring.update', $published), [
+            'construct' => 'NEED',
+            'direction' => 'HIGHER_IS_MORE_NEED',
+            'missing_policy' => 'REQUIRE_RESPONSE',
+        ])->assertSessionHasErrors('status');
+    }
+
     public function test_publisher_and_source_are_a_guided_step_after_purpose(): void
     {
         $admin = $this->platformAdmin();

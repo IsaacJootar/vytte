@@ -35,13 +35,7 @@ use Illuminate\Validation\ValidationException;
  */
 class AssessmentBuilderController extends Controller
 {
-    /**
-     * Wizard steps. Only Basic Information is implemented at this stage. The remaining
-     * steps are shown as upcoming so the shape of the workflow is visible without
-     * presenting controls that do nothing.
-     *
-     * @var list<array{key: string, label: string, available: bool}>
-     */
+    /** @var list<array{key: string, label: string, available: bool}> */
     public const STEPS = [
         ['key' => 'purpose', 'label' => 'Purpose', 'available' => true],
         ['key' => 'publisher', 'label' => 'Publisher & source', 'available' => true],
@@ -49,8 +43,8 @@ class AssessmentBuilderController extends Controller
         ['key' => 'questions', 'label' => 'Questions', 'available' => true],
         ['key' => 'logic', 'label' => 'Logic', 'available' => true],
         ['key' => 'scoring', 'label' => 'Scoring', 'available' => true],
-        ['key' => 'test', 'label' => 'Test', 'available' => true],
         ['key' => 'review', 'label' => 'Review', 'available' => true],
+        ['key' => 'test', 'label' => 'Test', 'available' => true],
         ['key' => 'publish', 'label' => 'Publish', 'available' => true],
     ];
 
@@ -135,6 +129,16 @@ class AssessmentBuilderController extends Controller
      */
     public function build(DepartmentFrameworkVersion $assessment): View
     {
+        return $this->buildView($assessment, 'structure');
+    }
+
+    public function questions(DepartmentFrameworkVersion $assessment): View
+    {
+        return $this->buildView($assessment, 'questions');
+    }
+
+    private function buildView(DepartmentFrameworkVersion $assessment, string $step): View
+    {
         $assessment->load([
             'module',
             'sections.questionPlacements.questionVersion.questionType',
@@ -144,7 +148,8 @@ class AssessmentBuilderController extends Controller
         return view('admin.assessment-builder.build', [
             'assessment' => $assessment,
             'steps' => self::STEPS,
-            'currentStep' => 'structure',
+            'currentStep' => $step,
+            'builderMode' => $step,
             'isEditable' => $this->isEditable($assessment),
             'questionCount' => $assessment->sections->sum(fn ($section) => $section->questionPlacements->count()),
         ]);
@@ -155,6 +160,16 @@ class AssessmentBuilderController extends Controller
      */
     public function review(DepartmentFrameworkVersion $assessment, AssessmentReadinessService $readiness, AssessmentVersionService $versions): View
     {
+        return $this->reviewView($assessment, $readiness, $versions, 'publish');
+    }
+
+    public function publishPage(DepartmentFrameworkVersion $assessment, AssessmentReadinessService $readiness, AssessmentVersionService $versions): View
+    {
+        return $this->reviewView($assessment, $readiness, $versions, 'publish');
+    }
+
+    private function reviewView(DepartmentFrameworkVersion $assessment, AssessmentReadinessService $readiness, AssessmentVersionService $versions, string $step): View
+    {
         $assessment->load([
             'module.healthDomains',
             'sections.questionPlacements.questionVersion.questionType',
@@ -164,7 +179,8 @@ class AssessmentBuilderController extends Controller
         return view('admin.assessment-builder.review', [
             'assessment' => $assessment,
             'steps' => self::STEPS,
-            'currentStep' => 'review',
+            'currentStep' => $step,
+            'pageMode' => $step,
             'isEditable' => $this->isEditable($assessment),
             'readiness' => $readiness->evaluate($assessment),
             'healthAreas' => HealthDomain::orderBy('domain_name')->get(['health_domain_id', 'domain_name']),
@@ -221,6 +237,45 @@ class AssessmentBuilderController extends Controller
             'currentStep' => 'publisher',
             'isEditable' => $this->isEditable($assessment),
         ]);
+    }
+
+    public function scoring(DepartmentFrameworkVersion $assessment, ScoringModelService $scoringModels): View
+    {
+        $version = $scoringModels->ensureForFramework($assessment);
+        $assessment->load(['sections.questionPlacements.questionVersion.questionType', 'sections.questionPlacements.subIndex']);
+
+        return view('admin.assessment-builder.scoring', [
+            'assessment' => $assessment,
+            'scoringModel' => $version->load('itemRules'),
+            'steps' => self::STEPS,
+            'currentStep' => 'scoring',
+            'isEditable' => $this->isEditable($assessment),
+        ]);
+    }
+
+    public function updateScoring(Request $request, DepartmentFrameworkVersion $assessment, ScoringModelService $scoringModels, AuditService $audit): RedirectResponse
+    {
+        if (! $this->isEditable($assessment)) {
+            return back()->withErrors(['status' => 'Published scoring models are locked. Create a new assessment version to change scoring.']);
+        }
+
+        $validated = $request->validate([
+            'construct' => ['required', Rule::in(['READINESS', 'COMPLIANCE', 'CAPACITY', 'EXPERIENCE', 'NEED', 'PREVALENCE'])],
+            'direction' => ['required', Rule::in(['HIGHER_IS_BETTER', 'HIGHER_IS_MORE_NEED'])],
+            'missing_policy' => ['required', Rule::in(['EXCLUDE_AND_MARK_PARTIAL', 'REQUIRE_RESPONSE'])],
+        ]);
+        $version = $scoringModels->ensureForFramework($assessment);
+        $old = $version->only(['construct', 'direction', 'missing_policy']);
+        $missingPolicy = collect($version->missing_policy)->map(fn () => $validated['missing_policy'])->all();
+        $missingPolicy['NOT_APPLICABLE'] = 'EXCLUDE_FROM_DENOMINATOR';
+        $version->update([
+            'construct' => $validated['construct'],
+            'direction' => $validated['direction'],
+            'missing_policy' => $missingPolicy,
+        ]);
+        $audit->record('assessment.scoring_model.updated', $assessment, $old, $version->only(['construct', 'direction', 'missing_policy']));
+
+        return back()->with('success', 'Scoring purpose and missing-response rules saved.');
     }
 
     public function publish(Request $request, DepartmentFrameworkVersion $assessment, AssessmentPublicationService $publisher): RedirectResponse

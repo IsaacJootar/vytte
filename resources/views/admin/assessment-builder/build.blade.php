@@ -2,15 +2,17 @@
     <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
             <a href="{{ route('admin.assessments.show', $assessment) }}" class="text-sm text-slate-500 hover:underline dark:text-slate-400">← Back to assessment</a>
-            <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Build Assessment</h1>
+            <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">{{ $builderMode === 'structure' ? 'Structure' : 'Questions' }}</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-                {{ $assessment->display_name }} · {{ $assessment->sections->count() }} {{ Str::plural('section', $assessment->sections->count()) }} · {{ $questionCount }} {{ Str::plural('question', $questionCount) }}
+                {{ $builderMode === 'structure'
+                    ? 'Organize the assessment into named sections with clear instructions and respondent guidance.'
+                    : 'Write original questions or reuse governed questions from the library, then arrange them within sections.' }}
             </p>
         </div>
         <x-assessment-status-badge :status="$assessment->status" />
     </div>
 
-    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" />
+    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" :assessment="$assessment" />
 
     @unless ($isEditable)
         <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
@@ -39,7 +41,7 @@
                         <p class="mt-1 text-xs text-slate-400">{{ $section->questionPlacements->count() }} {{ Str::plural('question', $section->questionPlacements->count()) }}</p>
                     </div>
 
-                    @if ($isEditable)
+                    @if ($isEditable && $builderMode === 'structure')
                         <div class="flex flex-wrap items-center gap-1.5">
                             @if (! $loop->first)
                                 <form method="POST" action="{{ route('admin.assessments.sections.move', [$assessment, $section]) }}">
@@ -64,6 +66,7 @@
                     @endif
                 </div>
 
+                @if ($builderMode === 'questions')
                 <ul class="divide-y divide-slate-100 dark:divide-slate-700">
                     @forelse ($section->questionPlacements as $placement)
                         <li class="flex flex-wrap items-start justify-between gap-3 px-5 py-3">
@@ -132,8 +135,9 @@
                         <li class="px-5 py-4 text-sm text-slate-500 dark:text-slate-400">No questions in this section yet.</li>
                     @endforelse
                 </ul>
+                @endif
 
-                @if ($isEditable)
+                @if ($isEditable && $builderMode === 'structure')
                     <details class="border-t border-slate-100 p-4 dark:border-slate-700">
                         <summary class="cursor-pointer text-sm font-semibold text-slate-600 dark:text-slate-300">Edit section guidance</summary>
                         <form method="POST" action="{{ route('admin.assessments.sections.update', [$assessment, $section]) }}" class="mt-3 grid gap-3 sm:grid-cols-2">
@@ -160,6 +164,8 @@
                             <div class="sm:col-span-2"><button class="rounded-xl bg-vytte-600 px-4 py-2 text-sm font-semibold text-white">Save section guidance</button></div>
                         </form>
                     </details>
+                @endif
+                @if ($isEditable && $builderMode === 'questions')
                     <div class="flex flex-wrap gap-2 border-t border-slate-100 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
                         <a href="{{ route('admin.assessments.questions.library', [$assessment, $section]) }}"
                            class="rounded-xl bg-vytte-600 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-700">
@@ -181,13 +187,13 @@
     </div>
 
     <div class="mt-4 flex justify-end">
-        <a href="{{ route('admin.assessments.logic', $assessment) }}"
+        <a href="{{ $builderMode === 'structure' ? route('admin.assessments.questions', $assessment) : route('admin.assessments.logic', $assessment) }}"
            class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">
-            Continue to logic →
+            {{ $builderMode === 'structure' ? 'Continue to questions' : 'Continue to logic' }} &rarr;
         </a>
     </div>
 
-    @if ($isEditable)
+    @if ($isEditable && $builderMode === 'structure')
         <form method="POST" action="{{ route('admin.assessments.sections.store', $assessment) }}"
               class="mt-4 section-card p-5 dark:border-slate-700 dark:bg-slate-800">
             @csrf

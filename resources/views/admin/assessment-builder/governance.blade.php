@@ -7,7 +7,7 @@
         </p>
     </div>
 
-    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" />
+    <x-assessment-wizard-steps :steps="$steps" :current-step="$currentStep" :assessment="$assessment" />
 
     @unless ($isEditable)
         <div class="mb-4 max-w-2xl rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">

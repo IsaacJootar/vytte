@@ -353,6 +353,8 @@ Basic authors see plain-language choices and safe defaults. Advanced controls ar
 - Add review assignments, review evidence, approvals, contribution requests, and publisher views.
 - Preserve Advanced Tools for expert inspection.
 
+The Platform Admin navigation names this surface **Governance Studio**. Every step has a real destination rather than a decorative progress label. Structure and Questions are distinct authoring screens; Scoring exposes the immutable model declarations and item rules; Review, Test, and Publish are separate decisions in that order.
+
 ### Module 6 — Unified score views and reporting
 
 - **Status: implemented.**
