@@ -273,7 +273,7 @@ class ExportController extends Controller
             ->values()
             ->all();
 
-        // The workspace's tailored section, scored in its own lane.
+        // The workspace's local questions section, with its own optional local score.
         $customSection = $assessment->localCustomSections()->first();
         $customScored = $customSection
             ? app(CustomSectionScoringService::class)->score($customSection->questions ?? [], $customSection->answers ?? [])

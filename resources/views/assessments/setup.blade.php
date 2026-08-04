@@ -11,7 +11,7 @@
             <h1 class="mt-0.5 text-2xl font-bold text-slate-900 dark:text-white">
                 @switch($step)
                     @case(1) Review this assessment @break
-                    @case(2) Add your own questions @break
+                    @case(2) Add local questions @break
                     @case(3) How will it be answered? @break
                     @default Ready to go
                 @endswitch
@@ -19,7 +19,7 @@
         </div>
 
         {{-- Step indicator --}}
-        @php $steps = ['Review', 'Your questions', 'Collect answers', 'Finish']; @endphp
+        @php $steps = ['Review', 'Local questions', 'Collect answers', 'Finish']; @endphp
         <ol class="mb-6 flex items-center gap-2 text-xs font-semibold">
             @foreach ($steps as $i => $label)
                 @php $n = $i + 1; $state = $n < $step ? 'done' : ($n === $step ? 'current' : 'todo'); @endphp
@@ -68,7 +68,7 @@
                 @endif
             </div>
             <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                These are the official Vytte questions. Next you can add your own — they're scored separately and never change the Vytte score.
+                These questions come from the published assessment. Next, you may add optional local context without changing its frozen score or benchmark.
             </p>
 
             {{-- Preview the actual questions and segments, so the user can judge them before adding. --}}
@@ -109,15 +109,15 @@
                 </a>
                 <a href="{{ route('assessments.setup', ['assessment' => $assessment, 'step' => 2]) }}"
                    class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">
-                    Add my own questions →
+                    Add local questions →
                 </a>
             </div>
 
         {{-- ===================== STEP 2 — YOUR QUESTIONS ===================== --}}
         @elseif ($step === 2)
             <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
-                Add questions that matter to your context, one at a time — scored on their own (0–100) in a separate
-                “Tailored by your team” section. @if ($customCount > 0)<span class="font-semibold text-slate-700 dark:text-slate-200">{{ $customCount }} saved so far.</span>@endif
+                Add questions needed for this specific setting. They appear in the same report as clearly labelled local context and cannot alter the published assessment score or its comparisons.
+                @if ($customCount > 0)<span class="font-semibold text-slate-700 dark:text-slate-200">{{ $customCount }} saved so far.</span>@endif
             </p>
 
             @include('assessments.partials.custom-questions-form', ['wizard' => true, 'redirectTo' => 'setup'])

@@ -6,21 +6,24 @@ use App\Actions\CompleteSelfAssessment;
 use App\Models\Assessment;
 use App\Models\LocalCustomSection;
 use App\Services\Reporting\CustomSectionScoringService;
+use App\Support\LocalQuestionFormat;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
- * The workspace's own "Tailored by your team" section on an assessment.
+ * The workspace's own local questions section on an assessment.
  *
- * Additive only: a workspace adds its own questions to sit alongside the governed ones. They
- * are never mixed into the official Vytte score — they live in their own lane and are scored
- * and reported separately. Governed questions can never be removed, so the official score
- * always measures the same standard set and stays comparable.
+ * Additive only: a workspace adds its own questions to sit alongside the published ones. They
+ * never mutate the published assessment's frozen score or benchmark — only Yes/No, Yes/No/Not
+ * applicable, and 1-5 rating questions may optionally contribute to a separate, clearly labelled
+ * optional local score. Published questions can never be removed, so the published score always
+ * measures the same standard set and stays comparable.
  *
  * Questions are authored only while the assessment is still open; once it is complete the
- * tailored section is frozen. They are answered as the last step of the same assessment,
+ * local section is frozen. They are answered as the last step of the same assessment,
  * right before it is finished.
  */
 class CustomSectionController extends Controller
@@ -48,19 +51,43 @@ class CustomSectionController extends Controller
             'questions' => ['array', 'max:50'],
             'questions.*.id' => ['nullable', 'string'],
             'questions.*.text' => ['required', 'string', 'max:500'],
-            'questions.*.type' => ['required', 'in:YES_NO,SCALE_5'],
+            'questions.*.type' => ['required', 'in:'.implode(',', LocalQuestionFormat::keys())],
             'questions.*.good' => ['nullable', 'in:YES,NO'],
-            'questions.*.reversed' => ['nullable'],
+            'questions.*.direction' => ['nullable', 'in:HIGHER_IS_BETTER,LOWER_IS_BETTER'],
+            'questions.*.is_scored' => ['nullable', 'boolean'],
+            'questions.*.choices' => ['nullable', 'array', 'max:10'],
+            'questions.*.choices.*' => ['nullable', 'string', 'max:180'],
+            'questions.*.numeric_min' => ['nullable', 'numeric'],
+            'questions.*.numeric_max' => ['nullable', 'numeric'],
+            'questions.*.numeric_unit' => ['nullable', 'string', 'max:40'],
         ]);
 
         // Keep each question's id stable across edits so any answers stay attached to it.
-        $questions = collect($validated['questions'] ?? [])->map(fn ($q) => [
-            'id' => ! empty($q['id']) ? $q['id'] : (string) Str::uuid(),
-            'text' => $q['text'],
-            'response_type' => $q['type'],
-            'good_answer' => $q['type'] === 'YES_NO' ? ($q['good'] ?? 'YES') : null,
-            'reversed' => $q['type'] === 'SCALE_5' ? (bool) ($q['reversed'] ?? false) : false,
-        ])->values()->all();
+        $questions = collect($validated['questions'] ?? [])->map(function ($q, $index) {
+            $type = $q['type'];
+            $choices = collect($q['choices'] ?? [])->map(fn ($choice) => trim((string) $choice))->filter()->unique()->values();
+            if (in_array($type, [LocalQuestionFormat::SINGLE_SELECT, LocalQuestionFormat::MULTI_SELECT], true) && $choices->count() < 2) {
+                throw ValidationException::withMessages(["questions.$index.choices" => 'Add at least two different answer choices.']);
+            }
+            if (isset($q['numeric_min'], $q['numeric_max']) && (float) $q['numeric_min'] > (float) $q['numeric_max']) {
+                throw ValidationException::withMessages(["questions.$index.numeric_min" => 'The minimum cannot be greater than the maximum.']);
+            }
+
+            $canScore = LocalQuestionFormat::canScore($type);
+
+            return [
+                'id' => ! empty($q['id']) ? $q['id'] : (string) Str::uuid(),
+                'text' => $q['text'],
+                'response_type' => $type,
+                'choices' => $choices->all(),
+                'numeric_min' => $type === LocalQuestionFormat::NUMERIC ? ($q['numeric_min'] ?? null) : null,
+                'numeric_max' => $type === LocalQuestionFormat::NUMERIC ? ($q['numeric_max'] ?? null) : null,
+                'numeric_unit' => $type === LocalQuestionFormat::NUMERIC ? ($q['numeric_unit'] ?? null) : null,
+                'is_scored' => $canScore && (bool) ($q['is_scored'] ?? true),
+                'good_answer' => in_array($type, [LocalQuestionFormat::YES_NO, LocalQuestionFormat::YES_NO_NA], true) ? ($q['good'] ?? 'YES') : null,
+                'score_direction' => $type === LocalQuestionFormat::SCALE_5 ? ($q['direction'] ?? 'HIGHER_IS_BETTER') : null,
+            ];
+        })->values()->all();
 
         if ($questions === []) {
             // The step is optional. Left blank, there is nothing to keep — drop any unanswered
@@ -73,7 +100,7 @@ class CustomSectionController extends Controller
                 ['assessment_id' => $assessment->assessment_id],
                 [
                     'workspace_id' => app('current.workspace')->workspace_id,
-                    'section_title' => ($validated['section_title'] ?? null) ?: 'Tailored by your team',
+                    'section_title' => ($validated['section_title'] ?? null) ?: 'Local context',
                     'instructions' => $validated['instructions'] ?? null,
                     'questions' => $questions,
                     'created_by' => auth()->id(),
@@ -122,10 +149,16 @@ class CustomSectionController extends Controller
 
         $validated = $request->validate([
             'answers' => ['array'],
-            'answers.*' => ['nullable', 'string', 'max:10'],
+            'answers.*' => ['nullable'],
         ]);
 
-        $answers = collect($validated['answers'] ?? [])->filter(fn ($v) => $v !== null && $v !== '')->all();
+        $questions = collect($section->questions ?? [])->keyBy('id');
+        $answers = collect($validated['answers'] ?? [])->mapWithKeys(function ($value, $questionId) use ($questions) {
+            $question = $questions->get($questionId);
+            $normalized = $question ? LocalQuestionFormat::normalizeAnswer($question, $value) : null;
+
+            return LocalQuestionFormat::isBlank($normalized) ? [] : [$questionId => $normalized];
+        })->all();
         $result = $scorer->score($section->questions ?? [], $answers);
 
         $section->update([

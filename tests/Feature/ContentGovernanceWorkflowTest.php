@@ -53,6 +53,30 @@ class ContentGovernanceWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_contribution_form_retains_all_fields_and_explains_the_governed_workflow(): void
+    {
+        [$author] = $this->workspaceUser();
+
+        $this->actingAs($author)->get(route('contributions.create'))
+            ->assertOk()
+            ->assertSee('Question')
+            ->assertSee('Answer design')
+            ->assertSee('Purpose and evidence')
+            ->assertSee('Contribution title')
+            ->assertSee('Question wording')
+            ->assertSee('How should people answer?')
+            ->assertSee('Yes / No')
+            ->assertSee('Yes / No / Not applicable')
+            ->assertSee('Multiple choice')
+            ->assertSee('Choose all that apply')
+            ->assertSee('Rating (1 to 5)')
+            ->assertSee('Written answer')
+            ->assertSee('When and why should this question be used?')
+            ->assertSee('Source authority or expert group')
+            ->assertSee('does not make the question public')
+            ->assertSee('private draft');
+    }
+
     public function test_workspace_expert_can_submit_a_question_without_exposing_it_to_another_workspace(): void
     {
         [$author, $workspace] = $this->workspaceUser();

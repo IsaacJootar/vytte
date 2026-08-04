@@ -38,45 +38,127 @@ class CustomSectionTest extends TestCase
         return [$user, $assessment];
     }
 
-    public function test_the_author_page_renders(): void
+    public function test_the_author_page_renders_all_seven_answer_formats_in_plain_language(): void
     {
         [$user, $assessment] = $this->setup_assessment();
 
         $this->actingAs($user)->get(route('assessments.custom.edit', $assessment))
             ->assertOk()
-            ->assertSee('Add your own questions')
-            ->assertSee('Tailored by your team');
+            ->assertSee('Add local questions')
+            ->assertSee('Local questions')
+            ->assertSee('Yes or no')
+            ->assertSee('Yes, no or not applicable')
+            ->assertSee('Choose one option')
+            ->assertSee('Choose all that apply')
+            ->assertSee('Rating scale (1 to 5)')
+            ->assertSee('Number')
+            ->assertSee('Written answer')
+            ->assertSee('is the better score')
+            ->assertDontSee('reverse the scale');
     }
 
-    public function test_saving_custom_questions_persists_them_in_their_own_lane(): void
+    public function test_saving_persists_each_answer_format_with_its_own_configuration(): void
     {
         [$user, $assessment] = $this->setup_assessment();
 
         $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
             'section_title' => 'Our extras',
             'questions' => [
-                ['text' => 'Is there a working referral vehicle?', 'type' => 'YES_NO', 'good' => 'YES'],
-                ['text' => 'Rate the cleanliness', 'type' => 'SCALE_5', 'reversed' => '0'],
+                ['text' => 'Is there a working referral vehicle?', 'type' => 'YES_NO', 'good' => 'YES', 'is_scored' => '1'],
+                ['text' => 'Does this apply here?', 'type' => 'YES_NO_NA', 'good' => 'YES', 'is_scored' => '1'],
+                ['text' => 'Which service is available?', 'type' => 'SINGLE_SELECT', 'choices' => ['Referral', 'Ambulance', 'Referral']],
+                ['text' => 'Which supplies are stocked?', 'type' => 'MULTI_SELECT', 'choices' => ['Gloves', 'Masks', 'Gowns']],
+                ['text' => 'Rate the cleanliness', 'type' => 'SCALE_5', 'direction' => 'HIGHER_IS_BETTER', 'is_scored' => '1'],
+                ['text' => 'How many staff are on duty?', 'type' => 'NUMERIC', 'numeric_min' => '0', 'numeric_max' => '50', 'numeric_unit' => 'staff'],
+                ['text' => 'Any other observations?', 'type' => 'OPEN_ENDED'],
             ],
         ])->assertRedirect(route('assessments.custom.edit', $assessment));
 
         $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->firstOrFail();
         $this->assertSame('Our extras', $section->section_title);
-        $this->assertCount(2, $section->questions);
-        $this->assertSame('YES_NO', $section->questions[0]['response_type']);
-        $this->assertSame('YES', $section->questions[0]['good_answer']);
-        $this->assertSame('SCALE_5', $section->questions[1]['response_type']);
-        $this->assertNotEmpty($section->questions[0]['id']);
+        $this->assertCount(7, $section->questions);
+
+        [$yesNo, $yesNoNa, $singleSelect, $multiSelect, $scale, $numeric, $openEnded] = $section->questions;
+
+        $this->assertSame('YES_NO', $yesNo['response_type']);
+        $this->assertSame('YES', $yesNo['good_answer']);
+        $this->assertTrue($yesNo['is_scored']);
+
+        $this->assertSame('YES_NO_NA', $yesNoNa['response_type']);
+        $this->assertTrue($yesNoNa['is_scored']);
+
+        $this->assertSame('SINGLE_SELECT', $singleSelect['response_type']);
+        $this->assertSame(['Referral', 'Ambulance'], $singleSelect['choices']);
+        $this->assertFalse($singleSelect['is_scored']);
+
+        $this->assertSame('MULTI_SELECT', $multiSelect['response_type']);
+        $this->assertSame(['Gloves', 'Masks', 'Gowns'], $multiSelect['choices']);
+        $this->assertFalse($multiSelect['is_scored']);
+
+        $this->assertSame('SCALE_5', $scale['response_type']);
+        $this->assertSame('HIGHER_IS_BETTER', $scale['score_direction']);
+        $this->assertTrue($scale['is_scored']);
+
+        $this->assertSame('NUMERIC', $numeric['response_type']);
+        $this->assertEquals('0', $numeric['numeric_min']);
+        $this->assertEquals('50', $numeric['numeric_max']);
+        $this->assertSame('staff', $numeric['numeric_unit']);
+        $this->assertFalse($numeric['is_scored']);
+
+        $this->assertSame('OPEN_ENDED', $openEnded['response_type']);
+        $this->assertFalse($openEnded['is_scored']);
+
+        foreach ($section->questions as $question) {
+            $this->assertNotEmpty($question['id']);
+        }
     }
 
-    public function test_answering_scores_the_section_in_its_own_0_to_100_lane(): void
+    public function test_unscorable_formats_can_never_be_forced_into_the_optional_local_score(): void
     {
         [$user, $assessment] = $this->setup_assessment();
 
         $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
             'questions' => [
-                ['text' => 'Is there a vehicle?', 'type' => 'YES_NO', 'good' => 'YES'],
-                ['text' => 'Rate cleanliness', 'type' => 'SCALE_5'],
+                ['text' => 'Which service is available?', 'type' => 'SINGLE_SELECT', 'choices' => ['A', 'B'], 'is_scored' => '1'],
+            ],
+        ]);
+
+        $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $this->assertFalse($section->questions[0]['is_scored']);
+    }
+
+    public function test_selection_formats_require_at_least_two_unique_choices(): void
+    {
+        [$user, $assessment] = $this->setup_assessment();
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'questions' => [
+                ['text' => 'Which service is available?', 'type' => 'SINGLE_SELECT', 'choices' => ['Only one']],
+            ],
+        ])->assertSessionHasErrors('questions.0.choices');
+
+        $this->assertNull(LocalCustomSection::where('assessment_id', $assessment->assessment_id)->first());
+    }
+
+    public function test_numeric_minimum_cannot_exceed_maximum(): void
+    {
+        [$user, $assessment] = $this->setup_assessment();
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'questions' => [
+                ['text' => 'How many?', 'type' => 'NUMERIC', 'numeric_min' => '10', 'numeric_max' => '1'],
+            ],
+        ])->assertSessionHasErrors('questions.0.numeric_min');
+    }
+
+    public function test_answering_scores_the_section_as_an_optional_local_score(): void
+    {
+        [$user, $assessment] = $this->setup_assessment();
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'questions' => [
+                ['text' => 'Is there a vehicle?', 'type' => 'YES_NO', 'good' => 'YES', 'is_scored' => '1'],
+                ['text' => 'Rate cleanliness', 'type' => 'SCALE_5', 'is_scored' => '1'],
             ],
         ]);
 
@@ -95,7 +177,73 @@ class CustomSectionTest extends TestCase
         $this->assertSame(Assessment::STATUS_COMPLETE, $assessment->fresh()->status);
     }
 
-    public function test_submitting_with_tailored_questions_routes_to_the_answer_step(): void
+    public function test_unscored_questions_stay_visible_and_never_distort_the_optional_local_score(): void
+    {
+        [$user, $assessment] = $this->setup_assessment();
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'questions' => [
+                ['text' => 'Is there a vehicle?', 'type' => 'YES_NO', 'good' => 'YES', 'is_scored' => '1'],
+                ['text' => 'How many staff are on duty?', 'type' => 'NUMERIC', 'numeric_min' => '0', 'numeric_max' => '50'],
+            ],
+        ]);
+
+        $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $scoredId = $section->questions[0]['id'];
+        $unscoredId = $section->questions[1]['id'];
+
+        $this->actingAs($user)->post(route('assessments.custom.finish', $assessment), [
+            'answers' => [$scoredId => 'YES', $unscoredId => '12'],
+        ]);
+
+        $section->refresh();
+        // Only the scored Yes/No question contributes, so the average is exactly its own score.
+        $this->assertEquals(100.0, (float) $section->custom_score);
+
+        $scorer = app(CustomSectionScoringService::class);
+        $result = $scorer->score($section->questions, $section->answers);
+        $numericRow = collect($result['questions'])->firstWhere('id', $unscoredId);
+        $this->assertSame('12', $numericRow['answer']);
+        $this->assertNull($numericRow['score']);
+    }
+
+    public function test_finish_normalizes_every_answer_shape_including_arrays_and_not_applicable(): void
+    {
+        [$user, $assessment] = $this->setup_assessment();
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'questions' => [
+                ['text' => 'Does this apply?', 'type' => 'YES_NO_NA', 'good' => 'YES', 'is_scored' => '1'],
+                ['text' => 'Which supplies are stocked?', 'type' => 'MULTI_SELECT', 'choices' => ['Gloves', 'Masks', 'Gowns']],
+                ['text' => 'How many staff?', 'type' => 'NUMERIC', 'numeric_min' => '0', 'numeric_max' => '10'],
+                ['text' => 'Notes?', 'type' => 'OPEN_ENDED'],
+            ],
+        ]);
+
+        $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        [$naQuestion, $multiQuestion, $numericQuestion, $openQuestion] = $section->questions;
+
+        $this->actingAs($user)->post(route('assessments.custom.finish', $assessment), [
+            'answers' => [
+                $naQuestion['id'] => 'NOT_APPLICABLE',
+                $multiQuestion['id'] => ['Gloves', 'Gowns', 'Not-a-real-choice'],
+                $numericQuestion['id'] => '99',
+                $openQuestion['id'] => '  Some notes with trailing space  ',
+            ],
+        ]);
+
+        $section->refresh();
+        $this->assertSame('NOT_APPLICABLE', $section->answers[$naQuestion['id']]);
+        $this->assertSame(['Gloves', 'Gowns'], $section->answers[$multiQuestion['id']]);
+        // 99 is outside the 0-10 numeric range, so it normalizes to null and is dropped entirely.
+        $this->assertArrayNotHasKey($numericQuestion['id'], $section->answers);
+        $this->assertSame('Some notes with trailing space', $section->answers[$openQuestion['id']]);
+
+        // Not-applicable is excluded from scoring rather than counted as a failure.
+        $this->assertNull($section->custom_score);
+    }
+
+    public function test_submitting_with_local_questions_routes_to_the_answer_step(): void
     {
         [$user, $assessment] = $this->setup_assessment();
 
@@ -115,13 +263,13 @@ class CustomSectionTest extends TestCase
             'questions' => [['text' => 'Extra?', 'type' => 'YES_NO', 'good' => 'YES']],
         ]);
 
-        // With a tailored section attached, submit sends the user to the tailored answer step.
+        // With a local section attached, submit sends the user to the local answer step.
         $this->actingAs($user)->post(route('assessments.submit', $assessment))
             ->assertRedirect(route('assessments.custom.answer', $assessment));
         $this->assertSame(Assessment::STATUS_IN_PROGRESS, $assessment->fresh()->status);
     }
 
-    public function test_aggregate_averages_each_respondents_private_score(): void
+    public function test_aggregate_averages_each_respondents_local_score(): void
     {
         $scorer = new CustomSectionScoringService;
         $questions = [
@@ -139,6 +287,20 @@ class CustomSectionTest extends TestCase
         $this->assertEquals(58.3, $result['overall']);
         $this->assertSame(3, $result['respondents']);
         $this->assertEquals(66.7, $result['questions'][0]['score']); // q1 mean of 100,0,100
+    }
+
+    public function test_legacy_reversed_scale_questions_continue_to_render_and_score_correctly(): void
+    {
+        // Old data saved before `score_direction` existed used a boolean `reversed` flag.
+        $scorer = new CustomSectionScoringService;
+        $questions = [
+            ['id' => 'q1', 'text' => 'Legacy reversed scale', 'response_type' => 'SCALE_5', 'reversed' => true],
+        ];
+
+        $result = $scorer->score($questions, ['q1' => '1']);
+
+        // 1 is best when reversed, so it should score as 100, not 0.
+        $this->assertEquals(100.0, $result['questions'][0]['score']);
     }
 
     public function test_another_workspace_cannot_edit_the_custom_section(): void

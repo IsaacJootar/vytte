@@ -191,7 +191,7 @@ class AssessmentTest extends TestCase
             ->assertOk()
             ->assertSee('Review this assessment')
             ->assertSee('Vytte questions')
-            ->assertSee('Add my own questions')
+            ->assertSee('Add local questions')
             ->assertSee('Continue without adding');
 
         // Step 3 offers how it is answered.

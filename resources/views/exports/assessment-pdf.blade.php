@@ -420,11 +420,11 @@
         </table>
     @endif
 
-    {{-- Tailored by your team — the workspace's own questions, in their own lane. --}}
+    {{-- Local questions — workspace-authored context, never part of the published score. --}}
     @if (($customSection ?? null) && ! empty($customScored['questions']) && $customScored['overall'] !== null)
         @php $cs = (float) $customScored['overall']; $csColor = $cs >= 70 ? '#15803D' : ($cs >= 45 ? '#B45309' : '#B91C1C'); @endphp
-        <div class="section-title">{{ $customSection->section_title ?: 'Tailored by your team' }} — {{ number_format($cs, 1) }} / 100</div>
-        <p style="font-size: 8px; color: #64748b; margin-bottom: 6px;">The team's own questions — scored separately, not part of the official Vytte score.</p>
+        <div class="section-title">{{ $customSection->section_title ?: 'Local context' }} — {{ number_format($cs, 1) }} / 100</div>
+        <p style="font-size: 8px; color: #64748b; margin-bottom: 6px;">Optional local score from questions the workspace chose to score — not part of the published assessment score.</p>
         <table>
             <tbody>
                 @foreach ($customScored['questions'] as $q)

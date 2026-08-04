@@ -255,6 +255,25 @@ Workspace users may create local custom sections attached to an assessment. Thes
 - are excluded from official scoring;
 - may capture local notes, questions, observations, instructions, and evidence prompts.
 
+`App\Support\LocalQuestionFormat` defines the seven answer formats a workspace may use for a
+local question: Yes/No, Yes/No/Not applicable, Choose one option, Choose all that apply, 1-5
+rating, Number, and Written answer. Every format has complete authenticated and public
+rendering, validation, persistence, and report display.
+
+Only Yes/No, Yes/No/Not applicable, and 1-5 rating may optionally contribute to a separate,
+clearly labelled **optional local score**, computed by `CustomSectionScoringService` on the same
+0-100 scale as the published score for readability, but never combined with it. An author
+explicitly marks each eligible question as scored; the other four formats (choose one, choose
+several, number, written answer) are always contextual-only — they render, persist, and appear in
+the report, but never produce a score, because no calibrated scoring rule exists for free-form or
+open-ended input. Not-applicable answers are excluded from the optional local score rather than
+counted as a failure.
+
+A workspace question that wants to become reusable, benchmarkable, governed content goes through
+**Contribute Questions** (`ContentContribution`) instead: an accepted contribution is a private
+draft until a publisher assigns its scoring model and a future published template version. Local
+questions never mutate a published template's frozen score or benchmark, regardless of path.
+
 ## Authorization and Audit
 
 - Workspace access is enforced through active workspace membership, scoped project/target ownership, and policies.

@@ -114,9 +114,11 @@
             @foreach ($customQuestions as $cq)
                 <div class="bg-white rounded-2xl border border-slate-200 p-5">
                     <p class="text-sm font-semibold text-slate-900 leading-snug mb-3">{{ $cq['text'] }}</p>
-                    <div class="flex flex-wrap gap-2">
-                        @if (($cq['response_type'] ?? 'YES_NO') === 'YES_NO')
-                            @foreach (['YES' => 'Yes', 'NO' => 'No'] as $val => $lbl)
+                    @php $customType = $cq['response_type'] ?? \App\Support\LocalQuestionFormat::YES_NO; @endphp
+                    <div>
+                        @if (in_array($customType, [\App\Support\LocalQuestionFormat::YES_NO, \App\Support\LocalQuestionFormat::YES_NO_NA], true))
+                            <div class="flex flex-wrap gap-2">
+                            @foreach (['YES' => 'Yes', 'NO' => 'No', ...($customType === \App\Support\LocalQuestionFormat::YES_NO_NA ? ['NOT_APPLICABLE' => 'Not applicable'] : [])] as $val => $lbl)
                                 @php $sel = ($customAnswers[$cq['id']] ?? null) === $val; @endphp
                                 <button
                                     wire:click="selectCustomOption('{{ $cq['id'] }}', '{{ $val }}')"
@@ -125,7 +127,9 @@
                                     {{ $lbl }}
                                 </button>
                             @endforeach
-                        @else
+                            </div>
+                        @elseif ($customType === \App\Support\LocalQuestionFormat::SCALE_5)
+                            <div class="flex flex-wrap gap-2">
                             @for ($n = 1; $n <= 5; $n++)
                                 @php $sel = ($customAnswers[$cq['id']] ?? null) === (string) $n; @endphp
                                 <button
@@ -135,7 +139,27 @@
                                     {{ $n }}
                                 </button>
                             @endfor
-                            <span class="self-center text-[11px] text-slate-400">(1 = low, 5 = high)</span>
+                            </div>
+                            <div class="mt-1 flex max-w-[13rem] justify-between text-[11px] text-slate-400"><span>1 = lowest</span><span>5 = highest</span></div>
+                        @elseif ($customType === \App\Support\LocalQuestionFormat::SINGLE_SELECT)
+                            <div class="space-y-2">
+                                @foreach ($cq['choices'] ?? [] as $choice)
+                                    <label class="flex items-center gap-2 text-sm text-slate-700"><input type="radio" wire:model.live="customAnswers.{{ $cq['id'] }}" value="{{ $choice }}" class="text-vytte-600 focus:ring-vytte-500">{{ $choice }}</label>
+                                @endforeach
+                            </div>
+                        @elseif ($customType === \App\Support\LocalQuestionFormat::MULTI_SELECT)
+                            <div class="space-y-2">
+                                @foreach ($cq['choices'] ?? [] as $choice)
+                                    <label class="flex items-center gap-2 text-sm text-slate-700"><input type="checkbox" wire:model.live="customAnswers.{{ $cq['id'] }}" value="{{ $choice }}" class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500">{{ $choice }}</label>
+                                @endforeach
+                            </div>
+                        @elseif ($customType === \App\Support\LocalQuestionFormat::NUMERIC)
+                            <div class="flex items-center gap-2">
+                                <input type="number" step="any" wire:model.blur="customAnswers.{{ $cq['id'] }}" @if (($cq['numeric_min'] ?? null) !== null) min="{{ $cq['numeric_min'] }}" @endif @if (($cq['numeric_max'] ?? null) !== null) max="{{ $cq['numeric_max'] }}" @endif class="w-full rounded-xl border-slate-300 text-sm">
+                                @if ($cq['numeric_unit'] ?? null)<span class="text-sm text-slate-500">{{ $cq['numeric_unit'] }}</span>@endif
+                            </div>
+                        @else
+                            <textarea wire:model.blur="customAnswers.{{ $cq['id'] }}" rows="3" maxlength="5000" placeholder="Write your answer" class="w-full rounded-xl border-slate-300 text-sm"></textarea>
                         @endif
                     </div>
                 </div>

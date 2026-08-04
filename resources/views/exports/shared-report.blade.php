@@ -339,15 +339,15 @@
             </div>
         @endif
 
-        {{-- Tailored by your team — the workspace's own questions, in their own lane. --}}
+        {{-- Local questions — workspace-authored context, never part of the published score. --}}
         @if (($customSection ?? null) && ! empty($customScored['questions']) && $customScored['overall'] !== null)
             @php $cs = (float) $customScored['overall']; $csColor = $cs >= 70 ? '#15803D' : ($cs >= 45 ? '#B45309' : '#B91C1C'); @endphp
             <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden mb-5">
                 <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between gap-3">
-                    <h2 class="text-sm font-bold text-slate-900">{{ $customSection->section_title ?: 'Tailored by your team' }}</h2>
+                    <h2 class="text-sm font-bold text-slate-900">{{ $customSection->section_title ?: 'Local context' }}</h2>
                     <span class="text-sm font-bold" style="color: {{ $csColor }}">{{ number_format($cs, 1) }} / 100</span>
                 </div>
-                <p class="px-5 pt-3 text-xs text-slate-500">The team's own questions — scored separately, not part of the official Vytte score above.</p>
+                <p class="px-5 pt-3 text-xs text-slate-500">Optional local score from questions the workspace chose to score — the published assessment score above is unchanged.</p>
                 <ul class="divide-y divide-slate-100 mt-2">
                     @foreach ($customScored['questions'] as $q)
                         <li class="flex items-start justify-between gap-3 px-5 py-2.5">

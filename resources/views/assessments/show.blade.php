@@ -88,12 +88,12 @@
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {{ $questionCount }} Vytte question{{ $questionCount === 1 ? '' : 's' }}
                     @if ($customCount > 0)
-                        · {{ $customCount }} tailored
+                        · {{ $customCount }} local
                     @endif
                 </p>
                 @if ($areas->isNotEmpty())<p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ $areas->join(' · ') }}</p>@endif
                 @unless ($status === 'complete' || $status === 'collecting' || $status === 'closed')
-                    <a href="{{ route('assessments.custom.edit', $assessment) }}" class="mt-3 inline-block text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:underline">{{ $customCount > 0 ? 'Edit your questions' : 'Add your own questions' }} →</a>
+                    <a href="{{ route('assessments.custom.edit', $assessment) }}" class="mt-3 inline-block text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:underline">{{ $customCount > 0 ? 'Edit local questions' : 'Add local questions' }} →</a>
                 @endunless
             </div>
 

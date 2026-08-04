@@ -138,7 +138,9 @@ Scoring:
 5. Applies the frozen aggregation policy.
 6. Persists algorithm version and calibration status.
 
-Local custom sections are intentionally absent from this flow.
+Local custom sections are intentionally absent from this flow. Where a workspace added one, it is
+scored separately by `CustomSectionScoringService` as an optional local score after this flow
+completes, and that local score never feeds back into the published overall score above.
 
 ## 9. Reporting
 

@@ -11,6 +11,7 @@ use App\Models\RespondentConsent;
 use App\Models\Response;
 use App\Services\AssessmentLogicService;
 use App\Services\RespondentSubmissionService;
+use App\Support\LocalQuestionFormat;
 use App\Support\ResponseInputContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Arr;
@@ -76,10 +77,10 @@ class PublicRespondentRunner extends Component
 
     public int $currentIndex = 0;
 
-    /** @var array<int, array<string, mixed>> The workspace's own "Tailored by your team" questions. */
+    /** @var array<int, array<string, mixed>> The workspace's own local questions. */
     public array $customQuestions = [];
 
-    /** @var array<string, string> This respondent's tailored answers, question id => value. */
+    /** @var array<string, mixed> This respondent's local answers, question id => value. */
     public array $customAnswers = [];
 
     public bool $onCustomStep = false;
@@ -475,8 +476,8 @@ class PublicRespondentRunner extends Component
     }
 
     /**
-     * Store this respondent's tailored answers on the section, keyed by their session id, so the
-     * private custom score can be averaged across respondents when the collection is finalised.
+     * Store this respondent's local answers on the section, keyed by their session id, so the
+     * optional local score can be averaged across respondents when the collection is finalised.
      */
     private function persistCustomAnswers(): void
     {
@@ -489,8 +490,11 @@ class PublicRespondentRunner extends Component
             return;
         }
 
-        $validIds = collect($this->customQuestions)->pluck('id')->all();
-        $answers = array_intersect_key($this->customAnswers, array_flip($validIds));
+        $answers = collect($this->customQuestions)->mapWithKeys(function ($question) {
+            $value = LocalQuestionFormat::normalizeAnswer($question, $this->customAnswers[$question['id']] ?? null);
+
+            return LocalQuestionFormat::isBlank($value) ? [] : [$question['id'] => $value];
+        })->all();
 
         $all = is_array($section->respondent_answers) ? $section->respondent_answers : [];
         $all[$this->respondentId] = $answers;
@@ -505,8 +509,9 @@ class PublicRespondentRunner extends Component
     }
 
     /**
-     * A tailored section is answered by the respondent as a final step, after the official
-     * questions. It is optional and only present when the workspace added one before sharing.
+     * A local questions section is answered by the respondent as a final step, after the
+     * published questions. It is optional and only present when the workspace added one before
+     * sharing.
      */
     private function loadCustomSection(): void
     {
@@ -529,9 +534,12 @@ class PublicRespondentRunner extends Component
         }
 
         $type = $question['response_type'] ?? 'YES_NO';
-        $valid = $type === 'YES_NO'
-            ? in_array($value, ['YES', 'NO'], true)
-            : in_array($value, ['1', '2', '3', '4', '5'], true);
+        $valid = match ($type) {
+            LocalQuestionFormat::YES_NO => in_array($value, ['YES', 'NO'], true),
+            LocalQuestionFormat::YES_NO_NA => in_array($value, ['YES', 'NO', 'NOT_APPLICABLE'], true),
+            LocalQuestionFormat::SCALE_5 => in_array($value, ['1', '2', '3', '4', '5'], true),
+            default => false,
+        };
         if (! $valid) {
             return;
         }

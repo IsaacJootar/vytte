@@ -437,6 +437,58 @@ class PublicRespondentRunnerTest extends TestCase
         $this->assertSame(['c1' => 'YES'], $section->respondent_answers[$component->get('respondentId')]);
     }
 
+    public function test_public_respondent_local_answers_normalize_every_format_including_arrays(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createPublicAssessment($workspace, $user);
+
+        LocalCustomSection::create([
+            'assessment_id' => $assessment->assessment_id,
+            'workspace_id' => $workspace->workspace_id,
+            'section_title' => 'Local context',
+            'questions' => [
+                ['id' => 'c1', 'text' => 'Vehicle?', 'response_type' => 'YES_NO', 'good_answer' => 'YES'],
+                ['id' => 'c2', 'text' => 'Applies here?', 'response_type' => 'YES_NO_NA'],
+                ['id' => 'c3', 'text' => 'Supplies stocked?', 'response_type' => 'MULTI_SELECT', 'choices' => ['Gloves', 'Masks', 'Gowns']],
+                ['id' => 'c4', 'text' => 'Which service?', 'response_type' => 'SINGLE_SELECT', 'choices' => ['A', 'B']],
+                ['id' => 'c5', 'text' => 'Staff on duty?', 'response_type' => 'NUMERIC', 'numeric_min' => 0, 'numeric_max' => 10],
+                ['id' => 'c6', 'text' => 'Notes?', 'response_type' => 'OPEN_ENDED'],
+            ],
+            'created_by' => $user->user_id,
+        ]);
+
+        $token = $this->createToken($assessment);
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $component->call('giveConsent');
+
+        foreach ($component->get('questionData') as $q) {
+            if ($q['is_scored']) {
+                $component->call('selectOption', $q['question_id'], $q['options'][0]['option_id']);
+            }
+        }
+
+        $component->call('goToCustomStep')
+            ->call('selectCustomOption', 'c1', 'YES')
+            ->call('selectCustomOption', 'c2', 'NOT_APPLICABLE')
+            ->set('customAnswers.c3', ['Gloves', 'Gowns', 'Not-a-real-choice'])
+            ->set('customAnswers.c4', 'A')
+            ->set('customAnswers.c5', '99')
+            ->set('customAnswers.c6', '  trimmed note  ')
+            ->call('submit')
+            ->assertSet('isSubmitted', true);
+
+        $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $answers = $section->respondent_answers[$component->get('respondentId')];
+
+        $this->assertSame('YES', $answers['c1']);
+        $this->assertSame('NOT_APPLICABLE', $answers['c2']);
+        $this->assertSame(['Gloves', 'Gowns'], $answers['c3']);
+        $this->assertSame('A', $answers['c4']);
+        // 99 is outside the 0-10 numeric range, so it normalizes to null and is dropped entirely.
+        $this->assertArrayNotHasKey('c5', $answers);
+        $this->assertSame('trimmed note', $answers['c6']);
+    }
+
     public function test_submit_rechecks_completeness_from_stored_responses(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();

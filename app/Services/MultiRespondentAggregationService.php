@@ -148,9 +148,9 @@ class MultiRespondentAggregationService
     }
 
     /**
-     * Score the tailored "Tailored by your team" section in its own private lane: the mean of
-     * each eligible respondent's 0-100 custom score. Kept entirely out of the official aggregate
-     * above. No-op when the assessment has no tailored section or nobody answered it.
+     * Score the workspace's local questions section as an optional local score: the mean of
+     * each eligible respondent's 0-100 local score. Kept entirely out of the published aggregate
+     * above. No-op when the assessment has no local section or nobody answered it.
      *
      * @param  array<int, string>  $eligibleSessionIds
      */

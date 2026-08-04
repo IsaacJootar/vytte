@@ -2,13 +2,16 @@
 
 namespace App\Services\Reporting;
 
+use App\Support\LocalQuestionFormat;
+
 /**
- * Scores a workspace's own "Tailored by your team" questions — in their own private lane,
- * never touching the official Vytte score.
+ * Scores a workspace's own local questions — as an optional local score, never touching the
+ * published assessment's frozen score or benchmark.
  *
- * It deliberately mirrors the official method's 0-100 normalisation so the custom score reads
- * on the same scale, then averages the answered questions. Two separate numbers on one scale:
- * the official (comparable) and the tailored (the workspace's own).
+ * It deliberately mirrors the published method's 0-100 normalisation so the local score reads
+ * on the same scale, then averages only the questions explicitly marked scored. Two separate
+ * numbers on one scale: the published (comparable) and the local (the workspace's own).
+ * Unscored questions retain a displayable answer but never contribute a score.
  */
 class CustomSectionScoringService
 {
@@ -34,7 +37,7 @@ class CustomSectionScoringService
                 'id' => $q['id'],
                 'text' => $q['text'] ?? '',
                 'response_type' => $q['response_type'] ?? 'YES_NO',
-                'answer' => $answer,
+                'answer' => LocalQuestionFormat::displayAnswer($q, $answer),
                 'score' => $questionScore,
             ];
         }
@@ -70,8 +73,13 @@ class CustomSectionScoringService
         $scored = [];
         foreach ($questions as $q) {
             $perQuestion = [];
+            $recordedAnswers = [];
             foreach ($answerSets as $answers) {
-                $value = $this->questionScore($q, is_array($answers) ? ($answers[$q['id']] ?? null) : null);
+                $answer = is_array($answers) ? ($answers[$q['id']] ?? null) : null;
+                if (! LocalQuestionFormat::isBlank($answer)) {
+                    $recordedAnswers[] = $answer;
+                }
+                $value = $this->questionScore($q, $answer);
                 if ($value !== null) {
                     $perQuestion[] = $value;
                 }
@@ -82,7 +90,11 @@ class CustomSectionScoringService
                 'text' => $q['text'] ?? '',
                 'response_type' => $q['response_type'] ?? 'YES_NO',
                 // The report shows one value per row; for many respondents that is the mean score.
-                'answer' => $mean === null ? null : number_format($mean, 0).' / 100',
+                'answer' => $mean !== null
+                    ? number_format($mean, 0).' / 100'
+                    : (count($recordedAnswers) === 1
+                        ? LocalQuestionFormat::displayAnswer($q, $recordedAnswers[0])
+                        : (count($recordedAnswers) > 1 ? count($recordedAnswers).' responses' : null)),
                 'score' => $mean,
             ];
         }
@@ -103,14 +115,22 @@ class CustomSectionScoringService
      */
     private function questionScore(array $q, mixed $answer): ?float
     {
-        if ($answer === null || $answer === '') {
+        if (LocalQuestionFormat::isBlank($answer) || array_key_exists('is_scored', $q) && ! $q['is_scored']) {
             return null;
         }
 
-        if (($q['response_type'] ?? 'YES_NO') === 'YES_NO') {
+        $type = $q['response_type'] ?? LocalQuestionFormat::YES_NO;
+        if (in_array($type, [LocalQuestionFormat::YES_NO, LocalQuestionFormat::YES_NO_NA], true)) {
+            if ($answer === 'NOT_APPLICABLE') {
+                return null;
+            }
             $good = $q['good_answer'] ?? 'YES';
 
             return strtoupper((string) $answer) === strtoupper((string) $good) ? 100.0 : 0.0;
+        }
+
+        if ($type !== LocalQuestionFormat::SCALE_5) {
+            return null;
         }
 
         // 1-5 scale: 1 => 0, 5 => 100, reversed when 1 is best.
@@ -120,6 +140,9 @@ class CustomSectionScoringService
         }
         $base = ($value - 1) / 4 * 100;
 
-        return ! empty($q['reversed']) ? round(100 - $base, 1) : round($base, 1);
+        $lowerIsBetter = ($q['score_direction'] ?? null) === 'LOWER_IS_BETTER'
+            || ! empty($q['reversed']);
+
+        return $lowerIsBetter ? round(100 - $base, 1) : round($base, 1);
     }
 }

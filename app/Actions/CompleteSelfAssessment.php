@@ -16,9 +16,10 @@ use Illuminate\Support\Facades\Notification;
  * Finishes a self-assessment: freezes it complete, scores it, snapshots the report and
  * notifies the workspace admins.
  *
- * Extracted so both the normal submit and the "finish after answering tailored questions"
- * path complete an assessment identically. Only the official governed questions drive the
- * official score here; the tailored section is scored in its own lane before this runs.
+ * Extracted so both the normal submit and the "finish after answering local questions"
+ * path complete an assessment identically. Only the published governed questions drive the
+ * published score here; the local questions section is scored as an optional local score
+ * before this runs.
  */
 class CompleteSelfAssessment
 {

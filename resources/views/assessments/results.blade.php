@@ -734,18 +734,18 @@
     {{-- ===== AI SUMMARIES ===== --}}
     <div x-show="tab === 'ai'" x-cloak class="report-panel">
 
-    {{-- Tailored by your team — read-only on the finished report; answered during the run. --}}
+    {{-- Local questions — read-only on the finished report; answered during the run. --}}
     @if ($customSection && ! empty($customScored['questions']))
         <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 print-break-avoid">
             <div class="flex items-center justify-between gap-3 mb-1">
-                <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $customSection->section_title ?: 'Tailored by your team' }}</h2>
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $customSection->section_title ?: 'Local context' }}</h2>
                 @if ($customScored['overall'] !== null)
                     @php $cs = (float) $customScored['overall']; $csColor = $cs >= 70 ? '#15803D' : ($cs >= 45 ? '#B45309' : '#B91C1C'); @endphp
                     <span class="text-sm font-bold tabular-nums" style="color: {{ $csColor }}">{{ number_format($cs, 1) }} / 100</span>
                 @endif
             </div>
             <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">
-                Your own questions — scored on their own, and kept out of the official Vytte score above so it stays comparable with other facilities.@if (! empty($customScored['respondents'])) Averaged across {{ $customScored['respondents'] }} {{ \Illuminate\Support\Str::plural('respondent', $customScored['respondents']) }}.@endif
+                Optional local score — only questions you chose to score contribute. The published assessment score and benchmark above are unchanged.@if (! empty($customScored['respondents'])) Averaged across {{ $customScored['respondents'] }} {{ \Illuminate\Support\Str::plural('respondent', $customScored['respondents']) }}.@endif
             </p>
             <ul class="divide-y divide-slate-100 dark:divide-slate-700">
                 @foreach ($customScored['questions'] as $q)

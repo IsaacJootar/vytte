@@ -435,9 +435,9 @@ class AssessmentController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        // The workspace's own tailored section — scored in its own lane, never the official score.
-        // A shared-link assessment is answered by many respondents, so the section is aggregated
-        // across them; a self-assessment has a single answer set.
+        // The workspace's own local questions section — an optional local score, never the
+        // published assessment score. A shared-link assessment is answered by many respondents,
+        // so the section is aggregated across them; a self-assessment has a single answer set.
         $customSection = $assessment->localCustomSections()->first();
         $customScorer = app(CustomSectionScoringService::class);
         $customScored = null;
