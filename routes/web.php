@@ -55,6 +55,7 @@ use App\Http\Controllers\ProjectProgressController;
 use App\Http\Controllers\ReportScheduleController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RespondentLinkController;
+use App\Http\Controllers\ScoringModelController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\UserPreferenceController;
 use App\Http\Controllers\WorkspaceSettingsController;
@@ -85,6 +86,7 @@ Route::middleware('auth')->group(function () {
     Route::get('contributions', [ContentContributionController::class, 'index'])->name('contributions.index');
     Route::get('contributions/create', [ContentContributionController::class, 'create'])->name('contributions.create');
     Route::post('contributions', [ContentContributionController::class, 'store'])->name('contributions.store');
+    Route::get('scoring-model', [ScoringModelController::class, 'index'])->name('scoring-model.index');
 
     Route::get('assessments', [AssessmentController::class, 'index'])->name('assessments.index');
     Route::get('assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');

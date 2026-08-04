@@ -31,6 +31,7 @@
                 <p class="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">Use <a href="{{ route('contributions.create') }}" class="font-semibold text-vytte-700 hover:underline dark:text-vytte-300">Contribute Questions</a> instead. A reviewer can add it to Vytte's shared question list.</p>
             </div>
         </div>
+        <p class="mt-3 text-xs text-slate-500 dark:text-slate-400"><a href="{{ route('scoring-model.index') }}" class="font-semibold text-vytte-700 hover:underline dark:text-vytte-300">See how scoring works →</a></p>
     </x-help-callout>
 
     <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">

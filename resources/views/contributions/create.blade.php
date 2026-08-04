@@ -16,6 +16,7 @@
 
         <x-help-callout id="contribute-question" title="What happens next">
             <p class="text-xs leading-5 text-slate-600 dark:text-slate-300">A publisher reviews the wording, answer design, and evidence you provide, then decides the scoring model and which future published assessment version includes it. Until then, this contribution stays a private draft and cannot affect any workspace's assessments, scores, or benchmarks.</p>
+            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400"><a href="{{ route('scoring-model.index') }}" class="font-semibold text-vytte-700 hover:underline dark:text-vytte-300">See how scoring works →</a></p>
         </x-help-callout>
 
         <form method="POST" action="{{ route('contributions.store') }}"
