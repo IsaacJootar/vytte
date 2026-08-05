@@ -43,14 +43,14 @@
             @method('PUT')
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Draft metadata</h2>
             <div class="mt-4 grid gap-4 md:grid-cols-2">
-                <input name="display_name" value="{{ $framework->display_name }}" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="source_authority" value="{{ $framework->source_authority }}" placeholder="Source authority" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="license_code" value="{{ $framework->license_code }}" placeholder="License code" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="source_url" value="{{ $framework->source_url }}" placeholder="Source URL" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                <input name="display_name" value="{{ $framework->display_name }}" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="source_authority" value="{{ $framework->source_authority }}" placeholder="Source authority" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="license_code" value="{{ $framework->license_code }}" placeholder="License code" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="source_url" value="{{ $framework->source_url }}" placeholder="Source URL" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             </div>
-            <textarea name="description" rows="2" placeholder="Description" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ $framework->description }}</textarea>
-            <textarea name="purpose" rows="2" placeholder="Purpose" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ $framework->purpose }}</textarea>
-            <textarea name="methodology_notes" rows="2" placeholder="Methodology notes" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ $framework->methodology_notes }}</textarea>
+            <textarea name="description" rows="2" placeholder="Description" class="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">{{ $framework->description }}</textarea>
+            <textarea name="purpose" rows="2" placeholder="Purpose" class="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">{{ $framework->purpose }}</textarea>
+            <textarea name="methodology_notes" rows="2" placeholder="Methodology notes" class="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">{{ $framework->methodology_notes }}</textarea>
             <div class="mt-4 text-right"><button class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Save metadata</button></div>
         </form>
     @endif
@@ -135,55 +135,55 @@
             <form method="POST" action="{{ route('admin.framework-versions.sections.store', $framework) }}" class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                 @csrf
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Add section</h2>
-                <input name="section_code" placeholder="Code" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="section_name" placeholder="Name" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="display_order" type="number" value="{{ $framework->sections->count() + 1 }}" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <textarea name="purpose" rows="2" placeholder="Purpose" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+                <input name="section_code" placeholder="Code" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="section_name" placeholder="Name" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="display_order" type="number" value="{{ $framework->sections->count() + 1 }}" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <textarea name="purpose" rows="2" placeholder="Purpose" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"></textarea>
                 <button class="mt-3 rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Add section</button>
             </form>
 
             <form method="POST" action="{{ route('admin.framework-versions.indicators.store', $framework) }}" class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                 @csrf
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Add indicator</h2>
-                <select name="framework_section_id" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <select name="framework_section_id" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
                     @foreach ($framework->sections as $section)
                         <option value="{{ $section->framework_section_id }}">{{ $section->section_name }}</option>
                     @endforeach
                 </select>
-                <input name="indicator_code" placeholder="Code" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="indicator_name" placeholder="Name" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="display_order" type="number" value="{{ $framework->indicators->count() + 1 }}" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <textarea name="description" rows="2" placeholder="Description" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+                <input name="indicator_code" placeholder="Code" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="indicator_name" placeholder="Name" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="display_order" type="number" value="{{ $framework->indicators->count() + 1 }}" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <textarea name="description" rows="2" placeholder="Description" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"></textarea>
                 <button class="mt-3 rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Add indicator</button>
             </form>
 
             <form method="POST" action="{{ route('admin.framework-versions.placements.store', $framework) }}" class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">
                 @csrf
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Add question placement</h2>
-                <select name="framework_section_id" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <select name="framework_section_id" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
                     @foreach ($framework->sections as $section)
                         <option value="{{ $section->framework_section_id }}">{{ $section->section_name }}</option>
                     @endforeach
                 </select>
-                <select name="framework_indicator_id" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <select name="framework_indicator_id" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
                     @foreach ($framework->indicators as $indicator)
                         <option value="{{ $indicator->framework_indicator_id }}">{{ $indicator->indicator_name }}</option>
                     @endforeach
                 </select>
-                <select name="question_version_id" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <select name="question_version_id" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
                     @foreach ($publishedQuestionVersions as $version)
                         <option value="{{ $version->question_version_id }}">{{ $version->question?->question_code }} · {{ str($version->question_text)->limit(70) }}</option>
                     @endforeach
                 </select>
-                <select name="sub_index_id" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                <select name="sub_index_id" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                     <option value="">Unscored / context only</option>
                     @foreach ($subIndices as $subIndex)
                         <option value="{{ $subIndex->sub_index_id }}">{{ $subIndex->full_name }}</option>
                     @endforeach
                 </select>
-                <input name="display_order" type="number" value="{{ $framework->questionPlacements->count() + 1 }}" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="weight" type="number" step="0.001" value="1" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-                <input name="criticality" value="STANDARD" class="mt-3 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <input name="display_order" type="number" value="{{ $framework->questionPlacements->count() + 1 }}" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="weight" type="number" step="0.001" value="1" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+                <input name="criticality" value="STANDARD" class="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
                 <label class="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"><input type="checkbox" name="is_required" value="1" checked> Required</label>
                 <label class="mt-2 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"><input type="checkbox" name="scoring_contribution" value="1"> Scored</label>
                 <button class="mt-3 rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">Add placement</button>

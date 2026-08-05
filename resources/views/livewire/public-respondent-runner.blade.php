@@ -155,11 +155,11 @@
                             </div>
                         @elseif ($customType === \App\Support\LocalQuestionFormat::NUMERIC)
                             <div class="flex items-center gap-2">
-                                <input type="number" step="any" wire:model.blur="customAnswers.{{ $cq['id'] }}" @if (($cq['numeric_min'] ?? null) !== null) min="{{ $cq['numeric_min'] }}" @endif @if (($cq['numeric_max'] ?? null) !== null) max="{{ $cq['numeric_max'] }}" @endif class="w-full rounded-xl border-slate-300 text-sm">
+                                <input type="number" step="any" wire:model.blur="customAnswers.{{ $cq['id'] }}" @if (($cq['numeric_min'] ?? null) !== null) min="{{ $cq['numeric_min'] }}" @endif @if (($cq['numeric_max'] ?? null) !== null) max="{{ $cq['numeric_max'] }}" @endif class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900">
                                 @if ($cq['numeric_unit'] ?? null)<span class="text-sm text-slate-500">{{ $cq['numeric_unit'] }}</span>@endif
                             </div>
                         @else
-                            <textarea wire:model.blur="customAnswers.{{ $cq['id'] }}" rows="3" maxlength="5000" placeholder="Write your answer" class="w-full rounded-xl border-slate-300 text-sm"></textarea>
+                            <textarea wire:model.blur="customAnswers.{{ $cq['id'] }}" rows="3" maxlength="5000" placeholder="Write your answer" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900"></textarea>
                         @endif
                     </div>
                 </div>

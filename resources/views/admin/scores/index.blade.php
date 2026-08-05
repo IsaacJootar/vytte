@@ -82,7 +82,7 @@
 
             <div>
                 <label for="module_id" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Department</label>
-                <select id="module_id" name="module_id" required class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                <select id="module_id" name="module_id" required class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                     <option value="">Choose a department</option>
                     @foreach ($departments as $department)
                         <option value="{{ $department->module_id }}" @selected((int) old('module_id') === (int) $department->module_id)>{{ $department->module_name }}</option>
@@ -94,13 +94,13 @@
                 <label for="full_name" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Score name</label>
                 <p class="text-xs text-slate-500 dark:text-slate-400">What this score tells the reader, for example "Outpatient Readiness".</p>
                 <input id="full_name" name="full_name" value="{{ old('full_name') }}" required maxlength="120"
-                       class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                       class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             </div>
 
             <div>
                 <label for="domain_id" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">What does it measure?</label>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Used to group results across departments in reports.</p>
-                <select id="domain_id" name="domain_id" required class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                <select id="domain_id" name="domain_id" required class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                     <option value="">Choose an area</option>
                     @foreach ($areas as $area)
                         <option value="{{ $area->domain_id }}" @selected((int) old('domain_id') === (int) $area->domain_id)>{{ $area->domain_name }}</option>
@@ -111,7 +111,7 @@
             <div>
                 <label for="description" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Description <span class="font-normal text-slate-400">(optional)</span></label>
                 <textarea id="description" name="description" rows="2" maxlength="500"
-                          class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">{{ old('description') }}</textarea>
+                          class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">{{ old('description') }}</textarea>
             </div>
 
             <button class="w-full rounded-xl bg-vytte-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-500">

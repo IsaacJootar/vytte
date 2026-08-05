@@ -48,20 +48,20 @@
                 <h2 class="text-sm font-bold text-slate-900 dark:text-white">Score meaning</h2>
                 <p class="mt-1 text-xs text-slate-500">These declarations travel with the immutable scoring model and report.</p>
                 <label class="mt-4 block text-xs font-semibold text-slate-700 dark:text-slate-200">What does the score measure?
-                    <select name="construct" @disabled(! $isEditable) class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                    <select name="construct" @disabled(! $isEditable) class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         @foreach (['READINESS' => 'Readiness', 'COMPLIANCE' => 'Compliance', 'CAPACITY' => 'Capacity', 'EXPERIENCE' => 'Experience', 'NEED' => 'Need', 'PREVALENCE' => 'Prevalence'] as $value => $label)
                             <option value="{{ $value }}" @selected(old('construct', $scoringModel->construct) === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
                 </label>
                 <label class="mt-3 block text-xs font-semibold text-slate-700 dark:text-slate-200">How should a higher score be read?
-                    <select name="direction" @disabled(! $isEditable) class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                    <select name="direction" @disabled(! $isEditable) class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         <option value="HIGHER_IS_BETTER" @selected(old('direction', $scoringModel->direction) === 'HIGHER_IS_BETTER')>Higher is better</option>
                         <option value="HIGHER_IS_MORE_NEED" @selected(old('direction', $scoringModel->direction) === 'HIGHER_IS_MORE_NEED')>Higher means greater need</option>
                     </select>
                 </label>
                 <label class="mt-3 block text-xs font-semibold text-slate-700 dark:text-slate-200">If a required answer is missing
-                    <select name="missing_policy" @disabled(! $isEditable) class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                    <select name="missing_policy" @disabled(! $isEditable) class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         @php($currentMissing = collect($scoringModel->missing_policy)->except('NOT_APPLICABLE')->contains('REQUIRE_RESPONSE') ? 'REQUIRE_RESPONSE' : 'EXCLUDE_AND_MARK_PARTIAL')
                         <option value="EXCLUDE_AND_MARK_PARTIAL" @selected(old('missing_policy', $currentMissing) === 'EXCLUDE_AND_MARK_PARTIAL')>Exclude it and mark the result partial</option>
                         <option value="REQUIRE_RESPONSE" @selected(old('missing_policy', $currentMissing) === 'REQUIRE_RESPONSE')>Require an answer before completion</option>

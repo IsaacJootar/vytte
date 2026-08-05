@@ -1,6 +1,7 @@
 <x-admin-layout title="New Question">
     <div class="mb-5">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">Create Reusable Question</h1>
+        <a href="{{ route('admin.question-identities.index') }}" class="text-sm text-slate-500 hover:underline dark:text-slate-400">← Back to questions</a>
+        <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Create Reusable Question</h1>
         <p class="text-sm text-slate-500 dark:text-slate-400">This creates the stable identity plus its first draft version.</p>
     </div>
     <form method="POST" action="{{ route('admin.question-identities.store') }}" class="max-w-3xl section-card p-5 dark:border-slate-700 dark:bg-slate-800">

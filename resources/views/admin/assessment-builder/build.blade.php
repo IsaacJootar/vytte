@@ -143,19 +143,19 @@
                         <form method="POST" action="{{ route('admin.assessments.sections.update', [$assessment, $section]) }}" class="mt-3 grid gap-3 sm:grid-cols-2">
                             @csrf @method('PUT')
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Section name
-                                <input name="section_name" value="{{ $section->section_name }}" required maxlength="180" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                <input name="section_name" value="{{ $section->section_name }}" required maxlength="180" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                             </label>
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Purpose
-                                <input name="purpose" value="{{ $section->purpose }}" maxlength="1000" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                <input name="purpose" value="{{ $section->purpose }}" maxlength="1000" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                             </label>
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300 sm:col-span-2">Instructions shown before this section
-                                <textarea name="instructions" rows="3" maxlength="3000" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ $section->instructions }}</textarea>
+                                <textarea name="instructions" rows="3" maxlength="3000" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">{{ $section->instructions }}</textarea>
                             </label>
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Best answered by
-                                <input name="respondent_role" value="{{ $section->respondent_role }}" maxlength="120" placeholder="e.g. Facility manager" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                <input name="respondent_role" value="{{ $section->respondent_role }}" maxlength="120" placeholder="e.g. Facility manager" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                             </label>
                             <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Estimated time (minutes)
-                                <input name="estimated_minutes" value="{{ $section->estimated_minutes }}" type="number" min="1" max="999" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                <input name="estimated_minutes" value="{{ $section->estimated_minutes }}" type="number" min="1" max="999" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                             </label>
                             <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 sm:col-span-2">
                                 <input type="checkbox" name="is_repeatable" value="1" @checked($section->is_repeatable) class="rounded border-slate-300 text-vytte-600 focus:ring-vytte-500">
@@ -200,13 +200,13 @@
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Add a section</h2>
             <div class="mt-3 grid gap-3 sm:grid-cols-2">
                 <input name="section_name" value="{{ old('section_name') }}" required maxlength="180" placeholder="Section name, e.g. Infection Control"
-                       class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                       class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 <input name="purpose" value="{{ old('purpose') }}" maxlength="1000" placeholder="Short description (optional)"
-                       class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                <textarea name="instructions" rows="2" maxlength="3000" placeholder="Instructions shown before this section (optional)" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+                       class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                <textarea name="instructions" rows="2" maxlength="3000" placeholder="Instructions shown before this section (optional)" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"></textarea>
                 <div class="grid grid-cols-2 gap-2">
-                    <input name="respondent_role" maxlength="120" placeholder="Best answered by" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                    <input name="estimated_minutes" type="number" min="1" max="999" placeholder="Minutes" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                    <input name="respondent_role" maxlength="120" placeholder="Best answered by" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                    <input name="estimated_minutes" type="number" min="1" max="999" placeholder="Minutes" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 </div>
                 <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"><input type="checkbox" name="is_repeatable" value="1" class="rounded border-slate-300 text-vytte-600"> Repeatable section</label>
                 <button class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">Add section</button>

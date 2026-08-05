@@ -4,7 +4,7 @@
         <p class="text-sm text-slate-500 dark:text-slate-400">Official setting profiles that define valid departments/services for comprehensive assessments.</p>
     </div>
     <form method="GET" class="mb-4 flex flex-wrap gap-3 section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-        <select name="status" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+        <select name="status" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             <option value="">All status</option>
             <option value="DRAFT" @selected(request('status') === 'DRAFT')>Draft</option>
             <option value="PUBLISHED" @selected(request('status') === 'PUBLISHED')>Published</option>

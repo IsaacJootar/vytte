@@ -174,13 +174,13 @@
                     <div class="mt-3 space-y-3">
                         <input name="source_authority" value="{{ old('source_authority', $assessment->source_authority) }}" maxlength="180"
                                placeholder="Who published the underlying guidance?"
-                               class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                               class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         <input name="license_code" value="{{ old('license_code', $assessment->license_code) }}" maxlength="80"
                                placeholder="How may it be used? e.g. CC-BY-4.0"
-                               class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                               class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         <input name="source_url" value="{{ old('source_url', $assessment->source_url) }}" maxlength="2000"
                                placeholder="Link to the source (optional)"
-                               class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                               class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         <button class="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200">Save source details</button>
                     </div>
                 </form>
@@ -192,7 +192,7 @@
 
                     <label for="health_domain_id" class="mt-3 block text-xs font-semibold text-slate-700 dark:text-slate-200">Which health area does this cover?</label>
                     <select id="health_domain_id" name="health_domain_id" required
-                            class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                            class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         <option value="">Choose a health area</option>
                         @foreach ($healthAreas as $area)
                             <option value="{{ $area->health_domain_id }}" @selected((int) old('health_domain_id', $suggestedHealthAreaId) === (int) $area->health_domain_id)>{{ $area->domain_name }}</option>

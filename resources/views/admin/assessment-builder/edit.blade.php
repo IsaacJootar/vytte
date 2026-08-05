@@ -23,19 +23,19 @@
         <div>
             <label for="display_name" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Assessment name</label>
             <input id="display_name" name="display_name" value="{{ old('display_name', $assessment->display_name) }}" required maxlength="180" @disabled(! $isEditable)
-                   class="mt-1.5 w-full rounded-xl border-slate-300 text-sm disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">
+                   class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">
         </div>
 
         <div>
             <label for="description" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Description</label>
             <textarea id="description" name="description" rows="3" maxlength="2000" @disabled(! $isEditable)
-                      class="mt-1.5 w-full rounded-xl border-slate-300 text-sm disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">{{ old('description', $assessment->description) }}</textarea>
+                      class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">{{ old('description', $assessment->description) }}</textarea>
         </div>
 
         <div>
             <label for="module_id" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Department or category</label>
             <select id="module_id" name="module_id" required @disabled(! $isEditable)
-                    class="mt-1.5 w-full rounded-xl border-slate-300 text-sm disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">
+                    class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">
                 @foreach ($departments as $department)
                     <option value="{{ $department->module_id }}" @selected((int) old('module_id', $assessment->module_id) === (int) $department->module_id)>{{ $department->module_name }}</option>
                 @endforeach
@@ -45,7 +45,7 @@
         <div>
             <label for="purpose" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Intended use <span class="font-normal text-slate-400">(optional)</span></label>
             <textarea id="purpose" name="purpose" rows="2" maxlength="2000" @disabled(! $isEditable)
-                      class="mt-1.5 w-full rounded-xl border-slate-300 text-sm disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">{{ old('purpose', $assessment->purpose) }}</textarea>
+                      class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-600 dark:bg-slate-900 dark:text-white dark:disabled:bg-slate-800">{{ old('purpose', $assessment->purpose) }}</textarea>
         </div>
 
         @if ($isEditable)

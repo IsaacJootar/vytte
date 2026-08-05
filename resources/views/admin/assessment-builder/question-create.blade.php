@@ -15,7 +15,7 @@
             <p class="text-xs text-slate-500 dark:text-slate-400">Write it exactly as the person answering will read it.</p>
             <textarea id="question_text" name="question_text" rows="3" required maxlength="5000"
                       placeholder="e.g. Is emergency oxygen available and working today?"
-                      class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ old('question_text') }}</textarea>
+                      class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">{{ old('question_text') }}</textarea>
         </div>
 
         <fieldset>
@@ -41,7 +41,7 @@
             <div class="mt-2 space-y-2">
                 @for ($i = 0; $i < 6; $i++)
                     <input name="choices[]" value="{{ old('choices.'.$i) }}" maxlength="180" placeholder="Choice {{ $i + 1 }}"
-                           class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                           class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 @endfor
             </div>
         </div>
@@ -51,11 +51,11 @@
             <p class="text-xs text-slate-500 dark:text-slate-400">Limits help people enter a sensible value.</p>
             <div class="mt-2 grid gap-3 sm:grid-cols-3">
                 <input name="numeric_min" value="{{ old('numeric_min') }}" type="number" step="any" placeholder="Smallest allowed"
-                       class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                       class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 <input name="numeric_max" value="{{ old('numeric_max') }}" type="number" step="any" placeholder="Largest allowed"
-                       class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                       class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 <input name="numeric_unit" value="{{ old('numeric_unit') }}" maxlength="40" placeholder="Unit, e.g. beds"
-                       class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                       class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             </div>
         </div>
 

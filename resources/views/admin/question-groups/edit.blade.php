@@ -7,14 +7,14 @@
         @csrf
         @method('PUT')
         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Department / scope</label>
-        <input value="{{ $group->module?->module_name }}" disabled class="mt-1 w-full rounded-lg border-slate-300 bg-slate-100 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900">
+        <input value="{{ $group->module?->module_name }}" disabled class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-100 px-3.5 py-2.5 text-sm text-slate-500 shadow-sm dark:border-slate-600 dark:bg-slate-900">
         <input type="hidden" name="module_id" value="{{ $group->module_id }}">
         <label class="mt-4 block text-sm font-semibold text-slate-700 dark:text-slate-200">Display number</label>
-        <input name="group_number" type="number" min="1" value="{{ old('group_number', $group->group_number) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+        <input name="group_number" type="number" min="1" value="{{ old('group_number', $group->group_number) }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
         <label class="mt-4 block text-sm font-semibold text-slate-700 dark:text-slate-200">Group label</label>
-        <input name="group_label" value="{{ old('group_label', $group->group_label) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+        <input name="group_label" value="{{ old('group_label', $group->group_label) }}" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
         <label class="mt-4 block text-sm font-semibold text-slate-700 dark:text-slate-200">Status</label>
-        <select name="status" class="mt-1 w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+        <select name="status" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             <option value="ACTIVE" @selected($group->status === 'ACTIVE')>Active</option>
             <option value="ARCHIVED" @selected($group->status === 'ARCHIVED')>Archived</option>
         </select>

@@ -217,14 +217,14 @@
                             @endforeach
                         </div>
                     @elseif ($isNumericType)
-                        <input disabled type="number" placeholder="Numeric answer" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                        <input disabled type="number" placeholder="Numeric answer" class="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         <div class="mt-4 space-y-2 text-xs text-slate-500">
                             @foreach (collect($version->numeric_bands ?? [])->sortBy('display_order') as $band)
                                 <p>{{ $band['label'] ?? 'Band' }}: {{ $band['min_value'] ?? '—' }}–{{ $band['max_value'] ?? '—' }} = {{ $band['score_weight'] ?? '—' }}</p>
                             @endforeach
                         </div>
                     @else
-                        <textarea disabled rows="3" placeholder="Open-ended answer" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+                        <textarea disabled rows="3" placeholder="Open-ended answer" class="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm dark:border-slate-600 dark:bg-slate-900 dark:text-white"></textarea>
                     @endif
                 </div>
                 <div class="section-card p-5 dark:border-slate-700 dark:bg-slate-800">

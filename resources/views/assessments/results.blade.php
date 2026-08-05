@@ -511,18 +511,18 @@
             <form method="GET" action="{{ route('assessments.results', $assessment) }}" class="mt-3 grid gap-2 sm:grid-cols-4">
                 <input type="hidden" name="view" value="custom">
                 <input type="hidden" name="tab" value="diagnosis">
-                <select name="focus" class="rounded-lg border-slate-300 text-xs dark:border-slate-700 dark:bg-slate-900">
+                <select name="focus" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                     @foreach (['PRIORITIES' => 'Priorities', 'RISKS' => 'Risks and gaps', 'STRENGTHS' => 'Strengths and opportunities', 'ALL' => 'Everything'] as $value => $label)
                         <option value="{{ $value }}" @selected(($lensView['custom']['focus'] ?? null) === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
-                <select name="domain" class="rounded-lg border-slate-300 text-xs dark:border-slate-700 dark:bg-slate-900">
+                <select name="domain" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                     <option value="">All measurement areas</option>
                     @foreach ($reportDomainOptions as $code => $name)
                         <option value="{{ $code }}" @selected(($lensView['custom']['domain'] ?? null) === $code)>{{ $name }}</option>
                     @endforeach
                 </select>
-                <select name="detail" class="rounded-lg border-slate-300 text-xs dark:border-slate-700 dark:bg-slate-900">
+                <select name="detail" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                     @foreach (['BRIEF' => 'Brief', 'STANDARD' => 'Standard detail', 'DETAILED' => 'Detailed'] as $value => $label)
                         <option value="{{ $value }}" @selected(($lensView['custom']['detail'] ?? null) === $value)>{{ $label }}</option>
                     @endforeach

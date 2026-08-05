@@ -107,7 +107,7 @@
                             <div class="flex-shrink-0 flex flex-col items-end gap-2">
                                 <form method="POST" action="{{ route('actions.update', $action) }}">
                                     @csrf @method('PATCH')
-                                    <select name="status" onchange="this.form.submit()" class="text-xs rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 py-1">
+                                    <select name="status" onchange="this.form.submit()" class="text-xs rounded-lg border border-slate-200 bg-white text-slate-700 px-2 py-1 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
                                         @foreach (['OPEN' => 'Open', 'IN_PROGRESS' => 'In progress', 'DONE' => 'Done', 'VERIFIED' => 'Verified'] as $val => $lbl)
                                             <option value="{{ $val }}" @selected($action->status === $val)>{{ $lbl }}</option>
                                         @endforeach

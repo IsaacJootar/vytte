@@ -7,22 +7,22 @@
     <form method="POST" action="{{ route('admin.catalogue-releases.store') }}" class="max-w-3xl section-card p-5 dark:border-slate-700 dark:bg-slate-800">
         @csrf
         <div class="grid gap-4 md:grid-cols-2">
-            <input name="release_code" placeholder="Release code" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
-            <input name="release_name" placeholder="Release name" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+            <input name="release_code" placeholder="Release code" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
+            <input name="release_name" placeholder="Release name" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
         </div>
-        <textarea name="description" rows="2" placeholder="Description" class="mt-4 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+        <textarea name="description" rows="2" placeholder="Description" class="mt-4 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"></textarea>
         <div class="mt-4 grid gap-4 md:grid-cols-3">
-            <select name="creation_path" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+            <select name="creation_path" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
                 <option value="COMPREHENSIVE">Comprehensive</option>
                 <option value="FOCUSED">Focused</option>
             </select>
-            <select name="facility_profile_id" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+            <select name="facility_profile_id" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 <option value="">Facility profile</option>
                 @foreach ($facilityProfiles as $profile)
                     <option value="{{ $profile->facility_profile_id }}">{{ $profile->profile_name }}</option>
                 @endforeach
             </select>
-            <select name="health_domain_id" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+            <select name="health_domain_id" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 <option value="">Focused domain</option>
                 @foreach ($healthDomains as $domain)
                     <option value="{{ $domain->health_domain_id }}">{{ $domain->domain_name }}</option>

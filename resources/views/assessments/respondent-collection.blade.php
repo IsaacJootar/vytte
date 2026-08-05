@@ -180,13 +180,13 @@
                                   class="flex flex-wrap items-center gap-2">
                                 @csrf
                                 @method('PATCH')
-                                <select name="classification" class="rounded-lg border-slate-300 text-xs">
+                                <select name="classification" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                     <option value="ELIGIBLE" @selected($session->eligibility_status === 'ELIGIBLE' && ! $session->is_test)>Eligible</option>
                                     <option value="EXCLUDED" @selected($session->eligibility_status === 'EXCLUDED' && ! $session->is_test)>Exclude</option>
                                     <option value="TEST" @selected($session->is_test)>Test</option>
                                 </select>
                                 <input name="reason" value="{{ $session->eligibility_reason }}" placeholder="Reason when excluded"
-                                       class="rounded-lg border-slate-300 text-xs">
+                                       class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                 <button class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold">Save</button>
                             </form>
                         @endif

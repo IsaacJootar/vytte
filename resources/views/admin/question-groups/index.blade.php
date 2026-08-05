@@ -8,13 +8,13 @@
     </div>
 
     <form method="GET" class="mb-4 flex flex-wrap gap-3 section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-        <select name="module_id" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+        <select name="module_id" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             <option value="">All departments</option>
             @foreach ($modules as $module)
                 <option value="{{ $module->module_id }}" @selected(request('module_id') == $module->module_id)>{{ $module->module_name }}</option>
             @endforeach
         </select>
-        <select name="status" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+        <select name="status" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             <option value="">All status</option>
             <option value="ACTIVE" @selected(request('status') === 'ACTIVE')>Active</option>
             <option value="ARCHIVED" @selected(request('status') === 'ARCHIVED')>Archived</option>

@@ -9,8 +9,8 @@
 
     <form method="GET" class="mb-4 flex flex-wrap items-center gap-3 section-card p-4 dark:border-slate-700 dark:bg-slate-800">
         <input name="search" value="{{ request('search') }}" placeholder="Search question wording"
-               class="min-w-[16rem] flex-1 rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-        <select name="department" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+               class="min-w-[16rem] flex-1 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+        <select name="department" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             <option value="">All departments</option>
             @foreach ($departments as $department)
                 <option value="{{ $department->module_id }}" @selected((int) request('department') === (int) $department->module_id)>{{ $department->module_name }}</option>

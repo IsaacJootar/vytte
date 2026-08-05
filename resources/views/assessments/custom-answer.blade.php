@@ -53,12 +53,12 @@
                         @elseif ($type === \App\Support\LocalQuestionFormat::NUMERIC)
                             <div class="flex items-center gap-2">
                                 <input type="number" step="any" name="answers[{{ $q['id'] }}]" @if (($q['numeric_min'] ?? null) !== null) min="{{ $q['numeric_min'] }}" @endif @if (($q['numeric_max'] ?? null) !== null) max="{{ $q['numeric_max'] }}" @endif
-                                       class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-white">
+                                       class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white">
                                 @if ($q['numeric_unit'] ?? null)<span class="text-sm text-slate-500">{{ $q['numeric_unit'] }}</span>@endif
                             </div>
                         @else
                             <textarea name="answers[{{ $q['id'] }}]" rows="3" maxlength="5000" placeholder="Write your answer"
-                                      class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-white"></textarea>
+                                      class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-700 dark:text-white"></textarea>
                         @endif
                     </div>
                 </div>

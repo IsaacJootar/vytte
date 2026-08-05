@@ -42,7 +42,7 @@
                         @csrf @method('PUT')
                         <div class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                             <span>Show this question when</span>
-                            <select name="operator" class="rounded-lg border-slate-300 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-900">
+                            <select name="operator" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                 <option value="ALL" @selected(old('operator', $rule['operator'] ?? 'ALL') === 'ALL')>all conditions match</option>
                                 <option value="ANY" @selected(old('operator', $rule['operator'] ?? 'ALL') === 'ANY')>any condition matches</option>
                             </select>
@@ -51,18 +51,18 @@
                         @for ($row = 0; $row < 3; $row++)
                             @php $condition = $savedConditions->get($row, []); @endphp
                             <div x-data="{ comparison: @js($condition['comparison'] ?? '') }" class="grid gap-2 rounded-xl bg-slate-50 p-3 md:grid-cols-3 dark:bg-slate-900/50">
-                                <select name="conditions[{{ $row }}][source_question_id]" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                                <select name="conditions[{{ $row }}][source_question_id]" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                     <option value="">{{ $row === 0 ? 'Choose an earlier question' : 'Optional extra condition' }}</option>
                                     @foreach ($eligible as $source)
                                         <option value="{{ $source->question_id }}" @selected(($condition['source_question_id'] ?? '') === $source->question_id)>{{ Str::limit($source->local_display_text ?: $source->questionVersion?->question_text, 80) }}</option>
                                     @endforeach
                                 </select>
-                                <select name="conditions[{{ $row }}][comparison]" x-model="comparison" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                                <select name="conditions[{{ $row }}][comparison]" x-model="comparison" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                     <option value="">Choose a condition</option>
                                     @foreach ($comparisons as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
                                 </select>
                                 <div>
-                                    <select x-show="['OPTION_SELECTED','OPTION_NOT_SELECTED'].includes(comparison)" name="conditions[{{ $row }}][option_value]" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                                    <select x-show="['OPTION_SELECTED','OPTION_NOT_SELECTED'].includes(comparison)" name="conditions[{{ $row }}][option_value]" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                         <option value="">Choose the answer</option>
                                         @foreach ($eligible as $source)
                                             @if (collect($source->questionVersion?->options ?? [])->isNotEmpty())
@@ -74,11 +74,11 @@
                                             @endif
                                         @endforeach
                                     </select>
-                                    <select x-show="comparison === 'STATE_IS'" name="conditions[{{ $row }}][state_value]" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                                    <select x-show="comparison === 'STATE_IS'" name="conditions[{{ $row }}][state_value]" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                         <option value="">Choose the response state</option>
                                         @foreach ($states as $value => $label)<option value="{{ $value }}" @selected(($condition['value'] ?? '') === $value)>{{ $label }}</option>@endforeach
                                     </select>
-                                    <input x-show="comparison.startsWith('NUMBER_')" name="conditions[{{ $row }}][number_value]" type="number" step="any" value="{{ str_starts_with($condition['comparison'] ?? '', 'NUMBER_') ? ($condition['value'] ?? '') : '' }}" placeholder="Enter a number" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                                    <input x-show="comparison.startsWith('NUMBER_')" name="conditions[{{ $row }}][number_value]" type="number" step="any" value="{{ str_starts_with($condition['comparison'] ?? '', 'NUMBER_') ? ($condition['value'] ?? '') : '' }}" placeholder="Enter a number" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                     <p x-show="!['OPTION_SELECTED','OPTION_NOT_SELECTED','STATE_IS'].includes(comparison) && !comparison.startsWith('NUMBER_')" class="px-2 py-2 text-xs text-slate-400">No extra value needed.</p>
                                 </div>
                             </div>

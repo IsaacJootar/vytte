@@ -16,8 +16,8 @@
                 <form method="POST" action="{{ route('admin.assessments.scoring-groups.store', $assessment) }}" class="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
                     @csrf
                     <input name="name" value="{{ old('name') }}" required maxlength="120" placeholder="Score name, e.g. Outpatient Readiness"
-                           class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                    <select name="domain_id" required class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                           class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                    <select name="domain_id" required class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                         <option value="">What area does it measure?</option>
                         @foreach ($domains as $domain)
                             <option value="{{ $domain->domain_id }}" @selected((int) old('domain_id') === (int) $domain->domain_id)>{{ $domain->domain_name }}</option>
@@ -59,7 +59,7 @@
                 @if ($scoringGroups->count() > 1)
                     <div>
                         <label for="scoring_group_id" class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Which score should this contribute to?</label>
-                        <select id="scoring_group_id" name="scoring_group_id" class="mt-1.5 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                        <select id="scoring_group_id" name="scoring_group_id" class="mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                             @foreach ($scoringGroups as $group)
                                 <option value="{{ $group->sub_index_id }}" @selected((int) old('scoring_group_id', $placement->sub_index_id) === (int) $group->sub_index_id)>{{ $group->full_name }}</option>
                             @endforeach
@@ -107,7 +107,7 @@
                                         <span class="text-sm text-slate-700 dark:text-slate-200">{{ $option['option_label'] }}</span>
                                         <input type="number" min="0" max="100" step="1" name="points[{{ $option['option_order'] }}]"
                                                value="{{ old('points.'.$option['option_order'], $optionRules->get($option['option_order'])['score'] ?? $option['score_weight'] ?? '') }}" placeholder="Points"
-                                               class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                               class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                         <label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                                             <input type="checkbox" name="critical[{{ $option['option_order'] }}]" value="1"
                                                    @checked(old('critical.'.$option['option_order'], $optionRules->get($option['option_order'])['critical_failure'] ?? $option['critical_failure'] ?? false))
@@ -133,13 +133,13 @@
                                 @php $band = old('bands.'.$i, ($numericRuleBands[$i] ?? null)); @endphp
                                 <div class="grid gap-2 sm:grid-cols-4">
                                     <input name="bands[{{ $i }}][min]" value="{{ $band['min'] ?? $band['min_value'] ?? '' }}" type="number" step="any" placeholder="From"
-                                           class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                           class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                     <input name="bands[{{ $i }}][max]" value="{{ $band['max'] ?? $band['max_value'] ?? '' }}" type="number" step="any" placeholder="To"
-                                           class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                           class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                     <input name="bands[{{ $i }}][points]" value="{{ $band['points'] ?? $band['score_weight'] ?? '' }}" type="number" min="0" max="100" placeholder="Points"
-                                           class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                           class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                     <input name="bands[{{ $i }}][label]" value="{{ $band['label'] ?? '' }}" maxlength="60" placeholder="Label (optional)"
-                                           class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                                           class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                                 </div>
                             @endfor
                         </div>
@@ -163,7 +163,7 @@
             <div x-show="evidence === 'note'" x-cloak class="mt-3">
                 <input name="evidence_prompt" value="{{ old('evidence_prompt', $placement->evidence_expectation) }}" maxlength="500"
                        placeholder="What should they describe? e.g. Name the register you checked."
-                       class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+                       class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     Respondents are shown this prompt with the answer. A note is requested, not required to finish the assessment.
                 </p>

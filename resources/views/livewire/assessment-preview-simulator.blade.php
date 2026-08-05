@@ -44,9 +44,9 @@
                             <button type="button" wire:click="selectOption('{{ $question['question_id'] }}', {{ $option['option_id'] }})" class="w-full rounded-xl border px-3 py-2 text-left text-sm {{ $selected ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-slate-200 text-slate-700 dark:border-slate-700 dark:text-slate-200' }}">{{ $option['option_label'] }}</button>
                         @endforeach
                     @elseif (($question['response_type'] ?? null) === 'NUMERIC')
-                        <input type="number" step="any" value="{{ $answer['number'] ?? '' }}" wire:change="setNumeric('{{ $question['question_id'] }}', $event.target.value)" placeholder="Enter a number" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900">
+                        <input type="number" step="any" value="{{ $answer['number'] ?? '' }}" wire:change="setNumeric('{{ $question['question_id'] }}', $event.target.value)" placeholder="Enter a number" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
                     @else
-                        <textarea rows="3" wire:change="setText('{{ $question['question_id'] }}', $event.target.value)" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900" placeholder="Type a test answer">{{ $answer['text'] ?? '' }}</textarea>
+                        <textarea rows="3" wire:change="setText('{{ $question['question_id'] }}', $event.target.value)" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white" placeholder="Type a test answer">{{ $answer['text'] ?? '' }}</textarea>
                     @endif
                 </div>
                 <details class="mt-3 border-t border-slate-100 pt-3 dark:border-slate-700">

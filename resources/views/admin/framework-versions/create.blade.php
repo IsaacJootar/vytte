@@ -9,38 +9,38 @@
         @csrf
         <div class="grid gap-4 md:grid-cols-2">
             <label class="text-sm font-semibold text-slate-700 dark:text-slate-200">Department / scope
-                <select name="module_id" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <select name="module_id" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
                     @foreach ($modules as $module)
                         <option value="{{ $module->module_id }}">{{ $module->module_name }}</option>
                     @endforeach
                 </select>
             </label>
             <label class="text-sm font-semibold text-slate-700 dark:text-slate-200">Framework type
-                <select name="framework_type" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <select name="framework_type" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
                     <option value="DEPARTMENT">Department</option>
                     <option value="FOCUSED">Focused assessment</option>
                 </select>
             </label>
         </div>
         <label class="mt-4 block text-sm font-semibold text-slate-700 dark:text-slate-200">Display name
-            <input name="display_name" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+            <input name="display_name" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
         </label>
         <label class="mt-4 block text-sm font-semibold text-slate-700 dark:text-slate-200">Description
-            <textarea name="description" rows="2" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+            <textarea name="description" rows="2" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"></textarea>
         </label>
         <label class="mt-4 block text-sm font-semibold text-slate-700 dark:text-slate-200">Purpose
-            <textarea name="purpose" rows="2" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"></textarea>
+            <textarea name="purpose" rows="2" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"></textarea>
         </label>
         <div class="mt-4 grid gap-4 md:grid-cols-2">
             <label class="text-sm font-semibold text-slate-700 dark:text-slate-200">Source authority
-                <input name="source_authority" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <input name="source_authority" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
             </label>
             <label class="text-sm font-semibold text-slate-700 dark:text-slate-200">License code
-                <input name="license_code" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white" required>
+                <input name="license_code" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white" required>
             </label>
         </div>
         <label class="mt-4 block text-sm font-semibold text-slate-700 dark:text-slate-200">Source URL
-            <input name="source_url" type="url" class="mt-1 w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+            <input name="source_url" type="url" class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
         </label>
         <div class="mt-5 flex justify-end">
             <button class="rounded-xl bg-vytte-700 px-5 py-2 text-sm font-bold text-white">Create draft</button>

@@ -1,6 +1,7 @@
 <x-admin-layout title="Question Library">
     <div class="mb-5">
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">Question Library</h1>
+        <a href="{{ route('admin.assessments.index') }}" class="text-sm text-slate-500 hover:underline dark:text-slate-400">← Back to assessments</a>
+        <h1 class="mt-2 text-xl font-bold text-slate-900 dark:text-white">Question Library</h1>
         <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
             Official questions you can reuse across assessments. Wording is locked once approved.
         </p>

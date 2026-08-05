@@ -284,7 +284,7 @@
                                     <form method="POST" action="{{ route('assessments.type', $a) }}">
                                         @csrf @method('PATCH')
                                         <select name="assessment_type" onchange="this.form.submit()"
-                                                class="text-xs rounded-lg border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 py-1">
+                                                class="text-xs rounded-lg border border-slate-200 bg-white text-slate-700 px-2 py-1 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">
                                             <option value="" @selected(! $a->assessment_type)>—</option>
                                             @foreach (\App\Models\Assessment::TYPES as $type)
                                                 <option value="{{ $type }}" @selected($a->assessment_type === $type)>{{ ucfirst(strtolower($type)) }}</option>

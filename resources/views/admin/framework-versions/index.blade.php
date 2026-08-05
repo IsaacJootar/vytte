@@ -7,12 +7,12 @@
         <a href="{{ route('admin.framework-versions.create') }}" class="rounded-xl bg-vytte-700 px-4 py-2 text-sm font-bold text-white">New framework</a>
     </div>
     <form method="GET" class="mb-4 flex flex-wrap gap-3 section-card p-4 dark:border-slate-700 dark:bg-slate-800">
-        <select name="framework_type" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+        <select name="framework_type" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             <option value="">All types</option>
             <option value="DEPARTMENT" @selected(request('framework_type') === 'DEPARTMENT')>Department</option>
             <option value="FOCUSED" @selected(request('framework_type') === 'FOCUSED')>Focused</option>
         </select>
-        <select name="status" class="rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
+        <select name="status" class="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
             <option value="">All status</option>
             @foreach (['DRAFT', 'PUBLISHED', 'SUPERSEDED', 'ARCHIVED'] as $status)
                 <option value="{{ $status }}" @selected(request('status') === $status)>{{ $status }}</option>

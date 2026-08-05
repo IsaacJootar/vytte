@@ -23,19 +23,34 @@
                         ])>{{ str($publisher->verification_status)->replace('_', ' ')->title() }}</span>
                     </summary>
 
+                    @php($fieldClasses = 'mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white')
                     <form method="POST" action="{{ route('admin.publishers.update', $publisher) }}" class="mt-5 grid gap-3 border-t border-slate-200 pt-5 dark:border-slate-700 sm:grid-cols-2">
                         @csrf @method('PUT')
-                        <input name="publisher_code" value="{{ $publisher->publisher_code }}" required maxlength="80" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                        <input name="name" value="{{ $publisher->name }}" required maxlength="180" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                        <select name="publisher_type" required class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                            @foreach ($types as $value => $label)<option value="{{ $value }}" @selected($publisher->publisher_type === $value)>{{ $label }}</option>@endforeach
-                        </select>
-                        <select name="visibility" required class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                            @foreach ($visibilities as $value => $label)<option value="{{ $value }}" @selected($publisher->visibility === $value)>{{ $label }}</option>@endforeach
-                        </select>
-                        <input name="website_url" value="{{ $publisher->website_url }}" type="url" placeholder="Website (optional)" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                        <input name="contact_email" value="{{ $publisher->contact_email }}" type="email" placeholder="Contact email (optional)" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                        <textarea name="attribution" rows="2" placeholder="Attribution statement" class="rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white sm:col-span-2">{{ $publisher->attribution }}</textarea>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Publisher code
+                            <input name="publisher_code" value="{{ $publisher->publisher_code }}" required maxlength="80" class="{{ $fieldClasses }}">
+                        </label>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Name
+                            <input name="name" value="{{ $publisher->name }}" required maxlength="180" class="{{ $fieldClasses }}">
+                        </label>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Publisher type
+                            <select name="publisher_type" required class="{{ $fieldClasses }}">
+                                @foreach ($types as $value => $label)<option value="{{ $value }}" @selected($publisher->publisher_type === $value)>{{ $label }}</option>@endforeach
+                            </select>
+                        </label>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Visibility
+                            <select name="visibility" required class="{{ $fieldClasses }}">
+                                @foreach ($visibilities as $value => $label)<option value="{{ $value }}" @selected($publisher->visibility === $value)>{{ $label }}</option>@endforeach
+                            </select>
+                        </label>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Website <span class="font-normal text-slate-400">(optional)</span>
+                            <input name="website_url" value="{{ $publisher->website_url }}" type="url" class="{{ $fieldClasses }}">
+                        </label>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300">Contact email <span class="font-normal text-slate-400">(optional)</span>
+                            <input name="contact_email" value="{{ $publisher->contact_email }}" type="email" class="{{ $fieldClasses }}">
+                        </label>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 sm:col-span-2">Attribution statement
+                            <textarea name="attribution" rows="2" class="{{ $fieldClasses }}">{{ $publisher->attribution }}</textarea>
+                        </label>
                         <div class="flex flex-wrap gap-2 sm:col-span-2">
                             <button class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">Save details</button>
                         </div>
@@ -55,16 +70,30 @@
             {{ $publishers->links() }}
         </div>
 
-        <form method="POST" action="{{ route('admin.publishers.store') }}" class="section-card h-fit space-y-3 p-5 dark:border-slate-700 dark:bg-slate-800">
+        <form method="POST" action="{{ route('admin.publishers.store') }}" class="section-card h-fit space-y-4 p-5 dark:border-slate-700 dark:bg-slate-800">
             @csrf
             <h2 class="font-bold text-slate-900 dark:text-white">Add publisher</h2>
-            <input name="publisher_code" value="{{ old('publisher_code') }}" required maxlength="80" placeholder="Short code, e.g. MOH-NG" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-            <input name="name" value="{{ old('name') }}" required maxlength="180" placeholder="Publisher name" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-            <select name="publisher_type" required class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white"><option value="">Publisher type</option>@foreach ($types as $value => $label)<option value="{{ $value }}" @selected(old('publisher_type') === $value)>{{ $label }}</option>@endforeach</select>
-            <select name="visibility" required class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">@foreach ($visibilities as $value => $label)<option value="{{ $value }}" @selected(old('visibility', 'PUBLIC') === $value)>{{ $label }}</option>@endforeach</select>
-            <input name="website_url" value="{{ old('website_url') }}" type="url" placeholder="Website (optional)" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-            <input name="contact_email" value="{{ old('contact_email') }}" type="email" placeholder="Contact email (optional)" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-            <textarea name="attribution" rows="2" placeholder="Attribution statement (optional)" class="w-full rounded-xl border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-white">{{ old('attribution') }}</textarea>
+            <x-form-field label="Publisher code" name="publisher_code">
+                <x-text-input id="publisher_code" name="publisher_code" type="text" class="block w-full" :value="old('publisher_code')" required maxlength="80" placeholder="Short code, e.g. MOH-NG" />
+            </x-form-field>
+            <x-form-field label="Publisher name" name="name">
+                <x-text-input id="name" name="name" type="text" class="block w-full" :value="old('name')" required maxlength="180" placeholder="Publisher name" />
+            </x-form-field>
+            <x-form-field label="Publisher type" name="publisher_type">
+                <select id="publisher_type" name="publisher_type" required class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"><option value="">Choose a type</option>@foreach ($types as $value => $label)<option value="{{ $value }}" @selected(old('publisher_type') === $value)>{{ $label }}</option>@endforeach</select>
+            </x-form-field>
+            <x-form-field label="Visibility" name="visibility">
+                <select id="visibility" name="visibility" required class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">@foreach ($visibilities as $value => $label)<option value="{{ $value }}" @selected(old('visibility', 'PUBLIC') === $value)>{{ $label }}</option>@endforeach</select>
+            </x-form-field>
+            <x-form-field label="Website" name="website_url" optional>
+                <x-text-input id="website_url" name="website_url" type="url" class="block w-full" :value="old('website_url')" placeholder="https://" />
+            </x-form-field>
+            <x-form-field label="Contact email" name="contact_email" optional>
+                <x-text-input id="contact_email" name="contact_email" type="email" class="block w-full" :value="old('contact_email')" />
+            </x-form-field>
+            <x-form-field label="Attribution statement" name="attribution" optional>
+                <textarea id="attribution" name="attribution" rows="2" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white">{{ old('attribution') }}</textarea>
+            </x-form-field>
             <button class="w-full rounded-xl bg-vytte-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-vytte-700">Create unverified publisher</button>
         </form>
     </div>
