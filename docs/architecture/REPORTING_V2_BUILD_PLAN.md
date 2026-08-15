@@ -1,6 +1,7 @@
 # Reporting Module v2 — Approved Build Plan
 
-Status: **approved**, in build. This document is authoritative — the app must tally with it.
+Status: **implemented baseline; retained as the approved reporting contract.** Explicitly deferred
+items remain identified below; current runtime authority is `CURRENT_ARCHITECTURE.md`.
 It upgrades the R1–R8 reporting skeleton into a deep reasoning engine, streamlining the
 original vision where it was oversized without dropping its intent.
 

@@ -1,51 +1,83 @@
 # Vytte Lifecycle State Machine
 
-## Assessment Execution
+## Assessment lifecycle has separate axes
+
+An assessment has an immutable content snapshot at creation, but its operational lifecycle uses
+separate execution, publication, and collection-window fields.
+
+### Execution state (`assessments.status`)
 
 | State | Meaning | Allowed next state |
 |---|---|---|
-| `IN_PROGRESS` | The assessment can accept authorized responses. | `COMPLETE` |
-| `COMPLETE` | Required responses were validated, scoring ran, and the immutable final report was captured. | None |
+| `IN_PROGRESS` | Setup, collection, or self-completion is not finally scored. | `COMPLETE` |
+| `COMPLETE` | Required responses were validated, scoring ran, and the immutable report was captured. | None |
 
-`COMPLETE` is the database value. "Completed" is the UI label.
+Completion is terminal. A correction requires a future approved correction/version contract; a
+completed assessment is never reopened or silently recalculated.
 
-Completion is terminal. Reopening, correction versions, cancellation, and archival require a future approved lifecycle design.
+### Publication state (`assessments.publish_status`)
 
-## Assessment Area Execution
+| State | Meaning | Allowed next state |
+|---|---|---|
+| `DRAFT` | Setup remains private to authorized workspace users. | `PUBLISHED` |
+| `PUBLISHED` | Setup is locked and governed collection may begin. | None |
 
-Rows in `assessment_module_scope` use:
+### Collection window (`closed_at`)
+
+A published, incomplete assessment collects only while `closed_at` is null. An OWNER or ADMIN may
+close the window before finalization and may reopen that window while the assessment remains
+incomplete. Closing is not completion and does not calculate a result.
+
+## Assessment area execution
 
 | State | Meaning |
 |---|---|
-| `PENDING` | Included department or assessment area awaiting completion of the parent assessment. |
-| `COMPLETED` | Included department or assessment area completed with the parent assessment. |
-| `EXCLUDED` | Department or assessment area intentionally excluded during composition with a reason where required. |
+| `PENDING` | Included department or area awaiting parent completion. |
+| `COMPLETED` | Included department or area completed with the parent assessment. |
+| `EXCLUDED` | Area intentionally excluded during composition, with a reason where required. |
 
-## Department Framework Publication
+## Question version lifecycle
 
-| State | Meaning | Allowed next state |
-|---|---|---|
-| `DRAFT` | Mutable Vytte Platform Admin working version. | `PUBLISHED` |
-| `PUBLISHED` | Immutable official department framework version. | None |
+`DRAFT -> INTERNAL_REVIEW -> APPROVED -> PUBLISHED -> SUPERSEDED or ARCHIVED`
 
-Published department framework versions cannot be edited or deleted.
+Draft, internal-review, and approved versions remain mutable only within their authorized workflow.
+Published, superseded, and archived question versions are immutable. Supersession clones a successor
+draft and preserves the predecessor.
 
-## Facility Profile Publication
+## Framework version lifecycle
 
-| State | Meaning | Allowed next state |
-|---|---|---|
-| `DRAFT` | Mutable platform profile. | `PUBLISHED` |
-| `PUBLISHED` | Official profile available for catalogue releases and project creation. | None in the current implementation |
+`DRAFT -> PUBLISHED -> SUPERSEDED or ARCHIVED`
 
-## Catalogue Release Publication
+Published, superseded, and archived framework versions are immutable. Corrections require a successor.
 
-| State | Meaning | Allowed next state |
-|---|---|---|
-| `DRAFT` | Mutable catalogue release under curation. | `PUBLISHED` |
-| `PUBLISHED` | Immutable release available for assessment creation. | None |
+## Catalogue release lifecycle
 
-Published catalogue releases cannot be edited. Corrections require a new release.
+`DRAFT -> PUBLISHED -> SUPERSEDED or ARCHIVED`
 
-## Report Finalization
+Published releases pin exact framework versions and cannot be edited. Supersession preserves every
+assessment that already points at the predecessor.
 
-A completed assessment has one immutable final report snapshot. Report routes, exports, share links, dashboards, and analytics read that same report architecture.
+## Facility profile lifecycle
+
+`DRAFT -> PUBLISHED`
+
+Published profiles are official reference content. Changes affect future composition only and never
+rewrite an existing assessment snapshot.
+
+## Independent trust review lifecycle
+
+`ASSIGNED -> SUBMITTED -> APPROVED or CHANGES_REQUESTED`
+
+The assigned reviewer submits evidence and a recommendation. A different Platform Admin makes the
+decision. `CHANGES_REQUESTED` is not an approval and returns work for further evidence.
+
+## Contribution lifecycle
+
+A workspace contribution remains tenant-private through submission and review. Acceptance does not
+publish it. Promotion creates a private, unscored draft question version which then enters the normal
+question/framework/scoring/publication lifecycle.
+
+## Report finalization
+
+A completed assessment has one immutable final report snapshot. Results, exports, shares, dashboards,
+actions, and analytics read that report contract rather than reconstructing facts from mutable content.

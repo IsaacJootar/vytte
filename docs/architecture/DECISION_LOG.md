@@ -5,15 +5,15 @@
 ### DEC-2026-07-18-001: Platform-Governed Assessment Composition
 
 - **Status:** Accepted and implemented.
-- **Decision:** Vytte owns official departments, department framework versions, facility profiles, catalogue releases, scoring methodology, aggregation policy, publication, versioning, and provenance.
+- **Decision:** Accountable publishers own content purpose and methodology claims. Vytte governs departments, versions, profiles, catalogue composition, validation, declared scoring contracts, publication, provenance, audit, reproducibility, and comparison eligibility. DEC-2026-08-03-042 supersedes the earlier universal-ownership wording.
 - **Comprehensive Health Assessment:** implemented as a composition orchestrator. It resolves a facility profile, loads a published catalogue release, applies required/default/optional department policy, and freezes one immutable assessment snapshot.
 - **Focused Health Assessment:** implemented as a single-scope catalogue release for one health domain, programme, topic, or intervention.
 - **Catalogue rule:** the system must never resolve "latest framework version" at assessment creation time. A published catalogue release pins exact framework version IDs and hashes.
 - **Snapshot rule:** every assessment freezes content, manifest, policy, collection config, scoring version, hashes, and exclusions.
-- **Workspace rule:** workspaces consume approved Vytte content. They cannot publish official departments, official frameworks, official scoring, or official catalogue releases.
-- **Local customization rule:** workspace-local custom sections may capture local context but cannot alter official content and never affect official scoring.
+- **Workspace rule:** workspaces consume published content and may contribute private candidates. Public catalogue publication remains governed and cannot be claimed merely by submitting content.
+- **Local customization rule:** workspace-local custom sections may capture local context and eligible configured items may produce a separate optional local score; they cannot alter published content, its score, or its benchmark.
 - **Reporting rule:** all use cases share the ordinary Vytte scoring and reporting architecture. No separate community, respondent, or local-section reporting subsystem exists.
-- **Dataset rule:** current seeded catalogue content is demonstration-only and not production clinical methodology.
+- **Dataset rule:** production uses the official source-informed beta library; demonstration catalogue and account seeders are test-only. Independent review claims still require real evidence-backed records.
 
 ## Supporting Decisions
 
@@ -44,7 +44,7 @@
 
 - **Status:** Accepted and implemented.
 - **Decision:** Official content may publish only response types with working UI, storage, validation, completeness, snapshot, reporting, and scoring or explicit unscored behavior.
-- **Current publishable types:** scalar option, Likert, open text when unscored, and numeric with valid configuration.
+- **Current publishable types:** `SINGLE_SELECT`, `MULTI_SELECT`, `LIKERT`, unscored `OPEN_ENDED`, and `NUMERIC`; scored numeric items require frozen bands.
 
 ### DEC-2026-07-18-007: Terminal Assessment Completion
 
@@ -54,9 +54,9 @@
 
 ### DEC-2026-07-18-008: Demonstration Dataset
 
-- **Status:** Accepted and implemented.
-- **Decision:** Use a small labelled demonstration dataset to prove the architecture rather than inventing production clinical methodology.
-- **Boundary:** production content requires governed source, licence, review, scoring, and publication.
+- **Status:** Superseded for production by the official master seed; retained for automated test fixtures.
+- **Decision:** The original small labelled dataset proved the architecture without pretending to be production methodology.
+- **Current boundary:** `DatabaseSeeder` contains the official source-informed beta library. Demonstration seeders may run only through the test baseline or an explicitly requested demo environment.
 
 ### DEC-2026-07-18-009: Platform Admin UI and Demo Account Boundary
 
@@ -318,7 +318,7 @@
 
 ### DEC-2026-08-03-042: Vytte Governs Integrity Rather Than Claiming Universal Content Authority
 
-- **Status:** Accepted; implementation in progress.
+- **Status:** Accepted and implemented.
 - **Context:** The original composition architecture treated all official content as owned by Vytte. That is too narrow for credible instruments published by standards bodies, governments, hospitals, programmes, researchers, and experts.
 - **Decision:** The instrument publisher owns the content purpose, methodology, and scoring claim. Vytte governs publisher identity, provenance, review state, technical validation, immutable versions, audit, reproducibility, and comparison eligibility. “Vytte curated” describes completed governance checks and does not claim authorship of external guidance.
 - **Consequence:** Publisher identity and independent trust signals become first-class governed metadata. Workspaces may publish within declared visibility and review limits; public or curated distribution requires stronger review.
@@ -326,7 +326,7 @@
 
 ### DEC-2026-08-03-043: Question Origin Does Not Define Its Scoring Lane
 
-- **Status:** Accepted; implementation in progress.
+- **Status:** Accepted and implemented for governed instrument versions; ad-hoc local extensions remain separate.
 - **Context:** DEC-037 and DEC-041 protected benchmarks by forcing tailored questions into a separate score. That preserves comparison but incorrectly couples content origin to scoring purpose.
 - **Decision:** Any question may contribute to an instrument's primary score when the accountable publisher deliberately includes it in a complete immutable scoring model. Content origin is disclosed separately. A common-core score contains only approved shared anchors and remains the comparison surface when a primary instrument is customized.
 - **Historical boundary:** Existing assessment snapshots and reports keep their frozen official and tailored lanes. They are not recalculated or relabelled.
@@ -334,7 +334,7 @@
 
 ### DEC-2026-08-03-044: Question Semantics And Scoring Interpretation Are Separately Versioned
 
-- **Status:** Accepted; implementation in progress.
+- **Status:** Accepted and implemented with legacy dual-read compatibility.
 - **Decision:** A question version defines wording, response semantics, options, validation, applicability, evidence guidance, source, and translations. A separately versioned scoring model defines item values, numeric bands, weights, denominators, critical behavior, aggregation, calibration, and score purpose. An instrument version pins both.
 - **Rationale:** The same question can legitimately be unscored, weighted, critical, or contextual in different instruments without changing what it means.
 - **Compatibility:** Published legacy payloads continue to score from embedded option weights and numeric bands. New scoring models reproduce that behavior before new instruments adopt separated rules.
@@ -347,7 +347,7 @@
 
 ### DEC-2026-08-03-046: AI Assists Inside A Human Publication Boundary
 
-- **Status:** Accepted; implementation in progress.
+- **Status:** Accepted and implemented for deterministic lint, advisory assistance, and frozen-finding narratives; bounded ecosystem extensions remain deferred.
 - **Decision:** AI may extract, draft, lint, map, translate, simulate, analyse field-test behavior, and explain frozen findings. AI cannot approve or publish, invent provenance, mutate historical results, or create arbitrary live scored questions. Adaptive delivery may select only from an approved versioned item pool under a frozen policy.
 - **Evidence rule:** AI report statements and recommendations must identify the frozen response, score, evidence, or trend that supports them.
 

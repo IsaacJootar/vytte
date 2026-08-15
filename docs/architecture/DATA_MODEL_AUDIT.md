@@ -38,11 +38,15 @@ The migration set is the schema source of truth. Current active assessment archi
 
 `scoring_models` provides stable scoring identities. `scoring_model_versions` freezes score purpose, construct, direction, missing policy, aggregation, algorithm, and content hash. `scoring_item_rules` binds instrument-specific scoring interpretations to exact framework placements and question versions. Frameworks, new snapshots, and new report snapshots pin the applicable version; comprehensive manifests may contain several pinned scoring models.
 
+### Methodology starting points
+
+`assessment_templates` is an active methodology-layer table. It stores official starting points used
+to guide assessment design (`ENTERPRISE` or `FOCUSED` breadth); it is not the removed legacy runtime
+template architecture and assessments do not execute from it.
+
 ### Reserved Tables
 
 Respondent records, topic scope, legacy multi-option response storage, observation records, topic/project score rollups, root-cause rows, recommendation rules, and recommendation rows are present but not current product authority. Active multi-select answers use the typed response envelope, not the reserved legacy table.
-
-The earlier assessment template tables are no longer present. They were dropped with the legacy template architecture and no code references them.
 
 Reserved means present in the schema but not the authority for current assessment creation.
 
@@ -75,7 +79,10 @@ An assessment snapshot is the runtime authority. Master content, future framewor
 
 ## Local Custom Sections
 
-`local_custom_sections` captures workspace-specific context. These rows are tenant-owned and assessment-bound. They do not enter official scoring and cannot mutate platform content.
+`local_custom_sections` captures workspace-specific context. These rows are tenant-owned and
+assessment-bound. They cannot mutate platform content or the published score. Eligible Yes/No,
+Yes/No/Not applicable, and 1-5 rating questions may contribute to a separately labelled optional
+local score; all other local formats remain contextual and unscored.
 
 ## Integrity Findings
 
@@ -91,14 +98,18 @@ An assessment snapshot is the runtime authority. Master content, future framewor
 - Framework sections carry delivery guidance; placement applicability is a frozen, acyclic response-rule contract shared by rendering, completeness, and scoring.
 - Question semantics and instrument scoring interpretation are separately versioned for new governed content.
 - New assessment snapshots carry a deterministic comparison signature.
-- The default seed is repository-contained and includes demonstration governed content only.
+- The production `DatabaseSeeder` is repository-contained and includes the official beta library only.
+  Demonstration accounts and catalogue fixtures are isolated to `TestBaselineSeeder`.
 
-## Current Counts
+## Current Official Seed Baseline
 
-Counts are not architecture contracts. They describe only the current development seed and may change as governed content is curated.
+The production seed currently publishes 388 question identities and versions, 57 framework versions,
+36 active catalogue releases (41 including superseded history), 46 departments, and 40 methodology
+starting points. Counts are release metadata rather than permanent architecture contracts.
 
 ## Release Gates
 
 - PostgreSQL migration and concurrency parity.
 - Advanced Platform Admin dependency graph and version comparison views.
-- Production clinical content curation with source, licence, scoring, and review metadata.
+- Independent evidence-backed review records for official content; publisher assignment alone is not a review claim.
+- Production queue, scheduler, backup, monitoring, and restore verification.

@@ -1,33 +1,68 @@
 # Operations Readiness
 
-## Overall status
+## Current production contract
 
-Operational readiness is incomplete for production.
+Vytte runs at `https://klickitsystems.com/vytte` under the `klickit` account with PHP 8.3 and
+PostgreSQL 17 on `127.0.0.1:5433`. PostgreSQL 10 on port 5432 belongs to other applications and must
+never be changed by Vytte deployment or backup operations.
 
-## Current operational capabilities
+The production release must provide:
 
-- PostgreSQL is the database authority.
-- Database queue driver is configured.
-- Health endpoints exist: Laravel's `/up` and the application's `/health` JSON endpoint.
-- `php artisan vytte:preflight` validates environment, key, URL, database, queue, mail, and filesystem configuration.
-- Audit logs exist.
-- Notifications exist.
-- Mail can use Resend.
-- Plan settings and feature flags are configurable.
-- Payment webhooks exist for Paystack and Flutterwave.
+- cached configuration, events, routes, and views;
+- database-backed queue processing under a Vytte-only supervised service;
+- Laravel scheduling once per minute under a Vytte-only timer;
+- a daily Vytte-only database/application backup with retention;
+- `/up` and `/health` monitoring;
+- failed-job, backup-age, disk, certificate, and application-error checks;
+- secure response headers and HTTPS-only production cookies;
+- a fresh backup before every deployment.
 
-## Findings
+## Vytte-only service names
 
-| Severity | Finding | Evidence | Recommendation |
-| --- | --- | --- | --- |
-| MEDIUM | Production environment validation is partial. | `php artisan vytte:preflight` checks that environment, key, URL, database, queue, mail, and filesystem are configured, but does not assert production-specific values such as `APP_ENV=production`, `APP_DEBUG=false`, a real `APP_URL`, or payment keys. | Extend the preflight command to assert production values, and add a deployment checklist. |
-| HIGH | Backups are not defined. | No backup runbook or automated backup integration is present. | Define PostgreSQL backup/restore and storage backup procedures. |
-| HIGH | Queue worker supervision is not documented. | Queue is database-backed, but no worker/supervisor runbook exists. | Add worker process, retry, failed-job, and alerting instructions. |
-| HIGH | Monitoring/alerting hooks are incomplete. | `/up` exists, but no monitoring provider, uptime alert, queue alert, failed-job alert, or log alert is documented. | Add monitoring and incident runbooks. |
-| MEDIUM | File storage production policy is not finalized. | Default disk is local/private; evidence upload is absent. | Decide local vs S3-compatible storage before file uploads. |
-| MEDIUM | Error handling is mostly framework-default. | Laravel defaults exist. | Add production error reporting target and incident triage process. |
-| LOW | Maintenance mode uses default settings. | Laravel maintenance mode exists. | Document maintenance procedure for releases. |
+The repository deployment templates define:
 
-## Production go/no-go
+- `vytte-queue.service`
+- `vytte-scheduler.service` and `vytte-scheduler.timer`
+- `vytte-backup.service` and `vytte-backup.timer`
 
-Operations are not ready for production until deployment, backup, monitoring, queue, mail, logging, and incident-response procedures are implemented and rehearsed.
+Every unit runs only `/home/klickit/vytte` as user `klickit` with cPanel PHP 8.3. These units must not
+restart, reconfigure, or inspect the queues, databases, or files of other hosted projects.
+
+## Backup and restore rule
+
+Daily backups are stored below `/home/klickit/backups` with a UTC timestamp. A backup is complete only
+when it contains a PostgreSQL custom-format dump, application metadata, and a manifest. Retention may
+delete only timestamped Vytte backups created by the Vytte backup script and older than the configured
+retention period.
+
+A restore drill must use a separate temporary database and path. Never restore over production to
+“test” a backup. Record the drill date, dump verification, migration status, and application boot check.
+
+## Deployment procedure
+
+1. Verify GitHub commit, local full sequential suite, Pint, Blade compilation, official seed checks,
+   and frontend build.
+2. Create and verify a fresh Vytte backup.
+3. Enter maintenance mode.
+4. Fast-forward `master`; never reset or overwrite production changes blindly.
+5. Install locked production dependencies and build locked frontend dependencies.
+6. Run migrations with `--force` using PHP 8.3 and PostgreSQL 17.
+7. Rebuild Laravel caches, restart only `vytte-queue.service`, and leave maintenance mode.
+8. Verify commit, migrations, health, login, assets, security headers, queue, scheduler, backup timer,
+   and recent logs.
+
+## Incident minimum
+
+- Application unhealthy: enter maintenance mode, preserve logs, and roll back only to the verified
+  previous commit and compatible database state.
+- Queue failure: stop only `vytte-queue.service`, inspect `failed_jobs`, correct the cause, then retry
+  selected jobs deliberately.
+- Database failure: do not initialize, drop, or restore anything until the exact port and database are
+  confirmed as PostgreSQL 17 `vytte`.
+- Suspected data exposure: revoke affected tokens/links, preserve audit records, and notify the product
+  owner before destructive cleanup.
+
+## External evidence still required
+
+Code and service installation do not prove ongoing readiness. Public launch still requires an uptime
+alert destination, an error-reporting destination, a named incident owner, and a recorded restore drill.

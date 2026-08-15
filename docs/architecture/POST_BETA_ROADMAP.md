@@ -1,11 +1,18 @@
 # Post-Beta Roadmap
 
-## Milestone 1: Complete governed content operations
+## Completed foundations
 
-- Question version editing for options, numeric bands, review metadata, and archival.
-- Framework supersession workflows.
-- Catalogue release supersession and archival workflows.
-- Dependency checks before archiving or superseding content.
+- Question version editing, scoring configuration, review metadata, supersession, and archival.
+- Framework and catalogue creation, composition, publication, supersession, and archival.
+- Governed contribution promotion and independent-review separation.
+- Deterministic branching, simulation, unified reports, actions, progress, and comparison guards.
+
+## Milestone 1: Operational and governance evidence
+
+- Independent clinical/methodology/scoring review of launch instruments.
+- Jurisdiction-specific adaptations as governed successor versions.
+- Monitoring-provider integration and recurring backup restore drills.
+- Plan-to-content entitlement only if differentiated catalogue access is approved.
 
 ## Milestone 2: Billing integration
 
@@ -17,7 +24,6 @@
 
 ## Milestone 3: Advanced admin experience
 
-- Rich framework designer.
 - Dependency graph visualization.
 - Version comparison UI.
 - Bulk editing tools.
@@ -31,7 +37,7 @@
 
 ## Milestone 5: Intelligence and scale
 
-- AI-assisted framework authoring.
-- AI-assisted recommendations.
-- Benchmark intelligence.
-- Advanced reporting and dashboards.
+- Governed document extraction and drafting beyond the existing advisory lint boundary.
+- Field-test analytics and approved adaptive item pools after sufficient governed data exists.
+- Crosswalk-approved benchmarking between methodologies.
+- Geographic and predictive analysis only when the required data and validation exist.

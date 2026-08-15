@@ -91,10 +91,12 @@ The authenticated runner:
 
 1. Verifies workspace authorization.
 2. Loads questions from `assessment_snapshots.payload`.
-3. Supports option, open-text, and numeric inputs.
-4. Stores optional supporting evidence on the exact response as `responses.evidence_note`.
-5. Autosaves responses.
-6. Rejects writes when the question or option is not in the frozen snapshot.
+3. Supports single-select, multi-select, Likert/rating, explicitly unscored open text, and numeric inputs.
+4. Preserves explicit response states such as not applicable, unknown, not assessed, not observed, and declined.
+5. Applies frozen, earlier-answer branching consistently across rendering, completeness, and scoring.
+6. Stores optional supporting evidence on the exact response as `responses.evidence_note`.
+7. Autosaves responses.
+8. Rejects writes when the question or option is not in the frozen snapshot.
 
 Evidence is context support. It is not a separate workflow.
 
@@ -157,6 +159,12 @@ The final report snapshot preserves:
 - completion and report timestamps;
 - reproducibility hash.
 
+It may also freeze primary, common-core, context/needs, qualitative, critical, coverage, limitation,
+issue-tracking, action, and comparison views. Presentation lenses never rewrite these facts.
+
 ## Current Boundary
 
-The default governed dataset is demonstration content. It proves the architecture, not production clinical methodology.
+The default production seed is the governed official beta library described in
+`OFFICIAL_SEED_REPORT.md`. It is source-informed and product-owner approved, but it is not a claim of
+universal clinical authority. Jurisdiction-specific regulation and independent clinical review must
+produce governed successor versions where stronger evidence or local adaptation is required.

@@ -115,7 +115,7 @@ that needs a different seed. The freshly seeded official database is verified se
 ## Validation
 
 - `methodology:validate` — every entity reachable, every reference resolves, no orphans.
-- Full PostgreSQL suite — 692 tests, 692 passed (2,423 assertions).
+- Full sequential PostgreSQL suite — passing in the 2026-08-15 release audit. Exact counts are recorded in `TEST_COVERAGE_REVIEW.md` because the suite grows with each module.
 - Fresh `migrate:fresh --seed` — clean official state, verified by the counts above.
 
 ## Remaining gaps and post-seed backlog

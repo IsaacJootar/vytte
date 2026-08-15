@@ -95,20 +95,14 @@ The runner and reports use immutable assessment snapshots. Response rows remain 
 - section and indicator metadata;
 - scoring profile and weights.
 
-## Demonstration content
+## Official beta content
 
-The demonstration dataset proves:
+The production seed currently contains 388 reusable question identities and immutable versions,
+57 published framework versions, and 926 framework placements. Questions are reused across
+comprehensive, focused, and department frameworks; framework-specific placements freeze wording,
+requiredness, evidence, scoring role, weight, criticality, domain routing, and branching.
 
-- 16 reusable question identities;
-- 17 published question versions;
-- one later published question version not used by existing published frameworks;
-- 5 published official framework versions;
-- 20 framework placements;
-- one reusable question version placed in more than one framework;
-- framework-specific display wording;
-- a focused framework using governed question versions;
-- comprehensive assessment composition using department frameworks;
-- evidence expectations;
-- scoring and critical-failure behavior.
-
-Demo content is not validated production methodology.
+The library is source-informed and product-owner approved for beta. That label is not a substitute for
+independent source, subject, methodology, scoring, field-test, translation, benchmark, or
+jurisdiction-specific review. Those trust signals exist only when evidence-backed governance records
+say they do.

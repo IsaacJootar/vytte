@@ -13,7 +13,10 @@ The current publication controls remain available only to Vytte Platform Admin w
 - catalogue releases;
 - official questions or indicators.
 
-Existing workspace tailoring remains available under its frozen legacy score-lane contract. The successor scoring-model architecture is defined in `ASSESSMENT_GOVERNANCE_VISION.md` and will permit publisher-approved content of any origin to enter the primary instrument score without changing historical assessments.
+Existing workspace tailoring remains available as local context with an optional local score for
+explicitly configured Yes/No and rating questions. It never alters the published score. Content of
+any origin may enter a future primary score only when an accountable publisher deliberately places it
+inside a complete immutable scoring model and publishes a successor instrument version.
 
 ## Roles
 
@@ -74,10 +77,13 @@ Local custom sections:
 - cannot replace official questions;
 - are visually and semantically local;
 - are excluded from official scoring;
+- may contribute eligible questions to a separate, clearly labelled optional local score;
 - may contain local notes, local questions, instructions, observations, and evidence prompts.
 
 ## Prohibited Publication
 
 Official content cannot publish when it contains unsupported response types, missing provenance, missing licence metadata, empty question sets, option questions without choices, scored open text, scored numeric questions without bands, scored questions without scoring-profile membership, or scored options without weights.
 
-Demonstration content must remain labelled as demonstration content and must not be promoted as production clinical methodology.
+The production seed is a source-informed, product-owner-approved beta library. Publisher assignment
+does not prove independent source, subject, methodology, scoring, field-test, translation, or benchmark
+review. Those claims may be shown only when the corresponding evidence-backed review records exist.

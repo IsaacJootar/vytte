@@ -1,5 +1,8 @@
 # Claude Engineering Handover
 
+> Historical handover retained for provenance. It is not current architecture authority. Follow
+> `AGENTS.md` and the ordered current architecture documents instead.
+
 Date: 2026-07-18
 
 This handover captures the current architecture and the non-negotiable engineering rules Claude must preserve while finishing beta readiness.

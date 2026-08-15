@@ -28,7 +28,8 @@ php artisan db:seed --class=DemoAccountSeeder --force
 - `organization@vytte.test`
 - `admin@vytte.test`
 
-All demo passwords remain `password`.
+Demo passwords remain `password` only when an operator explicitly runs the demo account seeder.
+`DatabaseSeeder` never creates demo accounts in production.
 
 ## Email
 

@@ -1,5 +1,9 @@
 # Vytte Beta Readiness Report
 
+> Historical readiness snapshot from 2026-07-19. Superseded by `GO_LIVE_CHECKLIST.md`,
+> `CURRENT_ARCHITECTURE.md`, and `OPERATIONS_READINESS.md`. Retained to explain the earlier beta gate;
+> its “not ready” conclusion is not the current release status.
+
 ## Summary
 
 This sprint moved Vytte closer to public beta by converting paid plans into configurable beta licensing, removing exposed payment processing, adding Platform Admin draft content controls, adding workspace custom assessment self-service, and adding basic production hardening.

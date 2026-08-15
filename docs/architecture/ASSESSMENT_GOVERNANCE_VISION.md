@@ -322,12 +322,16 @@ Basic authors see plain-language choices and safe defaults. Advanced controls ar
 
 ### Module 1 — Governance constitution and publisher foundation
 
+- **Status: implemented.**
+
 - Record this vision and superseding decisions.
 - Add publisher identities, distribution levels, and independent trust signals.
 - Attach publishers compatibly to governed questions, frameworks, and catalogue releases.
 - Preserve null publisher fields for legacy content and backfill Vytte as the legacy publisher.
 
 ### Module 2 — Scoring-model separation and comparison foundation
+
+- **Status: implemented with historical dual-read compatibility.**
 
 - Add immutable scoring-model versions and item rules.
 - Generate legacy scoring models that reproduce current published payloads exactly.
@@ -336,11 +340,15 @@ Basic authors see plain-language choices and safe defaults. Advanced controls ar
 
 ### Module 3 — Typed responses and first-class missing states
 
+- **Status: implemented for the currently publishable response types.**
+
 - Introduce the typed response envelope and state contract.
 - Preserve existing scalar response columns during migration.
 - Implement response types one complete vertical slice at a time, beginning with multi-select.
 
 ### Module 4 — Structure, logic, and simulation
+
+- **Status: implemented for deterministic earlier-answer branching and no-save simulation.**
 
 - Extend sections with instructions and applicability.
 - Add deterministic enablement rules and repeatable groups.

@@ -2,54 +2,57 @@
 
 ## Authority
 
-Seed data exists to make development, tests, and demos reproducible. It is not production clinical authority.
+`DatabaseSeeder` is the official production seed. It is repository-contained and never reads personal
+Downloads folders or untracked source documents.
 
-The default seed sequence is:
+The production sequence is:
 
 1. `PlatformSettingsSeeder`
 2. `ReferenceDataSeeder`
-3. `PlatformGovernedDemoSeeder`
-4. `PlanFeatureSeeder`
-5. `DemoAccountSeeder`
-6. `DemoDataSeeder`
+3. `OfficialTaxonomySeeder`
+4. `SubscriptionPlanSeeder`
+5. `PlanFeatureSeeder`
+6. `OfficialReferenceSeeder`
+7. `MethodologyCatalogueSeeder`
+8. `OfficialQuestionLibrarySeeder`
+9. `OfficialDepartmentQuestionLibrarySeeder`
+10. `OfficialFrameworkSeeder`
+11. `OfficialCatalogueSeeder`
+12. methodology publication, publisher backfill, and scoring-model backfill
 
-The default seed is repository-contained. It does not read personal Downloads folders or external documents.
+`PlatformGovernedDemoSeeder`, `DemoAccountSeeder`, and `DemoDataSeeder` are excluded from production.
+They remain test fixtures only; `TestBaselineSeeder` may use the governed demonstration baseline for
+fast deterministic automated tests.
 
-## Governed Demonstration Dataset
+## Official beta library
 
-`PlatformGovernedDemoSeeder` creates a clearly labelled demonstration catalogue:
+The current official seed publishes:
 
-- facility profiles: Clinic, Primary Health Centre, General Hospital;
-- official demo departments: Outpatient, Pharmacy, Laboratory, Mental Health;
-- department framework version 1 for each demo department;
-- one comprehensive Clinic catalogue release;
-- one focused Mental Health catalogue release.
+- 388 question identities and immutable question versions;
+- 57 framework versions and 926 placements;
+- 46 departments;
+- 41 catalogue releases, of which 36 are currently published;
+- 23 health-facility profiles with comprehensive releases;
+- 13 focused subjects;
+- one published eight-domain measurement taxonomy;
+- 40 methodology starting points.
 
-The demonstration catalogue proves the architecture end to end. It must not be described as production clinical methodology.
+`OFFICIAL_SEED_REPORT.md` records the content breakdown. Counts are release metadata, not permanent
+architecture constants.
 
-## Publication Rule
+## Publication rule
 
-Official production content requires:
+The seed uses the same publishing services, validation, hashes, audit, immutable versions, supported
+response rules, and scoring-model requirements as interactive authoring. Being in the official seed
+does not manufacture independent clinical review. Evidence-backed governance claims remain separate
+records and must reflect real reviewers and evidence.
 
-- source authority;
-- licence/provenance metadata;
-- completed scoring profile;
-- supported response types;
-- evidence and critical-failure rules where applicable;
-- Vytte Platform Admin review;
-- immutable framework version publication;
-- immutable catalogue release publication.
+## Publishable response types
 
-## Response Types
+- `SINGLE_SELECT`
+- `MULTI_SELECT`
+- `LIKERT`
+- explicitly unscored `OPEN_ENDED`
+- `NUMERIC`, with frozen bands whenever scored
 
-Currently publishable response types:
-
-- scalar option questions;
-- open text when explicitly unscored;
-- numeric questions with valid input configuration.
-
-Scored numeric questions require frozen numeric bands. Declaring a question type in the database does not make it publishable.
-
-## Counts
-
-Counts are dataset metadata, not architecture constants. They may change through governed dataset updates.
+Declaring another type in reference data does not make it publishable.

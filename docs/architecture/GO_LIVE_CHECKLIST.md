@@ -1,76 +1,70 @@
 # Go-Live Checklist
 
-This is the single go-live checklist. It merges the former `GO_LIVE_CHECKLIST.md` and
-`PRODUCTION_GO_LIVE_CHECKLIST.md`, which overlapped and contradicted each other on whether framework
-content management was complete. Beta and production are separate gates and are kept as separate
-sections rather than separate documents.
+## Current status
 
-Status: **NOT READY FOR PUBLIC BETA.**
+**Private beta operational; public/paid launch remains conditional.**
 
-## Complete
+The application and official beta library are live. “Operational” does not mean independently
+clinically validated for every jurisdiction, nor does it mean paid-launch operations are complete.
 
-- [x] PostgreSQL migrations run cleanly.
-- [x] Beta plans exist as configurable records.
-- [x] Payment processing is not exposed to customers.
-- [x] Feature gates are server-side enforceable.
-- [x] Platform Admin can create draft framework versions.
-- [x] Platform Admin can create catalogue releases and pin published frameworks.
-- [x] Workspace Admin can create workspace custom assessment designs.
+## Application and data complete
+
+- [x] Laravel 13/PHP 8.3 and PostgreSQL migrations are current.
+- [x] Exactly two assessment creation paths are enforced.
+- [x] Official production seed excludes demo accounts and demo catalogue fixtures.
+- [x] Official framework and catalogue creation, editing, publication, supersession, and archival exist.
+- [x] Governance Studio exposes the nine labelled authoring steps.
+- [x] Published questions, frameworks, releases, snapshots, scoring models, completed scores, and final
+  reports are immutable historical contracts.
+- [x] Supported response types have authenticated/public rendering, validation, persistence,
+  completeness, snapshot, reporting, and scored/unscored behavior.
+- [x] Local questions cannot alter the published score or benchmark.
+- [x] Public respondent/report routes are throttled and token governed.
+- [x] Production preflight asserts production environment, debug, URL, database, queue, mail, and disk.
 - [x] Health endpoints exist at `/up` and `/health`.
-- [x] Public shared-report and respondent routes have explicit throttles.
-- [x] Production preflight command exists, covering presence of required configuration.
-- [x] Full sequential PostgreSQL test suite passes.
-- [x] Assessment snapshot immutability is enforced in code and covered by tests.
-- [x] Governance dependency counting is correct and bounded.
+- [x] Web responses carry CSP, HSTS, frame, MIME, referrer, opener, and permissions headers.
+- [x] Full sequential PostgreSQL testing is the release gate.
 
-Framework sections, indicators, and question placements are reachable through routes but are not
-yet manageable through a complete authoring interface. They are listed under Required Before Beta
-rather than as complete. The previous checklist marked them complete while `ARCHITECTURE_GAPS`
-GAP-02 and `TECHNICAL_DEBT_REPORT` recorded the same capability as critical and incomplete.
+## Production operations required for every release
 
-## Required before public beta
+- [ ] Fresh pre-deployment Vytte backup created and verified.
+- [ ] Vytte queue service active and failed-job count checked.
+- [ ] Vytte scheduler timer active.
+- [ ] Vytte daily backup timer active and next run visible.
+- [ ] Latest database dump passes `pg_restore --list`.
+- [ ] Production commit equals GitHub `master`.
+- [ ] Migrations, caches, assets, login, `/up`, `/health`, and security headers verified.
+- [ ] Recent Laravel/Apache logs checked without exposing secrets.
 
-- [ ] Complete Platform Admin framework authoring: sections, indicators, placements, ordering, and weighting.
-- [ ] Complete catalogue composition authoring.
-- [ ] Complete framework and catalogue supersession/archival interfaces.
-- [ ] Author a defensible official content library with source authority and licence metadata.
-- [ ] Enforce the content review chain: distinct author, reviewer, and approver.
-- [ ] Decide whether workspace custom assessment designs must be runnable in beta, or label them clearly as design drafts only.
-- [ ] Configure real production mail provider.
-- [ ] Configure queue workers and failed-job monitoring.
-- [ ] Configure backups and test a restore.
-- [ ] Configure deployment monitoring and incident response.
-- [ ] Extend preflight to assert production values, not only presence.
-- [ ] Review every public page for customer-facing copy and empty states.
-- [ ] Verify the full journey end to end on production-like infrastructure with real content.
+These boxes are operational observations and must be checked again on each deployment; they are not
+permanent code claims.
 
-## Required before production
+## Required before public beta promotion
 
-- [ ] Implement plan-to-content entitlements using current plan codes: `STARTER`, `PROFESSIONAL`, `ORGANIZATION`.
-- [ ] Gate module library and assessment creation by plan entitlements.
-- [ ] Complete or withdraw production claims for workspace custom assessments and local sections.
-- [ ] Decide whether evidence remains text-only or implement a secure evidence-file lifecycle.
-- [ ] Remove or explicitly justify every reserved schema table.
-- [ ] Configure `APP_ENV=production`, `APP_DEBUG=false`, production `APP_URL`, secure session and cookie settings, and cached config, routes, and views.
-- [ ] Re-run full sequential tests.
-- [ ] Re-run clean PostgreSQL `migrate:fresh --seed --force`.
-- [ ] Re-run frontend build.
-- [ ] Perform a final security review.
+- [ ] Assign real independent source, subject, methodology, scoring, and field-test reviewers to the
+  official instruments and record evidence-backed decisions.
+- [ ] Complete at least one jurisdiction-specific clinical/regulatory review for the launch market.
+- [ ] Run and record a backup restore drill into an isolated temporary database and path.
+- [ ] Configure uptime, failed-job, backup-age, certificate-expiry, disk, and application-error alerts
+  with a named recipient.
+- [ ] Name the incident owner and publish the internal escalation path.
+- [ ] Review the complete signed-in journey on production with ordinary workspace and Platform Admin
+  accounts at desktop and 375px mobile widths.
+- [ ] Decide whether one catalogue entitlement serves all beta plans or approve plan-to-content
+  entitlements before selling differentiated access.
+- [ ] Keep workspace custom assessment designs explicitly labelled as non-runnable drafts unless they
+  are promoted through the governed instrument lifecycle.
 
 ## Required before paid launch
 
-- [ ] Add billing event ledger.
-- [ ] Add webhook idempotency.
-- [ ] Add subscription state model.
-- [ ] Add invoice and receipt tracking.
-- [ ] Add payment reconciliation.
-- [ ] Add tests for billing idempotency and failure handling.
+- [ ] Billing event ledger and webhook idempotency.
+- [ ] Subscription state, invoice/receipt tracking, reconciliation, refund, and failure handling.
+- [ ] Payment-provider production keys, webhook monitoring, and financial incident ownership.
+- [ ] Contractual privacy, retention, clinical-content, and support terms reviewed for launch markets.
 
-## May wait until after production MVP
+## Explicitly deferred
 
-- [ ] Dependency graph interface.
-- [ ] Version comparison interface.
-- [ ] External REST API.
-- [ ] Partner portal.
-- [ ] Mobile app API.
-- [ ] Enterprise/custom plan.
+- Dependency graph visualization and rich version comparison.
+- Generic external REST API, partner portal, and mobile API.
+- Advanced response types that do not yet satisfy the full response contract.
+- Cross-methodology ranking where comparison signatures do not match.

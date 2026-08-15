@@ -6,11 +6,10 @@ The implementation and user-access evidence for the fourteen-part assessment gov
 
 This document describes the implemented Vytte platform-governed composition architecture, including the reusable question-bank layer added after the original composition work.
 
-Verified locally:
-
-- `php artisan test`: 401 tests, 1097 assertions passing. Full sequential PostgreSQL run, 2026-07-19, commit `65648e5`.
-- Clean disposable PostgreSQL `migrate:fresh --seed`: passing.
-- Production frontend build with `npm.cmd run build`: passing.
+Release verification requires one full sequential PostgreSQL suite, a clean official seed validation,
+Pint, compiled Blade views, and the production frontend build. The most recent full-suite audit passed
+on 2026-08-15. Test counts are release evidence, not architecture contracts, and belong in
+`TEST_COVERAGE_REVIEW.md` rather than being frozen here.
 
 PostgreSQL is the database authority for local development, automated tests, release verification, and production.
 
@@ -80,7 +79,8 @@ flowchart TD
     REP --> OUT[Results, PDF, reports, sharing, analytics]
 
     A --> LCS[Local custom sections]
-    LCS -.context only.-> REP
+    LCS --> LS[Context plus optional local score]
+    LS --> REP
 ```
 
 ## Platform Content Model

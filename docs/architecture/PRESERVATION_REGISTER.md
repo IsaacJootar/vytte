@@ -19,12 +19,12 @@ This register identifies current contracts that future work must preserve unless
 | Focused assessment | One health domain/programme/topic/intervention | Add approved focused releases without unrelated checklists |
 | Assessment snapshot | Payload, manifest, policy, collection config, and content hash are frozen. Enforced by a model guard that rejects updates. See DEC-2026-07-19-012 | Add versioned fields compatibly |
 | Response key | Responses are keyed by question identity, so one identity appears at most once per assessment. See DEC-2026-07-19-011 | Re-keying to placements requires an explicit decision and a migration of responses, runners, scorers, and reports |
-| Assessment lifecycle | `IN_PROGRESS -> COMPLETE`, terminal | Reopen/correction/archive requires explicit rules |
+| Assessment lifecycle | Setup publication (`DRAFT -> PUBLISHED`), reversible collection close before finalization, and execution (`IN_PROGRESS -> COMPLETE`, terminal) are separate axes | Reopening a completed assessment or rewriting its result requires explicit correction-version rules |
 | Assessment module scope | Included/excluded rows remain historical | Do not rewrite completed composition |
 | Runner | Reads immutable snapshot, validates every write | Add response types only with full contracts |
 | Evidence | Optional note attached to one response | No separate evidence subsystem |
 | Scoring | 0-100 canonical output, null means uncalibrated, version stored | New formulas require new versions and fixtures |
-| Local custom sections | Workspace-local context only, excluded from official scoring | Future local scoring requires explicit methodology |
+| Local custom sections | Workspace-local extensions never change the published score or benchmark; only explicitly configured Yes/No and rating formats may enter the separate optional local score | Governed inclusion in a future primary score requires contribution review and a new frozen scoring-model/instrument version |
 | Final report snapshot | Structured payload/hash is immutable | Regenerate formats from the snapshot |
 | Governed share links | Creator, expiry, revocation, use count, and audit are preserved | Add management UI around the same records |
 | Consent | Exact consent text, actor/session, and time remain historical | New consent versions do not rewrite prior records |
@@ -47,7 +47,8 @@ These tables are not current product authority:
 - `recommendation_rules`
 - `recommendations`
 
-The earlier assessment template tables are no longer present. They were dropped with the legacy template architecture and no code references them.
+`assessment_templates` is not reserved: it is an active methodology-layer starting-point table and is
+not the authority for runtime assessment creation.
 
 Do not build new product behavior on reserved structures without a fresh design decision.
 
@@ -61,7 +62,7 @@ Do not build new product behavior on reserved structures without a fresh design 
 - Snapshot immutability
 - Question/option authority
 - Required-response completion enforcement
-- Local custom section scoring exclusion
+- Local custom section exclusion from the published score and correct optional-local-score behavior
 - Score normalization, calibration, critical failure, version, and idempotence
 - Final-report immutability
 - Respondent/report token expiry and revocation

@@ -1,5 +1,8 @@
 # Technical Debt Report
 
+Last reconciled: 2026-08-15. `ARCHITECTURE_GAPS.md` is the controlling open-gap list; this document
+keeps lower-level engineering debt and its history.
+
 ## Summary
 
 The codebase is organized and the core architecture is coherent, but production debt remains around incomplete operational controls, inactive schema, and incomplete UI coverage for backend-supported capabilities.
@@ -9,12 +12,9 @@ The codebase is organized and the core architecture is coherent, but production 
 | Severity | Debt | Recommendation |
 | --- | --- | --- |
 | CRITICAL | Paid-plan content entitlement is missing. | Add plan/module/template/catalogue binding tables, UI, and enforcement. |
-| HIGH | Catalogue composition is not fully self-service. | Add release composition UI and tests. |
 | HIGH | Workspace custom assessments are backend-supported but not fully user-facing. | Complete UI/lifecycle or remove production claim. |
 | HIGH | Inactive/reserved tables remain in schema. | Remove or justify non-authoritative tables before production. |
-| MEDIUM | Backup and incident runbooks are still absent. Monitoring, queue and mail are now visible in Platform Health, but there is no documented recovery procedure. | Write backup, restore and incident runbooks before production. |
 | MEDIUM | Payment architecture is partial. | Add billing ledger, idempotency, subscriptions, invoices, and reconciliation before paid production. |
-| MEDIUM | Public route throttles need explicit policies. | Add route-specific throttles. |
 | MEDIUM | Evidence remains text-only. | Keep as text support or implement secure file lifecycle. |
 | FUTURE ENHANCEMENT | Dependency graph and version comparison are absent. | Build after production blockers are resolved. |
 
@@ -29,6 +29,10 @@ The codebase is organized and the core architecture is coherent, but production 
 | The demo dataset silently seeded nothing after the plan rename, so a fresh install had no demo assessments, scores, or reports. | Seeder identifiers aligned; a missing demo account now warns instead of failing silently. |
 | The full sequential test suite had never been run. | It runs and passes. Earlier green claims came from batched runs. |
 | Official framework editing was not self-service. | The Assessment Builder (B1–B6) covers sections, questions, scoring, evidence, review, publication and versioning through governed flows. Advanced Tools retains the raw governance views. |
+| Catalogue composition, supersession, and archival were not self-service. | Platform Admin catalogue screens now create releases, attach exact frameworks, publish, supersede, and archive them with tests. |
+| Public respondent and report-share throttles lacked explicit policy. | Route-specific throttles are applied to both public surfaces. |
+| Backup, queue, scheduler, and incident procedures were undocumented. | `OPERATIONS_READINESS.md` defines Vytte-only services, backup/restore boundaries, deployment, and incident minimums; production service state is verified on each release. |
+| Critical-failure configuration was not author-facing. | Governance Studio question settings expose critical options and freeze them into the scoring model. |
 | Workspace `SUSPENDED` was recorded but never enforced. Members of a suspended workspace kept full access. | `EnsureWorkspaceIsActive` blocks use; `SessionRevocationService` ends existing sessions. See DEC-2026-07-19-020. |
 | Platform Admin landed in a workspace on sign-in, contradicting DEC-009. | Sign-in routes to `/admin`; the workspace footer access-level card is removed. See DEC-2026-07-19-016. |
 | Platform Admin had drifted from the workspace design and was not mobile-first. | One shell for every role; only the navigation array differs. See DEC-2026-07-19-017. |
@@ -84,8 +88,9 @@ Four items agreed for post-seed resolution. Full detail in `MASTER_SEED_PLAN.md`
 | Ref | Item | Severity |
 | --- | --- | --- |
 | PS-1 | Methodology catalogue not yet reviewed by a health methodologist against source documents. | MEDIUM |
-| PS-2 | Trend and Benchmarking lens preconditions are described in prose and enforced nowhere. | MEDIUM |
-| PS-3 | No baseline-to-endline link; Trend infers sequence by date. | MEDIUM |
-| PS-4 | No agreed-actions entity, so the Progress Tracking lens has nothing to track against. | MEDIUM |
+| PS-2 | Trend and comparison now enforce frozen comparison signatures; richer peer-set governance remains bounded. | RESOLVED BASELINE |
+| PS-3 | Assessments support baseline, midline, endline, and follow-up typing; immutable report comparison still guards compatibility. | RESOLVED BASELINE |
+| PS-4 | `assessment_actions` and action updates provide the progress-tracking entity and are consumed by reporting. | RESOLVED |
 
-None blocks seeding. PS-2, PS-3 and PS-4 belong to the lens-driven reporting phase and should be scoped together.
+PS-1 remains the substantive content-governance requirement. The resolved baseline items may be
+extended without replacing their current contracts.

@@ -1,6 +1,7 @@
 # Activation & Hub — Approved Build Plan
 
-Status: **approved**, in build. Authoritative — the app must tally with it.
+Status: **implemented baseline; retained as the approved product contract.** Current architecture and
+remaining gaps are recorded in `CURRENT_ARCHITECTURE.md` and `ARCHITECTURE_GAPS.md`.
 
 Makes Vytte clear and guiding whether or not the workspace has data: one golden path, one
 adaptive home, zero dead-ends. Same rhythm as the reporting phases — each phase built, tested,

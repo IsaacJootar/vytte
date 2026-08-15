@@ -20,17 +20,19 @@ Open `/admin` as a user with `platform_role = PLATFORM_ADMIN`.
 
 ## Publication operations
 
-- Approve and publish question versions through `/admin/question-versions`.
-- Publish framework versions through `/admin/framework-versions`.
-- Publish catalogue releases through `/admin/catalogue-releases`.
+- Use **Governance Studio** (`/admin/assessments`) for the ordinary nine-step authoring flow.
+- Approve, publish, supersede, and archive question versions through `/admin/question-versions`.
+- Create, edit, publish, supersede, and archive framework versions through `/admin/framework-versions`.
+- Create, compose, publish, supersede, and archive catalogue releases through `/admin/catalogue-releases`.
+- Assign and decide independent trust reviews from Governance Studio's Review step. The assigned
+  reviewer cannot approve their own submission.
 
 ## Pending Platform Admin operations
 
-- Framework sections are currently inspectable but not yet fully create/edit/reorder-manageable through polished UI.
-- Framework indicators are currently inspectable but not yet fully create/edit/reorder-manageable through polished UI.
-- Framework question placements are currently inspectable but not yet fully place/replace/weight/reorder-manageable through polished UI.
 - Version comparison and dependency graph views are pending.
 - Deeper payment-provider operations dashboards are pending.
+- Independent governance evidence must be produced by real reviewers; the application does not seed
+  approval claims for the official beta library.
 
 ## Safety checks
 
