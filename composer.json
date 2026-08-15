@@ -12,7 +12,7 @@
         "laravel/breeze": "^2.4",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
-        "livewire/livewire": "4.3",
+        "livewire/livewire": "^4.3",
         "livewire/volt": "^1.7.0",
         "phpoffice/phppresentation": "^1.2",
         "phpoffice/phpspreadsheet": "^3.10",

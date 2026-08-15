@@ -40,5 +40,4 @@ class UserFactory extends Factory
             'platform_role' => 'PLATFORM_ADMIN',
         ]);
     }
-
 }

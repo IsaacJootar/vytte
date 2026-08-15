@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
+use App\Services\Reporting\ReportDocumentExporter;
 use App\Services\ScoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -105,7 +106,7 @@ class ReportExportTest extends TestCase
      */
     public function test_word_export_escapes_special_characters_and_opens(): void
     {
-        $bytes = app(\App\Services\Reporting\ReportDocumentExporter::class)->word([
+        $bytes = app(ReportDocumentExporter::class)->word([
             'title' => 'Infection Prevention & Control <Review>',
             'target' => ['name' => 'Ward A & B'],
             'project' => ['name' => 'Q1 & Q2'],

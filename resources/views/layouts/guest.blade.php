@@ -13,7 +13,7 @@
 <div class="min-h-screen flex flex-col justify-center items-center px-4 py-12 sm:px-6">
 
     {{-- Logo --}}
-    <a href="/" class="flex items-center gap-2.5 mb-8">
+    <a href="{{ route('login') }}" class="flex items-center gap-2.5 mb-8">
         <div class="w-9 h-9 rounded-xl bg-vytte-700 flex items-center justify-center">
             <x-vytte-mark class="w-5 h-5" />
         </div>
