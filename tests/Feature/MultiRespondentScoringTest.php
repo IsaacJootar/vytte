@@ -131,7 +131,7 @@ class MultiRespondentScoringTest extends TestCase
         $this->assertNotNull($section->scored_at);
     }
 
-    public function test_incomplete_test_revoked_and_unconfirmed_sessions_are_excluded_with_reasons(): void
+    public function test_completed_response_remains_eligible_after_its_link_is_revoked(): void
     {
         [$owner, $assessment] = $this->context(minimum: 1, eligibilityRules: [['field' => 'adult', 'operator' => 'equals', 'value' => true]]);
         $incomplete = $this->newSession($assessment);
@@ -152,11 +152,17 @@ class MultiRespondentScoringTest extends TestCase
         $preview = app(MultiRespondentAggregationService::class)->preview($assessment);
         $reasons = collect($preview['excluded_sessions'])->pluck('reason', 'session_id');
 
-        $this->assertSame(0, $preview['eligible_respondent_count']);
+        $this->assertSame(1, $preview['eligible_respondent_count']);
         $this->assertSame('INCOMPLETE_SESSION', $reasons[$incomplete->session_id]);
-        $this->assertSame('ACCESS_TOKEN_REVOKED', $reasons[$revoked->public_response_session_id]);
+        $this->assertArrayNotHasKey($revoked->public_response_session_id, $reasons->all());
         $this->assertSame('TEST_SESSION', $reasons[$test->public_response_session_id]);
         $this->assertSame('ELIGIBILITY_NOT_CONFIRMED', $reasons[$pending->public_response_session_id]);
+
+        $this->actingAs($owner)
+            ->get(route('assessments.respondent-sessions.show', [$assessment, $revoked->responseSession]))
+            ->assertOk()
+            ->assertSeeText('Back to collect & review')
+            ->assertSee(route('assessments.respondent-collection', $assessment), false);
     }
 
     public function test_missing_required_answers_are_rejected_and_never_treated_as_zero(): void

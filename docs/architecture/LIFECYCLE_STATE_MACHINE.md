@@ -20,13 +20,17 @@ completed assessment is never reopened or silently recalculated.
 | State | Meaning | Allowed next state |
 |---|---|---|
 | `DRAFT` | Setup remains private to authorized workspace users. | `PUBLISHED` |
-| `PUBLISHED` | Setup is locked and governed collection may begin. | None |
+| `PUBLISHED` | All respondent-facing setup, including local questions, is locked and governed collection may begin. | None |
 
 ### Collection window (`closed_at`)
 
 A published, incomplete assessment collects only while `closed_at` is null. An OWNER or ADMIN may
 close the window before finalization and may reopen that window while the assessment remains
 incomplete. Closing is not completion and does not calculate a result.
+
+An assessment normally has one reusable active respondent link. Deactivation or expiry blocks
+future access but does not invalidate an already-submitted session. Completed-session eligibility
+is governed by its durable session review, not by the link's later operational state.
 
 ## Assessment area execution
 

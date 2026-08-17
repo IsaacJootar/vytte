@@ -32,7 +32,7 @@ class MultiRespondentAssessmentController extends Controller
         // Respondent links used to be flashed once at creation and never shown again, so a
         // link the user did not copy in that moment was unrecoverable. They are listed now.
         $respondentTokens = AssessmentRespondentToken::where('assessment_id', $assessment->assessment_id)
-            ->whereNull('revoked_at')
+            ->usable()
             ->orderByDesc('created_at')
             ->get();
 

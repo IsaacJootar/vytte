@@ -257,6 +257,7 @@ Workspace users may create local custom sections attached to an assessment. Thes
 
 - belong only to the workspace;
 - are visibly local;
+- may be authored only while the assessment is a draft and are frozen when collection opens;
 - cannot change official content;
 - cannot replace official questions;
 - are excluded from official scoring;

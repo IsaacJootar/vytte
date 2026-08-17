@@ -47,11 +47,11 @@
                     Reopen collection
                 </button>
             </form>
-        @else
+        @elseif ($respondentTokens->isEmpty())
             <form method="POST" action="{{ route('assessments.respondent-link', $assessment) }}">
                 @csrf
                 <button class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800">
-                    {{ $respondentTokens->isNotEmpty() ? 'Create another link' : 'Create respondent link' }}
+                    Create replacement link
                 </button>
             </form>
         @endif
@@ -73,20 +73,26 @@
         @endforeach
     </div>
 
-    @unless ($isComplete)
+    @if ($assessment->isDraft())
         <div class="mb-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-xs text-slate-500 dark:text-slate-400">Need more setting-specific context? Add local questions before sharing the link.</p>
             <a href="{{ route('assessments.custom.edit', $assessment) }}" class="flex-shrink-0 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Add local questions →</a>
         </div>
-    @endunless
+    @endif
 
     @if ($respondentTokens->isNotEmpty())
         <div class="mb-5 section-card p-5">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Respondent links</h2>
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $respondentTokens->count() === 1 ? 'Respondent link' : 'Active respondent links' }}</h2>
             <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Send one of these to each person who should answer. They do not need a Vytte account.
+                Send this link to everyone who should answer. One link can collect responses from many people, and they do not need a Vytte account.
                 Email is switched off during beta, so share these yourself.
             </p>
+
+            @if ($respondentTokens->count() > 1)
+                <p class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                    This assessment has {{ $respondentTokens->count() }} active links from the earlier workflow. Keep the one you use and deactivate the extras. Completed responses remain available.
+                </p>
+            @endif
 
             <div class="mt-3 space-y-3">
                 @foreach ($respondentTokens as $respondentToken)
@@ -94,12 +100,12 @@
                         <x-share-link
                             :url="route('respondent.show', $respondentToken->token)"
                             :message="'Please complete this assessment for '.($assessment->target?->name ?? 'our facility').'. It takes a few minutes and you do not need an account:'"
-                            :label="'Link '.($loop->iteration)"
+                            :label="$respondentTokens->count() === 1 ? 'Respondent link' : 'Link '.($loop->iteration)"
                             :hint="'Created '.$respondentToken->created_at?->diffForHumans()" />
 
                         <form method="POST" action="{{ route('assessments.respondent-link.destroy', [$assessment, $respondentToken]) }}"
                               class="mt-1 text-right"
-                              onsubmit="return confirm('Deactivate this link? Anyone holding it will no longer be able to answer. Answers already submitted are kept.')">
+                              onsubmit="return confirm('Deactivate this link? It will stop future access. Completed responses remain available for review and can still count unless you exclude them.')">
                             @csrf @method('DELETE')
                             <button class="text-xs font-medium text-slate-400 transition-colors hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
 >

@@ -48,7 +48,7 @@ class RespondentLinkController extends Controller
 
             $respondentToken = AssessmentRespondentToken::query()
                 ->where('assessment_id', $lockedAssessment->assessment_id)
-                ->whereNull('revoked_at')
+                ->usable()
                 ->oldest()
                 ->first();
 
@@ -91,24 +91,49 @@ class RespondentLinkController extends Controller
             return back()->with('error', 'Shareable respondent links are not available on your current plan. Upgrade to share assessments with external respondents.');
         }
 
-        // Distribution is gated on publishing. A draft has not been opened for collection,
-        // and a closed or completed assessment is no longer collecting.
-        if (! $assessment->isCollecting()) {
-            return back()->with('error', 'Publish this assessment before sharing it, and make sure collection is still open.');
+        $result = DB::transaction(function () use ($assessment): array {
+            $lockedAssessment = Assessment::query()
+                ->whereKey($assessment->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (! $lockedAssessment->isCollecting()) {
+                return ['token' => null, 'created' => false];
+            }
+
+            $respondentToken = AssessmentRespondentToken::query()
+                ->where('assessment_id', $lockedAssessment->assessment_id)
+                ->usable()
+                ->oldest()
+                ->first();
+
+            if ($respondentToken !== null) {
+                return ['token' => $respondentToken, 'created' => false];
+            }
+
+            $respondentToken = AssessmentRespondentToken::create([
+                'token' => Str::random(32),
+                'assessment_id' => $lockedAssessment->assessment_id,
+                'created_by' => auth()->id(),
+            ]);
+            app(AuditService::class)->record('assessment.respondent_link.created', $lockedAssessment, newValues: [
+                'token_prefix' => substr($respondentToken->token, 0, 8),
+            ]);
+
+            return ['token' => $respondentToken, 'created' => true];
+        });
+
+        if ($result['token'] === null) {
+            return back()->with('error', 'Open this assessment for responses before creating a respondent link.');
         }
 
-        $token = Str::random(32);
+        $message = $result['created']
+            ? 'A replacement respondent link was created. Copy it below to continue collecting responses.'
+            : 'The existing respondent link is ready below. One link can collect responses from many people.';
 
-        $respondentToken = AssessmentRespondentToken::create([
-            'token' => $token,
-            'assessment_id' => $assessment->assessment_id,
-            'created_by' => auth()->id(),
-        ]);
-        app(AuditService::class)->record('assessment.respondent_link.created', $assessment, newValues: [
-            'token_prefix' => substr($respondentToken->token, 0, 8),
-        ]);
-
-        return back()->with('respondent_link', route('respondent.show', $token));
+        return back()
+            ->with('success', $message)
+            ->with('respondent_link', route('respondent.show', $result['token']->token));
     }
 
     public function destroy(
@@ -126,7 +151,7 @@ class RespondentLinkController extends Controller
             'token_prefix' => substr($respondentToken->token, 0, 8),
         ]);
 
-        return back()->with('success', 'The respondent link has been deactivated. Existing submitted responses were preserved.');
+        return back()->with('success', 'The respondent link has been deactivated. Completed responses remain available for review.');
     }
 
     private function authorizeWorkspaceAssessment(Assessment $assessment): void

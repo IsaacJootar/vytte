@@ -32,6 +32,28 @@ class LocalCustomSection extends Model
         'scored_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $section): void {
+            if (! $section->assessment()->firstOrFail()->isDraft()) {
+                throw new \LogicException('Local questions cannot be added after response collection has opened.');
+            }
+        });
+
+        static::updating(function (self $section): void {
+            if ($section->isDirty(['section_title', 'instructions', 'questions'])
+                && ! $section->assessment()->firstOrFail()->isDraft()) {
+                throw new \LogicException('Local questions cannot be changed after response collection has opened.');
+            }
+        });
+
+        static::deleting(function (self $section): void {
+            if (! $section->assessment()->firstOrFail()->isDraft()) {
+                throw new \LogicException('Local questions cannot be removed after response collection has opened.');
+            }
+        });
+    }
+
     public function assessment(): BelongsTo
     {
         return $this->belongsTo(Assessment::class, 'assessment_id', 'assessment_id');

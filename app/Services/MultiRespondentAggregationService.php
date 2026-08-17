@@ -208,12 +208,6 @@ class MultiRespondentAggregationService
                 ? 'INELIGIBLE: '.($session->eligibility_reason ?: 'No reason recorded')
                 : 'ELIGIBILITY_NOT_CONFIRMED';
         }
-        if ($session->accessToken?->revoked_at !== null) {
-            return 'ACCESS_TOKEN_REVOKED';
-        }
-        if ($session->accessToken?->expires_at?->isPast()) {
-            return 'ACCESS_TOKEN_EXPIRED';
-        }
         if (! $session->accessToken) {
             return 'ACCESS_TOKEN_MISSING';
         }

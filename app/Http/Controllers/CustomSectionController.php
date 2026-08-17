@@ -22,17 +22,20 @@ use Illuminate\Validation\ValidationException;
  * optional local score. Published questions can never be removed, so the published score always
  * measures the same standard set and stays comparable.
  *
- * Questions are authored only while the assessment is still open; once it is complete the
- * local section is frozen. They are answered as the last step of the same assessment,
- * right before it is finished.
+ * Questions are authored only while the assessment is a draft. Opening response collection
+ * freezes every respondent-facing question so all respondents receive the same instrument.
  */
 class CustomSectionController extends Controller
 {
     public function edit(Assessment $assessment): View|RedirectResponse
     {
         $this->authorize('update', $assessment);
-        if ($assessment->status === Assessment::STATUS_COMPLETE) {
+        if ($assessment->isComplete()) {
             return redirect()->route('assessments.results', $assessment);
+        }
+        if (! $assessment->isDraft()) {
+            return redirect()->route('assessments.respondent-collection', $assessment)
+                ->with('info', 'Local questions are locked because response collection has opened.');
         }
 
         $section = $assessment->localCustomSections()->first();
@@ -43,7 +46,7 @@ class CustomSectionController extends Controller
     public function save(Request $request, Assessment $assessment): RedirectResponse
     {
         $this->authorize('update', $assessment);
-        abort_if($assessment->status === Assessment::STATUS_COMPLETE, 403);
+        abort_unless($assessment->isDraft(), 403);
 
         $validated = $request->validate([
             'section_title' => ['nullable', 'string', 'max:180'],

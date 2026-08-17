@@ -49,7 +49,7 @@ class PublicRespondentRunnerTest extends TestCase
         return [$user, $workspace];
     }
 
-    private function createPublicAssessment(Workspace $workspace, User $user): Assessment
+    private function createPublicAssessment(Workspace $workspace, User $user, ?array $localQuestions = null): Assessment
     {
         $project = Project::create(['name' => 'Test Project', 'owner_user_id' => $user->user_id]);
         $target = Target::create([
@@ -61,6 +61,16 @@ class PublicRespondentRunnerTest extends TestCase
 
         $release = AssessmentCatalogueRelease::where('release_code', 'DEMO_MENTAL_HEALTH_FOCUSED_V1')->firstOrFail();
         $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
+
+        if ($localQuestions !== null) {
+            LocalCustomSection::create([
+                'assessment_id' => $assessment->assessment_id,
+                'workspace_id' => $workspace->workspace_id,
+                'section_title' => $localQuestions['section_title'],
+                'questions' => $localQuestions['questions'],
+                'created_by' => $user->user_id,
+            ]);
+        }
 
         // Collection is only open on a published assessment, so a respondent fixture must
         // publish before it can accept responses.
@@ -403,17 +413,11 @@ class PublicRespondentRunnerTest extends TestCase
     public function test_respondent_tailored_answers_are_stored_on_submit_in_their_own_lane(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
-        $assessment = $this->createPublicAssessment($workspace, $user);
-
-        // A tailored section, added by the workspace while collection is open.
-        LocalCustomSection::create([
-            'assessment_id' => $assessment->assessment_id,
-            'workspace_id' => $workspace->workspace_id,
+        $assessment = $this->createPublicAssessment($workspace, $user, [
             'section_title' => 'Team extras',
             'questions' => [
                 ['id' => 'c1', 'text' => 'Vehicle?', 'response_type' => 'YES_NO', 'good_answer' => 'YES'],
             ],
-            'created_by' => $user->user_id,
         ]);
 
         $token = $this->createToken($assessment);
@@ -440,11 +444,7 @@ class PublicRespondentRunnerTest extends TestCase
     public function test_public_respondent_local_answers_normalize_every_format_including_arrays(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
-        $assessment = $this->createPublicAssessment($workspace, $user);
-
-        LocalCustomSection::create([
-            'assessment_id' => $assessment->assessment_id,
-            'workspace_id' => $workspace->workspace_id,
+        $assessment = $this->createPublicAssessment($workspace, $user, [
             'section_title' => 'Local context',
             'questions' => [
                 ['id' => 'c1', 'text' => 'Vehicle?', 'response_type' => 'YES_NO', 'good_answer' => 'YES'],
@@ -454,7 +454,6 @@ class PublicRespondentRunnerTest extends TestCase
                 ['id' => 'c5', 'text' => 'Staff on duty?', 'response_type' => 'NUMERIC', 'numeric_min' => 0, 'numeric_max' => 10],
                 ['id' => 'c6', 'text' => 'Notes?', 'response_type' => 'OPEN_ENDED'],
             ],
-            'created_by' => $user->user_id,
         ]);
 
         $token = $this->createToken($assessment);
@@ -542,6 +541,22 @@ class PublicRespondentRunnerTest extends TestCase
         $token = AssessmentRespondentToken::first();
         $this->assertEquals($assessment->assessment_id, $token->assessment_id);
         $this->assertEquals($user->user_id, $token->created_by);
+
+        $this->actingAs($user)
+            ->post(route('assessments.respondent-link', $assessment))
+            ->assertRedirect()
+            ->assertSessionHas('respondent_link', route('respondent.show', $token->token));
+
+        $this->assertDatabaseCount('assessment_respondent_tokens', 1);
+
+        $token->update(['expires_at' => now()->subMinute()]);
+        $this->actingAs($user)
+            ->post(route('assessments.respondent-link', $assessment))
+            ->assertRedirect()
+            ->assertSessionHas('success', 'A replacement respondent link was created. Copy it below to continue collecting responses.');
+
+        $this->assertDatabaseCount('assessment_respondent_tokens', 2);
+        $this->assertSame(1, AssessmentRespondentToken::query()->usable()->count());
     }
 
     public function test_workspace_member_can_revoke_link_without_deleting_responses(): void

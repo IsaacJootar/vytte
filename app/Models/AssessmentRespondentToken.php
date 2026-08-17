@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -49,6 +50,13 @@ class AssessmentRespondentToken extends Model
     public function responseSessions(): HasMany
     {
         return $this->hasMany(PublicResponseSession::class, 'token', 'token');
+    }
+
+    public function scopeUsable(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('revoked_at')
+            ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()));
     }
 
     public function isUsable(): bool

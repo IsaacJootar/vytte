@@ -315,4 +315,29 @@ class CustomSectionTest extends TestCase
         // Tenant scoping hides the assessment from another workspace entirely.
         $this->actingAs($outsider)->get(route('assessments.custom.edit', $assessment))->assertNotFound();
     }
+
+    public function test_local_question_definitions_are_locked_when_collection_opens(): void
+    {
+        [$user, $assessment] = $this->setup_assessment();
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'section_title' => 'Local context',
+            'questions' => [['text' => 'Original question?', 'type' => 'YES_NO', 'good' => 'YES']],
+        ])->assertRedirect();
+
+        $section = LocalCustomSection::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $assessment->markPublished($user->user_id);
+
+        $this->actingAs($user)
+            ->get(route('assessments.custom.edit', $assessment))
+            ->assertRedirect(route('assessments.respondent-collection', $assessment))
+            ->assertSessionHas('info', 'Local questions are locked because response collection has opened.');
+
+        $this->actingAs($user)->post(route('assessments.custom.save', $assessment), [
+            'questions' => [['text' => 'Changed question?', 'type' => 'YES_NO', 'good' => 'YES']],
+        ])->assertForbidden();
+
+        $this->expectException(\LogicException::class);
+        $section->update(['section_title' => 'Changed outside the workflow']);
+    }
 }

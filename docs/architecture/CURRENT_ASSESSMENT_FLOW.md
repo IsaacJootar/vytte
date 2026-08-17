@@ -109,8 +109,9 @@ Multi-respondent collection remains part of the same assessment architecture.
 For workspace users, opening collection and creating the first respondent link is one deliberate,
 idempotent action. The action publishes and locks the assessment, creates the first active link when
 none exists, and redirects to the collection page with that link visible and ready to copy. Retrying
-the action reuses the active link rather than creating duplicates. Additional links are an explicit
-**Create another link** action. The operator workflow is **Open and share → Collect → Review →
+the action reuses the active link rather than creating duplicates. One reusable active link is the
+normal contract and may collect responses from many people. After deactivation, an operator may
+create one replacement link. The operator workflow is **Open and share → Collect → Review →
 Finalise**; collection may be closed and reopened while the assessment remains incomplete.
 The **Collect & review responses** page is the only assessment-specific operations surface: it
 contains link management, live response progress, completed-response review, eligibility decisions,
@@ -126,6 +127,11 @@ Published content must explicitly enable it and freeze:
 - scoring profile version.
 
 Each submitted public session is scored independently and keeps immutable response and score snapshots. Eligible completed sessions can be manually finalized by an authorized workspace user. Finalization creates the ordinary immutable Vytte report.
+
+Deactivating or expiring a link prevents future access through that link. It does not invalidate a
+session that was already submitted: completed-session eligibility remains an explicit review
+decision. All respondent-facing definitions, including local questions, are locked when collection
+opens so every respondent receives the same instrument.
 
 There is no separate community or respondent report.
 

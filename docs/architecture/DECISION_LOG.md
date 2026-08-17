@@ -427,7 +427,7 @@
 
 - **Status:** Accepted and implemented.
 - **Context:** Setup promised “Publish & create link” but only navigated to collection. Users then had to publish and create the respondent link in two more unexplained actions, with no immediate proof that a link existed.
-- **Decision:** The shared path exposes one deliberate **Open for responses & create link** action. It atomically publishes and locks the assessment and creates its first active respondent link, then redirects to collection with a success message and the reusable link visible. A retry reuses the active link; later links require the explicit **Create another link** action.
+- **Decision:** The shared path exposes one deliberate **Open for responses & create link** action. It atomically publishes and locks the assessment and creates its first active respondent link, then redirects to collection with a success message and the reusable link visible. A retry reuses the active link. DEC-2026-08-17-059 later narrowed replacement-link creation to assessments with no active link.
 - **Lifecycle boundary:** Publication remains permanent, the collection window may still be closed and reopened while incomplete, and completion remains terminal. The confirmation explains the setup lock before publication.
 - **Language:** Workspace UI says open, collect, review, and finalise. Internal publication fields and immutable audit events remain unchanged.
 
@@ -437,3 +437,11 @@
 - **Context:** An assessment's Respondent Collection page linked to a separate Monitor Responses page even though both displayed response counts and respondent sessions. Users could not tell which page governed collection.
 - **Decision:** **Collect & review responses** is the single assessment-specific page for respondent links, live progress, completed-response review, eligibility decisions, provisional aggregation, closing/reopening, and finalisation. The duplicate assessment Monitor page is removed, and its named URL redirects to collection for backward compatibility.
 - **Boundary:** The workspace-wide **Monitor Responses** hub remains because it summarizes collection across multiple assessments rather than duplicating one assessment's operations.
+
+### DEC-2026-08-17-059: One Reusable Active Link And A Frozen Respondent Instrument
+
+- **Status:** Accepted and implemented.
+- **Context:** The earlier workflow allowed unlimited active links without explaining why they existed, allowed local questions to change after respondents had started, and excluded completed responses if their access link was later deactivated. Those behaviours made one assessment capable of representing different instruments and contradicted the promise that completed answers were preserved.
+- **Decision:** The ordinary workflow maintains one reusable active respondent link per assessment. The same link may serve many respondents. A replacement can be created only when no active link remains; historical duplicate active links remain visible so an operator can deactivate extras deliberately. Opening collection freezes all respondent-facing definitions, including local questions.
+- **Revocation boundary:** Deactivation and expiry control future link access only. A completed session remains durable and may count when its explicit eligibility decision and integrity checks pass. Deactivation never deletes or silently disqualifies completed answers.
+- **Navigation:** A submitted response's read-only detail page returns to the same **Collect & review responses** operations page.
