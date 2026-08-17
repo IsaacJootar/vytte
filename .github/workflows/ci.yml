@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   php-verification:
-    name: PHP quality, tests, and official seed
+    name: Build, quality, tests, and official seed
     runs-on: ubuntu-latest
     env:
       COMPOSER_AUTH: >-
@@ -65,6 +65,18 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build production assets
+        run: npm run build
+
       - name: Validate Composer metadata
         run: composer validate --strict --no-check-publish
 
@@ -93,22 +105,3 @@ jobs:
       - name: Report the first test error
         if: always() && steps.full-tests.outcome == 'failure'
         run: php .github/scripts/report-junit.php storage/logs/junit.xml
-
-  frontend:
-    name: Frontend build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v7
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: npm
-
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Build production assets
-        run: npm run build
