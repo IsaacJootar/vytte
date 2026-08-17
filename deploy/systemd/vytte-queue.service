@@ -1,0 +1,21 @@
+[Unit]
+Description=Vytte Laravel queue worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=klickit
+Group=klickit
+WorkingDirectory=/home/klickit/vytte
+ExecStart=/opt/cpanel/ea-php83/root/usr/bin/php artisan queue:work --sleep=3 --tries=3 --timeout=120 --max-time=3600
+ExecReload=/bin/kill -s SIGTERM $MAINPID
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=360
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

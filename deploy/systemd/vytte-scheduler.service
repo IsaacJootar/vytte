@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the Vytte Laravel scheduler
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=klickit
+Group=klickit
+WorkingDirectory=/home/klickit/vytte
+ExecStart=/opt/cpanel/ea-php83/root/usr/bin/php artisan schedule:run --no-interaction
+PrivateTmp=true
+

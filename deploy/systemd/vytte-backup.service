@@ -1,0 +1,14 @@
+[Unit]
+Description=Create and verify a Vytte production backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/home/klickit/vytte
+ExecStart=/opt/cpanel/ea-php83/root/usr/bin/php /home/klickit/vytte/deploy/scripts/production-backup.php
+UMask=0077
+PrivateTmp=true
+
