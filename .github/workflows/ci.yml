@@ -18,6 +18,9 @@ jobs:
   php-verification:
     name: PHP quality, tests, and official seed
     runs-on: ubuntu-latest
+    env:
+      COMPOSER_AUTH: >-
+        {"github-oauth":{"github.com":"${{ secrets.GITHUB_TOKEN }}"}}
     services:
       postgres:
         image: postgres:17-alpine
@@ -42,6 +45,17 @@ jobs:
           php-version: '8.3'
           extensions: dom, intl, mbstring, pdo_pgsql, zip
           coverage: none
+
+      - name: Locate the Composer package cache
+        id: composer-cache
+        run: echo "directory=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the Composer package cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.directory }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
 
       - name: Install PHP dependencies once
         run: composer install --no-interaction --prefer-dist --no-progress
