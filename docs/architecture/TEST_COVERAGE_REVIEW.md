@@ -5,9 +5,10 @@
 Only one full sequential PostgreSQL run is release evidence. Parallel or batched test runs may support
 development but can hide ordering and shared-database failures.
 
-The 2026-08-15 baseline audit at commit `81c8618` passed 736 tests and 2,709 assertions. Modules added
-after that baseline must run focused tests during development and a new full sequential suite before
-deployment; the final release commit and result belong in the deployment record.
+The 2026-08-17 release audit through commit `70b7fe4` passed 739 tests and 2,731 assertions in one
+sequential local PostgreSQL run. Modules added after that baseline must run focused tests during
+development and a new full sequential suite before deployment; the final release commit and result
+belong in the deployment record.
 
 ## Strong coverage
 
