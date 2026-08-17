@@ -67,7 +67,12 @@ Historical records are in `docs/architecture/archive/`. They describe past state
 8. Do not create parallel scoring or reporting systems for respondent roles.
 9. Make mobile-first, accessible interfaces that work at 375px.
 10. Handle external-service failures in plain language without exposing raw exceptions.
-11. Work in bounded modules; run focused tests during work and the full sequential suite before finalizing. Batched runs have hidden real failures and do not evidence a passing suite.
+11. Work in bounded modules and verify in proportion to risk:
+    - Documentation-only changes require relevant link, formatting, or consistency checks; they do not require PHPUnit.
+    - Test-only changes require the affected tests locally; they do not require a second full local suite when application behavior is unchanged.
+    - Application changes require focused local tests. The full sequential PostgreSQL suite may run once in CI instead of being duplicated locally when the CI environment covers the change.
+    - Run a full local sequential PostgreSQL suite before deployment when changing migrations, seeders, database constraints, scoring, lifecycle state, tenant authorization, publication, immutable snapshots, reporting calculations, dependencies, or other cross-cutting release-critical behavior, or when the user explicitly requests it.
+    - Never run multiple local `php artisan test` processes concurrently. Parallel or batched runs against `vytte_test` can hide ordering failures or corrupt shared state and do not evidence a passing full suite.
 12. Commit and push each completed module separately.
 13. Preserve unrelated worktree changes and never stage them accidentally.
 14. PostgreSQL is the database for local development, tests, and production.
