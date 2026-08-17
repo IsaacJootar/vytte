@@ -36,7 +36,7 @@ jobs:
         run: composer validate --strict --no-check-publish
 
       - name: Check PHP formatting
-        run: vendor/bin/pint --test app bootstrap config database routes tests
+        run: vendor/bin/pint --test app bootstrap/app.php bootstrap/providers.php config database routes tests
 
   full-tests:
     name: Full sequential PostgreSQL suite
@@ -75,7 +75,13 @@ jobs:
           php artisan key:generate
 
       - name: Run one full sequential suite
-        run: php artisan test
+        id: full-tests
+        continue-on-error: true
+        run: php artisan test --log-junit storage/logs/junit.xml
+
+      - name: Report the first test error
+        if: steps.full-tests.outcome == 'failure'
+        run: php .github/scripts/report-junit.php storage/logs/junit.xml
 
   official-seed:
     name: Official seed integrity
