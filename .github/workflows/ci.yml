@@ -15,9 +15,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  php-quality:
-    name: PHP quality
+  php-verification:
+    name: PHP quality, tests, and official seed
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vytte_test
+          POSTGRES_USER: vytte
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd="pg_isready -U vytte -d vytte_test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -29,8 +43,13 @@ jobs:
           extensions: dom, intl, mbstring, pdo_pgsql, zip
           coverage: none
 
-      - name: Install PHP dependencies
+      - name: Install PHP dependencies once
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare Laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate
 
       - name: Validate Composer metadata
         run: composer validate --strict --no-check-publish
@@ -38,88 +57,13 @@ jobs:
       - name: Check PHP formatting
         run: vendor/bin/pint --test app bootstrap/app.php bootstrap/providers.php config database routes tests
 
-  full-tests:
-    name: Full sequential PostgreSQL suite
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_DB: vytte_test
-          POSTGRES_USER: vytte
-          POSTGRES_PASSWORD: secret
-        ports:
-          - 5433:5432
-        options: >-
-          --health-cmd="pg_isready -U vytte -d vytte_test"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v7
-
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: dom, intl, mbstring, pdo_pgsql, zip
-          coverage: none
-
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Prepare Laravel
-        run: |
-          cp .env.example .env
-          php artisan key:generate
-
       - name: Run one full sequential suite
         id: full-tests
         continue-on-error: true
         run: php artisan test --log-junit storage/logs/junit.xml
 
-      - name: Report the first test error
-        if: steps.full-tests.outcome == 'failure'
-        run: php .github/scripts/report-junit.php storage/logs/junit.xml
-
-  official-seed:
-    name: Official seed integrity
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_DB: vytte_test
-          POSTGRES_USER: vytte
-          POSTGRES_PASSWORD: secret
-        ports:
-          - 5433:5432
-        options: >-
-          --health-cmd="pg_isready -U vytte -d vytte_test"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-    steps:
-      - name: Check out source
-        uses: actions/checkout@v7
-
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.3'
-          extensions: dom, intl, mbstring, pdo_pgsql, zip
-          coverage: none
-
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Prepare Laravel
-        run: |
-          cp .env.example .env
-          php artisan key:generate
-
-      - name: Build official database from scratch
+      - name: Build and validate the official database from scratch
+        if: steps.full-tests.outcome == 'success'
         env:
           APP_ENV: testing
           DB_CONNECTION: pgsql
@@ -131,6 +75,10 @@ jobs:
         run: |
           php artisan migrate:fresh --seed --force
           php artisan methodology:validate
+
+      - name: Report the first test error
+        if: always() && steps.full-tests.outcome == 'failure'
+        run: php .github/scripts/report-junit.php storage/logs/junit.xml
 
   frontend:
     name: Frontend build
