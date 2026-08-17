@@ -1,9 +1,13 @@
-<x-app-layout title="Collect responses">
+<x-app-layout title="Collect & review responses">
     @php
         $canFinalize = auth()->user()->can('finalizeMultiRespondent', $assessment);
         $isComplete = $assessment->isComplete();
         $eligible = $preview['eligible_respondent_count'];
         $minimum = $preview['minimum_completed_respondents'];
+        $sessions = $assessment->publicResponseSessions->sortByDesc('last_activity_at');
+        $submitted = $sessions->whereNotNull('submitted_at');
+        $inProgress = $sessions->whereNull('submitted_at')->count();
+        $completionRate = $sessions->isNotEmpty() ? (int) round($submitted->count() / $sessions->count() * 100) : 0;
 
         // Where the collection sits in its four-step workflow.
         $step = $isComplete ? 4 : ($assessment->isDraft() ? 1 : ($eligible > 0 || $assessment->isClosed() ? 3 : 2));
@@ -18,7 +22,7 @@
     <div class="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
             <a href="{{ route('assessments.show', $assessment) }}" class="text-sm font-medium text-vytte-700 hover:underline">← Back to assessment</a>
-            <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Respondent collection</h1>
+            <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Collect & review responses</h1>
             <p class="mt-1 text-sm text-slate-500">
                 {{ $assessment->project?->name }} · {{ $assessment->target?->name }}
             </p>
@@ -44,18 +48,12 @@
                 </button>
             </form>
         @else
-            <div class="flex flex-wrap gap-2">
-                <a href="{{ route('assessments.monitor', $assessment) }}"
-                   class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200">
-                    Monitor responses
-                </a>
-                <form method="POST" action="{{ route('assessments.respondent-link', $assessment) }}">
-                    @csrf
-                    <button class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800">
-                        {{ $respondentTokens->isNotEmpty() ? 'Create another link' : 'Create respondent link' }}
-                    </button>
-                </form>
-            </div>
+            <form method="POST" action="{{ route('assessments.respondent-link', $assessment) }}">
+                @csrf
+                <button class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800">
+                    {{ $respondentTokens->isNotEmpty() ? 'Create another link' : 'Create respondent link' }}
+                </button>
+            </form>
         @endif
     </div>
 
@@ -114,25 +112,18 @@
         </div>
     @endif
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Eligible completed</p>
-            <p class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{{ $eligible }}</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Required minimum</p>
-            <p class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{{ $minimum }}</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Provisional score</p>
-            <p class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">
-                {{ $preview['result']['overall_score'] === null ? '—' : number_format($preview['result']['overall_score'], 2) }}
-            </p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Excluded</p>
-            <p class="mt-2 text-3xl font-bold text-slate-900 dark:text-white">{{ $preview['excluded_session_count'] }}</p>
-        </div>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <x-stat-card tone="blue" label="Responses started" :value="$sessions->count()"
+                     :sub="$inProgress.' still in progress'" />
+        <x-stat-card tone="strong" label="Completed" :value="$submitted->count()"
+                     :sub="$completionRate.'% of those started'" />
+        <x-stat-card :tone="$eligible >= $minimum ? 'strong' : 'moderate'" label="Eligible" :value="$eligible"
+                     :sub="$minimum.' needed to finalise'" />
+        <x-stat-card tone="slate" label="Required minimum" :value="$minimum" sub="Eligible completed responses" />
+        <x-stat-card tone="blue" label="Provisional score"
+                     :value="$preview['result']['overall_score'] === null ? '—' : number_format($preview['result']['overall_score'], 2)"
+                     sub="Updates until finalisation" />
+        <x-stat-card tone="slate" label="Excluded" :value="$preview['excluded_session_count']" sub="Not included in the result" />
     </div>
 
     <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
@@ -150,53 +141,83 @@
         @endif
     </div>
 
-    <div class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+    <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" aria-labelledby="responses-heading">
         <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-            <h2 class="font-semibold text-slate-900 dark:text-white">Respondent session audit</h2>
-            <p class="mt-1 text-xs text-slate-500">Individual answers are not displayed here or in shared reports.</p>
+            <h2 id="responses-heading" class="font-semibold text-slate-900 dark:text-white">Response progress and review</h2>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">See who has started, review completed responses, and decide which responses count before finalising.</p>
         </div>
-        <div class="divide-y divide-slate-100 dark:divide-slate-700">
-            @forelse ($assessment->publicResponseSessions->sortByDesc('started_at') as $session)
-                @php
-                    $exclusion = collect($preview['excluded_sessions'])->firstWhere('session_id', $session->session_id);
-                @endphp
-                <div class="px-5 py-4">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p class="font-mono text-xs text-slate-700 dark:text-slate-300">{{ $session->session_id }}</p>
-                            <p class="mt-1 text-xs text-slate-500">
-                                {{ $session->submitted_at ? 'Submitted '.$session->submitted_at->format('d M Y H:i') : 'Incomplete' }}
-                                · {{ $session->eligibility_status }}
-                                @if ($session->scoreResult?->overall_score !== null)
-                                    · Score {{ number_format((float) $session->scoreResult->overall_score, 2) }}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-900/50">
+                    <tr>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Started</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Last activity</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Progress</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Score</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Eligibility review</th>
+                        <th scope="col" class="px-5 py-2.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400"><span class="sr-only">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                    @forelse ($sessions as $session)
+                        @php
+                            $exclusion = collect($preview['excluded_sessions'])->firstWhere('session_id', $session->session_id);
+                            [$eligibilityLabel, $eligibilityClasses] = match (true) {
+                                $session->is_test => ['Test', 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'],
+                                $session->eligibility_status === 'ELIGIBLE' => ['Eligible', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'],
+                                $session->eligibility_status === 'EXCLUDED' => ['Excluded', 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'],
+                                default => ['Not reviewed', 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'],
+                            };
+                        @endphp
+                        <tr>
+                            <td class="whitespace-nowrap px-5 py-3 text-slate-600 dark:text-slate-300">{{ $session->started_at?->diffForHumans() ?? '—' }}</td>
+                            <td class="whitespace-nowrap px-5 py-3 text-xs text-slate-500 dark:text-slate-400">{{ $session->last_activity_at?->diffForHumans() ?? '—' }}</td>
+                            <td class="px-5 py-3">
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $session->submitted_at ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' }}">
+                                    {{ $session->submitted_at ? 'Completed' : 'In progress' }}
+                                </span>
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3 font-semibold text-slate-700 dark:text-slate-200">
+                                {{ $session->scoreResult?->overall_score === null ? '—' : number_format((float) $session->scoreResult->overall_score, 2) }}
+                            </td>
+                            <td class="min-w-72 px-5 py-3">
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $eligibilityClasses }}">{{ $eligibilityLabel }}</span>
+                                @if ($exclusion)
+                                    <p class="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">{{ $exclusion['reason'] }}</p>
                                 @endif
-                            </p>
-                            @if ($exclusion)
-                                <p class="mt-1 text-xs font-medium text-amber-700">{{ $exclusion['reason'] }}</p>
-                            @endif
-                        </div>
-                        @if ($canFinalize && ! $isComplete && $session->submitted_at)
-                            <form method="POST" action="{{ route('assessments.respondent-sessions.classify', [$assessment, $session]) }}"
-                                  class="flex flex-wrap items-center gap-2">
-                                @csrf
-                                @method('PATCH')
-                                <select name="classification" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
-                                    <option value="ELIGIBLE" @selected($session->eligibility_status === 'ELIGIBLE' && ! $session->is_test)>Eligible</option>
-                                    <option value="EXCLUDED" @selected($session->eligibility_status === 'EXCLUDED' && ! $session->is_test)>Exclude</option>
-                                    <option value="TEST" @selected($session->is_test)>Test</option>
-                                </select>
-                                <input name="reason" value="{{ $session->eligibility_reason }}" placeholder="Reason when excluded"
-                                       class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
-                                <button class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold">Save</button>
-                            </form>
-                        @endif
-                    </div>
-                </div>
-            @empty
-                <p class="px-5 py-10 text-center text-sm text-slate-500">No respondent sessions yet.</p>
-            @endforelse
+                                @if ($canFinalize && ! $isComplete && $session->submitted_at)
+                                    <form method="POST" action="{{ route('assessments.respondent-sessions.classify', [$assessment, $session]) }}" class="mt-2 flex flex-wrap items-center gap-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <select name="classification" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                                            <option value="ELIGIBLE" @selected($session->eligibility_status === 'ELIGIBLE' && ! $session->is_test)>Eligible</option>
+                                            <option value="EXCLUDED" @selected($session->eligibility_status === 'EXCLUDED' && ! $session->is_test)>Exclude</option>
+                                            <option value="TEST" @selected($session->is_test)>Test</option>
+                                        </select>
+                                        <input name="reason" value="{{ $session->eligibility_reason }}" placeholder="Reason when excluded"
+                                               class="min-w-44 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                                        <button class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold dark:border-slate-600">Save</button>
+                                    </form>
+                                @endif
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-3 text-right">
+                                @if ($session->submitted_at)
+                                    <a href="{{ route('assessments.respondent-sessions.show', [$assessment, $session]) }}" class="text-xs font-semibold text-vytte-700 hover:underline dark:text-vytte-400">View response →</a>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="px-5 py-10 text-center">
+                                <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No responses yet</p>
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Share the respondent link above. Responses will appear here as they arrive.</p>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
-    </div>
+    </section>
 
     @if ($canFinalize && ! $isComplete)
         <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">

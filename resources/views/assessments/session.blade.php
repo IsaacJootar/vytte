@@ -1,6 +1,6 @@
 <x-app-layout title="Respondent answers">
     <div class="max-w-3xl mx-auto">
-        <a href="{{ route('assessments.monitor', $assessment) }}" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-3">
+        <a href="{{ route('assessments.respondent-collection', $assessment) }}" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-3">
             ← Back to responses
         </a>
 

@@ -49,7 +49,7 @@ class MultiRespondentAssessmentController extends Controller
         abort_unless($responseSession->assessment_id === $assessment->assessment_id, 404);
 
         if ($responseSession->submitted_at === null) {
-            return redirect()->route('assessments.monitor', $assessment)
+            return redirect()->route('assessments.respondent-collection', $assessment)
                 ->with('error', 'That response is still in progress — there is nothing to view yet.');
         }
 

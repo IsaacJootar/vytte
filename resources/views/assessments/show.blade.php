@@ -62,8 +62,7 @@
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">Collecting responses by shared link.</p>
                 <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ $respondentDone }} of {{ $respondentTotal }} respondents have finished.</p>
                 <div class="mt-4 flex flex-wrap gap-3">
-                    <a href="{{ route('assessments.monitor', $assessment) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">Monitor responses →</a>
-                    <a href="{{ route('assessments.respondent-collection', $assessment) }}" class="inline-flex items-center rounded-xl border border-slate-200 dark:border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Manage links & finalize</a>
+                    <a href="{{ route('assessments.respondent-collection', $assessment) }}" class="inline-flex items-center gap-1.5 rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">Collect & review responses →</a>
                 </div>
             @elseif ($status === 'closed')
                 <p class="text-sm font-semibold text-slate-900 dark:text-white">Collection is closed.</p>
@@ -105,7 +104,7 @@
                         @if ($assessment->isPublished()){{ $respondentDone }} of {{ $respondentTotal }} finished · {{ $activeLinks }} active link{{ $activeLinks === 1 ? '' : 's' }}
                         @else Share a link so others can answer independently.@endif
                     </p>
-                    <a href="{{ route('assessments.respondent-collection', $assessment) }}" class="mt-3 inline-block text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:underline">{{ $assessment->isPublished() ? 'Manage collection' : 'Set up collection' }} →</a>
+                    <a href="{{ route('assessments.respondent-collection', $assessment) }}" class="mt-3 inline-block text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:underline">{{ $assessment->isPublished() ? 'Collect & review responses' : 'Set up collection' }} →</a>
                 </div>
             @endif
 

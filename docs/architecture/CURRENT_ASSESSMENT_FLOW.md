@@ -112,6 +112,11 @@ none exists, and redirects to the collection page with that link visible and rea
 the action reuses the active link rather than creating duplicates. Additional links are an explicit
 **Create another link** action. The operator workflow is **Open and share → Collect → Review →
 Finalise**; collection may be closed and reopened while the assessment remains incomplete.
+The **Collect & review responses** page is the only assessment-specific operations surface: it
+contains link management, live response progress, completed-response review, eligibility decisions,
+the provisional aggregate, and finalisation. The workspace-wide Monitor page still summarizes
+multiple assessments. The former per-assessment `/monitor` URL redirects to collection so saved
+bookmarks do not break.
 
 Published content must explicitly enable it and freeze:
 

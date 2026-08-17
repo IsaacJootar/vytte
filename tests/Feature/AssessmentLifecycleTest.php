@@ -207,7 +207,7 @@ class AssessmentLifecycleTest extends TestCase
             ->assertSessionHas('respondent_link');
     }
 
-    public function test_the_monitor_view_renders_for_a_published_assessment(): void
+    public function test_the_old_assessment_monitor_url_redirects_to_the_single_collection_page(): void
     {
         [$user, $workspace] = $this->ownerWithWorkspace();
         $assessment = $this->multiRespondentAssessment($workspace, $user);
@@ -215,9 +215,23 @@ class AssessmentLifecycleTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('assessments.monitor', $assessment))
+            ->assertRedirect(route('assessments.respondent-collection', $assessment));
+    }
+
+    public function test_collection_page_contains_live_progress_and_no_duplicate_monitor_link(): void
+    {
+        [$user, $workspace] = $this->ownerWithWorkspace();
+        $assessment = $this->multiRespondentAssessment($workspace, $user);
+        $assessment->markPublished($user->user_id);
+
+        $this->actingAs($user)
+            ->get(route('assessments.respondent-collection', $assessment))
             ->assertOk()
-            ->assertSee('Live response monitoring')
-            ->assertSee('No responses yet');
+            ->assertSee('Collect & review responses', false)
+            ->assertSee('Responses started')
+            ->assertSee('Response progress and review')
+            ->assertSee('No responses yet')
+            ->assertDontSee('Monitor responses');
     }
 
     public function test_the_dashboard_shows_operational_counts(): void

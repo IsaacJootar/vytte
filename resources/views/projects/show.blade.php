@@ -203,26 +203,14 @@
                                         View →
                                     </a>
                                 @elseif ($assessment->isDraft())
-                                    {{-- Publishing is the deliberate act that opens the assessment for responses. --}}
-                                    <form method="POST" action="{{ route('assessments.publish', $assessment) }}">
-                                        @csrf
-                                        <button type="submit"
-                                                class="text-xs font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
-                                            Publish
-                                        </button>
-                                    </form>
-                                    <a href="{{ route('assessments.run', $assessment) }}"
+                                    <a href="{{ route('assessments.setup', $assessment) }}"
                                        class="text-sm font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
-                                        Continue →
+                                        Continue setup →
                                     </a>
                                 @else
-                                    <a href="{{ route('assessments.monitor', $assessment) }}"
-                                       class="text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
-                                        Monitor
-                                    </a>
-                                    <a href="{{ route('assessments.run', $assessment) }}"
+                                    <a href="{{ route('assessments.respondent-collection', $assessment) }}"
                                        class="text-sm font-semibold text-vytte-700 hover:text-vytte-900 transition-colors">
-                                        Continue →
+                                        Collect & review →
                                     </a>
                                 @endif
                             </div>

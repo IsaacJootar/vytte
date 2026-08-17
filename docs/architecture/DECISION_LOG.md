@@ -430,3 +430,10 @@
 - **Decision:** The shared path exposes one deliberate **Open for responses & create link** action. It atomically publishes and locks the assessment and creates its first active respondent link, then redirects to collection with a success message and the reusable link visible. A retry reuses the active link; later links require the explicit **Create another link** action.
 - **Lifecycle boundary:** Publication remains permanent, the collection window may still be closed and reopened while incomplete, and completion remains terminal. The confirmation explains the setup lock before publication.
 - **Language:** Workspace UI says open, collect, review, and finalise. Internal publication fields and immutable audit events remain unchanged.
+
+### DEC-2026-08-17-058: One Assessment-Specific Collection Operations Page
+
+- **Status:** Accepted and implemented.
+- **Context:** An assessment's Respondent Collection page linked to a separate Monitor Responses page even though both displayed response counts and respondent sessions. Users could not tell which page governed collection.
+- **Decision:** **Collect & review responses** is the single assessment-specific page for respondent links, live progress, completed-response review, eligibility decisions, provisional aggregation, closing/reopening, and finalisation. The duplicate assessment Monitor page is removed, and its named URL redirects to collection for backward compatibility.
+- **Boundary:** The workspace-wide **Monitor Responses** hub remains because it summarizes collection across multiple assessments rather than duplicating one assessment's operations.

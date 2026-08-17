@@ -46,9 +46,9 @@ The organisation stays in control of who counts: every response session can be m
 
 - **Publish / Close / Reopen actions** — `AssessmentController@publish|close|reopen`, with model helpers `markPublished`, `markClosed`, `reopen`, `isCollecting`, `isClosed`. Audited.
 - **Distribution gate** — respondent-link creation and the public runner both check `isCollecting()`. Closing an assessment stops new answers even on links already shared.
-- **Monitoring view** — `assessments.monitor`, read-only over `public_response_sessions`: started, in progress, completed, completion rate, eligible vs minimum, per-respondent status.
+- **Collection operations view** — `assessments.respondent-collection` combines links, started/in-progress/completed counts, completion rate, eligibility review, per-response status, provisional aggregation, and finalisation. The former `assessments.monitor` URL redirects here.
 - **Operational dashboard** — the workspace homepage now leads with the daily work: awaiting publication, collecting now, responses in — over the same tables as the outcome figures.
-- **Lifecycle-aware UI** — the project page shows each assessment's state (Draft / Collecting / Closed / Complete) and offers the right action (Publish, Monitor, Continue).
+- **Lifecycle-aware UI** — the project page shows each assessment's state (Draft / Collecting / Closed / Complete) and offers one clear next action (Continue setup, Collect & review, or View report).
 
 No migration. No new core table. `closed_at` already existed on `assessments`.
 

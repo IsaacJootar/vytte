@@ -590,40 +590,14 @@ class AssessmentController extends Controller
     }
 
     /**
-     * Live monitoring of an assessment's responses: how many have come in, how far each has
-     * got, and how many are complete. A read-only view over the response sessions, so an
-     * organisation can watch collection without touching the data.
+     * Keep old assessment-monitor bookmarks working while collection, progress review,
+     * eligibility, and finalization live on one assessment-specific operations page.
      */
-    public function monitor(Assessment $assessment): View
+    public function monitor(Assessment $assessment): RedirectResponse
     {
         $this->authorizeWorkspace($assessment);
 
-        $assessment->load(['project', 'target', 'snapshot']);
-
-        $sessions = $assessment->publicResponseSessions()
-            ->orderByDesc('last_activity_at')
-            ->get();
-
-        $submitted = $sessions->whereNotNull('submitted_at');
-        $eligible = $submitted->where('eligibility_status', 'ELIGIBLE');
-
-        $minimum = (int) ($assessment->snapshot?->collection_config['minimum_completed_respondents'] ?? 1);
-
-        return view('assessments.monitor', [
-            'assessment' => $assessment,
-            'sessions' => $sessions,
-            'stats' => [
-                'started' => $sessions->count(),
-                'in_progress' => $sessions->whereNull('submitted_at')->count(),
-                'submitted' => $submitted->count(),
-                'eligible' => $eligible->count(),
-                'excluded' => $submitted->where('eligibility_status', 'EXCLUDED')->count(),
-                'minimum' => $minimum,
-                'completion_rate' => $sessions->count() > 0
-                    ? (int) round($submitted->count() / $sessions->count() * 100)
-                    : 0,
-            ],
-        ]);
+        return redirect()->route('assessments.respondent-collection', $assessment);
     }
 
     /**

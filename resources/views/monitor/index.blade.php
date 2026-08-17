@@ -24,7 +24,7 @@
                         $total = $assessment->public_response_sessions_count;
                     @endphp
                     <li>
-                        <a href="{{ route('assessments.monitor', $assessment) }}"
+                        <a href="{{ route('assessments.respondent-collection', $assessment) }}"
                            class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ $subject }}</p>
@@ -35,7 +35,7 @@
                                     <p class="text-sm font-bold text-slate-900 dark:text-white tabular-nums">{{ $done }}<span class="text-slate-400 dark:text-slate-500 font-normal"> / {{ $total }}</span></p>
                                     <p class="text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">completed</p>
                                 </div>
-                                <span class="text-xs font-semibold text-vytte-700 dark:text-vytte-400">Monitor →</span>
+                                <span class="text-xs font-semibold text-vytte-700 dark:text-vytte-400">Review →</span>
                             </div>
                         </a>
                     </li>
