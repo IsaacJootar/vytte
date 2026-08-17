@@ -161,6 +161,13 @@ Required departments cannot be removed. Default departments are preselected and 
 
 Published catalogue releases live in `assessment_catalogue_releases`.
 
+During beta, every published catalogue release is available to every workspace without a plan,
+publisher, or catalogue-entitlement restriction. Draft, archived, and superseded releases remain
+unavailable. Comprehensive releases must still match the project's setting and facility profile;
+every published focused release is available for any setting. This universal beta access is a
+commercial availability decision, not a relaxation of publication, compatibility, or snapshot
+governance.
+
 A catalogue release pins:
 
 - one creation path;

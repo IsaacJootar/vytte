@@ -50,7 +50,8 @@ The project model currently supports one assessed setting per project.
 Comprehensive Health Assessment is a composition orchestrator.
 
 1. The target's facility profile is resolved.
-2. The controller loads published comprehensive catalogue releases for that profile.
+2. The controller loads every published comprehensive catalogue release for that profile, without
+   filtering by workspace plan or catalogue entitlement during beta.
 3. The UI shows services included in the assessment.
 4. Required departments are locked in.
 5. Default departments are preselected and may be removed with a reason when allowed.
@@ -62,7 +63,8 @@ The orchestrator owns no clinical questions.
 
 ## 3. Focused Health Assessment
 
-1. The controller loads published focused catalogue releases.
+1. The controller loads every published focused catalogue release for every workspace and setting,
+   without filtering by workspace plan or catalogue entitlement during beta.
 2. The user selects one health domain, programme, topic, or intervention.
 3. The selected release resolves to one official framework scope in the current implementation.
 4. No unrelated department checklist or bulk starter set is shown.

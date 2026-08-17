@@ -144,6 +144,33 @@ class AssessmentTest extends TestCase
             ->assertSee('Demo Focused Mental Health Assessment');
     }
 
+    public function test_every_published_template_is_available_on_the_basic_plan_when_compatible(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $workspace->update(['plan' => 'BASIC']);
+        [$project, $target] = $this->createHealthFacilityProject($workspace, $user);
+
+        $response = $this->actingAs($user)
+            ->get(route('assessments.create', $project))
+            ->assertOk();
+
+        $visibleFocusedIds = $response->viewData('focusedReleases')
+            ->pluck('catalogue_release_id')->sort()->values()->all();
+        $publishedFocusedIds = AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+            ->where('creation_path', 'FOCUSED')
+            ->pluck('catalogue_release_id')->sort()->values()->all();
+
+        $visibleComprehensiveIds = $response->viewData('comprehensiveReleases')
+            ->pluck('catalogue_release_id')->sort()->values()->all();
+        $publishedCompatibleComprehensiveIds = AssessmentCatalogueRelease::where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+            ->where('creation_path', 'COMPREHENSIVE')
+            ->where('facility_profile_id', $target->facility_profile_id)
+            ->pluck('catalogue_release_id')->sort()->values()->all();
+
+        $this->assertSame($publishedFocusedIds, $visibleFocusedIds);
+        $this->assertSame($publishedCompatibleComprehensiveIds, $visibleComprehensiveIds);
+    }
+
     // ---- Store ----
 
     public function test_assessment_store_creates_assessment_and_module_scope(): void
