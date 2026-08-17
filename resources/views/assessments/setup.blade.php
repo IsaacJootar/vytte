@@ -68,7 +68,7 @@
                 @endif
             </div>
             <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                These questions come from the published assessment. Next, you may add optional local context without changing its frozen score or benchmark.
+                These questions come from the selected published assessment. Next, you can add questions that matter specifically to this setting.
             </p>
 
             {{-- Preview the actual questions and segments, so the user can judge them before adding. --}}
@@ -115,8 +115,11 @@
 
         {{-- ===================== STEP 2 — YOUR QUESTIONS ===================== --}}
         @elseif ($step === 2)
+            <div class="mb-2">
+                <span class="inline-flex rounded-full bg-vytte-50 px-2.5 py-1 text-xs font-semibold text-vytte-700 dark:bg-vytte-900/30 dark:text-vytte-300">Local to this assessment</span>
+            </div>
             <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
-                Add questions needed for this specific setting. They appear in the same report as clearly labelled local context and cannot alter the published assessment score or its comparisons.
+                Add questions specific to this setting. Their answers appear in the same report, and eligible answer types can contribute to an optional local score.
                 @if ($customCount > 0)<span class="font-semibold text-slate-700 dark:text-slate-200">{{ $customCount }} saved so far.</span>@endif
             </p>
 
@@ -161,12 +164,16 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
                 @if ($mode === 'share')
                     <h2 class="text-base font-bold text-slate-900 dark:text-white">Share it for others to answer</h2>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Publishing opens the assessment and lets you create a link to send. You review and finalise the combined result when enough people have answered.</p>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Open the assessment and create one link to send. Each person answers independently, then you review and finalise the combined result.</p>
+                    <p class="mt-3 rounded-xl bg-vytte-50 px-4 py-3 text-xs text-vytte-800 dark:bg-vytte-900/20 dark:text-vytte-200">Opening locks the assessment questions. You can close or reopen response collection later.</p>
                     <div class="mt-5 flex flex-col sm:flex-row gap-3">
-                        <a href="{{ route('assessments.respondent-collection', $assessment) }}"
-                           class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">
-                            Publish & create link →
-                        </a>
+                        <form method="POST" action="{{ route('assessments.open-and-create-link', $assessment) }}"
+                              onsubmit="return confirm('Open this assessment for responses? Its questions will be locked, but you can close or reopen collection later.')">
+                            @csrf
+                            <button class="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">
+                                Open for responses & create link →
+                            </button>
+                        </form>
                         <a href="{{ route('assessments.show', ['assessment' => $assessment, 'saved' => 1]) }}"
                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                             Save as draft for later

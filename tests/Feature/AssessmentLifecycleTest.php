@@ -127,6 +127,65 @@ class AssessmentLifecycleTest extends TestCase
         $this->assertDatabaseHas('assessment_respondent_tokens', ['assessment_id' => $assessment->assessment_id]);
     }
 
+    public function test_opening_for_shared_responses_publishes_and_creates_the_first_link_in_one_action(): void
+    {
+        [$user, $workspace] = $this->ownerWithWorkspace();
+        $assessment = $this->multiRespondentAssessment($workspace, $user);
+
+        $this->actingAs($user)
+            ->post(route('assessments.open-and-create-link', $assessment))
+            ->assertRedirect(route('assessments.respondent-collection', $assessment))
+            ->assertSessionHas('success', 'Assessment opened and respondent link created. Copy it below to start collecting responses.')
+            ->assertSessionHas('respondent_link');
+
+        $this->assertTrue($assessment->fresh()->isCollecting());
+        $this->assertDatabaseCount('assessment_respondent_tokens', 1);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.published']);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assessment.respondent_link.created']);
+    }
+
+    public function test_opening_for_shared_responses_is_idempotent_and_reuses_the_active_link(): void
+    {
+        [$user, $workspace] = $this->ownerWithWorkspace();
+        $assessment = $this->multiRespondentAssessment($workspace, $user);
+
+        $this->actingAs($user)->post(route('assessments.open-and-create-link', $assessment));
+        $firstLink = session('respondent_link');
+
+        $this->actingAs($user)
+            ->post(route('assessments.open-and-create-link', $assessment))
+            ->assertSessionHas('respondent_link', $firstLink);
+
+        $this->assertDatabaseCount('assessment_respondent_tokens', 1);
+    }
+
+    public function test_shared_setup_explains_the_single_open_and_create_action(): void
+    {
+        [$user, $workspace] = $this->ownerWithWorkspace();
+        $assessment = $this->multiRespondentAssessment($workspace, $user);
+
+        $this->actingAs($user)
+            ->get(route('assessments.setup', ['assessment' => $assessment, 'step' => 4, 'mode' => 'share']))
+            ->assertOk()
+            ->assertSee('Open for responses & create link', false)
+            ->assertSee('Opening locks the assessment questions.')
+            ->assertSee(route('assessments.open-and-create-link', $assessment), false);
+    }
+
+    public function test_local_question_step_uses_one_positive_explanation(): void
+    {
+        [$user, $workspace] = $this->ownerWithWorkspace();
+        $assessment = $this->multiRespondentAssessment($workspace, $user);
+
+        $this->actingAs($user)
+            ->get(route('assessments.setup', ['assessment' => $assessment, 'step' => 2]))
+            ->assertOk()
+            ->assertSee('Local to this assessment')
+            ->assertSee('eligible answer types can contribute to an optional local score')
+            ->assertDontSee("Vytte's official score")
+            ->assertDontSee('cannot alter the published assessment score');
+    }
+
     public function test_closing_stops_new_links_and_reopening_restores_them(): void
     {
         [$user, $workspace] = $this->ownerWithWorkspace();

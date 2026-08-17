@@ -5,12 +5,11 @@
         </a>
 
         <div class="mb-5">
-            <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Local questions</p>
+            <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Local to this assessment</p>
             <h1 class="mt-0.5 text-xl font-bold text-slate-900 dark:text-white">Add local questions</h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-                Add questions needed for this specific setting, alongside the published assessment. They appear in the
-                same report as clearly labelled local context and
-                <span class="font-semibold">cannot alter the published assessment score or benchmark</span>.
+                Add questions specific to this setting. Their answers appear in the same report, and eligible answer
+                types can contribute to an optional local score.
             </p>
         </div>
 

@@ -4,7 +4,7 @@
             <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 uppercase tracking-wide">Last step</p>
             <h1 class="mt-0.5 text-xl font-bold text-slate-900 dark:text-white">{{ $section->section_title ?: 'Local context' }}</h1>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                These local questions add context to the same report. They never change the published assessment score or benchmark.
+                These setting-specific answers appear in the same report, with any optional local score clearly labelled.
             </p>
         </div>
 

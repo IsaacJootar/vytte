@@ -8,7 +8,7 @@
         // Where the collection sits in its four-step workflow.
         $step = $isComplete ? 4 : ($assessment->isDraft() ? 1 : ($eligible > 0 || $assessment->isClosed() ? 3 : 2));
         $steps = [
-            1 => ['Share', 'Publish and send the link'],
+            1 => ['Open & share', 'Lock setup and create the first link'],
             2 => ['Collect', 'People answer independently'],
             3 => ['Review', 'Check who counts'],
             4 => ['Finalise', 'Combine into one result'],
@@ -29,11 +29,11 @@
                 View final report
             </a>
         @elseif ($assessment->isDraft())
-            {{-- Publishing opens the assessment for responses. Links cannot be created until then. --}}
-            <form method="POST" action="{{ route('assessments.publish', $assessment) }}">
+            <form method="POST" action="{{ route('assessments.open-and-create-link', $assessment) }}"
+                  onsubmit="return confirm('Open this assessment for responses? Its questions will be locked, but you can close or reopen collection later.')">
                 @csrf
                 <button class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800">
-                    Publish & open for responses
+                    Open for responses & create link
                 </button>
             </form>
         @elseif ($assessment->isClosed())
@@ -52,7 +52,7 @@
                 <form method="POST" action="{{ route('assessments.respondent-link', $assessment) }}">
                     @csrf
                     <button class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white hover:bg-vytte-800">
-                        Create respondent link
+                        {{ $respondentTokens->isNotEmpty() ? 'Create another link' : 'Create respondent link' }}
                     </button>
                 </form>
             </div>
@@ -77,7 +77,7 @@
 
     @unless ($isComplete)
         <div class="mb-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs text-slate-500 dark:text-slate-400">Need setting-specific context? Add optional local questions before sharing. They appear separately in the report and cannot alter the published score or benchmark.</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Need more setting-specific context? Add local questions before sharing the link.</p>
             <a href="{{ route('assessments.custom.edit', $assessment) }}" class="flex-shrink-0 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">Add local questions →</a>
         </div>
     @endunless

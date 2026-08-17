@@ -422,3 +422,11 @@
 - **Decision:** Every workspace may discover and use every published catalogue release during beta, regardless of subscription plan, publisher, or future catalogue-entitlement concepts. Focused templates are available for every setting. Comprehensive templates remain limited to their compatible setting and facility profile because that constraint protects assessment meaning rather than commercial access.
 - **Boundaries:** Draft, archived, and superseded releases are not user-selectable. Universal availability does not bypass publication validation, immutable versions, setting compatibility, workspace authorization, or the plan's separate limit on how many assessments may be created.
 - **Future change:** Paid catalogue segmentation may be introduced only through an explicit successor decision with visible product communication and access tests. It must never silently hide a previously available published template.
+
+### DEC-2026-08-17-057: Opening Shared Collection Creates The First Link In One Action
+
+- **Status:** Accepted and implemented.
+- **Context:** Setup promised “Publish & create link” but only navigated to collection. Users then had to publish and create the respondent link in two more unexplained actions, with no immediate proof that a link existed.
+- **Decision:** The shared path exposes one deliberate **Open for responses & create link** action. It atomically publishes and locks the assessment and creates its first active respondent link, then redirects to collection with a success message and the reusable link visible. A retry reuses the active link; later links require the explicit **Create another link** action.
+- **Lifecycle boundary:** Publication remains permanent, the collection window may still be closed and reopened while incomplete, and completion remains terminal. The confirmation explains the setup lock before publication.
+- **Language:** Workspace UI says open, collect, review, and finalise. Internal publication fields and immutable audit events remain unchanged.

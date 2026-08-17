@@ -120,6 +120,7 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/share', [ExportController::class, 'createShareLink'])->name('assessments.share');
     Route::post('assessments/{assessment}/email', [ExportController::class, 'emailReport'])->name('assessments.email');
     Route::delete('assessments/{assessment}/share-links/{shareLink}', [ExportController::class, 'revokeShareLink'])->name('assessments.share.revoke');
+    Route::post('assessments/{assessment}/open-and-create-link', [RespondentLinkController::class, 'openAndCreate'])->name('assessments.open-and-create-link');
     Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');
     Route::delete('assessments/{assessment}/respondent-links/{respondentToken}', [RespondentLinkController::class, 'destroy'])->name('assessments.respondent-link.destroy');
     Route::get('projects/{project}/export/csv', [ExportController::class, 'projectCsv'])->name('projects.export.csv');

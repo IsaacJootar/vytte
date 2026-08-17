@@ -106,6 +106,13 @@ Evidence is context support. It is not a separate workflow.
 
 Multi-respondent collection remains part of the same assessment architecture.
 
+For workspace users, opening collection and creating the first respondent link is one deliberate,
+idempotent action. The action publishes and locks the assessment, creates the first active link when
+none exists, and redirects to the collection page with that link visible and ready to copy. Retrying
+the action reuses the active link rather than creating duplicates. Additional links are an explicit
+**Create another link** action. The operator workflow is **Open and share → Collect → Review →
+Finalise**; collection may be closed and reopened while the assessment remains incomplete.
+
 Published content must explicitly enable it and freeze:
 
 - minimum completed eligible respondent threshold;

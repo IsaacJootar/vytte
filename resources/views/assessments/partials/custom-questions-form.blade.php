@@ -24,7 +24,7 @@
         <div class="grid gap-3 sm:grid-cols-2">
             <div>
                 <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Just for this assessment</p>
-                <p class="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">Add it below. It only shows up in this report and never changes Vytte's official score.</p>
+                <p class="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">Add it below so the answer appears in this assessment's report.</p>
             </div>
             <div>
                 <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Want other teams to use it too?</p>
@@ -113,9 +113,7 @@
                                 <input type="hidden" :name="'questions['+i+'][is_scored]'" value="0">
                                 <input type="checkbox" :name="'questions['+i+'][is_scored]'" value="1" x-model="q.is_scored"
                                        class="mt-0.5 rounded border-slate-300 text-vytte-600 focus:ring-vytte-500">
-                                <span>Score this question
-                                    <span class="mt-0.5 block text-xs font-normal text-slate-500">Only affects this local section's own score. Vytte's official score never changes.</span>
-                                </span>
+                                <span>Include in local score</span>
                             </label>
 
                             <div x-show="q.is_scored" class="mt-3">
