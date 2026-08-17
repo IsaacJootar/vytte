@@ -46,19 +46,19 @@ jobs:
           extensions: dom, intl, mbstring, pdo_pgsql, zip
           coverage: none
 
-      - name: Locate the Composer package cache
+      - name: Locate the Composer cache
         id: composer-cache
-        run: echo "directory=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+        run: echo "directory=$(composer config cache-dir)" >> "$GITHUB_OUTPUT"
 
-      - name: Restore the Composer package cache
-        uses: actions/cache@v4
+      - name: Restore the Composer cache
+        uses: actions/cache@v5
         with:
           path: ${{ steps.composer-cache.outputs.directory }}
           key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install PHP dependencies once
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer install --no-interaction --prefer-source --no-progress
 
       - name: Prepare Laravel
         run: |
