@@ -23,13 +23,16 @@ class OfficialPhcCatalogueTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        $release = AssessmentCatalogueRelease::where('release_code', 'VYTTE_PHC_ASSESSMENT_V3')
+        // WashMenstrualHygieneExtensionSeeder advances every comprehensive release that pins
+        // the WASH department framework, so the previously-live V3 is superseded by a new V4
+        // pinning the WASH department's v2 (menstrual hygiene management indicators added).
+        $release = AssessmentCatalogueRelease::where('release_code', 'VYTTE_PHC_ASSESSMENT_V4')
             ->with(['facilityProfile.departments', 'departmentFrameworkVersions.module'])
             ->firstOrFail();
 
         $this->assertSame(AssessmentCatalogueRelease::STATUS_PUBLISHED, $release->status);
         $this->assertDatabaseHas('assessment_catalogue_releases', [
-            'release_code' => 'VYTTE_PHC_ASSESSMENT_V2',
+            'release_code' => 'VYTTE_PHC_ASSESSMENT_V3',
             'status' => AssessmentCatalogueRelease::STATUS_SUPERSEDED,
         ]);
         $this->assertCount(25, $release->departmentFrameworkVersions);
@@ -42,8 +45,9 @@ class OfficialPhcCatalogueTest extends TestCase
             ->whereIn('framework_version_id', $frameworkIds)
             ->selectRaw('COUNT(*) AS placements, COUNT(DISTINCT question_id) AS questions')
             ->first();
-        $this->assertSame(280, (int) $questionCounts->placements);
-        $this->assertSame(280, (int) $questionCounts->questions);
+        // 280 original placements plus the 5 new menstrual hygiene management questions.
+        $this->assertSame(285, (int) $questionCounts->placements);
+        $this->assertSame(285, (int) $questionCounts->questions);
         $departmentsAwaitingContent = $release->facilityProfile->departments
             ->whereNotIn('module_id', $release->departmentFrameworkVersions->pluck('module_id'))
             ->reject(fn ($department) => $department->module_code === 'FAC');
@@ -55,8 +59,8 @@ class OfficialPhcCatalogueTest extends TestCase
             $departmentsAwaitingContent->pluck('module_code')->all(),
         );
 
-        $clinicRelease = AssessmentCatalogueRelease::where('release_code', 'VYTTE_CLINIC_ASSESSMENT_V2')->firstOrFail();
-        $hospitalRelease = AssessmentCatalogueRelease::where('release_code', 'VYTTE_HOSPITAL_READINESS_V3')->firstOrFail();
+        $clinicRelease = AssessmentCatalogueRelease::where('release_code', 'VYTTE_CLINIC_ASSESSMENT_V3')->firstOrFail();
+        $hospitalRelease = AssessmentCatalogueRelease::where('release_code', 'VYTTE_HOSPITAL_READINESS_V4')->firstOrFail();
         $this->assertSame(16, $clinicRelease->departmentFrameworkVersions()->count());
         $this->assertSame(33, $hospitalRelease->departmentFrameworkVersions()->count());
         $pharmacyFrameworkIds = DB::table('assessment_catalogue_department_versions as composition')
@@ -118,7 +122,9 @@ class OfficialPhcCatalogueTest extends TestCase
         );
 
         $this->assertCount(16, $assessment->snapshot->payload);
-        $this->assertSame(206, collect($assessment->snapshot->payload)->sum(
+        // 206 original questions plus the 5 new menstrual hygiene management questions
+        // (WASH is REQUIRED for this facility profile, so it is always selected).
+        $this->assertSame(211, collect($assessment->snapshot->payload)->sum(
             fn (array $department): int => count($department['questions'])
         ));
 

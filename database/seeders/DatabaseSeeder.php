@@ -47,6 +47,7 @@ class DatabaseSeeder extends Seeder
             OfficialDepartmentQuestionLibrarySeeder::class,
             OfficialFrameworkSeeder::class,
             OfficialCatalogueSeeder::class,
+            WashMenstrualHygieneExtensionSeeder::class,
         ]);
 
         $this->publishMethodology();

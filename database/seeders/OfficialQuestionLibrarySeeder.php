@@ -202,6 +202,7 @@ class OfficialQuestionLibrarySeeder extends Seeder
             self::personCentredness(),
             self::infectionPrevention(),
             self::wash(),
+            self::menstrualHygieneManagement(),
             self::hiv(),
             self::tuberculosis(),
             self::malaria(),
@@ -813,6 +814,45 @@ class OfficialQuestionLibrarySeeder extends Seeder
             ['code' => 'WASH.016', 'module' => 'WSHF', 'type' => 'OPEN_ENDED', 'respondent' => $respondent,
                 'text' => 'Which WASH problem most affects patients or staff here?',
                 'why' => 'WASH failures are highly visible to users and often known long before any assessment.'],
+        ];
+    }
+
+    /**
+     * Menstrual hygiene management, as a distinct WASH indicator rather than a single
+     * summary item.
+     *
+     * WASH.007 asks whether menstrual hygiene facilities exist at all. These questions
+     * assume they exist and ask whether they actually function for the person using them:
+     * privacy, water at the point of need, a cleansing agent, and safe disposal. Each is
+     * a distinct, observable failure point that a single yes/no cannot separate.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function menstrualHygieneManagement(): array
+    {
+        $respondent = 'Facility Manager · WASH Focal Person · Cleaner Supervisor';
+
+        return [
+            ['code' => 'WASH.017', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Do female toilets have doors that provide adequate privacy?',
+                'why' => 'A facility can pass a general separation check and still fail the privacy a menstruating patient needs.',
+                'observe' => true],
+            ['code' => 'WASH.018', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::AVAILABILITY, 'respondent' => $respondent,
+                'text' => 'Is water consistently available within or near the female toilet area?',
+                'why' => 'General facility water reliability does not guarantee water reaches the specific point where menstrual hygiene management happens.',
+                'observe' => true],
+            ['code' => 'WASH.019', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::FREQUENCY, 'respondent' => $respondent,
+                'text' => 'Is soap or another hand-cleansing agent usually available at handwashing stations?',
+                'why' => 'Handwashing facilities existing is not the same as a cleansing agent actually being present when needed.',
+                'observe' => true],
+            ['code' => 'WASH.020', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO_CRITICAL, 'respondent' => $respondent,
+                'text' => 'Is there a safe and appropriate system for disposal of menstrual hygiene materials?',
+                'why' => 'Disposal failure is a named WASH FIT risk category and a dignity and environmental-health issue independent of general waste segregation.',
+                'observe' => true],
+            ['code' => 'WASH.021', 'module' => 'WSHF', 'type' => 'SINGLE_SELECT', 'options' => self::YES_PARTIAL_NO, 'respondent' => $respondent,
+                'text' => 'Are covered waste bins available within female toilets?',
+                'why' => 'A concrete, observable indicator of whether the disposal system above is actually usable day to day.',
+                'observe' => true],
         ];
     }
 
