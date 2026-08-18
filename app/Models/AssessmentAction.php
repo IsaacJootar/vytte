@@ -37,9 +37,9 @@ class AssessmentAction extends Model
     public const PRIORITIES = ['HIGH', 'MEDIUM', 'LOW'];
 
     protected $fillable = [
-        'workspace_id', 'assessment_id', 'project_id',
+        'workspace_id', 'assessment_id', 'report_snapshot_id', 'project_id',
         'source_finding_category', 'source_finding_subject', 'source_finding_statement',
-        'source_measurement_domain', 'recommendation_statement',
+        'source_measurement_domain', 'finding_key', 'recommendation_statement',
         'title', 'owner_user_id', 'priority', 'due_date', 'status',
         'verified_by', 'verified_at', 'created_by',
     ];

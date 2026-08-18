@@ -61,8 +61,11 @@ class RecommendationService
                 'expected_impact' => $finding['expected_impact'] ?? null,
                 // The concrete items this action should tackle first (up to three).
                 'focus_items' => collect($finding['failed_indicators'] ?? [])->take(3)->pluck('question_text')->all(),
-                // The citation. This is what makes the recommendation defensible.
+                // The citation. This is what makes the recommendation defensible, and
+                // finding_key is what lets an action created from it be joined back to the
+                // exact governed finding later (Assessment Portfolio issue tracking).
                 'from_finding' => [
+                    'finding_key' => $finding['finding_key'] ?? null,
                     'subject' => $finding['subject'],
                     'category' => $finding['category'],
                     'statement' => $finding['statement'],

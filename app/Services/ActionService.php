@@ -42,11 +42,13 @@ class ActionService
 
         $action = AssessmentAction::create([
             'assessment_id' => $assessment->assessment_id,
+            'report_snapshot_id' => $assessment->reportSnapshot?->report_snapshot_id,
             'project_id' => $assessment->project_id,
             'source_finding_category' => $finding['category'] ?? 'UNKNOWN',
             'source_finding_subject' => $finding['subject'] ?? 'Assessment',
             'source_finding_statement' => $finding['statement'],
             'source_measurement_domain' => $recommendation['measurement_domain'] ?? null,
+            'finding_key' => $finding['finding_key'] ?? null,
             'recommendation_statement' => $recommendation['statement'] ?? $finding['statement'],
             // The title is a short label (column is varchar 255); the full recommendation
             // lives in recommendation_statement. Contextual recommendations can be a full

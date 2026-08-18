@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
+use App\Services\ReportSnapshotService;
 use App\Services\ScoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -66,8 +67,11 @@ class ActionManagementTest extends TestCase
 
         app(ScoringService::class)->calculate($assessment);
         $assessment->update(['status' => Assessment::STATUS_COMPLETE, 'completed_at' => now()]);
+        // Matches App\Actions\CompleteSelfAssessment: a real completion always freezes a final
+        // report snapshot, which is what an action's report_snapshot_id links back to.
+        app(ReportSnapshotService::class)->createFor($assessment->fresh());
 
-        return $assessment->fresh(['snapshot', 'score']);
+        return $assessment->fresh(['snapshot', 'reportSnapshot', 'score']);
     }
 
     public function test_recommendation_can_be_added_to_the_action_plan(): void
@@ -85,6 +89,10 @@ class ActionManagementTest extends TestCase
         // The citation must be carried over from the recommendation's finding.
         $this->assertNotEmpty($action->source_finding_statement);
         $this->assertSame($workspace->workspace_id, $action->workspace_id);
+        // Stable keys, not just frozen free text: this is what lets an action be joined back
+        // to the exact governed finding and report it came from.
+        $this->assertNotEmpty($action->finding_key);
+        $this->assertSame($assessment->reportSnapshot->report_snapshot_id, $action->report_snapshot_id);
     }
 
     public function test_storing_an_out_of_range_recommendation_creates_nothing(): void
