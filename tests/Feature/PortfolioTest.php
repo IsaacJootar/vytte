@@ -93,7 +93,7 @@ class PortfolioTest extends TestCase
 
         $this->actingAs($user)->get(route('portfolio.index'))
             ->assertOk()
-            ->assertSee('Overall results')
+            ->assertSee('Assessment Portfolio')
             ->assertSee('Group average')
             ->assertSee('same assessment and scoring rules')
             ->assertSee('Alpha Clinic')

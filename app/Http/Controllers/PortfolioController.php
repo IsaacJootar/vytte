@@ -18,7 +18,7 @@ class PortfolioController extends Controller
 
         if (! PlanService::workspaceCanAccess($workspace, 'progress_maturity_tracking')) {
             return redirect()->route('billing.index')
-                ->with('limit_error', 'Overall results are not available on your current plan. Upgrade to see completed results across all your settings.');
+                ->with('limit_error', 'Assessment Portfolio is not available on your current plan. Upgrade to see completed results across all your settings.');
         }
 
         return view('portfolio.index', $portfolio->build());

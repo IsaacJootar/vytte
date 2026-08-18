@@ -1,6 +1,6 @@
-<x-app-layout title="Overall results">
+<x-app-layout title="Assessment Portfolio">
     <div class="mb-5">
-        <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Overall results</h1>
+        <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Assessment Portfolio</h1>
         <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">See the latest completed results across all the settings in this workspace.</p>
     </div>
 
@@ -15,7 +15,7 @@
         <x-help-callout id="overall-results" title="What this page is for">
             <ul class="space-y-1 text-xs text-slate-600 dark:text-slate-300">
                 <li><span class="font-semibold">Reports</span> gives you the full detail for one assessment.</li>
-                <li><span class="font-semibold">Overall results</span> shows the latest completed result for every assessed setting.</li>
+                <li><span class="font-semibold">Assessment Portfolio</span> brings together completed work across your settings.</li>
                 <li>Vytte calculates an average only when settings used the same assessment and scoring rules. Unlike results are never ranked together.</li>
             </ul>
         </x-help-callout>

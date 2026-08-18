@@ -182,11 +182,11 @@ Reports, exports, shared links, dashboards, and analytics use the ordinary Vytte
 
 The completed Results page creates report-viewing links. The first action is labelled **Create report
 link** and subsequent actions **Create another report link**; these are distinct from the one reusable
-respondent link used to collect answers. **Overall Results** is the active workspace's management
+respondent link used to collect answers. **Assessment Portfolio** is the active workspace's management
 summary: it shows each setting's latest completed result and open-action totals. It calculates an
 average or comparison only within groups that share the same frozen comparison signature. Different
 assessment or scoring contracts remain visible separately and are never ranked or averaged together.
-The former `/benchmark` page redirects to Overall Results so users do not encounter a contradictory
+The former `/benchmark` page redirects to Assessment Portfolio so users do not encounter a contradictory
 comparison workflow.
 
 The final report snapshot preserves:

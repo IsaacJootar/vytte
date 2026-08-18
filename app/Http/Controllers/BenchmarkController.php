@@ -10,6 +10,6 @@ class BenchmarkController extends Controller
     public function index(): RedirectResponse
     {
         return redirect()->route('portfolio.index')
-            ->with('info', 'Comparisons are now included in Overall Results and are shown only when assessments use the same scoring rules.');
+            ->with('info', 'Comparisons are now included in Assessment Portfolio and are shown only when assessments use the same scoring rules.');
     }
 }
