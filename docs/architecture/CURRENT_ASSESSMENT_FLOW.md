@@ -119,6 +119,12 @@ the provisional aggregate, and finalisation. The workspace-wide Monitor page sti
 multiple assessments. The former per-assessment `/monitor` URL redirects to collection so saved
 bookmarks do not break.
 
+A submitted response is included automatically when the frozen template declares no respondent
+eligibility rules. In that case, changing the decision is an optional exception rather than a step
+that blocks finalisation. When frozen eligibility rules do exist, every submitted response remains
+pending until an authorized workspace user saves a decision, and finalisation is blocked until the
+minimum number of reviewed, valid responses is ready.
+
 Published content must explicitly enable it and freeze:
 
 - minimum completed eligible respondent threshold;
@@ -173,6 +179,15 @@ completes, and that local score never feeds back into the published overall scor
 ## 9. Reporting
 
 Reports, exports, shared links, dashboards, and analytics use the ordinary Vytte report architecture.
+
+The completed Results page creates report-viewing links. The first action is labelled **Create report
+link** and subsequent actions **Create another report link**; these are distinct from the one reusable
+respondent link used to collect answers. **Overall Results** is the active workspace's management
+summary: it shows each setting's latest completed result and open-action totals. It calculates an
+average or comparison only within groups that share the same frozen comparison signature. Different
+assessment or scoring contracts remain visible separately and are never ranked or averaged together.
+The former `/benchmark` page redirects to Overall Results so users do not encounter a contradictory
+comparison workflow.
 
 The final report snapshot preserves:
 

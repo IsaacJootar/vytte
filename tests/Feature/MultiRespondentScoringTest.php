@@ -234,6 +234,51 @@ class MultiRespondentScoringTest extends TestCase
             ->assertDontSeeText('Arithmetic mean');
     }
 
+    public function test_automatic_inclusion_does_not_present_review_as_a_required_step(): void
+    {
+        [$owner, $assessment] = $this->context(minimum: 1);
+        $this->submitRespondent($assessment, 'high');
+
+        $this->actingAs($owner)
+            ->get(route('assessments.respondent-collection', $assessment))
+            ->assertOk()
+            ->assertSeeText('Included automatically')
+            ->assertSeeText('No review is required. This completed response already counts.')
+            ->assertSeeText('Change decision')
+            ->assertSeeText('one active link, not separate links for departments or sections')
+            ->assertSeeText('Need a different link?')
+            ->assertSeeText('Create replacement link')
+            ->assertDontSeeText('Review required before finalising');
+    }
+
+    public function test_required_review_is_visible_and_enforced_before_finalisation(): void
+    {
+        [$owner, $assessment] = $this->context(
+            minimum: 1,
+            eligibilityRules: [['field' => 'adult', 'operator' => 'equals', 'value' => true]],
+        );
+        $submitted = $this->submitRespondent($assessment, 'high');
+
+        $this->actingAs($owner)
+            ->get(route('assessments.respondent-collection', $assessment))
+            ->assertOk()
+            ->assertSeeText('Review required before finalising')
+            ->assertSeeText('Save decision')
+            ->assertSeeText('Cannot finalise yet — 0 of 1 required valid completed responses are ready.');
+
+        $this->actingAs($owner)
+            ->post(route('assessments.respondent-collection.finalize', $assessment))
+            ->assertSessionHasErrors('respondents');
+
+        $this->actingAs($owner)
+            ->patch(route('assessments.respondent-sessions.classify', [$assessment, $submitted->responseSession]), [
+                'classification' => 'ELIGIBLE',
+            ])
+            ->assertSessionHas('success', 'Response review saved.');
+
+        $this->assertSame(1, app(MultiRespondentAggregationService::class)->preview($assessment->fresh())['eligible_respondent_count']);
+    }
+
     public function test_missing_required_answers_are_rejected_and_never_treated_as_zero(): void
     {
         [, $assessment] = $this->context(minimum: 1);
@@ -360,6 +405,11 @@ class MultiRespondentScoringTest extends TestCase
         app(MultiRespondentAggregationService::class)->finalize($assessment, $owner->user_id);
 
         $this->actingAs($owner)
+            ->get(route('assessments.results', $assessment))
+            ->assertOk()
+            ->assertSeeText('Create report link');
+
+        $this->actingAs($owner)
             ->post(route('assessments.share', $assessment))
             ->assertSessionHas('share_link');
         $share = AssessmentShareLink::where('assessment_id', $assessment->assessment_id)->firstOrFail();
@@ -369,6 +419,11 @@ class MultiRespondentScoringTest extends TestCase
             ->assertSee('Respondent aggregate')
             ->assertSee('eligible completed respondents')
             ->assertDontSee($score->public_response_session_id);
+
+        $this->actingAs($owner)
+            ->get(route('assessments.results', $assessment))
+            ->assertOk()
+            ->assertSeeText('Create another report link');
     }
 
     private function context(

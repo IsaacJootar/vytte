@@ -9,6 +9,7 @@
         $inProgress = $sessions->whereNull('submitted_at')->count();
         $completionRate = $sessions->isNotEmpty() ? (int) round($submitted->count() / $sessions->count() * 100) : 0;
         $systemCheckFailures = collect($preview['excluded_sessions'])->where('category', 'system')->count();
+        $requiresEligibilityReview = ! empty($preview['respondent_eligibility_rules']);
         $scoringLabel = match ($preview['scoring_version']) {
             'vytte-4.0-numeric-bands' => 'Vytte scoring v4 (numeric bands)',
             default => 'Published scoring rules',
@@ -87,10 +88,13 @@
 
     @if ($respondentTokens->isNotEmpty())
         <div class="mb-5 section-card p-5">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $respondentTokens->count() === 1 ? 'Respondent link' : 'Active respondent links' }}</h2>
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">{{ $respondentTokens->count() === 1 ? 'Assessment response link' : 'Active assessment response links' }}</h2>
             <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Send this link to everyone who should answer. One link can collect responses from many people, and they do not need a Vytte account.
+                This assessment uses one active link, not separate links for departments or sections. Send it to everyone who should answer; it can collect responses from many people, and they do not need a Vytte account.
                 Email is switched off during beta, so share these yourself.
+            </p>
+            <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                Need a different link? Deactivate the current one. A <span class="font-semibold">Create replacement link</span> button will then appear here. Completed responses remain safe.
             </p>
 
             @if ($respondentTokens->count() > 1)
@@ -105,7 +109,7 @@
                         <x-share-link
                             :url="route('respondent.show', $respondentToken->token)"
                             :message="'Please complete this assessment for '.($assessment->target?->name ?? 'our facility').'. It takes a few minutes and you do not need an account:'"
-                            :label="$respondentTokens->count() === 1 ? 'Respondent link' : 'Link '.($loop->iteration)"
+                            :label="$respondentTokens->count() === 1 ? 'Assessment response link' : 'Link '.($loop->iteration)"
                             :hint="'Created '.$respondentToken->created_at?->diffForHumans()" />
 
                         <form method="POST" action="{{ route('assessments.respondent-link.destroy', [$assessment, $respondentToken]) }}"
@@ -183,6 +187,7 @@
                             $exclusion = collect($preview['excluded_sessions'])->firstWhere('session_id', $session->session_id);
                             [$eligibilityLabel, $eligibilityClasses] = match (true) {
                                 $session->is_test => ['Test', 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'],
+                                $session->eligibility_status === 'ELIGIBLE' && ! $requiresEligibilityReview => ['Included automatically', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'],
                                 $session->eligibility_status === 'ELIGIBLE' => ['Approved to count', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'],
                                 $session->eligibility_status === 'EXCLUDED' => ['Excluded', 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'],
                                 $session->submitted_at !== null => ['Review needed', 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'],
@@ -208,20 +213,29 @@
                                     </p>
                                 @elseif ($exclusion && $exclusion['category'] === 'review')
                                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $exclusion['message'] }}</p>
+                                @elseif ($session->submitted_at && ! $requiresEligibilityReview && $session->eligibility_status === 'ELIGIBLE')
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">No review is required. This completed response already counts.</p>
                                 @endif
                                 @if ($canFinalize && ! $isComplete && $session->submitted_at)
-                                    <form method="POST" action="{{ route('assessments.respondent-sessions.classify', [$assessment, $session]) }}" class="mt-2 flex flex-wrap items-center gap-2">
-                                        @csrf
-                                        @method('PATCH')
-                                        <select name="classification" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
-                                            <option value="ELIGIBLE" @selected($session->eligibility_status === 'ELIGIBLE' && ! $session->is_test)>Include in result</option>
-                                            <option value="EXCLUDED" @selected($session->eligibility_status === 'EXCLUDED' && ! $session->is_test)>Exclude from result</option>
-                                            <option value="TEST" @selected($session->is_test)>Test response</option>
-                                        </select>
-                                        <input name="reason" value="{{ $session->eligibility_reason }}" placeholder="Required reason for exclusion"
-                                               class="min-w-44 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
-                                        <button class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold dark:border-slate-600">Save review</button>
-                                    </form>
+                                    @php $reviewNeeded = $requiresEligibilityReview && $session->eligibility_status === 'PENDING'; @endphp
+                                    <details class="mt-2 {{ $reviewNeeded ? 'rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20' : '' }}" @if ($reviewNeeded) open @endif>
+                                        <summary class="cursor-pointer text-xs font-semibold {{ $reviewNeeded ? 'text-amber-900 dark:text-amber-100' : 'text-vytte-700 dark:text-vytte-400' }}">
+                                            {{ $reviewNeeded ? 'Review required before finalising' : 'Change decision' }}
+                                        </summary>
+                                        <form method="POST" action="{{ route('assessments.respondent-sessions.classify', [$assessment, $session]) }}" class="mt-3 flex flex-wrap items-center gap-2">
+                                            @csrf
+                                            @method('PATCH')
+                                            <select name="classification" aria-label="How this response should be used" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                                                <option value="ELIGIBLE" @selected($session->eligibility_status === 'ELIGIBLE' && ! $session->is_test)>Include in result</option>
+                                                <option value="EXCLUDED" @selected($session->eligibility_status === 'EXCLUDED' && ! $session->is_test)>Exclude from result</option>
+                                                <option value="TEST" @selected($session->is_test)>Test response</option>
+                                            </select>
+                                            <input name="reason" value="{{ $session->eligibility_reason }}" placeholder="Required reason for exclusion"
+                                                   aria-label="Reason for excluding or marking as test"
+                                                   class="min-w-44 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
+                                            <button class="rounded-lg bg-vytte-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-vytte-800">Save decision</button>
+                                        </form>
+                                    </details>
                                 @endif
                             </td>
                             <td class="whitespace-nowrap px-5 py-3 text-right">

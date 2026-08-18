@@ -120,7 +120,7 @@ final class RoleNavigation
                         self::item('assessments.index', 'Assessments', 'clipboard-document-list', 'assessments.*'),
                         self::item('monitor.index', 'Monitor Responses', 'signal', 'monitor.*'),
                         self::item('reports.index', 'Reports', 'chart-bar', 'reports.*'),
-                        self::item('portfolio.index', 'Portfolio', 'squares-2x2', 'portfolio.*'),
+                        self::item('portfolio.index', 'Overall Results', 'squares-2x2', 'portfolio.*'),
                         self::item('actions.hub', 'Actions', 'check-circle', 'actions.*'),
                     ],
                 ],

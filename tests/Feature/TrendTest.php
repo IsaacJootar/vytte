@@ -212,14 +212,13 @@ class TrendTest extends TestCase
         $this->assertSame('BASELINE', $assessment->fresh()->assessment_type);
     }
 
-    public function test_compare_page_ranks_assessment_targets(): void
+    public function test_old_compare_page_redirects_to_overall_results(): void
     {
         $this->runAssessment('best', '2026-01-01');
 
         $this->actingAs($this->user)
             ->get(route('benchmark.index'))
-            ->assertOk()
-            ->assertSee('Compare your assessment targets')
-            ->assertSee($this->project->name);
+            ->assertRedirect(route('portfolio.index'))
+            ->assertSessionHas('info');
     }
 }

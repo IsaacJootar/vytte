@@ -10,8 +10,7 @@ use Illuminate\Http\RedirectResponse;
 class PortfolioController extends Controller
 {
     /**
-     * The portfolio hub — every completed assessment in the workspace harmonised into one
-     * program-level picture.
+     * A safe overall view of completed results across the current workspace.
      */
     public function index(PortfolioService $portfolio): View|RedirectResponse
     {
@@ -19,7 +18,7 @@ class PortfolioController extends Controller
 
         if (! PlanService::workspaceCanAccess($workspace, 'progress_maturity_tracking')) {
             return redirect()->route('billing.index')
-                ->with('limit_error', 'The portfolio hub is not available on your current plan. Upgrade to see your whole program in one place.');
+                ->with('limit_error', 'Overall results are not available on your current plan. Upgrade to see completed results across all your settings.');
         }
 
         return view('portfolio.index', $portfolio->build());

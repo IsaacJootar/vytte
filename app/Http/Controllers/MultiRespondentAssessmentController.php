@@ -128,7 +128,7 @@ class MultiRespondentAssessmentController extends Controller
             );
         });
 
-        return back()->with('success', 'Respondent eligibility classification updated.');
+        return back()->with('success', 'Response review saved.');
     }
 
     public function finalize(
