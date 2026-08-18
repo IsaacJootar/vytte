@@ -21,7 +21,7 @@ class PerformanceTarget extends Model
     protected $primaryKey = 'target_goal_id';
 
     protected $fillable = [
-        'workspace_id', 'project_id', 'domain_code', 'target_score', 'created_by',
+        'workspace_id', 'project_id', 'domain_code', 'comparison_signature', 'target_score', 'created_by',
     ];
 
     protected $casts = [
