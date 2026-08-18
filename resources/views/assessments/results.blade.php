@@ -424,7 +424,7 @@
         <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 print-break-avoid">
             <div class="border-b border-slate-100 p-5 dark:border-slate-700">
                 <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div><h2 class="text-sm font-bold text-slate-900 dark:text-white">Exact issues to track</h2><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Each issue keeps a stable key across comparable runs, so progress is based on the same assessed item—not similar wording.</p></div>
+                    <div><h2 class="text-sm font-bold text-slate-900 dark:text-white">Exact issues to track</h2><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Each issue is tracked as the same underlying question across runs, so progress reflects real change—not just similar-sounding wording.</p></div>
                     <div class="flex gap-2 text-[10px] font-bold"><span class="rounded-full bg-red-100 px-2 py-1 text-red-700">{{ $issueProgress['counts']['new'] }} new</span><span class="rounded-full bg-amber-100 px-2 py-1 text-amber-700">{{ $issueProgress['counts']['persistent'] }} persistent</span><span class="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">{{ $issueProgress['counts']['resolved'] }} resolved</span></div>
                 </div>
             </div>
@@ -485,6 +485,9 @@
         $headline = $intelligence['insights']['headline'] ?? null;
         $lead = collect($lensView['lead'] ?? []);
         $recommendations = collect($lensView['recommendations'] ?? []);
+        // Only the custom view's "detail" control varies depth; a named lens always shows the
+        // full picture — "detail" is a reader preference, not something a lens should impose.
+        $itemDepth = $lensView['lens'] === 'CUSTOM' ? ($lensView['custom']['detail'] ?? 'STANDARD') : 'DETAILED';
 
         $categoryStyle = fn ($category, $severity) => match ($category) {
             'CRITICAL_FINDING' => ['border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/20', 'text-red-600 dark:text-red-400', 'Critical'],
@@ -529,7 +532,7 @@
                 </select>
                 <button class="rounded-lg bg-vytte-600 px-3 py-2 text-xs font-bold text-white">Apply view</button>
             </form>
-            <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">This changes emphasis and detail only. Scores, evidence, critical findings, and limitations remain locked.</p>
+            <p class="mt-2 text-[11px] text-slate-500 dark:text-slate-400">This changes which items you see and how much is shown for each — Brief is headlines only, Detailed adds the reasoning, evidence, and consequence. Scores, critical findings, and limitations always remain visible.</p>
         </details>
     </div>
 
@@ -559,19 +562,20 @@
                         <div class="min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $label }}</span>
-                                @if (! empty($finding['expected_impact']))
+                                @if ($itemDepth !== 'BRIEF' && ! empty($finding['expected_impact']))
                                     <span class="text-[10px] font-semibold uppercase tracking-wide text-vytte-600 dark:text-vytte-400">{{ ucfirst(strtolower($finding['expected_impact'])) }} improvement potential</span>
                                 @endif
                             </div>
                             <p class="mt-0.5 text-sm text-slate-700 dark:text-slate-300">{{ $finding['statement'] }}</p>
-                            @if (! empty($finding['why']))
+                            @if ($itemDepth !== 'BRIEF' && ! empty($finding['why']))
                                 <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">{{ $finding['why'] }}</p>
                             @endif
-                            @if (! empty($finding['failed_indicators']))
+                            @if ($itemDepth !== 'BRIEF' && ! empty($finding['failed_indicators']))
+                                @php $indicatorCap = $itemDepth === 'DETAILED' ? 6 : 3; @endphp
                                 <details class="mt-1.5">
                                     <summary class="text-xs font-medium text-slate-500 dark:text-slate-400 cursor-pointer">{{ count($finding['failed_indicators']) }} failing item{{ count($finding['failed_indicators']) !== 1 ? 's' : '' }}</summary>
                                     <ul class="mt-1 flex flex-col gap-1">
-                                        @foreach (array_slice($finding['failed_indicators'], 0, 6) as $ind)
+                                        @foreach (array_slice($finding['failed_indicators'], 0, $indicatorCap) as $ind)
                                             <li class="text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1.5">
                                                 <span class="text-red-500 dark:text-red-400 font-bold tabular-nums">{{ number_format($ind['score'], 0) }}</span>
                                                 <span>{{ $ind['question_text'] }}</span>
@@ -580,7 +584,7 @@
                                     </ul>
                                 </details>
                             @endif
-                            @if (! empty($finding['consequence']))
+                            @if ($itemDepth === 'DETAILED' && ! empty($finding['consequence']))
                                 <p class="mt-1.5 text-xs italic text-red-600/80 dark:text-red-400/80">{{ $finding['consequence'] }}</p>
                             @endif
                         </div>

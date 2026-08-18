@@ -247,6 +247,160 @@ class ReportingEngineTest extends TestCase
         $this->assertSame('EXECUTIVE', $view['lens']);
     }
 
+    public function test_operations_lens_leads_with_the_most_concretely_broken_finding(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $payload = [
+            'score' => ['overall_score' => 30.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                // Listed first, same severity band as Workforce below, but only one failing item.
+                ['domain_name' => 'Service Delivery', 'domain_code' => 'SERV', 'score' => 20.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => [
+                    ['question_id' => 'q1', 'question_text' => 'Are triage protocols followed?', 'score' => 0.0],
+                ]],
+                // Listed second, same severity band, but three failing items — more concretely broken.
+                ['domain_name' => 'Workforce', 'domain_code' => 'WORK', 'score' => 20.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => [
+                    ['question_id' => 'q2', 'question_text' => 'Is staffing adequate on night shift?', 'score' => 0.0],
+                    ['question_id' => 'q3', 'question_text' => 'Is overtime tracked?', 'score' => 10.0],
+                    ['question_id' => 'q4', 'question_text' => 'Is there a staff retention plan?', 'score' => 5.0],
+                ]],
+            ],
+        ];
+        $intelligence = $composer->intelligence($payload);
+
+        $ops = $composer->throughLens($intelligence, 'OPERATIONS');
+
+        $this->assertSame('WORK', $ops['lead'][0]['measurement_domain']);
+    }
+
+    public function test_quality_lens_leads_with_safety_before_service(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $payload = [
+            'score' => ['overall_score' => 30.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                // Listed first, identical severity to Patient Safety below.
+                ['domain_name' => 'Service Delivery', 'domain_code' => 'SERV', 'score' => 20.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+                ['domain_name' => 'Patient Safety', 'domain_code' => 'SAFE', 'score' => 20.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+            ],
+        ];
+        $intelligence = $composer->intelligence($payload);
+
+        $quality = $composer->throughLens($intelligence, 'QUALITY');
+
+        // Same severity, same rank — only the safety-first tie-break explains this order.
+        $this->assertSame('SAFE', $quality['lead'][0]['measurement_domain']);
+    }
+
+    public function test_risk_lens_orders_by_true_risk_level_not_raw_severity(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $payload = [
+            'score' => ['overall_score' => 35.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                // Listed first, higher raw severity — but a low-criticality domain, so a MEDIUM actual risk.
+                ['domain_name' => 'Community & Patient Experience', 'domain_code' => 'PCOM', 'score' => 20.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+                // Listed second, lower raw severity — but a high-criticality domain, so a HIGH actual risk.
+                ['domain_name' => 'Governance', 'domain_code' => 'GOV', 'score' => 40.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+            ],
+        ];
+        $intelligence = $composer->intelligence($payload);
+
+        $risk = $composer->throughLens($intelligence, 'RISK');
+
+        // Raw severity alone would lead with PCOM; likelihood x impact makes GOV the bigger risk.
+        $this->assertSame('GOV', $risk['lead'][0]['measurement_domain']);
+    }
+
+    public function test_compliance_lens_leads_with_data_gaps_over_weaknesses(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $payload = [
+            'score' => ['overall_score' => 30.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                // Listed first, a severe scored weakness.
+                ['domain_name' => 'Governance', 'domain_code' => 'GOV', 'score' => 15.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+                // Listed second, unscored — a documentation/evidence gap, which compliance cares about first.
+                ['domain_name' => 'Financing', 'domain_code' => 'FIN', 'score' => null, 'calibration_status' => 'NOT_CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 0],
+            ],
+        ];
+        $intelligence = $composer->intelligence($payload);
+
+        $compliance = $composer->throughLens($intelligence, 'COMPLIANCE');
+
+        $this->assertSame('DATA_GAP', $compliance['lead'][0]['category']);
+        $this->assertSame('FIN', $compliance['lead'][0]['measurement_domain']);
+    }
+
+    public function test_programme_lens_leads_with_highest_improvement_potential(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $payload = [
+            'score' => ['overall_score' => 55.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                // Listed first: moderate score, but a low-criticality domain caps it at MEDIUM potential.
+                ['domain_name' => 'Community & Patient Experience', 'domain_code' => 'PCOM', 'score' => 68.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+                // Listed second: more headroom, so HIGH improvement potential despite tying on category and rank.
+                ['domain_name' => 'Information Systems', 'domain_code' => 'INFO', 'score' => 50.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+            ],
+        ];
+        $intelligence = $composer->intelligence($payload);
+
+        $programme = $composer->throughLens($intelligence, 'PROGRAMME_EFFECTIVENESS');
+
+        // Both are OPPORTUNITY findings (identical rank) — only expected impact explains the order.
+        $this->assertSame('INFO', $programme['lead'][0]['measurement_domain']);
+    }
+
+    public function test_custom_view_brief_detail_hides_reasoning_and_consequence(): void
+    {
+        $composer = new ReportComposer(new DiagnosticsService, new InsightService, new RecommendationService, new RootCauseService, new RiskService);
+        $intelligence = $composer->intelligence($this->payload());
+
+        $brief = $composer->customView($intelligence, 'PRIORITIES', 'BRIEF');
+        $detailed = $composer->customView($intelligence, 'PRIORITIES', 'DETAILED');
+
+        // customView() itself doesn't strip fields (the blade template renders depth) — but it
+        // must still carry the detail level through so the template knows what to hide.
+        $this->assertSame('BRIEF', $brief['custom']['detail']);
+        $this->assertSame('DETAILED', $detailed['custom']['detail']);
+        // The underlying finding data is identical either way — depth is presentational only.
+        $this->assertSame($brief['lead'][0]['consequence'] ?? null, $detailed['lead'][0]['consequence'] ?? null);
+    }
+
+    public function test_root_causes_detect_a_specific_upstream_downstream_pair_beyond_governance(): void
+    {
+        $findings = (new DiagnosticsService)->findings([
+            'score' => ['overall_score' => 30.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                ['domain_name' => 'Workforce', 'domain_code' => 'WORK', 'score' => 25.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+                ['domain_name' => 'Patient Safety', 'domain_code' => 'SAFE', 'score' => 28.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => []],
+            ],
+        ]);
+        $causes = (new RootCauseService)->rootCauses($findings);
+
+        $upstream = collect($causes)->firstWhere('measurement_domain', 'WORK');
+        $this->assertNotNull($upstream, 'A weak workforce domain sitting under a weak safety domain should surface as a probable upstream cause.');
+        $this->assertStringContainsString('Workforce', $upstream['statement']);
+        $this->assertStringContainsString('Patient Safety', $upstream['statement']);
+        $this->assertTrue($upstream['is_upstream']);
+    }
+
+    public function test_consequence_cites_the_specific_failing_item_when_available(): void
+    {
+        $findings = (new DiagnosticsService)->findings([
+            'score' => ['overall_score' => 20.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                ['domain_name' => 'Governance', 'domain_code' => 'GOV', 'score' => 20.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => [
+                    ['question_id' => 'q1', 'question_text' => 'Is there a governance board?', 'score' => 0.0],
+                ]],
+            ],
+        ]);
+        $gov = collect($findings)->firstWhere('measurement_domain', 'GOV');
+
+        $this->assertStringContainsString('left as it is', $gov['consequence']);
+        $this->assertStringContainsString('Is there a governance board?', $gov['consequence']);
+    }
+
     public function test_recommendations_are_contextual_and_cite_evidence(): void
     {
         $findings = (new DiagnosticsService)->findings($this->payload());

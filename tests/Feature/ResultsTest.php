@@ -281,6 +281,30 @@ class ResultsTest extends TestCase
         $this->assertSame($score, $assessment->fresh()->score->overall_score);
     }
 
+    public function test_custom_view_brief_detail_hides_reasoning_and_evidence(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupCompleteAssessment($workspace, $user, answerMode: 'worst');
+
+        $this->actingAs($user)
+            ->get(route('assessments.results', $assessment).'?view=custom&focus=PRIORITIES&detail=BRIEF&tab=diagnosis')
+            ->assertOk()
+            ->assertDontSee('improvement potential')
+            ->assertDontSee('failing item');
+    }
+
+    public function test_custom_view_detailed_shows_reasoning_and_evidence(): void
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupCompleteAssessment($workspace, $user, answerMode: 'worst');
+
+        $this->actingAs($user)
+            ->get(route('assessments.results', $assessment).'?view=custom&focus=PRIORITIES&detail=DETAILED&tab=diagnosis')
+            ->assertOk()
+            ->assertSee('improvement potential')
+            ->assertSee('failing item');
+    }
+
     public function test_risk_lens_changes_the_report_emphasis(): void
     {
 

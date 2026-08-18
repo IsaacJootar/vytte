@@ -169,8 +169,49 @@ class ReportComposer
             ])->filter()->values(),
             // Strengths and easy wins first — for a value/investment reading.
             'positive' => $findings->sortByDesc(fn ($f) => $this->rank($f))->values(),
+            // Operations: what's concretely broken right now — most failing items together first.
+            'operational' => $findings->sortBy(fn ($f) => (-count($f['failed_indicators'] ?? [])) * 1000 + $this->rank($f))->values(),
+            // Clinical & Quality: patient safety findings lead ahead of service-delivery ones.
+            'safety_first' => $findings->sortBy(fn ($f) => ((($f['measurement_domain'] ?? null) === 'SAFE') ? 0 : 1) * 1000 + $this->rank($f))->values(),
+            // Risk: real likelihood x impact (RiskService), not raw severity.
+            'risk_level' => $findings->sortBy(fn ($f) => (-$this->riskRank($f)) * 1000 + $this->rank($f))->values(),
+            // Compliance: undocumented / unevidenced gaps lead — the gap itself is the finding.
+            'evidence_gap' => $findings->sortBy(fn ($f) => ((($f['category'] ?? null) === 'DATA_GAP') ? 0 : 1) * 1000 + $this->rank($f))->values(),
+            // Programme: where investment would move the result most, not just what scores worst.
+            'impact_potential' => $findings->sortBy(fn ($f) => $this->impactRank($f) * 1000 + $this->rank($f))->values(),
             // Default: worst news first.
             default => $findings->sortBy(fn ($f) => $this->rank($f))->values(),
+        };
+    }
+
+    /**
+     * Sortable risk weight for the Risk lens — higher is worse. Findings with no risk level
+     * (strengths, opportunities, data gaps) sort after every risk-bearing finding.
+     *
+     * @param  array<string, mixed>  $finding
+     */
+    private function riskRank(array $finding): int
+    {
+        return match ($this->risks->levelFor($finding)) {
+            'HIGH' => 3,
+            'MEDIUM' => 2,
+            'LOW' => 1,
+            default => 0,
+        };
+    }
+
+    /**
+     * Sortable improvement-potential weight for the Programme lens — lower sorts first.
+     *
+     * @param  array<string, mixed>  $finding
+     */
+    private function impactRank(array $finding): int
+    {
+        return match ($finding['expected_impact'] ?? null) {
+            'HIGH' => 0,
+            'MEDIUM' => 1,
+            'LOW' => 2,
+            default => 3,
         };
     }
 

@@ -117,7 +117,7 @@ class DiagnosticsService
                 why: $why,
                 evidence: ['score' => (float) $score, 'calibration' => $calibration, 'failed_indicator_count' => count($failed)],
                 failedIndicators: $failed,
-                consequence: DomainRiskProfile::consequence($code, $name),
+                consequence: DomainRiskProfile::consequence($code, $name, $failed),
                 expectedImpact: $this->expectedImpact((float) $score, $code),
             );
         } elseif ($score >= self::STRONG) {

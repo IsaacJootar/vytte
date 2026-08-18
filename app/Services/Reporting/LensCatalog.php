@@ -33,35 +33,40 @@ class LensCatalog
             'question' => 'Is the facility running smoothly day to day?',
             'domains' => ['SERV', 'WORK', 'RES', 'INFO'],
             'categories' => ['OPERATIONAL_RISK', 'LOW_PERFORMING', 'PAIN_POINT', 'QUICK_WIN'],
-            'emphasis' => 'severity',
+            // What is most concretely broken right now — most failing items first.
+            'emphasis' => 'operational',
         ],
         'QUALITY' => [
             'name' => 'Clinical & Quality',
             'question' => 'Is care safe and of good quality?',
             'domains' => ['SAFE', 'SERV'],
             'categories' => ['CLINICAL_RISK', 'CRITICAL_FINDING', 'PAIN_POINT', 'GOOD_PRACTICE'],
-            'emphasis' => 'severity',
+            // Patient safety findings lead ahead of service-delivery findings.
+            'emphasis' => 'safety_first',
         ],
         'RISK' => [
             'name' => 'Risk',
             'question' => 'What could go wrong?',
             'domains' => [], // all — risk respects no boundary
             'categories' => ['CRITICAL_FINDING', 'CLINICAL_RISK', 'OPERATIONAL_RISK', 'COMPLIANCE_RISK'],
-            'emphasis' => 'severity',
+            // Likelihood x impact (RiskService), not raw severity — the actual risk lens question.
+            'emphasis' => 'risk_level',
         ],
         'COMPLIANCE' => [
             'name' => 'Compliance',
             'question' => 'Where do we fall short of the standard?',
             'domains' => ['GOV', 'INFO', 'FIN'],
             'categories' => ['COMPLIANCE_RISK', 'DATA_GAP', 'INSUFFICIENT_EVIDENCE', 'WEAKNESS'],
-            'emphasis' => 'severity',
+            // Undocumented / unevidenced gaps lead — a compliance reading cares about the gap itself.
+            'emphasis' => 'evidence_gap',
         ],
         'PROGRAMME_EFFECTIVENESS' => [
             'name' => 'Programme',
             'question' => 'Is the programme delivering results?',
             'domains' => ['SERV', 'PCOM', 'INFO'],
             'categories' => ['LOW_PERFORMING', 'STRATEGIC_PRIORITY', 'OPPORTUNITY', 'HIGH_PERFORMING'],
-            'emphasis' => 'severity',
+            // Where investment would move the result most, not just what scores worst.
+            'emphasis' => 'impact_potential',
         ],
         'EFFICIENCY' => [
             'name' => 'Value',

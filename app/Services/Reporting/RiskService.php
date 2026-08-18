@@ -21,7 +21,7 @@ class RiskService
         $risks = [];
 
         foreach ($findings as $finding) {
-            if (! in_array($finding['category'], ['WEAKNESS', 'CRITICAL_FINDING'], true)) {
+            if ($this->levelFor($finding) === null) {
                 continue;
             }
 
@@ -47,6 +47,27 @@ class RiskService
         usort($risks, fn ($a, $b) => $this->rank($b['level']) <=> $this->rank($a['level']));
 
         return $risks;
+    }
+
+    /**
+     * The risk level for a single finding, or null if the finding carries no risk (only
+     * weaknesses and critical findings do). Shared with the Risk lens, so "what could go
+     * wrong" is read through the same likelihood x impact judgement everywhere it appears.
+     *
+     * @param  array<string, mixed>  $finding
+     */
+    public function levelFor(array $finding): ?string
+    {
+        if (! in_array($finding['category'] ?? null, ['WEAKNESS', 'CRITICAL_FINDING'], true)) {
+            return null;
+        }
+
+        $likelihood = $this->likelihood($finding['severity'] ?? '');
+        $impact = ($finding['category'] ?? null) === 'CRITICAL_FINDING'
+            ? 'HIGH'
+            : DomainRiskProfile::criticality($finding['measurement_domain'] ?? null);
+
+        return $this->level($likelihood, $impact);
     }
 
     private function likelihood(string $severity): string

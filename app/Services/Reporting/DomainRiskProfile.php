@@ -52,10 +52,23 @@ class DomainRiskProfile
         return self::CRITICALITY[$domainCode] ?? 'MEDIUM';
     }
 
-    public static function consequence(?string $domainCode, string $subject): string
+    /**
+     * @param  array<int, array<string, mixed>>  $failedIndicators  the specific failing items behind this finding, if any
+     */
+    public static function consequence(?string $domainCode, string $subject, array $failedIndicators = []): string
     {
         $tail = self::CONSEQUENCE[$domainCode] ?? 'the gap persists and compounds, making it harder and more costly to close later.';
+        $base = 'If '.$subject.' is left as it is, '.$tail;
 
-        return 'If '.$subject.' is left as it is, '.$tail;
+        $examples = collect($failedIndicators)->pluck('question_text')->filter()->take(2)->values();
+        if ($examples->isEmpty()) {
+            return $base;
+        }
+
+        $count = count($failedIndicators);
+        $quoted = $examples->map(fn ($text) => '"'.$text.'"')->join(', ');
+
+        return $base.' The clearest sign right now: '.$quoted
+            .($count > $examples->count() ? ', among '.$count.' failing items.' : '.');
     }
 }
