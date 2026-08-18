@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\ReportSchedule;
 use App\Services\PlanService;
 use App\Services\Reporting\ComparisonEligibilityService;
+use App\Services\Reporting\ComparisonSeriesService;
 use App\Services\Reporting\TrendService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProjectProgressController extends Controller
 {
-    public function index(Project $project, TrendService $trends): View|RedirectResponse
+    public function index(Project $project, TrendService $trends, ComparisonSeriesService $seriesService): View|RedirectResponse
     {
         $this->authorize('view', $project);
         $workspace = app('current.workspace');
@@ -25,18 +26,22 @@ class ProjectProgressController extends Controller
                 ->with('limit_error', 'Progress tracking is not available on your current plan. Upgrade to view maturity trends over time.');
         }
 
+        // The full ledger: every completed run, regardless of series. The chart and domain
+        // matrix below use only the compatible subset — mixing series there would let visual
+        // proximity imply a trend Vytte is not permitted to claim.
         $assessments = Assessment::where('project_id', $project->project_id)
             ->where('status', Assessment::STATUS_COMPLETE)
             ->with(['score.maturityLevel', 'moduleScope.module'])
             ->orderBy('completed_at')
             ->get();
 
-        $assessmentIds = $assessments->pluck('assessment_id');
+        $series = $seriesService->seriesFor($project);
+        $seriesIds = $series->pluck('assessment_id');
 
-        $domainScoresByAssessment = $assessmentIds->isNotEmpty()
+        $domainScoresByAssessment = $seriesIds->isNotEmpty()
             ? DB::table('domain_scores as ds')
                 ->join('domains as d', 'd.domain_id', '=', 'ds.domain_id')
-                ->whereIn('ds.assessment_id', $assessmentIds)
+                ->whereIn('ds.assessment_id', $seriesIds)
                 ->where('d.is_operational', true)
                 ->select('ds.assessment_id', 'ds.score', 'd.domain_id', 'd.domain_code', 'd.domain_name', 'd.display_order')
                 ->orderBy('d.display_order')
@@ -57,7 +62,7 @@ class ProjectProgressController extends Controller
         $targets = PerformanceTarget::where('project_id', $project->project_id)->get();
         $schedules = ReportSchedule::where('project_id', $project->project_id)->get();
 
-        return view('projects.progress', compact('project', 'assessments', 'domainScoresByAssessment', 'allDomains', 'trend', 'followThrough', 'issues', 'trendInsights', 'targetProgress', 'targets', 'schedules'));
+        return view('projects.progress', compact('project', 'assessments', 'series', 'domainScoresByAssessment', 'allDomains', 'trend', 'followThrough', 'issues', 'trendInsights', 'targetProgress', 'targets', 'schedules'));
     }
 
     public function compare(Project $project, Request $request, ComparisonEligibilityService $eligibility): View|RedirectResponse
@@ -109,8 +114,13 @@ class ProjectProgressController extends Controller
 
     /**
      * Set (or update) a performance target for this project — overall or for one domain.
+     *
+     * Bound to the project's current compatible series at the moment it is set: if the project
+     * later moves to an incompatible series, this target stops applying rather than silently
+     * being measured against a different methodology. A project with no completed assessment
+     * yet gets a null signature, meaning "applies to whichever series is recorded first."
      */
-    public function setTarget(Request $request, Project $project): RedirectResponse
+    public function setTarget(Request $request, Project $project, ComparisonSeriesService $series): RedirectResponse
     {
         $this->authorize('update', $project);
 
@@ -119,8 +129,15 @@ class ProjectProgressController extends Controller
             'target_score' => ['required', 'numeric', 'min:0', 'max:100'],
         ]);
 
+        $currentSeries = $series->seriesFor($project);
+        $signature = $currentSeries->isNotEmpty() ? $series->signatureFor($currentSeries->last()) : null;
+
         PerformanceTarget::updateOrCreate(
-            ['project_id' => $project->project_id, 'domain_code' => $validated['domain_code'] ?: null],
+            [
+                'project_id' => $project->project_id,
+                'domain_code' => $validated['domain_code'] ?: null,
+                'comparison_signature' => $signature,
+            ],
             ['target_score' => $validated['target_score'], 'created_by' => $request->user()->user_id],
         );
 

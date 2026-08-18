@@ -14,6 +14,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\Reporting\TrendService;
+use App\Services\ReportSnapshotService;
 use App\Services\ScoringService;
 use Database\Seeders\PlanFeatureSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,8 +79,12 @@ class TrendTest extends TestCase
 
         app(ScoringService::class)->calculate($assessment);
         $assessment->update(['status' => Assessment::STATUS_COMPLETE, 'completed_at' => $completedAt]);
+        // Matches App\Actions\CompleteSelfAssessment: a real completion always freezes a final
+        // report snapshot. Issue-level tracking reads its measurement_views.issue_register, so
+        // a fixture that skips this step cannot exercise that behavior.
+        app(ReportSnapshotService::class)->createFor($assessment->fresh());
 
-        return $assessment->fresh(['snapshot', 'score']);
+        return $assessment->fresh(['snapshot', 'reportSnapshot', 'score']);
     }
 
     public function test_single_run_is_not_comparable(): void

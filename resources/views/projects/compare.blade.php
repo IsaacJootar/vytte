@@ -59,7 +59,6 @@
                         <div class="mb-1">
                             <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide mb-0.5">Stage</p>
                             <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                                <span class="text-vytte-700 dark:text-vytte-400 font-bold">L{{ $maturity->level_number }}</span>
                                 {{ $maturity->level_name }}
                             </p>
                         </div>

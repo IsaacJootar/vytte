@@ -128,12 +128,14 @@ class ProgressTrackingTest extends TestCase
         $project = $this->makeProjectWithTarget($user, $workspace);
         $this->makeCompleteAssessment($workspace, $user, $project, withAnswers: true);
 
-        // With all best answers, score is 100 → L5 maturity level
+        // With all best answers, score is 100 → level 5, "Leading". Vytte shows the
+        // plain-language performance-stage name, not the raw L1-L5 level code.
         $response = $this->actingAs($user)
             ->get(route('projects.progress', $project))
             ->assertOk();
 
-        $response->assertSee('L5');
+        $response->assertSee('Leading');
+        $response->assertDontSee('L5');
     }
 
     public function test_progress_page_shows_view_link_for_each_run(): void
@@ -162,7 +164,7 @@ class ProgressTrackingTest extends TestCase
         $this->actingAs($user)
             ->get(route('projects.progress', $project))
             ->assertOk()
-            ->assertSee('Compare Two Runs');
+            ->assertSee('Compare to current');
     }
 
     public function test_domain_matrix_not_shown_for_single_run(): void
@@ -191,7 +193,7 @@ class ProgressTrackingTest extends TestCase
         $this->actingAs($user)
             ->get(route('projects.progress', $project))
             ->assertOk()
-            ->assertSee('Compare Two Runs');
+            ->assertSee('Compare to current');
     }
 
     public function test_compare_form_not_shown_for_single_run(): void
@@ -204,7 +206,7 @@ class ProgressTrackingTest extends TestCase
         $this->actingAs($user)
             ->get(route('projects.progress', $project))
             ->assertOk()
-            ->assertDontSee('Compare Two Runs');
+            ->assertDontSee('Compare to current');
     }
 
     // ---- Compare page ----

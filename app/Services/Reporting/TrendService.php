@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\DB;
  *
  * A single report is a photograph; a trend is the story between photographs. Because a
  * project holds exactly one target, "over time" is unambiguous — every finalised assessment
- * of that target is a point on the same line. Only assessments that share the latest one's
- * composition hash are compared, so like is always measured against like.
+ * of that target is a point on the same line. Only assessments in the current compatible
+ * series — decided once, by ComparisonSeriesService, the same way everywhere else in Vytte
+ * decides it — are compared, so like is always measured against like.
  *
  * Trend also reads the action plan (§9): progress is not only whether the score moved, but
  * whether the things the org agreed to do actually got done. That link is what makes this
@@ -22,6 +23,11 @@ use Illuminate\Support\Facades\DB;
  */
 class TrendService
 {
+    public function __construct(
+        private readonly ComparisonSeriesService $series,
+        private readonly IssueTrackingService $issueTracking,
+    ) {}
+
     /**
      * Longitudinal summary for a project: the score trajectory and where each domain moved.
      *
@@ -29,18 +35,9 @@ class TrendService
      */
     public function summary(Project $project): array
     {
-        $history = Assessment::where('project_id', $project->project_id)
-            ->where('status', Assessment::STATUS_COMPLETE)
-            ->with('score')
-            ->orderBy('completed_at')
-            ->get();
-
-        // Compare only within the latest run's composition, so a change in content never
+        // Compare only within the current compatible series, so a change in methodology never
         // masquerades as a change in performance.
-        $latest = $history->last();
-        $comparable = $latest
-            ? $history->filter(fn ($a) => $a->composition_hash === $latest->composition_hash)->values()
-            : collect();
+        $comparable = $this->series->seriesFor($project);
 
         if ($comparable->count() < 2) {
             return [
@@ -102,38 +99,71 @@ class TrendService
     }
 
     /**
-     * How each domain has moved between the latest two comparable runs, classified as the
-     * organisational-learning story: resolved, persistent, new, regressed, improved.
+     * Exact assessed issues, classified by stable issue_key across the latest two comparable
+     * runs — not domain score bands. "This problem was fixed, that one is still with us, and a
+     * new one has appeared" is only true when it is the *same question* fixed, persisting, or
+     * new; a domain average moving is a symptom of this, not the fact itself.
      *
-     * This is the heart of progress tracking — not just "the score changed" but "this problem
-     * was fixed, that one is still with us, and a new one has appeared."
-     *
-     * @return array{comparable: bool, resolved: array<int, mixed>, persistent: array<int, mixed>, new: array<int, mixed>, regressed: array<int, mixed>, improved: array<int, mixed>}
+     * @return array{comparable: bool, new: array<int, mixed>, persistent: array<int, mixed>, improving: array<int, mixed>, resolved: array<int, mixed>, not_comparable: array<int, mixed>}
      */
     public function issues(Project $project): array
     {
-        [$latest, $previous] = $this->latestComparablePair($project);
-        $empty = ['comparable' => false, 'resolved' => [], 'persistent' => [], 'new' => [], 'regressed' => [], 'improved' => []];
-        if ($latest === null || $previous === null) {
+        $empty = ['comparable' => false, 'new' => [], 'persistent' => [], 'improving' => [], 'resolved' => [], 'not_comparable' => []];
+
+        [$latest, $previous] = $this->latestComparablePair($project, requireTwo: false);
+        if ($latest === null) {
             return $empty;
         }
 
-        $buckets = ['resolved' => [], 'persistent' => [], 'new' => [], 'regressed' => [], 'improved' => []];
-        foreach ($this->domainMovements($latest, $previous) as $move) {
-            if ($move['latest'] === null || $move['previous'] === null) {
-                continue;
-            }
-            $status = $this->issueStatus((float) $move['previous'], (float) $move['latest']);
-            if ($status !== null) {
-                $buckets[$status][] = $move;
-            }
+        // A chronologically earlier run exists but fell outside the current series: real
+        // history, just not one Vytte will silently compare against. Distinct from a true
+        // baseline, where nothing exists to compare against yet.
+        $incompatibleHistory = $previous === null && $this->series->hasIncompatiblePriorHistory($project);
+        if ($previous === null && ! $incompatibleHistory) {
+            return $empty;
+        }
+
+        $currentViews = $latest->reportSnapshot?->payload['measurement_views'] ?? [];
+        $previousViews = $previous?->reportSnapshot?->payload['measurement_views'] ?? null;
+        $result = $this->issueTracking->compare($currentViews, $previousViews, ! $incompatibleHistory);
+
+        $buckets = ['new' => [], 'persistent' => [], 'improving' => [], 'resolved' => [], 'not_comparable' => []];
+        foreach ($result['open'] as $issue) {
+            $buckets[strtolower($issue['progress_status'])][] = $this->issueRow($issue);
+        }
+        foreach ($result['resolved'] as $issue) {
+            $buckets['resolved'][] = $this->issueRow($issue);
         }
 
         return array_merge(['comparable' => true], $buckets);
     }
 
     /**
+     * @param  array<string, mixed>  $issue
+     * @return array<string, mixed>
+     */
+    private function issueRow(array $issue): array
+    {
+        $code = $issue['measurement_domain'] ?? null;
+
+        return [
+            'issue_key' => $issue['issue_key'] ?? null,
+            'domain_code' => $code,
+            'domain_name' => $code ? ($this->domainNames()['code_to_name'][$code] ?? $code) : 'General',
+            'question_text' => $issue['question_text'] ?? null,
+            'item_score' => $issue['item_score'] ?? null,
+            'critical_failure' => (bool) ($issue['critical_failure'] ?? false),
+        ];
+    }
+
+    /**
      * Current performance against the goals set for this project — overall and per domain.
+     *
+     * A target is measured only against the series it was set under. A target with no recorded
+     * signature (set before this was tracked, or before any assessment existed) is treated as
+     * bound to whichever series is current; a target whose signature no longer matches the
+     * current series is silently excluded here rather than measured against a different
+     * methodology — it remains visible in target management for the user to remove or reset.
      *
      * @return array<int, array{scope: string, target: float, current: ?float, gap: ?float, met: bool}>
      */
@@ -148,6 +178,10 @@ class TrendService
         if ($latest === null) {
             return [];
         }
+
+        $currentSignature = $this->series->signatureFor($latest);
+        $targets = $targets->filter(fn ($target) => $target->comparison_signature === null
+            || ($currentSignature !== null && hash_equals($target->comparison_signature, $currentSignature)));
 
         $overall = $this->overall($latest);
         $domainScores = $this->domainScores($latest->assessment_id);
@@ -190,86 +224,44 @@ class TrendService
         }
 
         $insights = [];
-        foreach ($issues['new'] as $move) {
-            $insights[] = $this->trendInsight('EMERGING_ISSUE', $move, $move['domain_name'].' has emerged as a new weak area since the last assessment.');
+        foreach ($issues['new'] as $issue) {
+            $insights[] = $this->trendInsight('EMERGING_ISSUE', $issue, ($issue['question_text'] ?? 'A new issue').' has appeared as a new finding since the last comparable assessment.');
         }
-        foreach ($issues['regressed'] as $move) {
-            $insights[] = $this->trendInsight('DECLINE', $move, $move['domain_name'].' has slipped since the last assessment ('.$this->signed($move['delta']).').');
-        }
-        foreach ($issues['persistent'] as $move) {
-            $insights[] = $this->trendInsight('NO_CHANGE', $move, $move['domain_name'].' remains weak — it has not moved since the last assessment.');
+        foreach ($issues['persistent'] as $issue) {
+            $insights[] = $this->trendInsight('NO_CHANGE', $issue, ($issue['question_text'] ?? 'This finding').' remains an open issue — it has not moved since the last comparable assessment.');
         }
 
         return $insights;
     }
 
     /**
-     * @param  array<string, mixed>  $move
+     * @param  array<string, mixed>  $issue
      * @return array<string, mixed>
      */
-    private function trendInsight(string $code, array $move, string $statement): array
+    private function trendInsight(string $code, array $issue, string $statement): array
     {
         return [
             'category_code' => $code,
             'category_name' => InsightCatalog::name($code),
             'polarity' => InsightCatalog::polarity($code),
-            'subject' => $move['domain_name'],
-            'measurement_domain' => $move['domain_code'],
+            'subject' => $issue['domain_name'],
+            'measurement_domain' => $issue['domain_code'],
             'statement' => $statement,
         ];
     }
 
-    private function issueStatus(float $previous, float $latest): ?string
-    {
-        $prevWeak = $previous < 45.0;
-        $nowWeak = $latest < 45.0;
-        $prevBand = $this->band($previous);
-        $nowBand = $this->band($latest);
-
-        return match (true) {
-            $prevWeak && ! $nowWeak => 'resolved',
-            ! $prevWeak && $nowWeak => 'new',
-            $prevWeak && $nowWeak => 'persistent',
-            $nowBand > $prevBand => 'improved',
-            $nowBand < $prevBand => 'regressed',
-            default => null, // stable — no story to tell
-        };
-    }
-
-    /** 0 weak, 1 moderate, 2 strong. */
-    private function band(float $score): int
-    {
-        return $score >= 70 ? 2 : ($score >= 45 ? 1 : 0);
-    }
-
-    private function signed(?float $delta): string
-    {
-        if ($delta === null) {
-            return 'no change';
-        }
-
-        return ($delta >= 0 ? '+' : '').round($delta, 1);
-    }
-
     /**
-     * The latest two composition-matched complete runs, newest last.
+     * The latest two series-matched complete runs, newest last.
      *
      * @return array{0: ?Assessment, 1: ?Assessment}
      */
     private function latestComparablePair(Project $project, bool $requireTwo = true): array
     {
-        $history = Assessment::where('project_id', $project->project_id)
-            ->where('status', Assessment::STATUS_COMPLETE)
-            ->with('score')
-            ->orderBy('completed_at')
-            ->get();
-
-        $latest = $history->last();
-        if ($latest === null) {
+        $comparable = $this->series->seriesFor($project);
+        if ($comparable->isEmpty()) {
             return [null, null];
         }
 
-        $comparable = $history->filter(fn ($a) => $a->composition_hash === $latest->composition_hash)->values();
         if ($requireTwo && $comparable->count() < 2) {
             return [null, null];
         }

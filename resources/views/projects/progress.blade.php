@@ -62,7 +62,7 @@
                         @endif
                     </p>
                     @php
-                        $trendPoints = $assessments->filter(fn ($a) => $a->score?->overall_score !== null)
+                        $trendPoints = $series->filter(fn ($a) => $a->score?->overall_score !== null)
                             ->map(fn ($a) => ['label' => $a->completed_at?->format('d M') ?? '', 'value' => (float) $a->score->overall_score])
                             ->values()->all();
                     @endphp
@@ -87,8 +87,13 @@
                         </div>
                     @endif
                 @else
+                    <div class="mt-2 flex items-start gap-2">
+                        <span class="mt-0.5 inline-flex flex-shrink-0 items-center rounded-full bg-vytte-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-vytte-700 dark:bg-vytte-900/30 dark:text-vytte-400">Baseline recorded</span>
+                    </div>
                     <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                        Run this assessment at least twice to see movement over time. Only runs with the same content are compared.
+                        This is the first result on record for the current assessment method.
+                        Run the same assessment again to see whether it's improving — Vytte will compare it automatically,
+                        only when the questions and scoring are still the same.
                     </p>
                 @endif
             </div>
@@ -119,26 +124,36 @@
             </div>
         </div>
 
-        {{-- Progress: what was resolved, what persists, what is new, what slipped. --}}
+        {{-- Progress: exact assessed issues, tracked by stable identity — not domain averages. --}}
         @if ($issues['comparable'])
             <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5">
-                <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Since the last assessment</h2>
-                <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">What changed, area by area.</p>
-                <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Since the last comparable assessment</h2>
+                @if (! empty($issues['not_comparable']))
+                    <p class="text-xs text-amber-600 dark:text-amber-400 mb-3">
+                        An earlier assessment exists but used a different methodology, so Vytte cannot say whether these issues are new or ongoing — only what is currently open.
+                    </p>
+                @else
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">What changed, issue by issue.</p>
+                @endif
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     @php
                         $buckets = [
                             'resolved' => ['Resolved', 'strong'],
-                            'improved' => ['Improved', 'blue'],
-                            'persistent' => ['Still weak', 'moderate'],
+                            'improving' => ['Improving', 'blue'],
+                            'persistent' => ['Still open', 'moderate'],
                             'new' => ['New issues', 'weak'],
-                            'regressed' => ['Slipped', 'weak'],
                         ];
                     @endphp
                     @foreach ($buckets as $key => [$label, $tone])
                         <x-stat-card :tone="count($issues[$key]) > 0 ? $tone : 'slate'" :label="$label" :value="count($issues[$key])"
-                                     :sub="count($issues[$key]) > 0 ? collect($issues[$key])->pluck('domain_name')->take(3)->join(', ') : null" />
+                                     :sub="count($issues[$key]) > 0 ? collect($issues[$key])->pluck('domain_name')->unique()->take(3)->join(', ') : null" />
                     @endforeach
                 </div>
+                @if (! empty($issues['not_comparable']))
+                    <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                        {{ count($issues['not_comparable']) }} currently open {{ Str::plural('issue', count($issues['not_comparable'])) }} not shown above (not comparable to prior methodology).
+                    </p>
+                @endif
                 @if (! empty($trendInsights))
                     <ul class="mt-4 flex flex-col gap-1.5 border-t border-slate-100 dark:border-slate-700 pt-3">
                         @foreach ($trendInsights as $ti)
@@ -152,9 +167,11 @@
             </div>
         @endif
 
-        {{-- Targets: current performance against the goals set for this project. --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Targets</h2>
+        {{-- Targets: current performance against the goals set for this project. Collapsed by
+             default when there is nothing to show yet, so it does not compete with the progress
+             story above for attention — expanded automatically once a target exists. --}}
+        <details class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5" @if (! empty($targetProgress)) open @endif>
+            <summary class="text-sm font-bold text-slate-900 dark:text-white mb-3 cursor-pointer select-none">Targets</summary>
             @if (! empty($targetProgress))
                 <div class="flex flex-col gap-2 mb-4">
                     @foreach ($targetProgress as $tp)
@@ -206,11 +223,11 @@
                     @endforeach
                 </div>
             @endif
-        </div>
+        </details>
 
         {{-- Scheduled reports: recurring email of the latest report to a recipient. --}}
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Scheduled reports</h2>
+        <details class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 mb-5" @if ($schedules->isNotEmpty()) open @endif>
+            <summary class="text-sm font-bold text-slate-900 dark:text-white mb-1 cursor-pointer select-none">Scheduled reports</summary>
             <p class="text-xs text-slate-400 dark:text-slate-500 mb-3">Email the latest report for this project to someone on a regular schedule.</p>
             @if ($schedules->isNotEmpty())
                 <div class="flex flex-col gap-2 mb-4">
@@ -245,7 +262,7 @@
                 </label>
                 <button type="submit" class="rounded-xl bg-vytte-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-vytte-700 transition-colors">Schedule</button>
             </form>
-        </div>
+        </details>
 
         {{-- Assessment runs table --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -268,6 +285,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                        @php $latestAssessmentId = $assessments->last()?->assessment_id; @endphp
                         @foreach ($assessments as $i => $a)
                             @php
                                 $aScore = $a->score?->overall_score !== null ? (float) $a->score->overall_score : null;
@@ -297,8 +315,7 @@
                                 </td>
                                 <td class="px-5 py-3">
                                     @if ($aMaturity)
-                                        <span class="inline-flex items-center gap-1 text-xs text-slate-700 dark:text-slate-300">
-                                            <span class="font-bold text-vytte-700 dark:text-vytte-400">L{{ $aMaturity->level_number }}</span>
+                                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">
                                             {{ $aMaturity->level_name }}
                                         </span>
                                     @else
@@ -311,11 +328,17 @@
                                 <td class="px-5 py-3 text-right">
                                     <x-score-pill :score="$aScore" />
                                 </td>
-                                <td class="px-5 py-3 text-right">
+                                <td class="px-5 py-3 text-right whitespace-nowrap">
                                     <a href="{{ route('assessments.results', $a) }}"
-                                       class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200 transition-colors whitespace-nowrap">
+                                       class="text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200 transition-colors">
                                         View →
                                     </a>
+                                    @if ($assessments->count() >= 2 && $a->assessment_id !== $latestAssessmentId)
+                                        <a href="{{ route('projects.compare', [$project, 'a' => $a->assessment_id, 'b' => $latestAssessmentId]) }}"
+                                           class="ml-3 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+                                            Compare to current →
+                                        </a>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -324,19 +347,19 @@
             </div>
         </div>
 
-        {{-- Domain scores matrix (when ≥ 2 assessments with domain scores exist) --}}
-        @if ($assessments->count() >= 2 && $domainScoresByAssessment->isNotEmpty())
+        {{-- Domain scores matrix (when ≥ 2 compatible-series assessments with domain scores exist) --}}
+        @if ($series->count() >= 2 && $domainScoresByAssessment->isNotEmpty())
             <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700">
                     <h2 class="text-sm font-bold text-slate-900 dark:text-white">Domain Score History</h2>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Score per domain across all runs</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Score per domain across the current compatible series</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="border-b border-slate-100 dark:border-slate-700">
                                 <th class="px-5 py-2.5 text-left text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide sticky left-0 bg-white dark:bg-slate-800">Domain</th>
-                                @foreach ($assessments as $i => $a)
+                                @foreach ($series as $i => $a)
                                     <th class="px-4 py-2.5 text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide whitespace-nowrap">
                                         Run {{ $i + 1 }}<br>
                                         <span class="font-normal normal-case text-slate-400 dark:text-slate-500">{{ $a->completed_at?->format('d M Y') ?? '—' }}</span>
@@ -353,7 +376,7 @@
                                             <span class="text-xs font-medium text-slate-700 dark:text-slate-300">{{ $domain->domain_name }}</span>
                                         </div>
                                     </td>
-                                    @foreach ($assessments as $a)
+                                    @foreach ($series as $a)
                                         @php
                                             $assessmentDomains = $domainScoresByAssessment->get($a->assessment_id, collect());
                                             $domainRow = $assessmentDomains->firstWhere('domain_id', $domain->domain_id);
@@ -378,53 +401,6 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        @endif
-
-        {{-- Compare section (when ≥ 2 completed assessments) --}}
-        @if ($assessments->count() >= 2)
-            <div class="mt-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
-                <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Compare Two Runs</h2>
-                <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Select any two assessments to see a side-by-side domain comparison.</p>
-                <form method="GET" action="{{ route('projects.compare', $project) }}"
-                      class="flex flex-col sm:flex-row items-start sm:items-end gap-3">
-                    <div class="flex-1 min-w-0">
-                        <label for="compare_a" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">First assessment (baseline)</label>
-                        <select name="a" id="compare_a"
-                                class="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 shadow-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20">
-                            @foreach ($assessments as $i => $a)
-                                <option value="{{ $a->assessment_id }}">
-                                    Run {{ $i + 1 }} — {{ $a->completed_at?->format('d M Y') }}
-                                    @if ($a->score?->overall_score !== null)
-                                        ({{ number_format((float) $a->score->overall_score, 1) }})
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="flex-shrink-0 text-sm font-semibold text-slate-400 dark:text-slate-500 pb-2 hidden sm:block">vs</div>
-                    <div class="flex-1 min-w-0">
-                        <label for="compare_b" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Second assessment (latest)</label>
-                        <select name="b" id="compare_b"
-                                class="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 shadow-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-vytte-500 focus:outline-none focus:ring-2 focus:ring-vytte-500/20">
-                            @foreach ($assessments->reverse() as $i => $a)
-                                <option value="{{ $a->assessment_id }}">
-                                    Run {{ $assessments->count() - $i }} — {{ $a->completed_at?->format('d M Y') }}
-                                    @if ($a->score?->overall_score !== null)
-                                        ({{ number_format((float) $a->score->overall_score, 1) }})
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <button type="submit"
-                            class="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-vytte-700 text-white text-sm font-semibold rounded-lg hover:bg-vytte-800 transition-colors focus:outline-none focus:ring-2 focus:ring-vytte-400 focus:ring-offset-1">
-                        Compare
-                        <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd"/>
-                        </svg>
-                    </button>
-                </form>
             </div>
         @endif
 
