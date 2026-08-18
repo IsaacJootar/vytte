@@ -17,6 +17,7 @@ use App\Services\AssessmentCreationService;
 use App\Services\AssessmentLogicService;
 use App\Services\AuditService;
 use App\Services\PlanService;
+use App\Services\Reporting\ComparisonSeriesService;
 use App\Services\Reporting\CustomSectionScoringService;
 use App\Services\Reporting\IssueTrackingService;
 use App\Services\Reporting\LensCatalog;
@@ -346,7 +347,7 @@ class AssessmentController extends Controller
             ->with('success', 'Assessment submitted.');
     }
 
-    public function results(Assessment $assessment, ReportSnapshotService $reports): View|RedirectResponse
+    public function results(Assessment $assessment, ReportSnapshotService $reports, ComparisonSeriesService $series): View|RedirectResponse
     {
         $this->authorizeWorkspace($assessment);
 
@@ -400,21 +401,9 @@ class AssessmentController extends Controller
             }
         }
 
-        // History is comparable only when the exact governed composition matches.
-        $historyQuery = Assessment::where('project_id', $assessment->project_id)
-            ->where('status', Assessment::STATUS_COMPLETE)
-            ->with(['score.maturityLevel', 'reportSnapshot']);
-        $comparisonSignature = $report['comparison_signature'] ?? null;
-        if ($comparisonSignature) {
-            $historyQuery->whereHas('reportSnapshot', fn ($query) => $query->where('comparison_signature', $comparisonSignature));
-        } elseif ($assessment->composition_hash) {
-            $historyQuery->where('composition_hash', $assessment->composition_hash);
-        } else {
-            $historyQuery->where('assessment_id', $assessment->assessment_id);
-        }
-        $history = $historyQuery
-            ->orderBy('completed_at')
-            ->get();
+        // History is comparable only when it matches this exact assessment's series — decided
+        // once, by ComparisonSeriesService, the same way Progress and Portfolio decide it.
+        $history = $series->seriesMatching($assessment->project, $assessment);
         foreach ($history as $historicalAssessment) {
             $historicalScore = $historicalAssessment->reportSnapshot?->payload['score'] ?? null;
             if ($historicalScore && $historicalAssessment->score) {

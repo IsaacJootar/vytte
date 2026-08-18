@@ -6,11 +6,13 @@ use App\Models\Assessment;
 
 class ComparisonEligibilityService
 {
+    public function __construct(private readonly ComparisonSeriesService $series) {}
+
     /** @return array{classification: string, comparable: bool, show_deltas: bool, reason: string, signature: ?string} */
     public function between(Assessment $first, Assessment $second): array
     {
-        $firstSignature = $first->reportSnapshot?->comparison_signature ?? $first->snapshot?->comparison_signature;
-        $secondSignature = $second->reportSnapshot?->comparison_signature ?? $second->snapshot?->comparison_signature;
+        $firstSignature = $this->series->signatureFor($first);
+        $secondSignature = $this->series->signatureFor($second);
 
         if ($firstSignature && $secondSignature && hash_equals($firstSignature, $secondSignature)) {
             return [
