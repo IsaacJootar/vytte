@@ -133,6 +133,12 @@ session that was already submitted: completed-session eligibility remains an exp
 decision. All respondent-facing definitions, including local questions, are locked when collection
 opens so every respondent receives the same instrument.
 
+Integrity verification hashes the exact persisted JSON artifact rather than a decoded and
+re-encoded PHP value. This preserves the original immutable fingerprint across safe runtime
+differences such as floating-point serialization precision. Collection UI presents review decisions
+and system verification as separate concepts, explains any finalization blocker in plain language,
+and keeps technical scoring/template identifiers behind optional details.
+
 There is no separate community or respondent report.
 
 ## 7. Completion

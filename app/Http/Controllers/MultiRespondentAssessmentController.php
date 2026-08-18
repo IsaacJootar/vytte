@@ -24,6 +24,7 @@ class MultiRespondentAssessmentController extends Controller
         $assessment->load([
             'project',
             'target',
+            'catalogueRelease',
             'aggregationResult',
             'publicResponseSessions.scoreResult',
             'publicResponseSessions.accessToken',

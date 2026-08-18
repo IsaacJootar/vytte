@@ -8,6 +8,11 @@
         $submitted = $sessions->whereNotNull('submitted_at');
         $inProgress = $sessions->whereNull('submitted_at')->count();
         $completionRate = $sessions->isNotEmpty() ? (int) round($submitted->count() / $sessions->count() * 100) : 0;
+        $systemCheckFailures = collect($preview['excluded_sessions'])->where('category', 'system')->count();
+        $scoringLabel = match ($preview['scoring_version']) {
+            'vytte-4.0-numeric-bands' => 'Vytte scoring v4 (numeric bands)',
+            default => 'Published scoring rules',
+        };
 
         // Where the collection sits in its four-step workflow.
         $step = $isComplete ? 4 : ($assessment->isDraft() ? 1 : ($eligible > 0 || $assessment->isClosed() ? 3 : 2));
@@ -123,26 +128,34 @@
                      :sub="$inProgress.' still in progress'" />
         <x-stat-card tone="strong" label="Completed" :value="$submitted->count()"
                      :sub="$completionRate.'% of those started'" />
-        <x-stat-card :tone="$eligible >= $minimum ? 'strong' : 'moderate'" label="Eligible" :value="$eligible"
-                     :sub="$minimum.' needed to finalise'" />
-        <x-stat-card tone="slate" label="Required minimum" :value="$minimum" sub="Eligible completed responses" />
-        <x-stat-card tone="blue" label="Provisional score"
+        <x-stat-card :tone="$eligible >= $minimum ? 'strong' : 'moderate'" label="Ready to count" :value="$eligible"
+                     :sub="$minimum.' needed for the final report'" />
+        <x-stat-card tone="slate" label="Responses needed" :value="$minimum" sub="Valid completed responses" />
+        <x-stat-card tone="blue" label="Current average"
                      :value="$preview['result']['overall_score'] === null ? '—' : number_format($preview['result']['overall_score'], 2)"
                      sub="Updates until finalisation" />
-        <x-stat-card tone="slate" label="Excluded" :value="$preview['excluded_session_count']" sub="Not included in the result" />
+        <x-stat-card tone="slate" label="Not counted" :value="$preview['excluded_session_count']" sub="Incomplete, excluded, test, or unverified" />
     </div>
 
     <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-        <h2 class="font-semibold text-slate-900 dark:text-white">Finalization contract</h2>
+        <h2 class="font-semibold text-slate-900 dark:text-white">How the final result will be created</h2>
+        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">These rules are fixed for this assessment so every final report is consistent.</p>
         <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <div><dt class="text-slate-500">Method</dt><dd class="font-medium">Arithmetic mean</dd></div>
-            <div><dt class="text-slate-500">Scoring profile</dt><dd class="font-medium">{{ $preview['scoring_version'] }}</dd></div>
-            <div><dt class="text-slate-500">Catalogue release</dt><dd class="font-mono text-xs">{{ $preview['catalogue_release_id'] }}</dd></div>
-            <div><dt class="text-slate-500">State</dt><dd class="font-medium">{{ $isComplete ? 'Final and immutable' : 'Provisional' }}</dd></div>
+            <div><dt class="text-slate-500">Scores combined by</dt><dd class="font-medium">Average of approved responses</dd></div>
+            <div><dt class="text-slate-500">Scoring rules</dt><dd class="font-medium">{{ $scoringLabel }}</dd></div>
+            <div><dt class="text-slate-500">Assessment template</dt><dd class="font-medium">{{ $assessment->catalogueRelease?->release_name ?? 'Published assessment template' }}</dd></div>
+            <div><dt class="text-slate-500">Report status</dt><dd class="font-medium">{{ $isComplete ? 'Final report — locked' : 'Draft result — still updating' }}</dd></div>
         </dl>
+        <details class="mt-4 text-xs text-slate-500 dark:text-slate-400">
+            <summary class="cursor-pointer font-semibold text-vytte-700 dark:text-vytte-400">Technical details</summary>
+            <dl class="mt-2 grid gap-2 sm:grid-cols-2">
+                <div><dt class="font-medium">Scoring version</dt><dd class="font-mono">{{ $preview['scoring_version'] }}</dd></div>
+                <div><dt class="font-medium">Template version ID</dt><dd class="break-all font-mono">{{ $preview['catalogue_release_id'] }}</dd></div>
+            </dl>
+        </details>
         @if ($preview['respondent_eligibility_rules'])
             <p class="mt-4 text-xs text-slate-500">
-                Eligibility rules are frozen with this assessment and require an authorized review before included sessions are finalized.
+                This template requires you to review which completed responses should count. Those rules cannot change after collection starts.
             </p>
         @endif
     </div>
@@ -160,7 +173,7 @@
                         <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Last activity</th>
                         <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Progress</th>
                         <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Score</th>
-                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Eligibility review</th>
+                        <th scope="col" class="px-5 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Review decision</th>
                         <th scope="col" class="px-5 py-2.5 text-right text-xs font-semibold text-slate-500 dark:text-slate-400"><span class="sr-only">Actions</span></th>
                     </tr>
                 </thead>
@@ -170,9 +183,10 @@
                             $exclusion = collect($preview['excluded_sessions'])->firstWhere('session_id', $session->session_id);
                             [$eligibilityLabel, $eligibilityClasses] = match (true) {
                                 $session->is_test => ['Test', 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'],
-                                $session->eligibility_status === 'ELIGIBLE' => ['Eligible', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'],
+                                $session->eligibility_status === 'ELIGIBLE' => ['Approved to count', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'],
                                 $session->eligibility_status === 'EXCLUDED' => ['Excluded', 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'],
-                                default => ['Not reviewed', 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'],
+                                $session->submitted_at !== null => ['Review needed', 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'],
+                                default => ['Awaiting completion', 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'],
                             };
                         @endphp
                         <tr>
@@ -188,21 +202,25 @@
                             </td>
                             <td class="min-w-72 px-5 py-3">
                                 <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $eligibilityClasses }}">{{ $eligibilityLabel }}</span>
-                                @if ($exclusion)
-                                    <p class="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">{{ $exclusion['reason'] }}</p>
+                                @if ($exclusion && $exclusion['category'] === 'system')
+                                    <p class="mt-2 rounded-lg bg-amber-50 px-2.5 py-2 text-xs font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                                        <span class="font-bold">System check:</span> {{ $exclusion['message'] }}
+                                    </p>
+                                @elseif ($exclusion && $exclusion['category'] === 'review')
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $exclusion['message'] }}</p>
                                 @endif
                                 @if ($canFinalize && ! $isComplete && $session->submitted_at)
                                     <form method="POST" action="{{ route('assessments.respondent-sessions.classify', [$assessment, $session]) }}" class="mt-2 flex flex-wrap items-center gap-2">
                                         @csrf
                                         @method('PATCH')
                                         <select name="classification" class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
-                                            <option value="ELIGIBLE" @selected($session->eligibility_status === 'ELIGIBLE' && ! $session->is_test)>Eligible</option>
-                                            <option value="EXCLUDED" @selected($session->eligibility_status === 'EXCLUDED' && ! $session->is_test)>Exclude</option>
-                                            <option value="TEST" @selected($session->is_test)>Test</option>
+                                            <option value="ELIGIBLE" @selected($session->eligibility_status === 'ELIGIBLE' && ! $session->is_test)>Include in result</option>
+                                            <option value="EXCLUDED" @selected($session->eligibility_status === 'EXCLUDED' && ! $session->is_test)>Exclude from result</option>
+                                            <option value="TEST" @selected($session->is_test)>Test response</option>
                                         </select>
-                                        <input name="reason" value="{{ $session->eligibility_reason }}" placeholder="Reason when excluded"
+                                        <input name="reason" value="{{ $session->eligibility_reason }}" placeholder="Required reason for exclusion"
                                                class="min-w-44 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white">
-                                        <button class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold dark:border-slate-600">Save</button>
+                                        <button class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold dark:border-slate-600">Save review</button>
                                     </form>
                                 @endif
                             </td>
@@ -227,16 +245,25 @@
 
     @if ($canFinalize && ! $isComplete)
         <div class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-            <h2 class="font-semibold text-slate-900 dark:text-white">Manual finalization</h2>
+            <h2 class="font-semibold text-slate-900 dark:text-white">Create the final report</h2>
             <p class="mt-1 text-sm text-slate-500">
-                Finalization freezes the current eligible session set and creates the ordinary immutable Vytte report.
-                Later submissions cannot change it.
+                When you finalise, Vytte locks the approved responses and creates the final report. New responses will not change it.
             </p>
+            @if ($eligible < $minimum)
+                <div id="finalise-blocker" class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100" role="status">
+                    <p class="font-semibold">Cannot finalise yet — {{ $eligible }} of {{ $minimum }} required valid completed responses are ready.</p>
+                    @if ($systemCheckFailures > 0)
+                        <p class="mt-1 text-xs">{{ $systemCheckFailures }} completed {{ Str::plural('response', $systemCheckFailures) }} {{ $systemCheckFailures === 1 ? 'needs' : 'need' }} system verification. Contact support before finalising.</p>
+                    @else
+                        <p class="mt-1 text-xs">Wait for more responses to be completed and approve the ones that should count.</p>
+                    @endif
+                </div>
+            @endif
             <form method="POST" action="{{ route('assessments.respondent-collection.finalize', $assessment) }}" class="mt-4">
                 @csrf
-                <button @disabled($eligible < $minimum)
+                <button @disabled($eligible < $minimum) @if ($eligible < $minimum) aria-describedby="finalise-blocker" @endif
                         class="rounded-lg bg-vytte-700 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">
-                    Finalize collection
+                    Finalise & create report
                 </button>
             </form>
         </div>

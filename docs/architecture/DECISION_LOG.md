@@ -445,3 +445,10 @@
 - **Decision:** The ordinary workflow maintains one reusable active respondent link per assessment. The same link may serve many respondents. A replacement can be created only when no active link remains; historical duplicate active links remain visible so an operator can deactivate extras deliberately. Opening collection freezes all respondent-facing definitions, including local questions.
 - **Revocation boundary:** Deactivation and expiry control future link access only. A completed session remains durable and may count when its explicit eligibility decision and integrity checks pass. Deactivation never deletes or silently disqualifies completed answers.
 - **Navigation:** A submitted response's read-only detail page returns to the same **Collect & review responses** operations page.
+
+### DEC-2026-08-18-060: Verify Persisted Score Bytes And Explain Finalization In Plain Language
+
+- **Status:** Accepted and implemented.
+- **Context:** A valid historical respondent score was fingerprinted from JSON containing ordinary decimal scores such as `66.11`. A later PHP runtime decoded and re-encoded that value as a long binary-floating-point representation, producing a false `SCORE_RESULT_INTEGRITY_MISMATCH` even though the stored fingerprint still exactly matched the persisted PostgreSQL JSON.
+- **Decision:** Response and score integrity checks hash the raw persisted JSON value that was originally fingerprinted. They never hash a decoded/re-encoded approximation. A changed stored artifact still fails closed; an unchanged artifact remains valid across runtime serialization settings. Existing immutable scores are verified in place and are not recalculated or rewritten.
+- **Language:** The collection page separates the human review decision from system verification, renders internal exclusion codes as plain-language guidance, explains the exact threshold blocking finalization, and presents method, scoring rules, template, and report state under **How the final result will be created**. Technical identifiers remain available under optional details.

@@ -37,6 +37,8 @@ class MultiRespondentAggregationService
                 $excluded->push([
                     'session_id' => $session->session_id,
                     'reason' => $reason,
+                    'message' => $this->exclusionMessage($reason),
+                    'category' => $this->exclusionCategory($reason),
                 ]);
             } else {
                 $eligible->push($session);
@@ -214,19 +216,67 @@ class MultiRespondentAggregationService
         if (! $session->scoreResult) {
             return 'RESPONDENT_SCORE_MISSING';
         }
-        $snapshotHash = hash('sha256', json_encode($session->response_snapshot, JSON_THROW_ON_ERROR));
+        $snapshotHash = $this->persistedJsonHash($session, 'response_snapshot');
         if (! hash_equals((string) $session->response_snapshot_hash, $snapshotHash)) {
             return 'RESPONSE_SNAPSHOT_INTEGRITY_MISMATCH';
         }
         if (! hash_equals((string) $session->response_snapshot_hash, (string) $session->scoreResult->input_hash)) {
             return 'RESPONSE_SCORE_INTEGRITY_MISMATCH';
         }
-        $scoreHash = hash('sha256', json_encode($session->scoreResult->payload, JSON_THROW_ON_ERROR));
+        $scoreHash = $this->persistedJsonHash($session->scoreResult, 'payload');
         if (! hash_equals((string) $session->scoreResult->result_hash, $scoreHash)) {
             return 'SCORE_RESULT_INTEGRITY_MISMATCH';
         }
 
         return null;
+    }
+
+    /**
+     * Hash the exact JSON persisted by the database. Decoding and re-encoding a valid JSON
+     * number can change its byte representation under a different PHP serialize_precision
+     * setting (for example, 66.11 may expand to 66.109999...). The immutable fingerprint was
+     * created from the original JSON bytes, so verification must use those same stored bytes.
+     */
+    private function persistedJsonHash(object $model, string $attribute): string
+    {
+        $raw = $model->getRawOriginal($attribute);
+
+        if (is_string($raw)) {
+            return hash('sha256', $raw);
+        }
+
+        return hash('sha256', json_encode($model->getAttribute($attribute), JSON_THROW_ON_ERROR));
+    }
+
+    private function exclusionMessage(string $reason): string
+    {
+        if (str_starts_with($reason, 'INELIGIBLE: ')) {
+            return 'Excluded from the result: '.substr($reason, strlen('INELIGIBLE: '));
+        }
+
+        return match ($reason) {
+            'INCOMPLETE_SESSION' => 'Not completed yet.',
+            'TEST_SESSION' => 'Marked as a test response.',
+            'ELIGIBILITY_NOT_CONFIRMED' => 'A reviewer must decide whether this response should count.',
+            'ACCESS_TOKEN_MISSING' => 'The original respondent-link record is unavailable. Contact support before finalising.',
+            'RESPONDENT_SCORE_MISSING' => 'This completed response has no saved score. Contact support before finalising.',
+            'RESPONSE_SNAPSHOT_INTEGRITY_MISMATCH' => 'The saved response could not be verified. Contact support before finalising.',
+            'RESPONSE_SCORE_INTEGRITY_MISMATCH' => 'The saved response and score do not match. Contact support before finalising.',
+            'SCORE_RESULT_INTEGRITY_MISMATCH' => 'The saved score could not be verified. Contact support before finalising.',
+            'SCORING_PROFILE_VERSION_MISMATCH' => 'This response used different scoring rules. Contact support before finalising.',
+            default => 'This response cannot currently be included in the final result.',
+        };
+    }
+
+    private function exclusionCategory(string $reason): string
+    {
+        return match (true) {
+            $reason === 'INCOMPLETE_SESSION' => 'progress',
+            $reason === 'TEST_SESSION',
+            $reason === 'ELIGIBILITY_NOT_CONFIRMED',
+            str_starts_with($reason, 'INELIGIBLE: ') => 'review',
+            default => 'system',
+        };
     }
 
     private function arithmeticMean(Collection $sessions, string $scoringVersion): array

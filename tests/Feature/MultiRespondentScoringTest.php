@@ -20,8 +20,10 @@ use App\Services\AssessmentCreationService;
 use App\Services\CataloguePublishingService;
 use App\Services\MultiRespondentAggregationService;
 use App\Services\RespondentSubmissionService;
+use App\Services\ScoringService;
 use Database\Seeders\PlanFeatureSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -163,6 +165,73 @@ class MultiRespondentScoringTest extends TestCase
             ->assertOk()
             ->assertSeeText('Back to collect & review')
             ->assertSee(route('assessments.respondent-collection', $assessment), false);
+    }
+
+    public function test_persisted_score_hash_is_stable_across_php_float_serialization_settings(): void
+    {
+        [, $assessment] = $this->context(minimum: 1);
+        $submitted = $this->submitRespondent($assessment, 'high');
+        $rawPayload = '{"sub_indices":[],"domains":[],"overall_score":66.11,"calibration_status":"CALIBRATED","scoring_version":"'.ScoringService::ALGORITHM_VERSION.'"}';
+
+        DB::table('respondent_score_results')
+            ->where('score_result_id', $submitted->score_result_id)
+            ->update([
+                'payload' => $rawPayload,
+                'result_hash' => hash('sha256', $rawPayload),
+            ]);
+
+        $originalPrecision = ini_get('serialize_precision');
+        ini_set('serialize_precision', '53');
+
+        try {
+            $this->assertNotSame(
+                hash('sha256', $rawPayload),
+                hash('sha256', json_encode(json_decode($rawPayload, true, 512, JSON_THROW_ON_ERROR), JSON_THROW_ON_ERROR)),
+            );
+
+            $preview = app(MultiRespondentAggregationService::class)->preview($assessment->fresh());
+            $this->assertSame(1, $preview['eligible_respondent_count']);
+            $this->assertSame([], $preview['excluded_sessions']);
+        } finally {
+            ini_set('serialize_precision', (string) $originalPrecision);
+        }
+    }
+
+    public function test_changed_persisted_score_payload_is_rejected_with_plain_language_context(): void
+    {
+        [, $assessment] = $this->context(minimum: 1);
+        $submitted = $this->submitRespondent($assessment, 'high');
+        $changedPayload = '{"sub_indices":[],"domains":[],"overall_score":0,"calibration_status":"CALIBRATED","scoring_version":"'.ScoringService::ALGORITHM_VERSION.'"}';
+
+        DB::table('respondent_score_results')
+            ->where('score_result_id', $submitted->score_result_id)
+            ->update(['payload' => $changedPayload]);
+
+        $preview = app(MultiRespondentAggregationService::class)->preview($assessment->fresh());
+        $exclusion = $preview['excluded_sessions'][0];
+
+        $this->assertSame(0, $preview['eligible_respondent_count']);
+        $this->assertSame('SCORE_RESULT_INTEGRITY_MISMATCH', $exclusion['reason']);
+        $this->assertSame('system', $exclusion['category']);
+        $this->assertSame('The saved score could not be verified. Contact support before finalising.', $exclusion['message']);
+    }
+
+    public function test_collection_explains_final_result_rules_and_why_finalisation_is_blocked(): void
+    {
+        [$owner, $assessment] = $this->context(minimum: 2);
+
+        $this->actingAs($owner)
+            ->get(route('assessments.respondent-collection', $assessment))
+            ->assertOk()
+            ->assertSeeText('How the final result will be created')
+            ->assertSeeText('Average of approved responses')
+            ->assertSeeText('Draft result — still updating')
+            ->assertSeeText('Ready to count')
+            ->assertSeeText('Responses needed')
+            ->assertSeeText('Cannot finalise yet — 0 of 2 required valid completed responses are ready.')
+            ->assertSeeText('Finalise & create report')
+            ->assertDontSeeText('Finalization contract')
+            ->assertDontSeeText('Arithmetic mean');
     }
 
     public function test_missing_required_answers_are_rejected_and_never_treated_as_zero(): void
