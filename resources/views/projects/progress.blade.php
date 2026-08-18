@@ -151,7 +151,7 @@
                 </div>
                 @if (! empty($issues['not_comparable']))
                     <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
-                        {{ count($issues['not_comparable']) }} currently open {{ Str::plural('issue', count($issues['not_comparable'])) }} not shown above (not comparable to prior methodology).
+                        {{ count($issues['not_comparable']) }} currently open {{ Str::plural('issue', count($issues['not_comparable'])) }} not shown above (an earlier run used different questions, so progress can't be tracked for {{ count($issues['not_comparable']) === 1 ? 'it' : 'them' }}).
                     </p>
                 @endif
                 @if (! empty($trendInsights))

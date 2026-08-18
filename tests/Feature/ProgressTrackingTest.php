@@ -266,7 +266,7 @@ class ProgressTrackingTest extends TestCase
         $this->actingAs($user)
             ->get(route('projects.compare', $project)."?a={$a->assessment_id}&b={$b->assessment_id}")
             ->assertOk()
-            ->assertSee('Directly Comparable')
+            ->assertSee('Comparable')
             ->assertSee('Domain Comparison');
     }
 
@@ -284,7 +284,7 @@ class ProgressTrackingTest extends TestCase
         $this->actingAs($user)
             ->get(route('projects.compare', $project)."?a={$a->assessment_id}&b={$b->assessment_id}")
             ->assertOk()
-            ->assertSee('Not Comparable')
+            ->assertSee('Not comparable')
             ->assertSee('Descriptive view only')
             ->assertDontSee('Domain Comparison');
     }

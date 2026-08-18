@@ -14,7 +14,7 @@
     </div>
 
     <div class="mb-5 rounded-2xl border p-4 {{ $comparison['comparable'] ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40' : 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40' }}">
-        <p class="text-xs font-bold uppercase tracking-wide {{ $comparison['comparable'] ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300' }}">{{ str($comparison['classification'])->replace('_', ' ')->title() }}</p>
+        <p class="text-xs font-bold uppercase tracking-wide {{ $comparison['comparable'] ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300' }}">{{ $comparison['label'] }}</p>
         <p class="mt-1 text-sm {{ $comparison['comparable'] ? 'text-emerald-800 dark:text-emerald-200' : 'text-amber-800 dark:text-amber-200' }}">{{ $comparison['reason'] }}</p>
     </div>
 
@@ -175,7 +175,7 @@
     @else
         <div class="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Descriptive view only</h2>
-            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Both reports remain available above, but domain deltas and trend claims are hidden because the frozen methodologies do not match.</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Both reports remain available above, but domain-by-domain changes and trend claims are hidden because they used different questions or scoring.</p>
         </div>
     @endif
 

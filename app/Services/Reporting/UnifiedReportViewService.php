@@ -94,8 +94,8 @@ class UnifiedReportViewService
                     'eligible' => filled($payload['comparison_signature'] ?? null),
                     'signature' => $payload['comparison_signature'] ?? null,
                     'reason' => filled($payload['comparison_signature'] ?? null)
-                        ? 'Compare only with a report carrying the same frozen methodology signature.'
-                        : 'This historical report has no frozen comparison signature.',
+                        ? 'Can be compared with any other report that used the exact same questions and scoring.'
+                        : 'This report predates our comparison tracking, so we can\'t confirm it\'s safe to compare against newer reports.',
                 ],
             ],
             'common_core' => $commonCore,
@@ -143,11 +143,11 @@ class UnifiedReportViewService
             ));
         $eligible = $defined && ! $isAggregate && $benchmarkApproved && filled($signature) && $score !== null;
         $reason = match (true) {
-            ! $defined => 'This instrument does not declare a governed common core.',
-            $isAggregate => 'This aggregate report has no separately frozen common-core aggregate.',
-            ! $benchmarkApproved => 'The common core has not received an evidence-backed benchmark approval claim.',
-            $score === null => 'The common core has insufficient answered items.',
-            default => 'Compare only with the same frozen common-core methodology signature.',
+            ! $defined => 'This instrument does not define a shared core set of questions.',
+            $isAggregate => 'This is a combined report, so it has no separate core-questions score to compare.',
+            ! $benchmarkApproved => 'This core question set has not yet been approved as a benchmark.',
+            $score === null => 'Not enough of the core questions were answered to calculate a score.',
+            default => 'Can be compared with any other report using the same core question set.',
         };
 
         return [

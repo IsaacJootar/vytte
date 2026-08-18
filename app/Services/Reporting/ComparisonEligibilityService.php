@@ -17,9 +17,10 @@ class ComparisonEligibilityService
         if ($firstSignature && $secondSignature && hash_equals($firstSignature, $secondSignature)) {
             return [
                 'classification' => 'DIRECTLY_COMPARABLE',
+                'label' => 'Comparable',
                 'comparable' => true,
                 'show_deltas' => true,
-                'reason' => 'Both reports use the same frozen methodology and comparison signature.',
+                'reason' => 'Both reports use the same set of questions and scoring, so this comparison is reliable.',
                 'signature' => $firstSignature,
             ];
         }
@@ -27,18 +28,20 @@ class ComparisonEligibilityService
         if (! $firstSignature && ! $secondSignature && $first->composition_hash && hash_equals($first->composition_hash, (string) $second->composition_hash)) {
             return [
                 'classification' => 'LEGACY_DIRECTLY_COMPARABLE',
+                'label' => 'Comparable',
                 'comparable' => true,
                 'show_deltas' => true,
-                'reason' => 'These legacy reports have the same frozen composition, but predate explicit methodology signatures.',
+                'reason' => 'Both reports use the same set of questions and scoring, so this comparison is reliable. (The older report predates our comparability tracking, but its content matches.)',
                 'signature' => null,
             ];
         }
 
         return [
             'classification' => 'NOT_COMPARABLE',
+            'label' => 'Not comparable',
             'comparable' => false,
             'show_deltas' => false,
-            'reason' => 'These results use different or undocumented methodologies. They are shown side by side for context, but Vytte will not calculate changes, ranks, or improvement claims.',
+            'reason' => 'These two reports used different questions or scoring, so Vytte will not calculate changes, ranks, or improvement claims between them. They are shown side by side for context only.',
             'signature' => null,
         ];
     }
