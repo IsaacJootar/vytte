@@ -132,6 +132,55 @@ class ReportExportTest extends TestCase
         $this->assertTrue($dom->loadXML($xml), 'word/document.xml must be well-formed XML with special characters escaped');
     }
 
+    /**
+     * InsightService::insights() returns many overlapping views onto the same items (a flat
+     * 'items' list, plus 'negative'/'weaknesses'/'priorities'/etc buckets that are subsets of
+     * it). The exporter must render each insight once, not once per bucket it belongs to.
+     */
+    public function test_word_export_does_not_duplicate_an_insight_that_belongs_to_several_categories(): void
+    {
+        $findings = (new \App\Services\Reporting\DiagnosticsService)->findings([
+            'score' => ['overall_score' => 20.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                ['domain_name' => 'Governance', 'domain_code' => 'GOV', 'score' => 15.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => [
+                    ['question_id' => 'q1', 'question_text' => 'Is there a governance board?', 'score' => 0.0],
+                    ['question_id' => 'q2', 'question_text' => 'Are decisions documented?', 'score' => 10.0],
+                ]],
+            ],
+        ]);
+        $insights = (new \App\Services\Reporting\InsightService)->insights($findings);
+        // This finding surfaces under several categories at once (WEAKNESS, LOW_PERFORMING,
+        // PAIN_POINT, SYSTEMIC_ISSUE, COMPLIANCE_RISK, STRATEGIC_PRIORITY) — the exact shape
+        // that previously caused the same statement to render several times.
+        $this->assertGreaterThan(3, count($insights['items']));
+
+        $bytes = app(ReportDocumentExporter::class)->word([
+            'title' => 'Duplicate Insight Regression',
+            'score' => ['overall_score' => 20.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [],
+            'intelligence' => ['findings' => $findings, 'insights' => $insights],
+        ]);
+
+        $path = tempnam(sys_get_temp_dir(), 'vytte_word_test_');
+        file_put_contents($path, $bytes);
+        $zip = new \ZipArchive;
+        $this->assertTrue($zip->open($path) === true);
+        $xml = (string) $zip->getFromName('word/document.xml');
+        $zip->close();
+        @unlink($path);
+
+        // Each of the 6 categories this finding was classified under is a legitimately distinct
+        // insight and must head its own section exactly once. Before the fix, iterating every
+        // key of insights() (items, negative, neutral, weaknesses, priorities, pain_points,
+        // systemic_issues) rendered "Systemic Issues" as its own group AND folded the same row
+        // into 'items' and 'negative' too — 16 Insight rows instead of the correct 6.
+        $this->assertSame(1, substr_count($xml, 'Systemic Issues'), 'Each category heading must appear exactly once.');
+        $this->assertSame(1, substr_count($xml, 'Strategic Priorities'), 'Each category heading must appear exactly once.');
+        // The shared statement text is expected to appear once per legitimate category (6) plus
+        // once in "What we found" (1) — 7 total, not the ~17 the old bucket-iteration bug produced.
+        $this->assertSame(7, substr_count($xml, 'Governance is weak'));
+    }
+
     public function test_exports_require_a_completed_assessment(): void
     {
         $project = Project::create(['name' => 'Draft Project', 'owner_user_id' => $this->user->user_id]);

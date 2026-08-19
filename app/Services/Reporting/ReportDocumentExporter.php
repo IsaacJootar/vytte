@@ -28,6 +28,8 @@ class ReportDocumentExporter
 {
     private const DISCLAIMER = 'About this assessment: its questions draw on WHO and other public health frameworks. It is not a World Health Organization product, and its results are a management guide, not a clinical diagnosis or an official accreditation.';
 
+    public function __construct(private readonly InsightService $insights) {}
+
     /**
      * A readable .docx report carrying the full diagnostic.
      *
@@ -99,7 +101,7 @@ class ReportDocumentExporter
         }
 
         // Insights, grouped by the governed category they belong to.
-        $insightGroups = $this->insightGroups($intel);
+        $insightGroups = $this->insights->groupedForDocument($intel['insights'] ?? []);
         if ($insightGroups !== []) {
             $section->addTextBreak();
             $section->addTitle('Insights', 2);
@@ -198,7 +200,7 @@ class ReportDocumentExporter
             ])->all());
 
         $this->sheet($book, 'Insights', ['Category', 'Polarity', 'Subject', 'Statement'],
-            collect($this->insightGroups($intel))->flatMap(fn ($group) => collect($group['rows'])->map(fn ($r) => [
+            collect($this->insights->groupedForDocument($intel['insights'] ?? []))->flatMap(fn ($group) => collect($group['rows'])->map(fn ($r) => [
                 $group['name'], $r['polarity'] ?? '', $r['subject'] ?? '', $r['statement'] ?? '',
             ]))->all());
 
@@ -261,30 +263,6 @@ class ReportDocumentExporter
         }
 
         return $this->render(fn ($path) => (new PowerPoint2007($deck))->save($path));
-    }
-
-    /**
-     * Insights come from the engine grouped by governed category (a map of category code to a
-     * list of rows). Flatten to an ordered list of {name, rows} for linear document layout.
-     *
-     * @param  array<string, mixed>  $intel
-     * @return array<int, array{name: string, rows: array<int, array<string, mixed>>}>
-     */
-    private function insightGroups(array $intel): array
-    {
-        $groups = [];
-        foreach ($intel['insights'] ?? [] as $rows) {
-            $rows = array_values(is_array($rows) ? $rows : []);
-            if ($rows === []) {
-                continue;
-            }
-            $groups[] = [
-                'name' => $rows[0]['category_name'] ?? 'Insights',
-                'rows' => $rows,
-            ];
-        }
-
-        return $groups;
     }
 
     /**

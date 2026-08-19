@@ -401,6 +401,37 @@ class ReportingEngineTest extends TestCase
         $this->assertStringContainsString('Is there a governance board?', $gov['consequence']);
     }
 
+    public function test_grouped_for_document_never_duplicates_an_insight_across_groups(): void
+    {
+        // A high-criticality, high-severity weakness with 2 failed indicators surfaces as
+        // several insight categories from ONE finding: WEAKNESS, LOW_PERFORMING, PAIN_POINT,
+        // SYSTEMIC_ISSUE, a domain-risk category, and STRATEGIC_PRIORITY. This is exactly the
+        // shape that made naive iteration over insights() render the same item several times.
+        $findings = (new DiagnosticsService)->findings([
+            'score' => ['overall_score' => 20.0, 'calibration_status' => 'CALIBRATED'],
+            'domain_scores' => [
+                ['domain_name' => 'Governance', 'domain_code' => 'GOV', 'score' => 15.0, 'calibration_status' => 'CALIBRATED', 'questions_expected' => 5, 'questions_answered' => 5, 'failed_indicators' => [
+                    ['question_id' => 'q1', 'question_text' => 'Is there a governance board?', 'score' => 0.0],
+                    ['question_id' => 'q2', 'question_text' => 'Are decisions documented?', 'score' => 10.0],
+                ]],
+            ],
+        ]);
+        $insights = (new InsightService)->insights($findings);
+        $groups = (new InsightService)->groupedForDocument($insights);
+
+        // One finding surfacing as 6 categories must produce 6 groups, one item each — never
+        // the same item appearing again under 'items', 'negative', 'weaknesses', etc.
+        $this->assertGreaterThan(1, count($insights['items']), 'The fixture must exercise a finding with several insight categories.');
+        $this->assertSame(collect($insights['items'])->pluck('category_code')->unique()->count(), count($groups));
+        $totalRows = collect($groups)->sum(fn ($g) => count($g['rows']));
+        $this->assertSame(count($insights['items']), $totalRows, 'Every insight item must appear exactly once across all document groups.');
+    }
+
+    public function test_grouped_for_document_returns_nothing_for_an_empty_insights_structure(): void
+    {
+        $this->assertSame([], (new InsightService)->groupedForDocument([]));
+    }
+
     public function test_recommendations_are_contextual_and_cite_evidence(): void
     {
         $findings = (new DiagnosticsService)->findings($this->payload());

@@ -206,11 +206,10 @@
             $lead = collect($intel['findings'] ?? [])
                 ->whereIn('category', ['CRITICAL_FINDING', 'WEAKNESS', 'STRENGTH']);
             $recs = collect($intel['recommendations'] ?? []);
-            $insightGroups = collect($intel['insights'] ?? [])
-                ->map(fn ($rows) => array_values(is_array($rows) ? $rows : []))
-                ->filter(fn ($rows) => $rows !== [])
-                ->map(fn ($rows) => ['name' => $rows[0]['category_name'] ?? 'Insights', 'rows' => $rows])
-                ->values();
+            // One canonical grouping (InsightService::groupedForDocument) — insights() returns
+            // many overlapping views onto the same items, so grouping from anything but 'items'
+            // renders the same insight once per bucket it happens to belong to.
+            $insightGroups = collect(app(\App\Services\Reporting\InsightService::class)->groupedForDocument($intel['insights'] ?? []));
             $rootCauses = collect($intel['root_causes'] ?? []);
             $risks = collect($intel['risks'] ?? []);
         @endphp

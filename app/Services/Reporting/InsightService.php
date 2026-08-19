@@ -145,6 +145,32 @@ class InsightService
     }
 
     /**
+     * Group the deduplicated insight items by category, for documents that lay out insights
+     * as named sections (PDF, Word, Excel, and the shareable report link).
+     *
+     * insights() above returns many overlapping views onto the same items — by polarity, by
+     * category, and the flat 'items' list — so that different consumers can read the shape
+     * they need directly. A document laying out named sections must read only 'items': every
+     * other key is a subset of it, and iterating the whole insights() array renders the same
+     * item once per bucket it happens to belong to.
+     *
+     * @param  array<string, mixed>  $insights  the full return of insights()
+     * @return array<int, array{name: string, rows: array<int, array<string, mixed>>}>
+     */
+    public function groupedForDocument(array $insights): array
+    {
+        return collect($insights['items'] ?? [])
+            ->unique(fn ($i) => ($i['category_code'] ?? '').'|'.($i['subject'] ?? ''))
+            ->groupBy('category_code')
+            ->map(fn ($rows, $code) => [
+                'name' => $rows->first()['category_name'] ?? 'Insights',
+                'rows' => $rows->values()->all(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
      * One honest sentence for the top of a report.
      *
      * @param  array<int, mixed>  $critical
