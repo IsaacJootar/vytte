@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\FrameworkIndicator;
+use App\Models\FrameworkIndicatorDomainMapping;
 use App\Models\FrameworkQuestionPlacement;
 use App\Models\FrameworkSection;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,7 @@ class AssessmentVersionService
      */
     public function cloneToDraft(DepartmentFrameworkVersion $framework, ?string $reviewNote = null): DepartmentFrameworkVersion
     {
-        $framework->load(['sections.indicators', 'questionPlacements']);
+        $framework->load(['sections.indicators.domainMappings', 'questionPlacements']);
 
         return DB::transaction(function () use ($framework, $reviewNote): DepartmentFrameworkVersion {
             $nextVersion = ((int) DepartmentFrameworkVersion::where('module_id', $framework->module_id)->max('version_number')) + 1;
@@ -85,6 +86,19 @@ class AssessmentVersionService
                     'description' => $indicator->description,
                     'display_order' => $indicator->display_order,
                 ])->framework_indicator_id;
+
+                // The indicator's measurement-domain routing must survive the clone, or every
+                // answer under it becomes invisible to domain scoring in the successor version
+                // despite being fully answered — a silent, hard-to-notice data loss.
+                foreach ($indicator->domainMappings as $mapping) {
+                    FrameworkIndicatorDomainMapping::create([
+                        'framework_indicator_id' => $indicatorMap[$indicator->framework_indicator_id],
+                        'domain_definition_id' => $mapping->domain_definition_id,
+                        'is_primary' => $mapping->is_primary,
+                        'contribution_weight' => $mapping->contribution_weight,
+                        'rationale' => $mapping->rationale,
+                    ]);
+                }
             }
 
             foreach ($framework->questionPlacements as $placement) {

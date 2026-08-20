@@ -64,6 +64,34 @@ class VersionedScoringModelTest extends TestCase
         $this->assertSame($rule->scoring_model_version_id, $payload['scoring_model']['scoring_model_version_id']);
     }
 
+    /**
+     * cloneToDraft() previously copied sections, indicators, and placements but never
+     * FrameworkIndicatorDomainMapping rows — so every framework version bump silently
+     * dropped domain-scoring routing for its indicators, even though the indicator itself
+     * (and its questions) carried over untouched. A real WASH assessment surfaced this: two
+     * indicators lost their domain mapping across separate clones, so answered questions
+     * became invisible to domain scoring with no error or warning anywhere.
+     */
+    public function test_cloning_a_framework_version_carries_forward_its_indicator_domain_mappings(): void
+    {
+        $published = DepartmentFrameworkVersion::where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)
+            ->whereHas('indicators.domainMappings')
+            ->firstOrFail();
+        $originalMappings = $published->indicators->flatMap->domainMappings;
+        $this->assertNotEmpty($originalMappings, 'Fixture must have at least one indicator domain mapping to prove it survives cloning.');
+
+        $draft = app(AssessmentVersionService::class)->cloneToDraft($published);
+        $draft->load('indicators.domainMappings');
+        $clonedMappings = $draft->indicators->flatMap->domainMappings;
+
+        $this->assertSame($originalMappings->count(), $clonedMappings->count(), 'Every indicator domain mapping must survive the clone.');
+        $this->assertSame(
+            $originalMappings->pluck('domain_definition_id')->sort()->values()->all(),
+            $clonedMappings->pluck('domain_definition_id')->sort()->values()->all(),
+            'The cloned mappings must point at the same domains as the original.'
+        );
+    }
+
     public function test_published_scoring_models_and_rules_are_immutable(): void
     {
         $model = ScoringModelVersion::where('status', ScoringModelVersion::STATUS_PUBLISHED)->firstOrFail();
