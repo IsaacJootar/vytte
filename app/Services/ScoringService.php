@@ -359,16 +359,9 @@ class ScoringService
         }
 
         $overallScore = $result['overall_score'];
-        $maturityLevelId = null;
-        if ($overallScore !== null) {
-            $maturityLevelId = DB::table('maturity_levels')
-                ->where('min_score', '<=', $overallScore)
-                ->where('max_score', '>', $overallScore)
-                ->value('level_id');
-            if ($maturityLevelId === null && $overallScore >= 100) {
-                $maturityLevelId = DB::table('maturity_levels')->orderByDesc('level_number')->value('level_id');
-            }
-        }
+        $maturityLevelId = $overallScore !== null
+            ? $this->resolveMaturityLevelId($assessment, (float) $overallScore)
+            : null;
 
         $moduleCount = count($assessment->snapshot?->payload ?? []);
         DB::table('assessment_scores')->upsert(
@@ -385,6 +378,51 @@ class ScoringService
             ['assessment_id'],
             ['overall_score', 'calibration_status', 'scoring_version', 'expected_module_count', 'active_module_count', 'maturity_level_id', 'calculated_at']
         );
+    }
+
+    /**
+     * A framework's own maturity bands apply only when it is the single, self-contained
+     * framework in scope — a Focused assessment. A Comprehensive assessment composes several
+     * departments' frameworks together, and there is no single one of them whose bands could
+     * legitimately govern one combined score, so it always falls back to the platform default.
+     */
+    private function resolveMaturityLevelId(Assessment $assessment, float $overallScore): ?int
+    {
+        $frameworkVersionIds = collect($assessment->snapshot?->payload ?? [])
+            ->pluck('framework_version_id')
+            ->filter()
+            ->unique();
+
+        $frameworkVersionId = $frameworkVersionIds->count() === 1 ? $frameworkVersionIds->first() : null;
+
+        $levelId = $this->maturityLevelIdFor($overallScore, $frameworkVersionId);
+
+        // A framework declared its own bands but this score falls outside all of them (e.g.
+        // its narrower thresholds don't reach 100) — fall back to the platform default rather
+        // than leave the assessment without any band at all.
+        if ($levelId === null && $frameworkVersionId !== null) {
+            $levelId = $this->maturityLevelIdFor($overallScore, null);
+        }
+
+        return $levelId;
+    }
+
+    private function maturityLevelIdFor(float $overallScore, ?string $frameworkVersionId): ?int
+    {
+        $levelId = DB::table('maturity_levels')
+            ->where('framework_version_id', $frameworkVersionId)
+            ->where('min_score', '<=', $overallScore)
+            ->where('max_score', '>', $overallScore)
+            ->value('level_id');
+
+        if ($levelId === null && $overallScore >= 100) {
+            $levelId = DB::table('maturity_levels')
+                ->where('framework_version_id', $frameworkVersionId)
+                ->orderByDesc('level_number')
+                ->value('level_id');
+        }
+
+        return $levelId;
     }
 
     private function scoringProfile(Assessment $assessment, array $moduleIds): array

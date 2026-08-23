@@ -105,6 +105,64 @@ class HealthFacilityDigitalReadinessTest extends TestCase
         $this->assertGreaterThan((float) $worst->score->overall_score, (float) $best->score->overall_score);
     }
 
+    public function test_dhr_assessment_resolves_to_its_own_maturity_bands(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        [$user, $workspace] = $this->userWithWorkspace();
+
+        $best = $this->runAssessment($user, $workspace, 'best', 'VYTTE_DHR_V1');
+        $worst = $this->runAssessment($user, $workspace, 'worst', 'VYTTE_DHR_V1');
+
+        $this->assertSame('Advanced', $best->score->maturityLevel->level_name);
+        $this->assertSame('Critical', $worst->score->maturityLevel->level_name);
+
+        // Both bands must actually belong to the DHR framework, not just happen to share a name.
+        $framework = DepartmentFrameworkVersion::where('module_id', AssessmentModule::where('module_code', 'DHR')->value('module_id'))
+            ->where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)->firstOrFail();
+        $this->assertSame($framework->framework_version_id, $best->score->maturityLevel->framework_version_id);
+        $this->assertSame($framework->framework_version_id, $worst->score->maturityLevel->framework_version_id);
+    }
+
+    public function test_other_frameworks_still_use_the_platform_default_bands(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        [$user, $workspace] = $this->userWithWorkspace();
+
+        // A stable, always-published focused release unrelated to WASH/DHR — WASH's own
+        // focused release code is randomised on every republish (AssessmentPublicationService
+        // generates a random suffix), so it can't be hardcoded here.
+        $worst = $this->runAssessment($user, $workspace, 'worst', 'VYTTE_IPC_V1');
+
+        $this->assertNull($worst->score->maturityLevel->framework_version_id);
+        $this->assertContains($worst->score->maturityLevel->level_name, [
+            'Urgent Action', 'Foundational', 'Developing', 'Established', 'Leading',
+        ]);
+    }
+
+    public function test_comprehensive_assessment_always_uses_the_platform_default(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        [$user, $workspace] = $this->userWithWorkspace();
+
+        // Any currently-published multi-framework Comprehensive release exercises the same
+        // "more than one framework in scope" fallback path — it doesn't need to specifically
+        // include DHR, since resolveMaturityLevelId() only ever counts distinct frameworks in
+        // scope. Looked up by criteria rather than a hardcoded version, since comprehensive
+        // release codes advance (superseding earlier versions) whenever any pinned department
+        // framework is corrected — VYTTE_PHC_ASSESSMENT_V1..V3 are already superseded.
+        $releaseCode = AssessmentCatalogueRelease::where('creation_path', 'COMPREHENSIVE')
+            ->where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)
+            ->get()
+            ->first(fn ($release) => $release->departmentFrameworkVersions()->count() > 1)
+            ->release_code;
+        $worst = $this->runAssessment($user, $workspace, 'worst', $releaseCode);
+
+        $this->assertNull($worst->score->maturityLevel->framework_version_id);
+    }
+
     /**
      * @return array{0: User, 1: Workspace}
      */
@@ -123,17 +181,17 @@ class HealthFacilityDigitalReadinessTest extends TestCase
         return [$user, $workspace];
     }
 
-    private function runAssessment(User $user, Workspace $workspace, string $answerMode): Assessment
+    private function runAssessment(User $user, Workspace $workspace, string $answerMode, string $releaseCode = 'VYTTE_DHR_V1'): Assessment
     {
-        $project = Project::create(['name' => "DHR {$answerMode} Project", 'owner_user_id' => $user->user_id]);
+        $project = Project::create(['name' => "{$releaseCode} {$answerMode} Project ".uniqid(), 'owner_user_id' => $user->user_id]);
         $target = Target::create([
             'target_type_code' => 'HEALTH_FACILITY',
-            'name' => "DHR {$answerMode} Facility",
+            'name' => "{$releaseCode} {$answerMode} Facility",
             'owner_workspace_id' => $workspace->workspace_id,
         ]);
         $project->targets()->attach($target->target_id, ['added_at' => now()]);
 
-        $release = AssessmentCatalogueRelease::where('release_code', 'VYTTE_DHR_V1')->firstOrFail();
+        $release = AssessmentCatalogueRelease::where('release_code', $releaseCode)->firstOrFail();
         $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
 
         $questions = collect($assessment->snapshot->payload)

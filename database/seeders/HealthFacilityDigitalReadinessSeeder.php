@@ -84,6 +84,12 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
             $this->command?->warn("Health Facility Digital Readiness framework: {$result['status']}.");
         }
 
+        // Runs whether the framework was just published or already existed from an earlier
+        // run, so re-running this seeder after this band step was added still backfills it.
+        if ($result['framework']) {
+            $this->seedMaturityBands($result['framework']);
+        }
+
         if ($result['missing'] !== []) {
             $this->command?->warn('Question codes referenced but not found: '.implode(', ', $result['missing']));
         }
@@ -229,6 +235,44 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
                 ]],
             ],
         ]);
+    }
+
+    /**
+     * "Vyttes maturity bands" — Odion's own labels and thresholds, explicitly not the
+     * platform default ("Urgent Action" / "Foundational" / etc). Scoped to this framework
+     * version via ScoringService::resolveMaturityLevelId(), so no other assessment on the
+     * platform is affected. Deliberately not locked in: Odion's own words were "resist
+     * locking these thresholds permanently... put them in the configuration layer, so we
+     * can recalibrate them after field validation" — recalibrating later means publishing a
+     * new framework version with new band rows, the same versioning discipline as everything
+     * else on this platform, not editing these in place.
+     */
+    private function seedMaturityBands(\App\Models\DepartmentFrameworkVersion $framework): void
+    {
+        if (\App\Models\MaturityLevel::where('framework_version_id', $framework->framework_version_id)->exists()) {
+            return;
+        }
+
+        $bands = [
+            [1, 'Critical', 0, 25, 'Fundamental capability/problem-management conditions are absent.'],
+            [2, 'Emerging', 25, 50, 'Some elements exist but are inconsistent or highly dependent on individuals.'],
+            [3, 'Developing', 50, 75, 'Important foundations exist, but significant gaps remain.'],
+            [4, 'Operational', 75, 90, 'The facility has a reasonably functional foundation for the assessed area.'],
+            [5, 'Advanced', 90, 100, 'The capability is well established and institutionalised.'],
+        ];
+
+        foreach ($bands as [$number, $name, $min, $max, $description]) {
+            \App\Models\MaturityLevel::create([
+                'framework_version_id' => $framework->framework_version_id,
+                'level_number' => $number,
+                'level_name' => $name,
+                'min_score' => $min,
+                'max_score' => $max,
+                'description' => $description,
+            ]);
+        }
+
+        $this->command?->info('Digital readiness maturity bands published.');
     }
 
     private function publishCatalogueRelease(): void
