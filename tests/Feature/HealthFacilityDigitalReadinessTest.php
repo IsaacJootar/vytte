@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\AssessmentRunner;
 use App\Models\Assessment;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
@@ -19,6 +20,7 @@ use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class HealthFacilityDigitalReadinessTest extends TestCase
@@ -161,6 +163,117 @@ class HealthFacilityDigitalReadinessTest extends TestCase
         $worst = $this->runAssessment($user, $workspace, 'worst', $releaseCode);
 
         $this->assertNull($worst->score->maturityLevel->framework_version_id);
+    }
+
+    public function test_assessor_can_record_verification_status_independent_of_the_respondent_answer(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->startAssessment($user, $workspace);
+
+        $component = Livewire::actingAs($user)->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+        $question = collect($component->get('questionData'))->firstWhere('question_code', 'DHR.018');
+
+        $component
+            ->call('selectOption', $question['question_id'], $question['options'][0]['option_id'])
+            ->call('saveObservationStatus', $question['question_id'], 'PARTIALLY_VERIFIED');
+
+        $this->assertDatabaseHas('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question['question_id'],
+            'observation_status' => 'PARTIALLY_VERIFIED',
+        ]);
+    }
+
+    public function test_assessor_can_check_off_specific_evidence_items(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->startAssessment($user, $workspace);
+
+        $component = Livewire::actingAs($user)->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+        $question = collect($component->get('questionData'))->firstWhere('question_code', 'DHR.018');
+        $this->assertNotEmpty($question['observation_checklist']);
+
+        $component
+            ->call('selectOption', $question['question_id'], $question['options'][0]['option_id'])
+            ->call('toggleEvidenceItem', $question['question_id'], 'Internet modem/router observed')
+            ->call('toggleEvidenceItem', $question['question_id'], 'Connectivity test completed');
+
+        $response = Response::where('assessment_id', $assessment->assessment_id)
+            ->where('question_id', $question['question_id'])->firstOrFail();
+        $this->assertEqualsCanonicalizing(
+            ['Internet modem/router observed', 'Connectivity test completed'],
+            $response->evidence_checked
+        );
+
+        // Toggling the same item again removes it.
+        $component->call('toggleEvidenceItem', $question['question_id'], 'Internet modem/router observed');
+        $this->assertEqualsCanonicalizing(
+            ['Connectivity test completed'],
+            $response->fresh()->evidence_checked
+        );
+    }
+
+    public function test_verification_controls_are_only_offered_for_questions_flagged_for_observation(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->startAssessment($user, $workspace);
+
+        $component = Livewire::actingAs($user)->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+        $questions = collect($component->get('questionData'))->keyBy('question_code');
+
+        $this->assertTrue($questions['DHR.018']['requires_observation']);
+        $this->assertFalse($questions['DHR.001']['requires_observation']);
+
+        // The save methods themselves refuse to record anything against a question that was
+        // never flagged for observation — not just a UI omission.
+        $component->call('selectOption', $questions['DHR.001']['question_id'], $questions['DHR.001']['options'][0]['option_id'])
+            ->call('saveObservationStatus', $questions['DHR.001']['question_id'], 'VERIFIED');
+
+        $this->assertDatabaseMissing('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $questions['DHR.001']['question_id'],
+            'observation_status' => 'VERIFIED',
+        ]);
+    }
+
+    public function test_observation_status_does_not_affect_scoring(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+        [$user, $workspace] = $this->userWithWorkspace();
+
+        $withVerification = $this->runAssessment($user, $workspace, 'worst', 'VYTTE_DHR_V1');
+        [$user2, $workspace2] = $this->userWithWorkspace();
+        $withoutVerification = $this->runAssessment($user2, $workspace2, 'worst', 'VYTTE_DHR_V1');
+
+        Response::where('assessment_id', $withVerification->assessment_id)
+            ->update(['observation_status' => 'NOT_VERIFIED', 'evidence_checked' => json_encode(['Internet modem/router observed'])]);
+        app(ScoringService::class)->calculate($withVerification->fresh());
+
+        $this->assertSame(
+            (float) $withoutVerification->score->overall_score,
+            (float) $withVerification->fresh('score')->score->overall_score
+        );
+    }
+
+    private function startAssessment(User $user, Workspace $workspace): Assessment
+    {
+        $project = Project::create(['name' => 'DHR runner project '.uniqid(), 'owner_user_id' => $user->user_id]);
+        $target = Target::create([
+            'target_type_code' => 'HEALTH_FACILITY',
+            'name' => 'DHR runner facility',
+            'owner_workspace_id' => $workspace->workspace_id,
+        ]);
+        $project->targets()->attach($target->target_id, ['added_at' => now()]);
+
+        $release = AssessmentCatalogueRelease::where('release_code', 'VYTTE_DHR_V1')->firstOrFail();
+
+        return app(AssessmentCreationService::class)->createFromCatalogue($project, $release);
     }
 
     /**

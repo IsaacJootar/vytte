@@ -38,6 +38,10 @@ class AssessmentRunner extends Component
 
     public array $savedEvidenceNotes = [];
 
+    public array $savedObservationStatus = [];
+
+    public array $savedEvidenceChecked = [];
+
     public string $lastSavedAt = '';
 
     public bool $isComplete = false;
@@ -96,6 +100,10 @@ class AssessmentRunner extends Component
                     'applicability' => $question['applicability'] ?? null,
                     // The author's evidence prompt, frozen into the snapshot at creation.
                     'evidence_expectation' => $question['evidence_expectation'] ?? null,
+                    // The assessor-verification triad: whether this question expects
+                    // independent observation, and the specific checklist to observe against.
+                    'requires_observation' => (bool) ($question['requires_observation'] ?? false),
+                    'observation_checklist' => $question['observation_checklist'] ?? [],
                     'options' => collect($question['options'])->map(fn ($option) => [
                         'option_id' => $option['option_id'],
                         'option_label' => $option['translations'][$locale] ?? $option['option_label'],
@@ -129,6 +137,12 @@ class AssessmentRunner extends Component
             }
             if ($response->evidence_note !== null) {
                 $this->savedEvidenceNotes[$response->question_id] = $response->evidence_note;
+            }
+            if ($response->observation_status !== null) {
+                $this->savedObservationStatus[$response->question_id] = $response->observation_status;
+            }
+            if ($response->evidence_checked !== null) {
+                $this->savedEvidenceChecked[$response->question_id] = $response->evidence_checked;
             }
         }
         $this->refreshVisibleQuestions();
@@ -472,6 +486,93 @@ class AssessmentRunner extends Component
             ['evidence_note' => $value]
         );
         $this->savedEvidenceNotes[$questionId] = $value;
+        $this->lastSavedAt = now()->format('g:i A');
+    }
+
+    /** The only statuses an assessor can record — independent of what the respondent claimed. */
+    private const OBSERVATION_STATUSES = ['VERIFIED', 'PARTIALLY_VERIFIED', 'NOT_VERIFIED'];
+
+    public function saveObservationStatus(string $questionId, string $status): void
+    {
+        $this->authorizeAssessmentAccess();
+
+        if ($this->isComplete) {
+            return;
+        }
+
+        $question = $this->snapshotQuestion($questionId);
+        $validQuestion = $question !== null && ($question['requires_observation'] ?? false) && $this->hasRequiredConsent();
+
+        if (! $validQuestion) {
+            return;
+        }
+
+        if ($status === '' || ! in_array($status, self::OBSERVATION_STATUSES, true)) {
+            Response::where('assessment_id', $this->assessment->assessment_id)
+                ->where('question_id', $questionId)
+                ->whereNull('respondent_id')
+                ->whereNull('public_response_session_id')
+                ->update(['observation_status' => null]);
+            unset($this->savedObservationStatus[$questionId]);
+
+            return;
+        }
+
+        Response::updateOrCreate(
+            [
+                'assessment_id' => $this->assessment->assessment_id,
+                'question_id' => $questionId,
+                'respondent_id' => null,
+                'public_response_session_id' => null,
+            ],
+            ['observation_status' => $status]
+        );
+        $this->savedObservationStatus[$questionId] = $status;
+        $this->lastSavedAt = now()->format('g:i A');
+    }
+
+    public function toggleEvidenceItem(string $questionId, string $item): void
+    {
+        $this->authorizeAssessmentAccess();
+
+        if ($this->isComplete) {
+            return;
+        }
+
+        $question = $this->snapshotQuestion($questionId);
+        $checklist = $question['observation_checklist'] ?? [];
+        $validQuestion = $question !== null && ($question['requires_observation'] ?? false)
+            && in_array($item, $checklist, true) && $this->hasRequiredConsent();
+
+        if (! $validQuestion) {
+            return;
+        }
+
+        $checked = collect($this->savedEvidenceChecked[$questionId] ?? []);
+        $checked = $checked->contains($item) ? $checked->reject(fn ($value) => $value === $item) : $checked->push($item);
+        $checked = $checked->values()->all();
+
+        if ($checked === []) {
+            Response::where('assessment_id', $this->assessment->assessment_id)
+                ->where('question_id', $questionId)
+                ->whereNull('respondent_id')
+                ->whereNull('public_response_session_id')
+                ->update(['evidence_checked' => null]);
+            unset($this->savedEvidenceChecked[$questionId]);
+
+            return;
+        }
+
+        Response::updateOrCreate(
+            [
+                'assessment_id' => $this->assessment->assessment_id,
+                'question_id' => $questionId,
+                'respondent_id' => null,
+                'public_response_session_id' => null,
+            ],
+            ['evidence_checked' => $checked]
+        );
+        $this->savedEvidenceChecked[$questionId] = $checked;
         $this->lastSavedAt = now()->format('g:i A');
     }
 

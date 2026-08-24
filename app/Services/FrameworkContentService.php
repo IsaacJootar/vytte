@@ -77,6 +77,7 @@ class FrameworkContentService
                 'scoring_method' => $itemRule?->method ?? ($placement->scoring_contribution ? 'LEGACY' : 'UNSCORED'),
                 'response_config' => $itemRule?->rule_config['multi_select'] ?? null,
                 'requires_observation' => (bool) $questionVersion->requires_observation,
+                'observation_checklist' => $questionVersion->observation_checklist,
                 'evidence_expectation' => $placement->evidence_expectation,
                 'applicability' => $placement->applicability,
                 'weight' => (float) ($itemRule?->weight ?? $placement->weight),

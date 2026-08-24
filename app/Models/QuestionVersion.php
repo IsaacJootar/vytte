@@ -35,6 +35,7 @@ class QuestionVersion extends Model
         'numeric_config',
         'numeric_bands',
         'requires_observation',
+        'observation_checklist',
         'respondent_role_hint',
         'methodology_notes',
         'source_summary',
@@ -52,6 +53,7 @@ class QuestionVersion extends Model
         'numeric_config' => 'array',
         'numeric_bands' => 'array',
         'requires_observation' => 'boolean',
+        'observation_checklist' => 'array',
         'effective_date' => 'date',
         'published_at' => 'datetime',
     ];

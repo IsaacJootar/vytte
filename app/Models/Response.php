@@ -23,6 +23,8 @@ class Response extends Model
         'value_numeric',
         'value_option_id',
         'evidence_note',
+        'observation_status',
+        'evidence_checked',
         'answered_at',
         'response_state',
         'typed_value',
@@ -32,6 +34,7 @@ class Response extends Model
         'answered_at' => 'datetime',
         'value_numeric' => 'decimal:4',
         'typed_value' => 'array',
+        'evidence_checked' => 'array',
     ];
 
     public function assessment(): BelongsTo

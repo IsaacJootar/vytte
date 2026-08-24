@@ -210,6 +210,38 @@
                     <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">This note stays attached to this response. It does not create a separate evidence workflow.</p>
                 </div>
             </details>
+
+            @if ($q['requires_observation'] ?? false)
+                <div class="mt-4 border-t border-slate-100 dark:border-slate-700 pt-3">
+                    <p class="text-xs font-semibold text-vytte-700 dark:text-vytte-400">Assessor verification</p>
+                    <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">Record what you personally confirmed on site — independent of the answer above.</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach (['VERIFIED' => 'Verified', 'PARTIALLY_VERIFIED' => 'Partially verified', 'NOT_VERIFIED' => 'Not verified'] as $status => $label)
+                            <button type="button"
+                                    @if ($isComplete) disabled @endif
+                                    wire:click="saveObservationStatus('{{ $q['question_id'] }}', '{{ $status }}')"
+                                    class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ ($savedObservationStatus[$q['question_id']] ?? null) === $status ? 'border-vytte-600 bg-vytte-50 text-vytte-800 dark:bg-vytte-900/30 dark:text-vytte-200' : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300' }}">{{ $label }}</button>
+                        @endforeach
+                    </div>
+                    @if (! empty($q['observation_checklist']))
+                        <div class="mt-3">
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-1.5">Evidence observed:</p>
+                            <div class="flex flex-col gap-1.5">
+                                @foreach ($q['observation_checklist'] as $item)
+                                    <label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                        <input type="checkbox"
+                                               @if ($isComplete) disabled @endif
+                                               wire:click="toggleEvidenceItem('{{ $q['question_id'] }}', '{{ $item }}')"
+                                               @checked(in_array($item, $savedEvidenceChecked[$q['question_id']] ?? [], true))
+                                               class="rounded border-slate-300 text-vytte-700 focus:ring-vytte-700">
+                                        {{ $item }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endif
         </div>
 
         {{-- Navigation --}}

@@ -44,6 +44,14 @@ use Illuminate\Support\Facades\DB;
  * should be scored. It measures potential value rather than current-state maturity, which
  * is worth keeping in mind when reading Domain C's score, but it is not an exception.
  *
+ * DHR.017-019 (electricity, internet, devices — the three most independently checkable
+ * infrastructure facts) carry an observation_checklist alongside requires_observation,
+ * wiring up the evidence & observation triad (Vytte decision record, primitive #2): the
+ * runner now shows an assessor-verification control and a concrete evidence checklist for
+ * these three, on top of the respondent's own answer. Every other question is unaffected —
+ * this is opt-in per question, per Odion's own framing ("selected Vytte questions should
+ * have" this), not a requirement on the other 28.
+ *
  * Domain-to-measurement-domain mapping is one domain per section, matching the platform's
  * existing convention (one section, one dominant domain) rather than splitting within a
  * section: A/B/C -> INFO (all three are facets of the same information-management problem,
@@ -180,6 +188,7 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
             'type_id' => $typeId,
             'options' => $this->optionPayload($definition),
             'requires_observation' => $definition['observe'] ?? false,
+            'observation_checklist' => $definition['checklist'] ?? null,
             'respondent_role_hint' => $definition['respondent'] ?? null,
             'methodology_notes' => $definition['why'] ?? null,
             'source_summary' => 'Authored from PrimeSafePath\'s Health Facility Problem Discovery & Digital Readiness specification (Aug 2026).',
@@ -483,6 +492,11 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
             // Domain D — Digital Infrastructure & Workforce Readiness
             ['code' => 'DHR.017', 'type' => 'SINGLE_SELECT', 'respondent' => $digitalRespondent, 'observe' => true,
                 'text' => 'Does the facility have reliable access to electricity for operating digital equipment?',
+                'checklist' => [
+                    'Mains power connection observed',
+                    'Backup power source (generator/solar/inverter) observed',
+                    'Backup source demonstrated working',
+                ],
                 'options' => [
                     ['label' => 'More than 75% of operating time / reliable primary and backup power', 'score' => 100],
                     ['label' => '51–75% of operating time', 'score' => 75],
@@ -492,6 +506,11 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
                 ]],
             ['code' => 'DHR.018', 'type' => 'SINGLE_SELECT', 'respondent' => $digitalRespondent, 'observe' => true,
                 'text' => 'Does the facility have reliable internet connectivity where digital health activities would take place?',
+                'checklist' => [
+                    'Internet modem/router observed',
+                    'Functional connection demonstrated',
+                    'Connectivity test completed',
+                ],
                 'options' => [
                     ['label' => 'Reliable and adequate for routine digital health operations', 'score' => 100],
                     ['label' => 'Reliable during most operating hours', 'score' => 75],
@@ -501,6 +520,11 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
                 ]],
             ['code' => 'DHR.019', 'type' => 'SINGLE_SELECT', 'respondent' => $digitalRespondent, 'observe' => true,
                 'text' => 'Does the facility have adequate functional digital devices for the staff who would use a digital health system?',
+                'checklist' => [
+                    'Computers/tablets observed at relevant workstations',
+                    'At least one device powered on and functional',
+                    'Devices accessible to the staff who would actually use them',
+                ],
                 'options' => [
                     ['label' => 'Adequate devices with replacement/maintenance arrangements', 'score' => 100],
                     ['label' => 'Adequate devices for routine use', 'score' => 75],
