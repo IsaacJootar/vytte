@@ -20,7 +20,9 @@ use Illuminate\Support\Facades\DB;
  * (20-21 Aug 2026): thirty scored questions across six domains — health information
  * workflow, information problems and pain, impact and workarounds, digital infrastructure
  * and workforce readiness, digital health/NDHA alignment, and implementation and change
- * readiness — plus one intentionally unscored free-text follow-up (DHR.014).
+ * readiness — plus two intentionally unscored items: a free-text follow-up (DHR.014) and
+ * the ranked-priority capstone (DHR.032, Vytte decision record primitive #3 — "rank your
+ * top 3 problems, then tell us which one you'd solve first").
  *
  * This is a pure measurement and readiness instrument. No product-fit or solution-matching
  * logic exists anywhere in this seeder or in the report it produces — that scope was
@@ -241,6 +243,9 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
                 ]],
                 ['domain' => 'WORK', 'name' => 'Implementation & Change Readiness', 'questions' => [
                     'DHR.027', 'DHR.028', 'DHR.029', 'DHR.030', 'DHR.031',
+                ]],
+                ['domain' => 'INFO', 'name' => 'Your Top Priorities', 'questions' => [
+                    'DHR.032',
                 ]],
             ],
         ]);
@@ -646,6 +651,14 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
                     ['label' => 'Interested but no realistic ability to implement', 'score' => 25],
                     ['label' => 'Not interested', 'score' => 0],
                 ]],
+
+            // Domain G — Your Top Priorities (unscored by design: RANKING is a structurally
+            // unscorable type, same category as open text — there is no predetermined
+            // good/bad direction for what someone names as their own priority). This is the
+            // one place in the whole instrument where the facility tells Vytte what matters,
+            // rather than the other way around.
+            ['code' => 'DHR.032', 'type' => 'RANKING', 'respondent' => $infoRespondent,
+                'text' => "What are your facility's top 3 health-information problems, in your own words? If you could solve only one in the next 12 months, which would you choose?"],
         ];
     }
 }

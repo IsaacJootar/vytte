@@ -42,6 +42,9 @@ class AssessmentRunner extends Component
 
     public array $savedEvidenceChecked = [];
 
+    /** Keyed by question_id => ['items' => [string, string, string], 'top_priority_index' => ?int]. */
+    public array $savedRankingResponses = [];
+
     public string $lastSavedAt = '';
 
     public bool $isComplete = false;
@@ -143,6 +146,12 @@ class AssessmentRunner extends Component
             }
             if ($response->evidence_checked !== null) {
                 $this->savedEvidenceChecked[$response->question_id] = $response->evidence_checked;
+            }
+            if (($response->typed_value['type'] ?? null) === 'RANKING') {
+                $this->savedRankingResponses[$response->question_id] = [
+                    'items' => $response->typed_value['items'] ?? ['', '', ''],
+                    'top_priority_index' => $response->typed_value['top_priority_index'] ?? null,
+                ];
             }
         }
         $this->refreshVisibleQuestions();
@@ -573,6 +582,88 @@ class AssessmentRunner extends Component
             ['evidence_checked' => $checked]
         );
         $this->savedEvidenceChecked[$questionId] = $checked;
+        $this->lastSavedAt = now()->format('g:i A');
+    }
+
+    public function saveRankingItem(string $questionId, int $index, string $value): void
+    {
+        $this->authorizeAssessmentAccess();
+
+        if ($this->isComplete || $index < 0 || $index > 2) {
+            return;
+        }
+
+        $question = $this->snapshotQuestion($questionId);
+        if ($question === null || ($question['response_type'] ?? null) !== 'RANKING' || ! $this->hasRequiredConsent()) {
+            return;
+        }
+
+        $items = $this->savedRankingResponses[$questionId]['items'] ?? ['', '', ''];
+        $items[$index] = mb_substr(trim($value), 0, 300);
+        $topPriorityIndex = $this->savedRankingResponses[$questionId]['top_priority_index'] ?? null;
+
+        // Clearing the item that was picked as the top priority clears that pick too — it
+        // can't point at something that no longer exists.
+        if ($items[$index] === '' && $topPriorityIndex === $index) {
+            $topPriorityIndex = null;
+        }
+
+        $this->persistRanking($questionId, $items, $topPriorityIndex);
+    }
+
+    public function saveRankingPriority(string $questionId, int $index): void
+    {
+        $this->authorizeAssessmentAccess();
+
+        if ($this->isComplete || $index < 0 || $index > 2) {
+            return;
+        }
+
+        $question = $this->snapshotQuestion($questionId);
+        if ($question === null || ($question['response_type'] ?? null) !== 'RANKING' || ! $this->hasRequiredConsent()) {
+            return;
+        }
+
+        $items = $this->savedRankingResponses[$questionId]['items'] ?? ['', '', ''];
+        if (trim($items[$index] ?? '') === '') {
+            return;
+        }
+
+        $this->persistRanking($questionId, $items, $index);
+    }
+
+    /**
+     * @param  array<int, string>  $items
+     */
+    private function persistRanking(string $questionId, array $items, ?int $topPriorityIndex): void
+    {
+        $hasAnyItem = collect($items)->contains(fn ($item) => trim($item) !== '');
+
+        if (! $hasAnyItem) {
+            Response::where('assessment_id', $this->assessment->assessment_id)
+                ->where('question_id', $questionId)
+                ->whereNull('respondent_id')
+                ->whereNull('public_response_session_id')
+                ->delete();
+            unset($this->savedRankingResponses[$questionId]);
+
+            return;
+        }
+
+        Response::updateOrCreate(
+            [
+                'assessment_id' => $this->assessment->assessment_id,
+                'question_id' => $questionId,
+                'respondent_id' => null,
+                'public_response_session_id' => null,
+            ],
+            [
+                'typed_value' => ['type' => 'RANKING', 'items' => $items, 'top_priority_index' => $topPriorityIndex],
+                'response_state' => 'ANSWERED',
+                'answered_at' => now(),
+            ]
+        );
+        $this->savedRankingResponses[$questionId] = ['items' => $items, 'top_priority_index' => $topPriorityIndex];
         $this->lastSavedAt = now()->format('g:i A');
     }
 

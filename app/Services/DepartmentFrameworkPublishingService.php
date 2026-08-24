@@ -96,12 +96,12 @@ class DepartmentFrameworkPublishingService
             }
         }
 
-        $unscorableOpenText = $placements->contains(function ($placement): bool {
+        $unscorableTypePlaced = $placements->contains(function ($placement): bool {
             return $placement->scoring_contribution
-                && $placement->questionVersion?->questionType?->type_code === 'OPEN_ENDED';
+                && in_array($placement->questionVersion?->questionType?->type_code, ResponseInputContract::UNSCORABLE_TYPES, true);
         });
-        if ($unscorableOpenText) {
-            $errors['scoring'][] = 'Open-text placements must be unscored supporting context.';
+        if ($unscorableTypePlaced) {
+            $errors['scoring'][] = 'Open-text and ranked-priority placements must be unscored supporting context.';
         }
 
         $scoredPlacementWithoutProfile = $placements->contains(

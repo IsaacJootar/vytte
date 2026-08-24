@@ -111,7 +111,7 @@ class AssessmentReadinessService
             }
 
             if ($placement->scoring_contribution) {
-                if ($type === 'OPEN_ENDED') {
+                if (in_array($type, ResponseInputContract::UNSCORABLE_TYPES, true)) {
                     $blockers[] = [
                         'kind' => 'scoring',
                         'placement_id' => $placement->framework_question_placement_id,

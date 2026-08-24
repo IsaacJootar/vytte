@@ -181,7 +181,7 @@ class OfficialFrameworkComposer
                 // so they inform analysis without distorting the score.
                 $type = $version->questionType?->type_code;
                 $numericWithoutBands = $type === 'NUMERIC' && empty($version->numeric_bands);
-                $scored = $type !== 'OPEN_ENDED' && ! $numericWithoutBands;
+                $scored = ! in_array($type, \App\Support\ResponseInputContract::UNSCORABLE_TYPES, true) && ! $numericWithoutBands;
 
                 FrameworkQuestionPlacement::create([
                     'framework_version_id' => $framework->framework_version_id,

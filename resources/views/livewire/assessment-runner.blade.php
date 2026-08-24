@@ -141,6 +141,31 @@
                 @if ($numericError)
                     <p class="mt-2 text-xs font-medium text-red-600">{{ $numericError }}</p>
                 @endif
+            @elseif (($q['response_type'] ?? null) === 'RANKING')
+                @php $ranking = $savedRankingResponses[$q['question_id']] ?? ['items' => ['', '', ''], 'top_priority_index' => null]; @endphp
+                <p class="mb-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Name them in your own words — there's no fixed list to choose from.</p>
+                <div class="space-y-3">
+                    @foreach ([0, 1, 2] as $i)
+                        <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                            <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Problem {{ $i + 1 }}</label>
+                            <input type="text" maxlength="300"
+                                   @if ($isComplete) disabled @endif
+                                   wire:change="saveRankingItem('{{ $q['question_id'] }}', {{ $i }}, $event.target.value)"
+                                   value="{{ $ranking['items'][$i] ?? '' }}"
+                                   class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-vytte-500 focus:ring-vytte-500"
+                                   placeholder="Describe the problem...">
+                            @if (filled($ranking['items'][$i] ?? null))
+                                <button type="button"
+                                        @if ($isComplete) disabled @endif
+                                        wire:click="saveRankingPriority('{{ $q['question_id'] }}', {{ $i }})"
+                                        class="mt-2 rounded-lg border px-3 py-1.5 text-xs font-semibold {{ ($ranking['top_priority_index'] ?? null) === $i ? 'border-vytte-600 bg-vytte-50 text-vytte-800 dark:bg-vytte-900/30 dark:text-vytte-200' : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300' }}">
+                                    {{ ($ranking['top_priority_index'] ?? null) === $i ? '✓ This is my top priority' : 'Make this my top priority' }}
+                                </button>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+                <p class="mt-2 text-[11px] text-slate-400 dark:text-slate-500">If you could solve only one of these in the next 12 months, mark it as your top priority.</p>
             @elseif (($q['response_type'] ?? null) === 'OPEN_ENDED' && empty($q['options']))
                 <textarea
                     rows="5"

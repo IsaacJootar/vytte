@@ -6,17 +6,18 @@ use App\Models\AssessmentCatalogueRelease;
 use App\Models\AssessmentModule;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\FrameworkIndicator;
-use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\RestoresCatalogueSnapshot;
 use Tests\TestCase;
 
 class WashDomainMappingCorrectionTest extends TestCase
 {
     use RefreshDatabase;
+    use RestoresCatalogueSnapshot;
 
     public function test_focused_wash_indicators_are_tagged_with_their_domains(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $module = AssessmentModule::where('module_code', 'WSHF')->firstOrFail();
         $live = DepartmentFrameworkVersion::where('module_id', $module->module_id)
@@ -42,7 +43,7 @@ class WashDomainMappingCorrectionTest extends TestCase
 
     public function test_department_wash_indicator_is_tagged_and_comprehensive_releases_advanced(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $module = AssessmentModule::where('module_code', 'WSHF')->firstOrFail();
         $live = DepartmentFrameworkVersion::where('module_id', $module->module_id)
@@ -74,7 +75,7 @@ class WashDomainMappingCorrectionTest extends TestCase
 
     public function test_original_wash_content_is_untouched_by_the_correction(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $module = AssessmentModule::where('module_code', 'WSHF')->firstOrFail();
         $live = DepartmentFrameworkVersion::where('module_id', $module->module_id)
@@ -89,7 +90,7 @@ class WashDomainMappingCorrectionTest extends TestCase
 
     public function test_running_the_correction_twice_does_not_duplicate_framework_versions(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
         $this->seed(\Database\Seeders\WashDomainMappingCorrectionSeeder::class);
 
         $module = AssessmentModule::where('module_code', 'WSHF')->firstOrFail();

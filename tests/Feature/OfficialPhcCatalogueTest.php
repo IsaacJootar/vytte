@@ -10,18 +10,19 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
-use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\Concerns\RestoresCatalogueSnapshot;
 use Tests\TestCase;
 
 class OfficialPhcCatalogueTest extends TestCase
 {
     use RefreshDatabase;
+    use RestoresCatalogueSnapshot;
 
     public function test_phc_successor_release_composes_content_ready_departments_without_duplicate_questions(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         // WashMenstrualHygieneExtensionSeeder advances every comprehensive release that pins
         // the WASH department framework, so the previously-live V3 is superseded by a new V4

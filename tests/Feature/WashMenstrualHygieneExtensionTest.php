@@ -8,17 +8,18 @@ use App\Models\DepartmentFrameworkVersion;
 use App\Models\FrameworkQuestionPlacement;
 use App\Models\Question;
 use App\Models\QuestionVersion;
-use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\RestoresCatalogueSnapshot;
 use Tests\TestCase;
 
 class WashMenstrualHygieneExtensionTest extends TestCase
 {
     use RefreshDatabase;
+    use RestoresCatalogueSnapshot;
 
     public function test_new_menstrual_hygiene_questions_are_published_with_distinct_hashes(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $hashes = [];
 
@@ -37,7 +38,7 @@ class WashMenstrualHygieneExtensionTest extends TestCase
 
     public function test_original_wash_questions_are_untouched(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         for ($number = 1; $number <= 16; $number++) {
             $code = sprintf('WASH.%03d', $number);
@@ -50,7 +51,7 @@ class WashMenstrualHygieneExtensionTest extends TestCase
 
     public function test_focused_wash_framework_is_advanced_to_v2(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $module = AssessmentModule::where('module_code', 'WSHF')->firstOrFail();
 
@@ -87,7 +88,7 @@ class WashMenstrualHygieneExtensionTest extends TestCase
 
     public function test_comprehensive_wash_department_is_advanced_to_v2_everywhere(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $module = AssessmentModule::where('module_code', 'WSHF')->firstOrFail();
 
@@ -135,7 +136,7 @@ class WashMenstrualHygieneExtensionTest extends TestCase
 
     public function test_scoring_rule_for_wash_020_preserves_its_critical_failure_flag(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $module = AssessmentModule::where('module_code', 'WSHF')->firstOrFail();
         $v2 = DepartmentFrameworkVersion::where('module_id', $module->module_id)

@@ -18,21 +18,22 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\AssessmentCreationService;
 use App\Services\ScoringService;
-use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Tests\Concerns\RestoresCatalogueSnapshot;
 use Tests\TestCase;
 
 class HealthFacilityDigitalReadinessTest extends TestCase
 {
     use RefreshDatabase;
+    use RestoresCatalogueSnapshot;
 
-    public function test_all_thirty_one_questions_are_published_with_distinct_hashes(): void
+    public function test_all_thirty_two_questions_are_published_with_distinct_hashes(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $hashes = [];
-        for ($number = 1; $number <= 31; $number++) {
+        for ($number = 1; $number <= 32; $number++) {
             $code = sprintf('DHR.%03d', $number);
             $question = Question::where('question_code', $code)->firstOrFail();
             $version = QuestionVersion::where('question_id', $question->question_id)
@@ -43,12 +44,12 @@ class HealthFacilityDigitalReadinessTest extends TestCase
             $hashes[] = $version->content_hash;
         }
 
-        $this->assertCount(31, array_unique($hashes));
+        $this->assertCount(32, array_unique($hashes));
     }
 
-    public function test_framework_has_thirty_scored_and_one_unscored_placement(): void
+    public function test_framework_has_thirty_scored_and_two_unscored_placements(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $module = AssessmentModule::where('module_code', 'DHR')->firstOrFail();
         $framework = DepartmentFrameworkVersion::where('module_id', $module->module_id)
@@ -56,18 +57,18 @@ class HealthFacilityDigitalReadinessTest extends TestCase
             ->firstOrFail();
 
         $placements = FrameworkQuestionPlacement::where('framework_version_id', $framework->framework_version_id)->get();
-        $this->assertCount(31, $placements);
+        $this->assertCount(32, $placements);
         $this->assertCount(30, $placements->where('scoring_contribution', true));
 
         $unscored = $placements->where('scoring_contribution', false);
-        $this->assertCount(1, $unscored);
-        $unscoredQuestion = Question::find($unscored->first()->question_id);
-        $this->assertSame('DHR.014', $unscoredQuestion->question_code);
+        $this->assertCount(2, $unscored);
+        $unscoredCodes = $unscored->map(fn ($p) => Question::find($p->question_id)->question_code)->sort()->values()->all();
+        $this->assertSame(['DHR.014', 'DHR.032'], $unscoredCodes);
     }
 
     public function test_catalogue_release_is_published_as_focused(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $release = AssessmentCatalogueRelease::where('release_code', 'VYTTE_DHR_V1')->firstOrFail();
         $this->assertSame('FOCUSED', $release->creation_path);
@@ -76,7 +77,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_no_product_name_appears_anywhere_in_the_published_content(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         $module = AssessmentModule::where('module_code', 'DHR')->firstOrFail();
         $framework = DepartmentFrameworkVersion::where('module_id', $module->module_id)
@@ -90,7 +91,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_best_answers_score_near_the_top_and_worst_answers_score_near_the_bottom(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         [$user, $workspace] = $this->userWithWorkspace();
 
@@ -109,7 +110,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_dhr_assessment_resolves_to_its_own_maturity_bands(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         [$user, $workspace] = $this->userWithWorkspace();
 
@@ -128,7 +129,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_other_frameworks_still_use_the_platform_default_bands(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         [$user, $workspace] = $this->userWithWorkspace();
 
@@ -145,7 +146,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_comprehensive_assessment_always_uses_the_platform_default(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
 
         [$user, $workspace] = $this->userWithWorkspace();
 
@@ -167,7 +168,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_assessor_can_record_verification_status_independent_of_the_respondent_answer(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->startAssessment($user, $workspace);
 
@@ -188,7 +189,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_assessor_can_check_off_specific_evidence_items(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->startAssessment($user, $workspace);
 
@@ -219,7 +220,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_verification_controls_are_only_offered_for_questions_flagged_for_observation(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
         $assessment = $this->startAssessment($user, $workspace);
 
@@ -244,7 +245,7 @@ class HealthFacilityDigitalReadinessTest extends TestCase
 
     public function test_observation_status_does_not_affect_scoring(): void
     {
-        $this->seed(DatabaseSeeder::class);
+        $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
 
         $withVerification = $this->runAssessment($user, $workspace, 'worst', 'VYTTE_DHR_V1');
@@ -258,6 +259,96 @@ class HealthFacilityDigitalReadinessTest extends TestCase
         $this->assertSame(
             (float) $withoutVerification->score->overall_score,
             (float) $withVerification->fresh('score')->score->overall_score
+        );
+    }
+
+    public function test_respondent_can_name_their_own_priorities_and_pick_a_top_one(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->startAssessment($user, $workspace);
+
+        $component = Livewire::actingAs($user)->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+        $question = collect($component->get('questionData'))->firstWhere('question_code', 'DHR.032');
+        $this->assertSame('RANKING', $question['response_type']);
+
+        $component
+            ->call('saveRankingItem', $question['question_id'], 0, 'Cannot find old patient records')
+            ->call('saveRankingItem', $question['question_id'], 1, 'Medicine stock runs out unpredictably')
+            ->call('saveRankingItem', $question['question_id'], 2, 'Reporting to LGA takes too long')
+            ->call('saveRankingPriority', $question['question_id'], 0);
+
+        $response = Response::where('assessment_id', $assessment->assessment_id)
+            ->where('question_id', $question['question_id'])->firstOrFail();
+        $this->assertSame([
+            'type' => 'RANKING',
+            'items' => ['Cannot find old patient records', 'Medicine stock runs out unpredictably', 'Reporting to LGA takes too long'],
+            'top_priority_index' => 0,
+        ], $response->typed_value);
+        $this->assertNull($response->value_option_id);
+    }
+
+    public function test_clearing_the_item_marked_as_top_priority_clears_that_pick_too(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->startAssessment($user, $workspace);
+
+        $component = Livewire::actingAs($user)->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+        $question = collect($component->get('questionData'))->firstWhere('question_code', 'DHR.032');
+
+        $component
+            ->call('saveRankingItem', $question['question_id'], 0, 'Cannot find old patient records')
+            ->call('saveRankingPriority', $question['question_id'], 0)
+            ->call('saveRankingItem', $question['question_id'], 0, '');
+
+        $response = Response::where('assessment_id', $assessment->assessment_id)
+            ->where('question_id', $question['question_id'])->first();
+        // The whole response is removed once every item is empty — nothing left worth saving.
+        $this->assertNull($response);
+    }
+
+    public function test_priority_cannot_be_set_on_an_empty_item(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->startAssessment($user, $workspace);
+
+        $component = Livewire::actingAs($user)->test(AssessmentRunner::class, ['assessment' => $assessment]);
+        $component->call('giveConsent');
+        $question = collect($component->get('questionData'))->firstWhere('question_code', 'DHR.032');
+
+        $component->call('saveRankingPriority', $question['question_id'], 1);
+
+        $this->assertDatabaseMissing('responses', [
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question['question_id'],
+        ]);
+    }
+
+    public function test_ranking_response_never_affects_the_score(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+
+        $withPriorities = $this->runAssessment($user, $workspace, 'worst', 'VYTTE_DHR_V1');
+        [$user2, $workspace2] = $this->userWithWorkspace();
+        $withoutPriorities = $this->runAssessment($user2, $workspace2, 'worst', 'VYTTE_DHR_V1');
+
+        $question = collect($withPriorities->snapshot->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->firstWhere('question_code', 'DHR.032');
+        Response::updateOrCreate(
+            ['assessment_id' => $withPriorities->assessment_id, 'question_id' => $question['question_id'], 'respondent_id' => null],
+            ['typed_value' => ['type' => 'RANKING', 'items' => ['A problem', '', ''], 'top_priority_index' => 0], 'response_state' => 'ANSWERED', 'answered_at' => now()]
+        );
+        app(ScoringService::class)->calculate($withPriorities->fresh());
+
+        $this->assertSame(
+            (float) $withoutPriorities->score->overall_score,
+            (float) $withPriorities->fresh('score')->score->overall_score
         );
     }
 
