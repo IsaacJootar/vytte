@@ -20,6 +20,7 @@ class AssessmentScore extends Model
         'overall_score',
         'maturity_level_id',
         'calibration_status',
+        'critical_findings',
         'clinical_quality_score',
         'expected_module_count',
         'active_module_count',
@@ -28,6 +29,7 @@ class AssessmentScore extends Model
 
     protected $casts = [
         'overall_score' => 'decimal:2',
+        'critical_findings' => 'array',
         'clinical_quality_score' => 'decimal:2',
         'calculated_at' => 'datetime',
     ];

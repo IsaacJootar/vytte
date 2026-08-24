@@ -319,6 +319,7 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
                     'aggregation_policy' => [
                         'method' => 'MEAN_OF_SCORED_SUB_INDICES',
                         'critical_failures' => ['enabled' => true, 'option_score_at_or_below' => 0, 'overall_score' => 'ZERO'],
+                        'compound_critical_rules' => $this->redFlagGatingRules(),
                     ],
                     'composition_rules' => ['latest_resolution' => 'forbidden'],
                 ]
@@ -337,6 +338,60 @@ class HealthFacilityDigitalReadinessSeeder extends Seeder
         });
 
         $this->command?->info('Digital readiness catalogue release published.');
+    }
+
+    /**
+     * Odion's own red-flag rule (email, 21 Aug 2026, §6): "Digital deployment cannot be
+     * classified 'Ready' if: no reliable electricity and no viable backup arrangement; no
+     * person responsible for implementation; no basic mechanism for protecting patient
+     * information; staff who will use the system have no realistic training pathway;
+     * facility leadership does not support implementation." A "minimum condition" in the WHO
+     * HHFA methodology she cites as her source is individually necessary — missing any ONE
+     * disqualifies "Ready" — matching her own rationale that this exists to stop an average
+     * "hiding A critical weakness" (singular). Hence operator ANY, not ALL: this is a set of
+     * independent gates, not one rule requiring every condition to fail at once.
+     *
+     * Vytte decision record, primitive #4 (compound red-flag gating rules).
+     *
+     * Four of her five conditions map to an existing DHR question's worst answer. Electricity
+     * and backup arrangement collapse into DHR.017 alone — its own worst option ("No reliable
+     * electricity") and observation checklist already jointly verify mains power and backup,
+     * so there is no second question to compound it against.
+     *
+     * Deliberately incomplete: "facility leadership does not support implementation" has no
+     * matching DHR question. DHR.026 asks about leadership's awareness of NDHA, DHR.028 asks
+     * about staff (not leadership) willingness to change — neither is the same fact, and
+     * reusing either would attribute a red flag to the wrong reason. Left out rather than
+     * approximated, pending a future DHR.033 leadership-support question.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function redFlagGatingRules(): array
+    {
+        $questionIds = Question::whereIn('question_code', ['DHR.017', 'DHR.025', 'DHR.027', 'DHR.029'])
+            ->pluck('question_id', 'question_code');
+
+        if ($questionIds->count() !== 4) {
+            return [];
+        }
+
+        // Every referenced question has exactly five options, worst-to-best ordered with the
+        // worst last; optionPayload() numbers them 1-based, so the worst is always local
+        // option_id 5 — see optionPayload() above.
+        $worstOptionId = 5;
+
+        return [[
+            'version' => 1,
+            'type' => 'response_rule',
+            'operator' => 'ANY',
+            'label' => "The facility does not meet a minimum condition for digital deployment: no reliable electricity or backup power, no person responsible for implementation, no basic mechanism for protecting patient information, or no realistic staff training pathway.",
+            'conditions' => [
+                ['source_question_id' => (string) $questionIds['DHR.017'], 'comparison' => 'OPTION_SELECTED', 'value' => $worstOptionId],
+                ['source_question_id' => (string) $questionIds['DHR.025'], 'comparison' => 'OPTION_SELECTED', 'value' => $worstOptionId],
+                ['source_question_id' => (string) $questionIds['DHR.027'], 'comparison' => 'OPTION_SELECTED', 'value' => $worstOptionId],
+                ['source_question_id' => (string) $questionIds['DHR.029'], 'comparison' => 'OPTION_SELECTED', 'value' => $worstOptionId],
+            ],
+        ]];
     }
 
     /**

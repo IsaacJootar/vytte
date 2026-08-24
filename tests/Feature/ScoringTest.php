@@ -230,6 +230,122 @@ class ScoringTest extends TestCase
         $this->assertSame('CALIBRATED', $result['calibration_status']);
     }
 
+    /**
+     * @return array{0: Assessment, 1: array<int, array<string, mixed>>, 2: array<string, mixed>, 3: array<string, mixed>}
+     *              [assessment, scored questions, worst option of question A, worst option of question B]
+     */
+    private function setupCompoundCriticalRule(array $rules): array
+    {
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->setupAssessment($workspace, $user);
+        $payload = $assessment->snapshot->payload;
+        $scored = collect($payload[0]['questions'])->where('is_scored', true)->values();
+        $questionA = $scored[0];
+        $questionB = $scored[1];
+        $worstA = collect($questionA['options'])->sortBy('score_weight')->first();
+        $worstB = collect($questionB['options'])->sortBy('score_weight')->first();
+
+        // Isolate the compound-rule mechanism from the pre-existing per-question one: some
+        // seeded content flags an option critical_failure regardless of its score_weight
+        // (e.g. a mental-health self-harm indicator), which would otherwise cross-contaminate
+        // this test's "only the compound rule should fire" assertions.
+        foreach ($payload[0]['questions'] as &$question) {
+            if (! isset($question['options'])) {
+                continue;
+            }
+            foreach ($question['options'] as &$option) {
+                $option['critical_failure'] = false;
+            }
+            unset($option);
+        }
+        unset($question);
+
+        $compoundRules = collect($rules)->map(fn (array $rule) => [
+            'version' => 1,
+            'type' => 'response_rule',
+            'operator' => $rule['operator'],
+            'label' => $rule['label'],
+            'conditions' => [
+                ['source_question_id' => $questionA['question_id'], 'comparison' => 'OPTION_SELECTED', 'value' => $worstA['option_id']],
+                ['source_question_id' => $questionB['question_id'], 'comparison' => 'OPTION_SELECTED', 'value' => $worstB['option_id']],
+            ],
+        ])->all();
+
+        $assessment = $this->replaceSnapshot($assessment, [
+            'payload' => $payload,
+            'aggregation_policy' => [
+                'method' => 'MEAN_OF_SCORED_SUB_INDICES',
+                'critical_failures' => ['enabled' => true, 'option_score_at_or_below' => -1],
+                'compound_critical_rules' => $compoundRules,
+            ],
+        ]);
+
+        return [$assessment, $scored->all(), $worstA, $worstB];
+    }
+
+    private function answerQuestion(Assessment $assessment, array $question, array $option): void
+    {
+        Response::create([
+            'assessment_id' => $assessment->assessment_id,
+            'question_id' => $question['question_id'],
+            'value_option_id' => $option['option_id'],
+            'response_state' => 'ANSWERED',
+            'answered_at' => now(),
+        ]);
+    }
+
+    public function test_compound_critical_rule_fires_only_when_every_condition_matches(): void
+    {
+        [$assessment, $scored, $worstA, $worstB] = $this->setupCompoundCriticalRule([
+            ['operator' => 'ALL', 'label' => 'No backup power and no responsible person for records safety.'],
+        ]);
+        $questionA = $scored[0];
+        $questionB = $scored[1];
+
+        foreach ($scored as $question) {
+            $best = collect($question['options'])->sortByDesc('score_weight')->first();
+            $this->answerQuestion($assessment, $question, $best);
+        }
+        $responses = Response::where('assessment_id', $assessment->assessment_id)->get()->keyBy('question_id');
+        $onlyOneBad = app(ScoringService::class)->scoreResponseSet($assessment, $responses);
+        $this->assertNotSame('CRITICAL_FAILURE', $onlyOneBad['calibration_status']);
+        $this->assertSame([], $onlyOneBad['critical_findings']);
+
+        Response::where('assessment_id', $assessment->assessment_id)->where('question_id', $questionA['question_id'])->delete();
+        $this->answerQuestion($assessment, $questionA, $worstA);
+        $responses = Response::where('assessment_id', $assessment->assessment_id)->get()->keyBy('question_id');
+        $stillOnlyOneBad = app(ScoringService::class)->scoreResponseSet($assessment, $responses);
+        $this->assertNotSame('CRITICAL_FAILURE', $stillOnlyOneBad['calibration_status']);
+
+        Response::where('assessment_id', $assessment->assessment_id)->where('question_id', $questionB['question_id'])->delete();
+        $this->answerQuestion($assessment, $questionB, $worstB);
+        $responses = Response::where('assessment_id', $assessment->assessment_id)->get()->keyBy('question_id');
+        $result = app(ScoringService::class)->scoreResponseSet($assessment, $responses);
+
+        $this->assertSame('CRITICAL_FAILURE', $result['calibration_status']);
+        $this->assertSame(['No backup power and no responsible person for records safety.'], $result['critical_findings']);
+    }
+
+    public function test_compound_critical_rule_with_any_operator_fires_on_a_single_condition(): void
+    {
+        [$assessment, $scored, $worstA] = $this->setupCompoundCriticalRule([
+            ['operator' => 'ANY', 'label' => 'Either condition alone is serious enough.'],
+        ]);
+        $questionA = $scored[0];
+
+        foreach ($scored as $question) {
+            $option = $question['question_id'] === $questionA['question_id']
+                ? $worstA
+                : collect($question['options'])->sortByDesc('score_weight')->first();
+            $this->answerQuestion($assessment, $question, $option);
+        }
+        $responses = Response::where('assessment_id', $assessment->assessment_id)->get()->keyBy('question_id');
+        $result = app(ScoringService::class)->scoreResponseSet($assessment, $responses);
+
+        $this->assertSame('CRITICAL_FAILURE', $result['calibration_status']);
+        $this->assertSame(['Either condition alone is serious enough.'], $result['critical_findings']);
+    }
+
     public function test_band_for_moderate_score(): void
     {
         $service = app(ScoringService::class);

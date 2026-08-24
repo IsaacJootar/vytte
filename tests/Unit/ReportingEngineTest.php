@@ -117,6 +117,40 @@ class ReportingEngineTest extends TestCase
         $this->assertSame('CRITICAL_FINDING', $findings[0]['category']);
     }
 
+    public function test_critical_failure_without_a_named_reason_uses_the_original_generic_wording(): void
+    {
+        // Frozen report snapshots created before critical_findings existed carry no such
+        // detail. Their statement must stay exactly what it always was, not gain a new prefix.
+        $findings = (new DiagnosticsService)->findings($this->payload('CRITICAL_FAILURE'));
+
+        $this->assertCount(1, collect($findings)->where('category', 'CRITICAL_FINDING'));
+        $this->assertSame(
+            'A critical failure was recorded. One or more answers indicate a problem serious enough to demand attention on its own, whatever the overall score.',
+            $findings[0]['statement']
+        );
+    }
+
+    public function test_critical_failure_with_named_reasons_produces_one_finding_per_reason(): void
+    {
+        $payload = $this->payload('CRITICAL_FAILURE');
+        $payload['score']['critical_findings'] = [
+            'No backup power and no responsible person for records safety.',
+            'No privacy practice in place.',
+        ];
+
+        $findings = collect((new DiagnosticsService)->findings($payload))->where('category', 'CRITICAL_FINDING')->values();
+
+        $this->assertCount(2, $findings);
+        $this->assertSame(
+            'A critical failure was recorded: No backup power and no responsible person for records safety.',
+            $findings[0]['statement']
+        );
+        $this->assertSame(
+            'A critical failure was recorded: No privacy practice in place.',
+            $findings[1]['statement']
+        );
+    }
+
     public function test_every_recommendation_cites_a_finding(): void
     {
         $findings = (new DiagnosticsService)->findings($this->payload());

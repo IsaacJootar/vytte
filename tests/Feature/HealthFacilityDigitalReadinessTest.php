@@ -166,6 +166,60 @@ class HealthFacilityDigitalReadinessTest extends TestCase
         $this->assertNull($worst->score->maturityLevel->framework_version_id);
     }
 
+    public function test_red_flag_gating_rule_targets_the_four_confirmed_minimum_conditions(): void
+    {
+        $this->seedOfficialCatalogue();
+
+        $release = AssessmentCatalogueRelease::where('release_code', 'VYTTE_DHR_V1')->firstOrFail();
+        $rules = $release->aggregation_policy['compound_critical_rules'] ?? [];
+
+        $this->assertCount(1, $rules);
+        $this->assertSame('ANY', $rules[0]['operator']);
+        $this->assertCount(4, $rules[0]['conditions']);
+
+        $expectedQuestionIds = Question::whereIn('question_code', ['DHR.017', 'DHR.025', 'DHR.027', 'DHR.029'])
+            ->pluck('question_id')
+            ->sort()
+            ->values()
+            ->all();
+        $conditionQuestionIds = collect($rules[0]['conditions'])
+            ->pluck('source_question_id')
+            ->sort()
+            ->values()
+            ->all();
+        $this->assertSame($expectedQuestionIds, $conditionQuestionIds);
+
+        foreach ($rules[0]['conditions'] as $condition) {
+            $this->assertSame('OPTION_SELECTED', $condition['comparison']);
+            $version = QuestionVersion::where('question_id', $condition['source_question_id'])
+                ->where('status', QuestionVersion::STATUS_PUBLISHED)
+                ->firstOrFail();
+            $worstOption = collect($version->options)->sortBy('score_weight')->first();
+            $this->assertSame($worstOption['option_id'], $condition['value']);
+        }
+    }
+
+    public function test_worst_answers_trigger_the_red_flag_with_a_named_reason(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+
+        $worst = $this->runAssessment($user, $workspace, 'worst');
+        $best = $this->runAssessment($user, $workspace, 'best');
+
+        $this->assertSame('CRITICAL_FAILURE', $worst->score->calibration_status);
+        // DHR's own pre-existing per-question policy (option_score_at_or_below: 0) also fires
+        // here, since every scored question's worst option scores 0 — that's expected and
+        // independent of this rule; the assertion only needs the compound rule's own reason.
+        $this->assertContains(
+            'The facility does not meet a minimum condition for digital deployment: no reliable electricity or backup power, no person responsible for implementation, no basic mechanism for protecting patient information, or no realistic staff training pathway.',
+            $worst->score->critical_findings
+        );
+
+        $this->assertNotSame('CRITICAL_FAILURE', $best->score->calibration_status);
+        $this->assertSame([], $best->score->critical_findings);
+    }
+
     public function test_assessor_can_record_verification_status_independent_of_the_respondent_answer(): void
     {
         $this->seedOfficialCatalogue();

@@ -103,10 +103,42 @@ class AssessmentLogicService
         return ($rule['operator'] ?? 'ALL') === 'ANY' ? $results->contains(true) : ! $results->contains(false);
     }
 
-    /** @return array<string, bool> */
-    public function visibilityMap(array|Collection $questions, Collection $responses): array
+    /**
+     * Same rule shape and condition vocabulary as isVisible(), for a gating use (e.g. compound
+     * critical-failure rules) rather than a display one. The default on a malformed or absent
+     * rule is the opposite of isVisible()'s: visibility fails open (show the question) because
+     * showing too much costs nothing; gating must fail closed (never match), because a broken
+     * rule silently fabricating a critical failure is a false, damaging claim about a facility.
+     */
+    public function matches(?array $rule, array $facts): bool
     {
-        $facts = $responses->mapWithKeys(fn ($response) => [
+        if (($rule['type'] ?? null) !== 'response_rule' || ($rule['version'] ?? null) !== 1) {
+            return false;
+        }
+
+        $conditions = collect($rule['conditions'] ?? []);
+        if ($conditions->isEmpty()) {
+            return false;
+        }
+
+        $results = $conditions->map(
+            fn (array $condition): bool => $this->conditionMatches($condition, $facts[$condition['source_question_id'] ?? ''] ?? [])
+        );
+
+        return ($rule['operator'] ?? 'ALL') === 'ANY' ? $results->contains(true) : ! $results->contains(false);
+    }
+
+    /**
+     * The per-question facts a rule's conditions read against — built once from a response
+     * set and shared by branching visibility and any other rule of the same frozen shape
+     * (e.g. compound critical-failure gating), so both read identical semantics for what
+     * counts as "answered", "selected", and so on.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function factsFromResponses(Collection $responses): array
+    {
+        return $responses->mapWithKeys(fn ($response) => [
             $response->question_id => [
                 'state' => $response->response_state ?? 'ANSWERED',
                 'option_ids' => collect($response->typed_value['option_ids'] ?? [])
@@ -120,6 +152,12 @@ class AssessmentLogicService
                     || ! empty($response->typed_value['option_ids'] ?? []),
             ],
         ])->all();
+    }
+
+    /** @return array<string, bool> */
+    public function visibilityMap(array|Collection $questions, Collection $responses): array
+    {
+        $facts = $this->factsFromResponses($responses);
 
         $visibility = [];
         $visibleFacts = [];

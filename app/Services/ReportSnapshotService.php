@@ -107,6 +107,7 @@ class ReportSnapshotService
             'score' => [
                 'overall_score' => $assessment->score?->overall_score !== null ? (float) $assessment->score->overall_score : null,
                 'calibration_status' => $assessment->score?->calibration_status ?? 'NOT_CALIBRATED',
+                'critical_findings' => $assessment->score?->critical_findings ?? [],
                 'scoring_version' => $assessment->score?->scoring_version,
                 'maturity_level' => $assessment->score?->maturityLevel ? [
                     'name' => $assessment->score->maturityLevel->level_name,

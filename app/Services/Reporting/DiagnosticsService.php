@@ -34,18 +34,28 @@ class DiagnosticsService
 
         $overall = $payload['score'] ?? [];
         if (($overall['calibration_status'] ?? null) === 'CRITICAL_FAILURE') {
-            $findings[] = $this->finding(
-                subject: 'Overall assessment',
-                domain: null,
-                category: 'CRITICAL_FINDING',
-                severity: 'HIGH',
-                score: 0.0,
-                statement: 'A critical failure was recorded. One or more answers indicate a problem serious enough to demand attention on its own, whatever the overall score.',
-                why: 'A critical failure is a single finding grave enough to matter regardless of how everything else scored.',
-                evidence: ['calibration' => 'CRITICAL_FAILURE'],
-                consequence: 'If the critical failure is left unaddressed, it exposes the facility to serious, immediate risk regardless of how the other areas performed.',
-                expectedImpact: 'HIGH',
-            );
+            // critical_findings names the specific answer or combination of answers responsible.
+            // Older frozen report snapshots, created before that column existed, carry no such
+            // detail — DEC-051-style historical-boundary discipline keeps their exact original
+            // wording rather than inventing detail after the fact.
+            $reasons = $overall['critical_findings'] ?? [];
+
+            foreach ($reasons === [] ? [null] : $reasons as $reason) {
+                $findings[] = $this->finding(
+                    subject: 'Overall assessment',
+                    domain: null,
+                    category: 'CRITICAL_FINDING',
+                    severity: 'HIGH',
+                    score: 0.0,
+                    statement: $reason === null
+                        ? 'A critical failure was recorded. One or more answers indicate a problem serious enough to demand attention on its own, whatever the overall score.'
+                        : "A critical failure was recorded: {$reason}",
+                    why: 'A critical failure is a single finding grave enough to matter regardless of how everything else scored.',
+                    evidence: ['calibration' => 'CRITICAL_FAILURE'],
+                    consequence: 'If the critical failure is left unaddressed, it exposes the facility to serious, immediate risk regardless of how the other areas performed.',
+                    expectedImpact: 'HIGH',
+                );
+            }
         }
 
         foreach ($payload['domain_scores'] ?? [] as $domain) {

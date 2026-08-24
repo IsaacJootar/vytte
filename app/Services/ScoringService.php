@@ -58,13 +58,29 @@ class ScoringService
             ->sortBy('display_order')
             ->flatMap(fn ($module) => collect($module['questions'] ?? [])->sortBy('display_order'))
             ->values();
-        $visibility = app(AssessmentLogicService::class)->visibilityMap($orderedQuestions, $responses);
+        $logic = app(AssessmentLogicService::class);
+        $visibility = $logic->visibilityMap($orderedQuestions, $responses);
         $criticalPolicy = $snapshot?->aggregation_policy['critical_failures'] ?? [];
         $criticalFailuresEnabled = (bool) ($criticalPolicy['enabled'] ?? false);
         $criticalThreshold = array_key_exists('option_score_at_or_below', $criticalPolicy)
             ? (float) $criticalPolicy['option_score_at_or_below']
             : null;
         $criticalFailureTriggered = false;
+        $criticalFindings = [];
+
+        // Compound rules fire on a *combination* of answers across different questions — no
+        // single one of them need be disqualifying on its own — unlike the per-question check
+        // below, which only ever looks at one answer at a time. See AssessmentLogicService for
+        // the shared, frozen rule shape.
+        if ($criticalFailuresEnabled) {
+            $facts = $logic->factsFromResponses($responses);
+            foreach ($snapshot?->aggregation_policy['compound_critical_rules'] ?? [] as $rule) {
+                if ($logic->matches($rule, $facts)) {
+                    $criticalFailureTriggered = true;
+                    $criticalFindings[] = (string) ($rule['label'] ?? 'A combination of answers indicates a serious problem.');
+                }
+            }
+        }
 
         $subIndices = $this->scoringProfile($assessment, $moduleIds);
         $subIndexResults = [];
@@ -174,6 +190,7 @@ class ScoringService
                     );
                     if ($isCriticalFailure) {
                         $criticalFailureTriggered = true;
+                        $criticalFindings[] = 'One or more answers indicate a problem serious enough to demand attention on its own, whatever the overall score.';
                     }
 
                     $weightedSum += $questionScore * $weight;
@@ -303,6 +320,7 @@ class ScoringService
             'domains' => array_values($domainResults),
             'overall_score' => $overallScore,
             'calibration_status' => $overallStatus,
+            'critical_findings' => array_values(array_unique($criticalFindings)),
             'scoring_version' => $this->scoringVersion($assessment),
         ];
     }
@@ -369,6 +387,7 @@ class ScoringService
                 'assessment_id' => $assessment->assessment_id,
                 'overall_score' => $overallScore,
                 'calibration_status' => $result['calibration_status'],
+                'critical_findings' => json_encode($result['critical_findings'] ?? [], JSON_THROW_ON_ERROR),
                 'scoring_version' => $result['scoring_version'],
                 'expected_module_count' => $moduleCount,
                 'active_module_count' => $moduleCount,
@@ -376,7 +395,7 @@ class ScoringService
                 'calculated_at' => $calculatedAt,
             ]],
             ['assessment_id'],
-            ['overall_score', 'calibration_status', 'scoring_version', 'expected_module_count', 'active_module_count', 'maturity_level_id', 'calculated_at']
+            ['overall_score', 'calibration_status', 'critical_findings', 'scoring_version', 'expected_module_count', 'active_module_count', 'maturity_level_id', 'calculated_at']
         );
     }
 
