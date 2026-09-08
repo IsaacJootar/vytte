@@ -15,18 +15,23 @@ Community surveys, patient-experience surveys, caregiver feedback, and similar u
 
 ## Platform Authority
 
-Vytte owns official:
+Vytte does not claim universal authorship of official content. An instrument's accountable
+publisher — Vytte itself, or a standards body, government, hospital, programme, researcher, or
+expert — owns that instrument's content purpose, methodology, and scoring claim.
 
-- departments;
-- department framework versions;
-- facility profiles;
-- assessment catalogue releases;
+Vytte governs:
+
+- publisher identity, provenance, and review state;
+- departments, department framework versions, facility profiles, and assessment catalogue releases;
 - questions, indicators, evidence requirements, scoring rules, and aggregation policies;
-- publication, versioning, hashes, provenance, and audit.
+- technical validation, immutable versioning, hashes, audit, reproducibility, and comparison eligibility.
 
-Workspaces consume approved content. They do not publish official departments, frameworks, scoring methods, or catalogue releases.
+Workspaces consume approved content and may submit candidate questions through a governed review
+path; they do not themselves publish official departments, frameworks, scoring methods, or
+catalogue releases.
 
-Workspace-local custom sections are allowed only as clearly marked local context. They cannot alter official questions, framework versions, catalogue releases, scoring, or reports.
+Workspace-local custom sections are allowed only as clearly marked local context. They cannot alter
+official questions, framework versions, catalogue releases, scoring, or reports.
 
 ## Stack
 
@@ -83,16 +88,24 @@ DB_PASSWORD=secret
 If you run your own PostgreSQL instead of the shipped service, set the port and password to match
 it, and keep `phpunit.xml` in step.
 
-## Demo Accounts
+## Demo Accounts (optional, local development only)
 
-`php artisan migrate --seed` creates demo accounts, all with the password `password`:
+`php artisan migrate --seed` does not create any user accounts — the default seed is the real
+official catalogue with no demo content (see Seed Data below). To get local login accounts for
+development, run the demo seeder explicitly:
+
+```bash
+php artisan db:seed --class=DemoAccountSeeder
+```
+
+This creates four accounts, all with the password `password`:
 
 - `starter@vytte.test`
 - `professional@vytte.test`
 - `organization@vytte.test`
 - `admin@vytte.test` (Vytte Platform Admin)
 
-The seed also creates a labelled demonstration catalogue and demo assessments, scores, and reports.
+It creates only the accounts and their workspaces — no demo assessments, scores, or reports.
 
 ## Verification
 
@@ -108,23 +121,20 @@ surfaces.
 
 ## Deployment
 
-Production deployment procedures, backup and restore, monitoring, queue supervision, and incident
-response are not yet codified. See `docs/architecture/OPERATIONS_READINESS.md` for the current
-status and outstanding requirements. Do not deploy to production against this README alone.
+`deploy/README.md` documents the current production contract (cPanel, PHP path, database, backup
+location) and the systemd units for the queue worker, scheduler, and backup timer. Monitoring,
+alerting, and incident response are not yet codified — see `docs/architecture/GO_LIVE_CHECKLIST.md`
+and `docs/architecture/OPERATIONS_READINESS.md` for current status and outstanding requirements.
+Do not deploy to production against this README alone.
 
 ## Architecture References
 
-- `docs/architecture/CURRENT_ARCHITECTURE.md` - implemented platform model
-- `docs/architecture/CURRENT_ASSESSMENT_FLOW.md` - assessment lifecycle
-- `docs/architecture/DATA_MODEL_AUDIT.md` - schema authority
-- `docs/architecture/QUESTION_BANK_ARCHITECTURE.md` - reusable question identity, question version, and framework placement model
-- `docs/architecture/OFFICIAL_ASSESSMENT_CONTENT_LIFECYCLE.md` - official content publication lifecycle
-- `docs/architecture/WORKSPACE_CUSTOM_ASSESSMENT_ARCHITECTURE.md` - customer-created assessment boundaries
-- `docs/architecture/AI_ASSISTED_ASSESSMENT_BOUNDARIES.md` - future AI drafting limits
-- `docs/architecture/CONTENT_GOVERNANCE.md` - publication and curation rules
-- `docs/architecture/SCORING_CONTRACT.md` - scoring and aggregation rules
-- `docs/architecture/DECISION_LOG.md` - controlling decisions
+`AGENTS.md` is the authoritative engineering guide and the single home for architecture
+navigation — read it before changing anything.
 
 ## Seed Data
 
-The default seed includes a small clearly labelled demonstration dataset so the architecture can be tested end to end. It is not production clinical content and must not be presented as approved clinical methodology.
+`php artisan migrate --seed` runs the real official production seed (`DatabaseSeeder`): the
+official source-informed catalogue, fully published, with no demo accounts, workspaces,
+assessments, or fixture content. See Demo Accounts above for an optional, explicit, local-only
+seeder that adds development login accounts on top of it.
