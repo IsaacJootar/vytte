@@ -42,44 +42,6 @@
         </a>
     </div>
 
-    {{-- First-run activation: the three steps, shown until the first report exists. Always a
-         clear next step, never a wall of zeros. --}}
-    @unless ($activation['report'])
-        @php
-            $steps = [
-                ['done' => $activation['project'], 'title' => 'Create your first project', 'desc' => 'A project holds one assessment target — a clinic, community, hospital, or programme.', 'cta' => route('projects.create'), 'label' => 'Create a project'],
-                ['done' => $activation['assessment'], 'title' => 'Run an assessment', 'desc' => 'Open your project and answer the questions. It only takes a few minutes.', 'cta' => route('projects.index'), 'label' => 'Start an assessment'],
-                ['done' => $activation['report'], 'title' => 'See your report', 'desc' => 'Scores, findings, risks, and what to do — generated the moment you submit.', 'cta' => route('reports.index'), 'label' => 'Open reports'],
-            ];
-            $currentIndex = collect($steps)->search(fn ($s) => ! $s['done']);
-        @endphp
-        <div class="mb-5 bg-white dark:bg-slate-800 rounded-2xl border border-vytte-200 dark:border-vytte-800 p-5">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Get started in 3 steps</h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Your first health check is a few minutes away.</p>
-            <ol class="mt-4 flex flex-col gap-3">
-                @foreach ($steps as $i => $step)
-                    <li class="flex items-start gap-3">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold
-                            {{ $step['done'] ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : ($i === $currentIndex ? 'bg-vytte-600 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500') }}">
-                            @if ($step['done']) ✓ @else {{ $i + 1 }} @endif
-                        </span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-semibold {{ $step['done'] ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white' }}">{{ $step['title'] }}</p>
-                            @unless ($step['done'])
-                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $step['desc'] }}</p>
-                            @endunless
-                        </div>
-                        @if ($i === $currentIndex)
-                            <a href="{{ $step['cta'] }}" class="flex-shrink-0 inline-flex items-center px-3 py-1.5 bg-vytte-700 text-white text-xs font-semibold rounded-lg hover:bg-vytte-800 transition-colors">
-                                {{ $step['label'] }}
-                            </a>
-                        @endif
-                    </li>
-                @endforeach
-            </ol>
-        </div>
-    @endunless
-
     {{-- Operational row: the daily work — what is being set up, what is out collecting,
          and how many responses have arrived. --}}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
@@ -166,6 +128,61 @@
             </div>
         </div>
     </div>
+
+    {{-- First-run activation: the three steps, shown until the first report exists. Always a
+         clear next step, never a wall of zeros. Dismissible per browser, same pattern as
+         x-help-callout — the reader can close it early and reopen it if they change their mind. --}}
+    @unless ($activation['report'])
+        @php
+            $steps = [
+                ['done' => $activation['project'], 'title' => 'Create your first project', 'desc' => 'A project holds one assessment target — a clinic, community, hospital, or programme.', 'cta' => route('projects.create'), 'label' => 'Create a project'],
+                ['done' => $activation['assessment'], 'title' => 'Run an assessment', 'desc' => 'Open your project and answer the questions. It only takes a few minutes.', 'cta' => route('projects.index'), 'label' => 'Start an assessment'],
+                ['done' => $activation['report'], 'title' => 'See your report', 'desc' => 'Scores, findings, risks, and what to do — generated the moment you submit.', 'cta' => route('reports.index'), 'label' => 'Open reports'],
+            ];
+            $currentIndex = collect($steps)->search(fn ($s) => ! $s['done']);
+        @endphp
+        <div class="mb-5" x-data="{ show: localStorage.getItem('vytte.dashboard.get_started') !== '0' }">
+            <div x-show="show" x-cloak class="bg-white dark:bg-slate-800 rounded-2xl border border-vytte-200 dark:border-vytte-800 p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h2 class="text-sm font-bold text-slate-900 dark:text-white">Get started in 3 steps</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Your first health check is a few minutes away.</p>
+                    </div>
+                    <button type="button" @click="show = false; localStorage.setItem('vytte.dashboard.get_started', '0')"
+                            class="flex-shrink-0 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
+                        Hide
+                    </button>
+                </div>
+                <ol class="mt-4 flex flex-col gap-3">
+                    @foreach ($steps as $i => $step)
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold
+                                {{ $step['done'] ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : ($i === $currentIndex ? 'bg-vytte-600 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500') }}">
+                                @if ($step['done']) ✓ @else {{ $i + 1 }} @endif
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-semibold {{ $step['done'] ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-900 dark:text-white' }}">{{ $step['title'] }}</p>
+                                @unless ($step['done'])
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ $step['desc'] }}</p>
+                                @endunless
+                            </div>
+                            @if ($i === $currentIndex)
+                                <a href="{{ $step['cta'] }}" class="flex-shrink-0 inline-flex items-center px-3 py-1.5 bg-vytte-700 text-white text-xs font-semibold rounded-lg hover:bg-vytte-800 transition-colors">
+                                    {{ $step['label'] }}
+                                </a>
+                            @endif
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+            <button type="button" x-show="!show" x-cloak
+                    @click="show = true; localStorage.removeItem('vytte.dashboard.get_started')"
+                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-vytte-700 dark:text-vytte-400 hover:text-vytte-900 dark:hover:text-vytte-200">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10A8 8 0 11 2 10a8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                Show get-started steps
+            </button>
+        </div>
+    @endunless
 
     {{-- Score distribution --}}
     @if ($hasScores)
