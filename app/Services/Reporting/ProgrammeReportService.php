@@ -38,16 +38,69 @@ class ProgrammeReportService
             $pooled = app(ProgrammeRespondentPoolService::class)->forAssessment($assessment, $roles, $sectionByDomain);
         }
 
-        return $this->build($payload, $config, $pooled);
+        $codeById = collect((array) $assessment->snapshot?->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->pluck('question_code', 'question_id')
+            ->all();
+        $report = $this->build($payload, $config, $pooled, $codeById);
+        $report['profile'] = $this->profile($report['context'], $config['profile'] ?? [], $assessment);
+
+        return $report;
+    }
+
+    /**
+     * The profile answers as short lines ("Public junior secondary school", "640 students · 310 girls"),
+     * never as the question and its answer. Each line comes from a template in the frozen report
+     * policy and is left out when any answer it needs is missing.
+     *
+     * @param  array<int, array<string, mixed>>  $context
+     * @param  array<int, string>  $templates
+     * @return array<int, string>
+     */
+    private function profile(array $context, array $templates, Assessment $assessment): array
+    {
+        $codeByText = collect((array) $assessment->snapshot?->payload)
+            ->flatMap(fn ($module) => $module['questions'] ?? [])
+            ->mapWithKeys(fn ($question) => [$question['question_text'] => substr($question['question_code'], strrpos($question['question_code'], '.') + 1)])
+            ->all();
+        $answers = [];
+        foreach ($context as $group) {
+            foreach ($group['items'] as $item) {
+                if (isset($codeByText[$item['question']])) {
+                    $answers[$codeByText[$item['question']]] = $item['answer'];
+                }
+            }
+        }
+
+        $lines = [];
+        foreach ($templates as $template) {
+            $complete = true;
+            $line = preg_replace_callback('/\{(\w+)\}/', function ($match) use ($answers, &$complete) {
+                $value = $answers[$match[1]] ?? null;
+                if ($value === null || $value === '' || $value === "Don't know") {
+                    $complete = false;
+
+                    return '';
+                }
+
+                return $value;
+            }, $template);
+            if ($complete) {
+                $lines[] = $line;
+            }
+        }
+
+        return $lines;
     }
 
     /**
      * @param  array<string, mixed>  $payload  the frozen report payload
      * @param  array<string, mixed>  $config  the `report` policy frozen with the template
      * @param  array<string, mixed>|null  $pooled  findings pooled across several respondents, when more than one answered
+     * @param  array<string, string>  $codeById  question code by question id, to find each question's written finding
      * @return array<string, mixed>
      */
-    public function build(array $payload, array $config, ?array $pooled = null): array
+    public function build(array $payload, array $config, ?array $pooled = null, array $codeById = []): array
     {
         $roles = $config['roles'] ?? [];
         $thresholds = $config['thresholds'] ?? [];
@@ -80,16 +133,26 @@ class ProgrammeReportService
         }
 
         $sectionByDomain = $sections->pluck('name', 'domain_code')->all();
-        $items = $pooled['items'] ?? $this->scoredItems($payload, $roles, $sectionByDomain);
+        $findings = $config['findings'] ?? [];
+        // Each item carries the template's own written sentence for it; the question's wording is only a
+        // fallback for a template that wrote none.
+        $items = ($pooled['items'] ?? $this->scoredItems($payload, $roles, $sectionByDomain))
+            ->map(function (array $item) use ($findings, $codeById) {
+                $written = $findings[$codeById[$item['question_id'] ?? ''] ?? ''] ?? null;
+
+                return $item + ['gap' => $written['gap'] ?? $item['question'], 'good' => $written['good'] ?? $item['question']];
+            });
 
         $gapCount = (int) ($config['gap_count'] ?? 5);
-        $gaps = $items->where('role', 'PROVISION')->filter(fn ($item) => $item['score'] < self::STRONG)
+        // A problem already named under "must fix" is not repeated in the lists below it.
+        $notAMustHave = fn (array $item) => ! in_array($item['gap'], $flags, true);
+        $gaps = $items->where('role', 'PROVISION')->filter(fn ($item) => $item['score'] < self::STRONG && $notAMustHave($item))
             ->sortBy('score')->take($gapCount)->values()->all();
-        $readinessGaps = $items->where('role', 'READINESS')->filter(fn ($item) => $item['score'] < self::STRONG)
+        $readinessGaps = $items->where('role', 'READINESS')->filter(fn ($item) => $item['score'] < self::STRONG && $notAMustHave($item))
             ->sortBy('score')->take(4)->values()->all();
         $strengths = $items->filter(fn ($item) => $item['score'] >= 100)
             ->groupBy('section')->map(fn ($group) => $group->first())->take(4)->values()->all();
-        $allGaps = $items->filter(fn ($item) => $item['score'] < self::STRONG)->pluck('question')->values()->all();
+        $allGaps = $items->filter(fn ($item) => $item['score'] < self::STRONG)->pluck('gap')->values()->all();
 
         $target = $payload['target'] ?? [];
 
@@ -134,6 +197,7 @@ class ProgrammeReportService
         return collect($payload['domain_scores'] ?? [])
             ->filter(fn ($domain) => isset($roles[$domain['domain_code'] ?? '']))
             ->flatMap(fn ($domain) => collect($domain['question_breakdown'] ?? [])->map(fn ($item) => [
+                'question_id' => $item['question_id'] ?? null,
                 'question' => $item['question_text'] ?? 'Question',
                 'answer' => $item['answer'] ?? null,
                 'score' => (float) ($item['score'] ?? 0),

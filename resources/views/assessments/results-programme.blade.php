@@ -94,8 +94,7 @@
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Biggest gaps found</h2>
             @forelse ($programme['gaps'] as $gap)
                 <div class="mt-3 border-t border-slate-100 pt-3 first:mt-2 first:border-0 first:pt-0 dark:border-slate-700">
-                    <p class="text-sm text-slate-800 dark:text-slate-200">{{ $gap['question'] }}</p>
-                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Answer: <span class="font-semibold text-red-700 dark:text-red-300">{{ $gap['answer'] }}</span></p>
+                    <p class="text-sm text-slate-800 dark:text-slate-200">{{ $gap['gap'] }}</p>
                 </div>
             @empty
                 <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">No major gaps were found.</p>
@@ -105,8 +104,7 @@
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">To get ready to host a Dignity Bank</h2>
             @forelse ($programme['readiness_gaps'] as $gap)
                 <div class="mt-3 border-t border-slate-100 pt-3 first:mt-2 first:border-0 first:pt-0 dark:border-slate-700">
-                    <p class="text-sm text-slate-800 dark:text-slate-200">{{ $gap['question'] }}</p>
-                    <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Answer: <span class="font-semibold text-amber-700 dark:text-amber-300">{{ $gap['answer'] }}</span></p>
+                    <p class="text-sm text-slate-800 dark:text-slate-200">{{ $gap['gap'] }}</p>
                 </div>
             @empty
                 <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Nothing further is needed to get ready.</p>
@@ -119,26 +117,20 @@
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">Working well</h2>
             <ul class="mt-2 space-y-1.5 text-sm text-slate-700 dark:text-slate-200">
                 @foreach ($programme['strengths'] as $strength)
-                    <li class="flex gap-2"><span class="text-emerald-600" aria-hidden="true">✓</span><span>{{ $strength['question'] }} <span class="text-slate-500 dark:text-slate-400">— {{ $strength['answer'] }}</span></span></li>
+                    <li class="flex gap-2"><span class="text-emerald-600" aria-hidden="true">✓</span><span>{{ $strength['good'] }}</span></li>
                 @endforeach
             </ul>
         </div>
     @endif
 
-    @if ($programme['context'])
+    @if ($programme['profile'])
         <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">About this {{ $programme['noun'] }}</h2>
-            @foreach ($programme['context'] as $group)
-                <h3 class="mt-4 text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ $group['section'] }}</h3>
-                <dl class="mt-1 divide-y divide-slate-100 text-sm dark:divide-slate-700">
-                    @foreach ($group['items'] as $item)
-                        <div class="flex flex-col gap-0.5 py-2 sm:flex-row sm:justify-between sm:gap-6">
-                            <dt class="text-slate-600 dark:text-slate-300">{{ $item['question'] }}</dt>
-                            <dd class="font-medium text-slate-900 sm:text-right dark:text-white">{{ $item['answer'] }}</dd>
-                        </div>
-                    @endforeach
-                </dl>
-            @endforeach
+            <ul class="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                @foreach ($programme['profile'] as $line)
+                    <li>{{ $line }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 

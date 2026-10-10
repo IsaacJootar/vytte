@@ -89,14 +89,14 @@
 
 <h2>Biggest gaps found</h2>
 @forelse ($programme['gaps'] as $gap)
-    <div class="item">{{ $gap['question'] }}<br><span class="muted small">Answer:</span> <strong style="color: #b91c1c;">{{ $gap['answer'] }}</strong></div>
+    <div class="item">{{ $gap['gap'] }}</div>
 @empty
     <div class="muted">No major gaps were found.</div>
 @endforelse
 
 <h2>To get ready to host a Dignity Bank</h2>
 @forelse ($programme['readiness_gaps'] as $gap)
-    <div class="item">{{ $gap['question'] }}<br><span class="muted small">Answer:</span> <strong style="color: #b45309;">{{ $gap['answer'] }}</strong></div>
+    <div class="item">{{ $gap['gap'] }}</div>
 @empty
     <div class="muted">Nothing further is needed to get ready.</div>
 @endforelse
@@ -104,22 +104,14 @@
 @if ($programme['strengths'])
     <h2>Working well</h2>
     @foreach ($programme['strengths'] as $strength)
-        <div class="item"><span style="color: #16a34a;">✓</span> {{ $strength['question'] }} <span class="muted">— {{ $strength['answer'] }}</span></div>
+        <div class="item"><span style="color: #16a34a;">✓</span> {{ $strength['good'] }}</div>
     @endforeach
 @endif
 
-@if ($programme['context'])
+@if ($programme['profile'])
     <h2>About this {{ $programme['noun'] }}</h2>
-    @foreach ($programme['context'] as $group)
-        <div class="eyebrow" style="margin-top: 8px;">{{ $group['section'] }}</div>
-        <table>
-            @foreach ($group['items'] as $item)
-                <tr>
-                    <td class="item" style="width: 62%;">{{ $item['question'] }}</td>
-                    <td class="item" style="text-align: right; font-weight: bold;">{{ $item['answer'] }}</td>
-                </tr>
-            @endforeach
-        </table>
+    @foreach ($programme['profile'] as $line)
+        <div class="item">{{ $line }}</div>
     @endforeach
 @endif
 

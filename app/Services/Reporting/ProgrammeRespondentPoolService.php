@@ -90,6 +90,7 @@ class ProgrammeRespondentPoolService
             arsort($answers);
 
             return [
+                'question_id' => $questionId,
                 'question' => $questions[$questionId]['text'] ?? 'Question',
                 'answer' => array_key_first($answers),
                 'score' => round(array_sum($slot['scores']) / max(count($slot['scores']), 1), 2),

@@ -325,10 +325,88 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
                     'LOWER_NEED_NOT_READY' => ['label' => 'Not a priority now', 'detail' => 'Needs are lower here and the '.$config['noun'].' is not yet ready.'],
                 ],
                 'gap_count' => 5,
+                'findings' => self::findings($site),
+                'profile' => self::profileLines($site),
             ],
         ];
     }
 
+    /**
+     * One plain sentence per scored question, written once and frozen with the template, so a report
+     * reads as findings rather than as the question and the answer given. `gap` is shown when the
+     * answer was weak, `good` when it was the best one. Keyed by question code.
+     *
+     * @return array<string, array{gap: string, good: string}>
+     */
+    private static function findings(string $site): array
+    {
+        $school = $site === 'school';
+        $p = self::SITES[$site]['prefix'];
+        $place = $school ? 'school' : 'PHC';
+        $girls = $school ? 'girls' : 'girls and women';
+        $toilet = $school ? "The girls' toilet" : 'The toilet for female clients';
+        $leaders = $school ? 'The head teacher and school leadership' : 'The PHC in-charge and management';
+
+        $rows = [
+            'B1' => ['Menstrual products are not reliably available for emergencies.', 'Menstrual products are regularly available.'],
+            'B3' => ["There is no clear, working way for {$girls} to get an emergency product.", "{$girls} can get an emergency product through a clear, working way."],
+            'B4' => ['There is no reliable way to restock products when they run out.', 'Products can be restocked reliably when they run out.'],
+            'B5' => ['Products have run out when they were needed.', 'Products have not run out when they were needed.'],
+            'C1' => ['Menstrual health '.($school ? 'education' : 'information and counselling').' is not given regularly.', 'Menstrual health '.($school ? 'education' : 'information and counselling').' is given routinely.'],
+            'C3' => ['Menstrual health materials are missing or rarely used.', 'Menstrual health materials are available and routinely used.'],
+            'C4' => ["No trained staff member is at the {$place} to support menstrual health.", "A trained staff member is at the {$place} now."],
+            'D1' => [$school ? 'There is no toilet used only by girls.' : 'There is no private toilet for female clients.', $school ? 'There is a toilet used only by girls.' : 'There is a private toilet for female clients.'],
+            'D2' => ["{$toilet} is not working properly.", "{$toilet} is working."],
+            'D3' => ['The toilet door does not close and lock properly.', 'The toilet door closes and locks.'],
+            'D4' => ['The toilet is not private enough to change menstrual materials.', 'The toilet is private enough to change menstrual materials.'],
+            'D5' => ['There is no water at the toilet.', 'There is water at the toilet.'],
+            'D6' => ['There is no soap at the handwashing point.', 'There is soap at the handwashing point.'],
+            'D7' => ['There is no covered bin for used menstrual materials.', 'A covered bin for used menstrual materials is in place.'],
+            'D8' => ['Used menstrual materials are not disposed of safely.', 'Used menstrual materials are disposed of safely.'],
+            'D9' => ['The toilet is not kept clean.', 'The toilet is kept clean.'],
+            'D10' => ['The toilet cannot be used by someone with limited mobility.', 'The toilet can be used by someone with limited mobility.'],
+            'F1' => ["{$leaders} have not yet committed to supporting a Dignity Bank.", "{$leaders} would fully support a Dignity Bank."],
+            'F2' => ['No suitable staff member has been found to run a Dignity Bank.', 'A willing staff member is ready to run a Dignity Bank.'],
+            'F3' => ['There is no secure place to store menstrual products.', 'A secure place to store menstrual products is available.'],
+            'F4' => ["There is no private place where {$girls} could collect products unnoticed.", "A private place for {$girls} to collect products is available."],
+            'F5' => ["{$girls} could not reach the collection place whenever they need it.", "{$girls} can reach the collection place whenever they need it."],
+            'F6' => ["The {$place} is not committed to keeping simple records of products given out.", "The {$place} is willing to keep simple records of products given out."],
+            'F7' => ['There is no way to ask for more stock when it runs low.', 'There is a way to ask for more stock when it runs low.'],
+            'F8' => ['There is no strong group in place to support a Dignity Bank.', 'A strong group is already active to support a Dignity Bank.'],
+        ];
+
+        if ($school) {
+            $rows['C5'] = ['Girls have no named trusted adult they can go to about menstrual concerns.', 'Girls know a trusted adult they can go to privately.'];
+        } else {
+            $rows['C5'] = ['Girls and women cannot reliably get help here for menstrual pain or problems.', 'Girls and women can routinely get help here for menstrual pain or problems.'];
+            $rows['C6'] = ['Adolescent girls cannot get menstrual health support confidentially.', 'Adolescent girls can get menstrual health support confidentially.'];
+            $rows['C7'] = ['There is no working referral route for problems the PHC cannot handle.', 'A working referral route exists for problems the PHC cannot handle.'];
+        }
+
+        $out = [];
+        foreach ($rows as $id => [$gap, $good]) {
+            $out["{$p}.{$id}"] = ['gap' => ucfirst($gap), 'good' => ucfirst($good)];
+        }
+
+        return $out;
+    }
+
+    /**
+     * How the profile answers read in a report: one short line each, built from the answers (by
+     * question id in braces) and left out when any of them was not answered.
+     *
+     * @return array<int, string>
+     */
+    private static function profileLines(string $site): array
+    {
+        return $site === 'school'
+            ? ['{A1}', '{A2} · {A3}', 'Boarding students: {A4}', 'Serves: {A5}',
+                'Existing menstrual health activity: {E1}', 'It includes: {E2}', 'Supported by: {E3}',
+                'Products now supplied by another programme: {E4}']
+            : ['{A1}', 'Serves about {A2}', 'Services: {A3}', 'Also serves: {A4}',
+                'Existing menstrual health activity: {E1}', 'It includes: {E2}', 'Supported by: {E3}',
+                'Products now supplied by another programme: {E4}'];
+    }
     /**
      * One single-condition rule per must-have, so each missing must-have is named on its own.
      *

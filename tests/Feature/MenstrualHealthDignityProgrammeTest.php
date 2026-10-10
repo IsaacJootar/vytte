@@ -182,6 +182,30 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->actingAs($user)->get(route('programmes.show', 'no-such-programme'))->assertNotFound();
     }
 
+    public function test_reports_state_findings_in_plain_sentences_not_the_question_and_answer(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V1', 'worst');
+        $report = app(ProgrammeReportService::class)->forAssessment($assessment);
+
+        $gaps = collect($report['gaps'])->pluck('gap');
+        $this->assertContains('There is no water at the toilet.', $report['all_gaps']);
+        $this->assertNotContains('Is there water at or near the toilet today?', $report['all_gaps']);
+        $this->assertNotEmpty($gaps);
+        // A must-have already named under "must fix" is not repeated among the gaps.
+        $this->assertContains('There is no toilet used only by girls.', $report['flags']);
+        $this->assertNotContains('There is no toilet used only by girls.', $gaps);
+
+        // The profile reads as short lines, not as questions with answers.
+        $this->assertContains('100 students · 100 girls', $report['profile']);
+        $this->actingAs($user)->get(route('assessments.results', $assessment))
+            ->assertOk()
+            ->assertSee($gaps->first())
+            ->assertDontSee('Is there water at or near the toilet today?')
+            ->assertDontSee('What type of school is this?');
+    }
+
     public function test_the_survey_report_page_and_pdf_render(): void
     {
         $this->seedOfficialCatalogue();
