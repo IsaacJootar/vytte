@@ -682,7 +682,7 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             self::q($p, 'F1', 'What is a period?', 'SINGLE_SELECT', self::l3('A normal monthly bleeding that is part of growing up', 'A sign of illness or infection', 'Something caused by bad behaviour or a curse')),
             self::q($p, 'F2', 'Which of these is a normal period?', 'SINGLE_SELECT', self::l3('Bleeding that lasts about 2 to 7 days', 'Bleeding that lasts more than 10 days every month', 'Bleeding that never stops')),
             self::q($p, 'F3', 'How often should a pad be changed?', 'SINGLE_SELECT', self::l3('Every 4 to 6 hours', 'Once a day', 'Only when it is soaked through')),
-            self::q($p, 'F4', 'Can a girl who has her period go to school, cook and play sports as usual?', 'SINGLE_SELECT', self::l3('Yes, she can do everything as usual', 'She can do only some things', 'No, she should stay away')),
+            self::q($p, 'F4', 'Is a girl or woman unclean when she has her period?', 'SINGLE_SELECT', self::l3('No, a period is natural and she is not unclean', 'Only on the heaviest days', 'Yes, she is unclean until it ends')),
             self::q($p, 'F5', 'When should a girl or woman see a health worker about her period?', 'SINGLE_SELECT', self::l3('When bleeding is very heavy, very painful, or her periods stop', 'Never, all problems pass by themselves', 'Only if her mother says so')),
             self::q($p, 'F6', 'Do you know where to get help or information about periods?', 'SINGLE_SELECT', self::l3('Yes, I can name a place or person', 'I am not sure', 'No')),
         ];
