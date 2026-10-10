@@ -50,6 +50,7 @@ use App\Http\Controllers\MultiRespondentAssessmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProgrammeController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectProgressController;
 use App\Http\Controllers\ReportScheduleController;
@@ -71,6 +72,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['au
 Route::middleware('auth')->group(function () {
     Route::resource('projects', ProjectController::class)->except('destroy');
     Route::patch('projects/{project}/archive', [ProjectController::class, 'archive'])->name('projects.archive');
+    Route::get('programmes/{programme}', [ProgrammeController::class, 'show'])->name('programmes.show');
     Route::get('projects/{project}/progress', [ProjectProgressController::class, 'index'])->name('projects.progress');
     Route::get('projects/{project}/compare', [ProjectProgressController::class, 'compare'])->name('projects.compare');
     Route::post('projects/{project}/targets', [ProjectProgressController::class, 'setTarget'])->name('projects.targets.set');

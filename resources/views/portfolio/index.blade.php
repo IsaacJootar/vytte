@@ -49,6 +49,23 @@
             </div>
         @endif
 
+        @if (! empty($programmes))
+            <section class="mb-6" aria-labelledby="programmes-heading">
+                <h2 id="programmes-heading" class="mb-3 text-base font-bold text-slate-900 dark:text-white">Programmes</h2>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    @foreach ($programmes as $programme)
+                        <a href="{{ route('programmes.show', $programme['slug']) }}" class="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors hover:border-vytte-300 dark:border-slate-700 dark:bg-slate-800">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ $programme['name'] }}</p>
+                                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{{ $programme['sites'] }} {{ Str::plural('site', $programme['sites']) }} · programme overview</p>
+                            </div>
+                            <span class="text-xs font-semibold text-vytte-700">Open</span>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         <section aria-labelledby="results-by-type-heading">
             <div class="mb-3">
                 <h2 id="results-by-type-heading" class="text-base font-bold text-slate-900 dark:text-white">Results by assessment type</h2>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\PlanService;
 use App\Services\Reporting\PortfolioService;
+use App\Services\Reporting\ProgrammeOverviewService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 
@@ -21,6 +22,8 @@ class PortfolioController extends Controller
                 ->with('limit_error', 'Assessment Portfolio is not available on your current plan. Upgrade to see completed results across all your settings.');
         }
 
-        return view('portfolio.index', $portfolio->build());
+        return view('portfolio.index', $portfolio->build() + [
+            'programmes' => app(ProgrammeOverviewService::class)->programmesFor($workspace),
+        ]);
     }
 }

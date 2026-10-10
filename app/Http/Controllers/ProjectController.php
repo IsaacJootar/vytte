@@ -139,6 +139,7 @@ class ProjectController extends Controller
             'assessments.score',
             'assessments.reportSnapshot',
             'assessments.catalogueRelease',
+            'assessments.snapshot',
         ]);
 
         return view('projects.show', compact('project'));

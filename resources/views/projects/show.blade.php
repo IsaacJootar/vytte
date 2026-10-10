@@ -27,6 +27,13 @@
             @if ($project->isArchived())
                 <span class="px-2.5 py-1 text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-lg">Archived</span>
             @endif
+            @php $programmeAssessment = $project->assessments->first(fn ($assessment) => \App\Support\ReportType::isProgramme($assessment)); @endphp
+            @if ($programmeAssessment)
+                <a href="{{ route('programmes.show', \Illuminate\Support\Str::slug((string) data_get(\App\Support\ReportType::config($programmeAssessment), 'programme'))) }}"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-white bg-vytte-700 rounded-lg hover:bg-vytte-800 transition-colors duration-150">
+                    Programme overview
+                </a>
+            @endif
             <a href="{{ route('projects.edit', $project) }}"
                class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-150">
                 Edit

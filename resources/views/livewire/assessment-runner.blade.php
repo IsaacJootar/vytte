@@ -74,6 +74,13 @@
                 <div class="h-full bg-vytte-600 rounded-full transition-all duration-300"
                      style="width: {{ $pct }}%"></div>
             </div>
+            @php $missing = $this->unansweredRequired(); @endphp
+            @if (! $isComplete && count($missing) > 0)
+                <div class="mt-2 flex items-center justify-between gap-3 text-xs">
+                    <span class="font-semibold text-amber-700 dark:text-amber-300">{{ count($missing) }} required {{ count($missing) === 1 ? 'question' : 'questions' }} still to answer</span>
+                    <button type="button" wire:click="goToQuestion({{ $missing[0]['index'] }})" class="font-semibold text-vytte-700 hover:text-vytte-800 dark:text-vytte-400">Take me to the next one</button>
+                </div>
+            @endif
         </div>
 
         @php
@@ -327,6 +334,19 @@
                     </form>
                 </div>
             </div>
+        @elseif (! $isComplete && $currentIndex === count($questionData) - 1 && count($missing) > 0)
+            <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+                <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">Almost there. {{ count($missing) }} required {{ count($missing) === 1 ? 'question still needs' : 'questions still need' }} an answer before you can submit.</p>
+                <p class="mt-1 text-xs text-amber-800 dark:text-amber-200">Tap a number to go straight to it.</p>
+                <div class="mt-3 flex flex-wrap gap-1.5">
+                    @foreach ($missing as $item)
+                        <button type="button" wire:click="goToQuestion({{ $item['index'] }})"
+                                class="h-8 min-w-8 rounded-lg bg-white px-2 text-xs font-bold text-amber-800 ring-1 ring-amber-300 transition-colors hover:bg-amber-100 dark:bg-slate-800 dark:text-amber-200 dark:ring-amber-700">
+                            {{ $item['number'] }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
         @endif
 
         {{-- Question dot navigation (for review / jumping) --}}
@@ -335,7 +355,8 @@
                 <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">{{ __('runner.jump_to_question') }}</p>
                 <div class="flex items-center gap-3 text-[10px] text-slate-400 dark:text-slate-500">
                     <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-green-100 dark:bg-green-900/40"></span>Answered</span>
-                    <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-slate-100 dark:bg-slate-700"></span>Not yet</span>
+                    <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-100 ring-1 ring-amber-300 dark:bg-amber-900/40 dark:ring-amber-700"></span>Needs an answer</span>
+                    <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-slate-100 dark:bg-slate-700"></span>Optional</span>
                 </div>
             </div>
             <div class="flex flex-wrap gap-1.5">
@@ -348,7 +369,9 @@
                                 ? 'bg-vytte-700 text-white ring-2 ring-vytte-300 dark:ring-vytte-700'
                                 : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null) || array_key_exists($item['question_id'], $savedNumericResponses) || ! empty($savedMultiResponses[$item['question_id']] ?? []) || isset($savedResponseStates[$item['question_id']])
                                     ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
-                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600') }}">
+                                    : ($item['is_scored']
+                                        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 ring-1 ring-amber-300 dark:ring-amber-700 hover:bg-amber-200'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600')) }}">
                         {{ $idx + 1 }}
                     </button>
                 @endforeach

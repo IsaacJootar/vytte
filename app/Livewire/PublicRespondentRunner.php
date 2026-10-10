@@ -431,30 +431,39 @@ class PublicRespondentRunner extends Component
 
     public function canSubmit(): bool
     {
-        foreach ($this->questionData as $question) {
-            $answered = isset($this->savedResponses[$question['question_id']])
-                || filled($this->savedTextResponses[$question['question_id']] ?? null)
-                || array_key_exists($question['question_id'], $this->savedNumericResponses)
-                || ! empty($this->savedMultiResponses[$question['question_id']] ?? [])
-                || isset($this->savedResponseStates[$question['question_id']]);
-            if ($question['is_scored'] && ! $answered) {
-                return false;
+        return $this->questionData !== [] && $this->unansweredRequired() === [];
+    }
+
+    /**
+     * The required (scored) questions that still have no answer, in the order they appear, so the
+     * respondent is told exactly what is blocking Submit instead of hunting for it question by question.
+     *
+     * @return array<int, array{index: int, number: int}>
+     */
+    public function unansweredRequired(): array
+    {
+        $missing = [];
+        foreach (array_values($this->questionData) as $index => $question) {
+            if ($question['is_scored'] && ! $this->isAnswered($question)) {
+                $missing[] = ['index' => $index, 'number' => $index + 1];
             }
         }
 
-        return $this->questionData !== [];
+        return $missing;
+    }
+
+    public function isAnswered(array $question): bool
+    {
+        return isset($this->savedResponses[$question['question_id']])
+            || filled($this->savedTextResponses[$question['question_id']] ?? null)
+            || array_key_exists($question['question_id'], $this->savedNumericResponses)
+            || ! empty($this->savedMultiResponses[$question['question_id']] ?? [])
+            || isset($this->savedResponseStates[$question['question_id']]);
     }
 
     public function answeredCount(): int
     {
-        return count(array_filter(
-            $this->questionData,
-            fn ($question) => isset($this->savedResponses[$question['question_id']])
-                || filled($this->savedTextResponses[$question['question_id']] ?? null)
-                || array_key_exists($question['question_id'], $this->savedNumericResponses)
-                || ! empty($this->savedMultiResponses[$question['question_id']] ?? [])
-                || isset($this->savedResponseStates[$question['question_id']])
-        ));
+        return count(array_filter($this->questionData, fn ($question) => $this->isAnswered($question)));
     }
 
     public function submit(RespondentSubmissionService $submission): void

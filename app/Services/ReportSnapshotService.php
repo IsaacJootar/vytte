@@ -100,6 +100,9 @@ class ReportSnapshotService
             'target' => [
                 'name' => $assessment->target?->name,
                 'type' => $assessment->target?->targetType?->target_type_name,
+                'country' => $assessment->target?->country,
+                'region' => $assessment->target?->region,
+                'sub_region' => $assessment->target?->sub_region,
             ],
             'assessor_name' => $assessment->assessor_name,
             'completed_at' => $assessment->completed_at?->toIso8601String(),

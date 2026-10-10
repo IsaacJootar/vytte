@@ -50,6 +50,7 @@ class DatabaseSeeder extends Seeder
             WashMenstrualHygieneExtensionSeeder::class,
             WashDomainMappingCorrectionSeeder::class,
             HealthFacilityDigitalReadinessSeeder::class,
+            MenstrualHealthDignityBaselineSeeder::class,
         ]);
 
         $this->publishMethodology();

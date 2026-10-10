@@ -669,30 +669,39 @@ class AssessmentRunner extends Component
 
     public function canSubmit(): bool
     {
-        foreach ($this->questionData as $q) {
-            $answered = isset($this->savedResponses[$q['question_id']])
-                || filled($this->savedTextResponses[$q['question_id']] ?? null)
-                || array_key_exists($q['question_id'], $this->savedNumericResponses)
-                || ! empty($this->savedMultiResponses[$q['question_id']] ?? [])
-                || isset($this->savedResponseStates[$q['question_id']]);
-            if ($q['is_scored'] && ! $answered) {
-                return false;
+        return count($this->questionData) > 0 && $this->unansweredRequired() === [];
+    }
+
+    /**
+     * The required (scored) questions that still have no answer, in the order they appear, so the
+     * runner can say exactly what is blocking Submit instead of leaving the reader to hunt for it.
+     *
+     * @return array<int, array{index: int, number: int}>
+     */
+    public function unansweredRequired(): array
+    {
+        $missing = [];
+        foreach (array_values($this->questionData) as $index => $q) {
+            if ($q['is_scored'] && ! $this->isAnswered($q)) {
+                $missing[] = ['index' => $index, 'number' => $index + 1];
             }
         }
 
-        return count($this->questionData) > 0;
+        return $missing;
+    }
+
+    public function isAnswered(array $q): bool
+    {
+        return isset($this->savedResponses[$q['question_id']])
+            || filled($this->savedTextResponses[$q['question_id']] ?? null)
+            || array_key_exists($q['question_id'], $this->savedNumericResponses)
+            || ! empty($this->savedMultiResponses[$q['question_id']] ?? [])
+            || isset($this->savedResponseStates[$q['question_id']]);
     }
 
     public function answeredCount(): int
     {
-        return count(array_filter(
-            $this->questionData,
-            fn ($q) => isset($this->savedResponses[$q['question_id']])
-                || filled($this->savedTextResponses[$q['question_id']] ?? null)
-                || array_key_exists($q['question_id'], $this->savedNumericResponses)
-                || ! empty($this->savedMultiResponses[$q['question_id']] ?? [])
-                || isset($this->savedResponseStates[$q['question_id']])
-        ));
+        return count(array_filter($this->questionData, fn ($q) => $this->isAnswered($q)));
     }
 
     private function refreshVisibleQuestions(): void

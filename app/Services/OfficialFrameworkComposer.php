@@ -143,6 +143,7 @@ class OfficialFrameworkComposer
                 'section_code' => $sectionSpec['domain'].'_S'.$sectionOrder,
                 'section_name' => $sectionSpec['name'],
                 'purpose' => $sectionSpec['name'].' — grouped for scoring against the '.$definition->domain_name.' measurement domain.',
+                'instructions' => $sectionSpec['instructions'] ?? null,
                 'display_order' => $sectionOrder,
             ]);
 
@@ -165,7 +166,13 @@ class OfficialFrameworkComposer
 
             $subIndex = $this->subIndexFor($module, $definition, $sectionSpec['name']);
 
-            foreach ($sectionSpec['questions'] as $questionCode) {
+            foreach ($sectionSpec['questions'] as $questionEntry) {
+                // An entry is a bare question code, or ['code' => ..., 'scored' => false] to
+                // place a select-type question as unscored context (profile answers, who
+                // supports an existing programme) that is reported but never scored.
+                $questionCode = is_array($questionEntry) ? $questionEntry['code'] : $questionEntry;
+                $forcedUnscored = is_array($questionEntry) && ($questionEntry['scored'] ?? true) === false;
+
                 $version = $this->publishedVersion($questionCode);
 
                 if (! $version) {
@@ -181,7 +188,7 @@ class OfficialFrameworkComposer
                 // so they inform analysis without distorting the score.
                 $type = $version->questionType?->type_code;
                 $numericWithoutBands = $type === 'NUMERIC' && empty($version->numeric_bands);
-                $scored = ! in_array($type, \App\Support\ResponseInputContract::UNSCORABLE_TYPES, true) && ! $numericWithoutBands;
+                $scored = ! in_array($type, \App\Support\ResponseInputContract::UNSCORABLE_TYPES, true) && ! $numericWithoutBands && ! $forcedUnscored;
 
                 FrameworkQuestionPlacement::create([
                     'framework_version_id' => $framework->framework_version_id,

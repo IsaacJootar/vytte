@@ -30,7 +30,7 @@
             <a href="{{ route('assessments.show', $assessment) }}" class="text-sm font-medium text-vytte-700 hover:underline">← Back to assessment</a>
             <h1 class="mt-1 text-2xl font-bold text-slate-900 dark:text-white">Collect & review responses</h1>
             <p class="mt-1 text-sm text-slate-500">
-                {{ $assessment->project?->name }} · {{ $assessment->target?->name }}
+                {{ $assessment->project?->name }} · {{ $assessment->target?->name }}{{ collect([$assessment->target?->sub_region, $assessment->target?->region])->filter()->isNotEmpty() ? ' · '.collect([$assessment->target?->sub_region, $assessment->target?->region])->filter()->implode(', ') : '' }}
             </p>
         </div>
         @if ($isComplete)

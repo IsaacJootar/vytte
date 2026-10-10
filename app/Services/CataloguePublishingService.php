@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AssessmentCatalogueRelease;
 use App\Models\DepartmentFrameworkVersion;
 use App\Models\FacilityProfile;
+use App\Support\ReportType;
 use Illuminate\Validation\ValidationException;
 
 class CataloguePublishingService
@@ -63,6 +64,23 @@ class CataloguePublishingService
 
         if (($release->aggregation_policy['method'] ?? null) !== 'MEAN_OF_SCORED_SUB_INDICES') {
             $errors['aggregation_policy'][] = 'MEAN_OF_SCORED_SUB_INDICES is the only demonstration facility aggregation method currently implemented.';
+        }
+
+        $reportPolicy = $release->aggregation_policy['report'] ?? null;
+        if ($reportPolicy !== null) {
+            $reportType = strtoupper((string) ($reportPolicy['type'] ?? ''));
+            if (! in_array($reportType, ReportType::ALL, true)) {
+                $errors['report'][] = 'Report type must be one of: '.implode(', ', ReportType::ALL).'.';
+            } elseif (strtoupper((string) ($reportPolicy['kind'] ?? '')) === ReportType::KIND_SURVEY) {
+                if (empty($reportPolicy['indicators'])) {
+                    $errors['report'][] = 'A survey report must declare its indicators.';
+                }
+                if (($release->collection_config['allows_multi_respondent'] ?? false) !== true) {
+                    $errors['report'][] = 'A survey report needs multi-respondent collection.';
+                }
+            } elseif ($reportType === ReportType::PROGRAMME && empty($reportPolicy['roles'])) {
+                $errors['report'][] = 'A programme report must declare which section groups are provision and which are readiness.';
+            }
         }
 
         $collectionConfig = $release->collection_config ?? ['allows_multi_respondent' => false];

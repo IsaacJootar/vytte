@@ -197,6 +197,13 @@
                 @php $pct = count($questionData) > 0 ? ($this->answeredCount() / count($questionData)) * 100 : 0; @endphp
                 <div class="h-full bg-vytte-600 rounded-full transition-all duration-300" style="width: {{ $pct }}%"></div>
             </div>
+            @php $missing = $this->unansweredRequired(); @endphp
+            @if (count($missing) > 0)
+                <div class="mt-2 flex items-center justify-between gap-3 text-xs">
+                    <span class="font-semibold text-amber-700">{{ count($missing) }} required {{ count($missing) === 1 ? 'question' : 'questions' }} still to answer</span>
+                    <button type="button" wire:click="goToQuestion({{ $missing[0]['index'] }})" class="font-semibold text-vytte-700 hover:text-vytte-800">Take me to the next one</button>
+                </div>
+            @endif
         </div>
 
         @php $q = $questionData[$currentIndex]; @endphp
@@ -361,10 +368,28 @@
                     @endif
                 </div>
             </div>
+        @elseif ($currentIndex === count($questionData) - 1 && count($missing) > 0)
+            <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <p class="text-sm font-semibold text-amber-900">Almost there. {{ count($missing) }} required {{ count($missing) === 1 ? 'question still needs' : 'questions still need' }} an answer before you can submit.</p>
+                <p class="mt-1 text-xs text-amber-800">Tap a number to go straight to it.</p>
+                <div class="mt-3 flex flex-wrap gap-1.5">
+                    @foreach ($missing as $item)
+                        <button type="button" wire:click="goToQuestion({{ $item['index'] }})"
+                                class="h-8 min-w-8 rounded-lg bg-white px-2 text-xs font-bold text-amber-800 ring-1 ring-amber-300 transition-colors hover:bg-amber-100">
+                            {{ $item['number'] }}
+                        </button>
+                    @endforeach
+                </div>
+            </div>
         @endif
 
         {{-- Dot navigation --}}
         <div class="mt-5 pt-4 border-t border-slate-100">
+            <div class="mb-2 flex items-center gap-3 text-[10px] text-slate-400">
+                <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded bg-vytte-100"></span>Answered</span>
+                <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded bg-amber-100 ring-1 ring-amber-300"></span>Needs an answer</span>
+                <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded bg-slate-100"></span>Optional</span>
+            </div>
             <div class="flex flex-wrap gap-1.5">
                 @foreach ($questionData as $idx => $item)
                     <button
@@ -375,7 +400,9 @@
                                 ? 'bg-vytte-700 text-white'
                                 : (isset($savedResponses[$item['question_id']]) || filled($savedTextResponses[$item['question_id']] ?? null) || array_key_exists($item['question_id'], $savedNumericResponses) || ! empty($savedMultiResponses[$item['question_id']] ?? []) || isset($savedResponseStates[$item['question_id']])
                                     ? 'bg-vytte-100 text-vytte-700'
-                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200') }}">
+                                    : ($item['is_scored']
+                                        ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300 hover:bg-amber-200'
+                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200')) }}">
                         {{ $idx + 1 }}
                     </button>
                 @endforeach
