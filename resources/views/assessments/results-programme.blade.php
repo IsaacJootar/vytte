@@ -111,6 +111,7 @@
                 @endforeach
             </ul>
         </div>
+        @if ($programme['next_steps'])
         <div class="{{ $card }}">
             <h2 class="{{ $cardTitle }}">What to do next</h2>
             <ol class="mt-3 space-y-3 text-sm text-slate-700 dark:text-slate-200">
@@ -119,6 +120,7 @@
                 @endforeach
             </ol>
         </div>
+        @endif
     </div>
 
     {{-- Section scores --}}

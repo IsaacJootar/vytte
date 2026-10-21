@@ -7,6 +7,7 @@ use App\Models\AssessmentModuleScope;
 use App\Models\AssessmentRespondentToken;
 use App\Models\LocalCustomSection;
 use App\Models\PublicResponseSession;
+use App\Livewire\Concerns\HasAnswerAlternatives;
 use App\Models\RespondentConsent;
 use App\Models\Response;
 use App\Services\AssessmentLogicService;
@@ -22,6 +23,8 @@ use Livewire\Component;
 
 class PublicRespondentRunner extends Component
 {
+    use HasAnswerAlternatives;
+
     public const CONSENT_TEXT = 'This assessment asks questions about health and community topics. Taking part is voluntary. Your answers will be kept anonymous and will not be linked to your name or identity. The information is collected only to improve health services in this area. You can stop at any time, or skip any question you do not wish to answer, without any consequence.';
 
     #[Locked]
@@ -294,7 +297,7 @@ class PublicRespondentRunner extends Component
     public function setResponseState(string $questionId, string $state): void
     {
         if (! $this->hasValidPublicContext() || ! $this->consentGiven
-            || ! in_array($state, array_diff(ResponseInputContract::RESPONSE_STATES, ['ANSWERED', 'MISSING']), true)
+            || ! array_key_exists($state, $this->answerAlternatives())
             || ! $this->authoritativeQuestion($questionId)) {
             return;
         }
@@ -434,6 +437,12 @@ class PublicRespondentRunner extends Component
         unset($this->savedResponses[$questionId], $this->savedTextResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->markSaved();
         $this->refreshVisibleQuestions();
+    }
+
+    /** @return array<string, string> the "cannot give a direct answer" choices this assessment offers */
+    public function answerAlternatives(): array
+    {
+        return $this->answerAlternativesFor(Assessment::find($this->assessmentId));
     }
 
     public function canSubmit(): bool

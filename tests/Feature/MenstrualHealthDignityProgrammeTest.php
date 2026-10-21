@@ -58,7 +58,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
 
         // There is no separate assessment for the girls and women: only the two, and nothing retired is offered.
         $this->assertSame(
-            ['VYTTE_MHD_PHC_V3', 'VYTTE_MHD_SCHOOL_V3'],
+            ['VYTTE_MHD_PHC_V4', 'VYTTE_MHD_SCHOOL_V4'],
             AssessmentCatalogueRelease::where('release_code', 'like', 'VYTTE_MHD_%')
                 ->where('status', AssessmentCatalogueRelease::STATUS_PUBLISHED)->orderBy('release_code')->pluck('release_code')->all()
         );
@@ -69,7 +69,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
 
-        $school = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V3', 'best');
+        $school = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V4', 'best');
         $dhr = $this->createAssessment($user, $workspace, 'VYTTE_DHR_V1');
 
         $this->assertSame(ReportType::PROGRAMME, ReportType::of($school));
@@ -81,7 +81,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
 
-        $report = app(ProgrammeReportService::class)->forAssessment($this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V3', 'best'));
+        $report = app(ProgrammeReportService::class)->forAssessment($this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V4', 'best'));
 
         $this->assertSame('LOWER_NEED_READY', $report['classification']['key']);
         $this->assertSame('Later', $report['classification']['label']);
@@ -94,7 +94,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
 
-        $report = app(ProgrammeReportService::class)->forAssessment($this->site($user, $workspace, 'VYTTE_MHD_PHC_V3', 'worst'));
+        $report = app(ProgrammeReportService::class)->forAssessment($this->site($user, $workspace, 'VYTTE_MHD_PHC_V4', 'worst'));
 
         $this->assertSame('HIGH_NEED_NOT_READY', $report['classification']['key']);
         $this->assertSame('Prepare first', $report['classification']['label']);
@@ -106,7 +106,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
     {
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
-        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V3', 'best');
+        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V4', 'best');
 
         $this->actingAs($user)->get(route('assessments.results', $assessment))
             ->assertOk()
@@ -168,8 +168,8 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
 
-        $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V3', 'best', 'Kuje school', 'Kuje');
-        $this->site($user, $workspace, 'VYTTE_MHD_PHC_V3', 'worst', 'Garki PHC', 'AMAC');
+        $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V4', 'best', 'Kuje school', 'Kuje');
+        $this->site($user, $workspace, 'VYTTE_MHD_PHC_V4', 'worst', 'Garki PHC', 'AMAC');
         // A third school answered by ten girls.
         $this->survey($this->project($user, $workspace, 'Bwari school'), $user, 10, best: true);
 
@@ -192,7 +192,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
     {
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
-        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V3', 'worst');
+        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V4', 'worst');
         $report = app(ProgrammeReportService::class)->forAssessment($assessment);
 
         $gaps = collect($report['gaps'])->pluck('gap');
@@ -216,7 +216,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
     {
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
-        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V3', 'worst');
+        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V4', 'worst');
         $report = app(ProgrammeReportService::class)->forAssessment($assessment);
 
         $this->assertNotEmpty($report['summary']);
@@ -226,7 +226,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->assertNotEmpty($report['next_steps']);
 
         // A ready school shows every must-have as in place, in the template's own words.
-        $ready = app(ProgrammeReportService::class)->forAssessment($this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V3', 'best'));
+        $ready = app(ProgrammeReportService::class)->forAssessment($this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V4', 'best'));
         $this->assertSame([false, false, false, false], collect($ready['must_haves'])->pluck('missing')->all());
         $this->assertContains('A secure place to store menstrual products is available.', collect($ready['must_haves'])->pluck('ok')->all());
 
@@ -242,7 +242,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
     {
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
-        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V3');
+        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V4');
         $assessment->update(['publish_status' => Assessment::PUBLISH_PUBLISHED]);
         $token = Str::random(32);
         AssessmentRespondentToken::create(['token' => $token, 'assessment_id' => $assessment->assessment_id]);
@@ -258,6 +258,29 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
             ->assertSee('43 more required questions to answer (15 optional)');
     }
 
+    public function test_people_answering_are_offered_two_ways_out_not_five_and_others_are_refused(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V4');
+        $assessment->update(['publish_status' => Assessment::PUBLISH_PUBLISHED]);
+        $token = Str::random(32);
+        AssessmentRespondentToken::create(['token' => $token, 'assessment_id' => $assessment->assessment_id]);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $component->call('giveConsent');
+
+        $this->assertSame(['UNKNOWN' => "I don't know", 'DECLINED' => 'I prefer not to say'], $component->instance()->answerAlternatives());
+        $component->assertSee("I don't know")->assertSee('I prefer not to say')
+            ->assertDontSee('Not observed')->assertDontSee('Not assessed');
+
+        // "I don't know" is accepted; a choice the template does not offer is refused.
+        $question = collect($component->get('questionData'))->firstWhere('is_scored', true);
+        $component->call('setResponseState', $question['question_id'], 'NOT_OBSERVED');
+        $this->assertSame(0, Response::where('assessment_id', $assessment->assessment_id)->where('response_state', 'NOT_OBSERVED')->count());
+        $component->call('setResponseState', $question['question_id'], 'UNKNOWN');
+        $this->assertSame(1, Response::where('assessment_id', $assessment->assessment_id)->where('response_state', 'UNKNOWN')->count());
+    }
     public function test_the_report_shows_what_the_girls_reported_with_the_facility_findings(): void
     {
         $this->seedOfficialCatalogue();
@@ -279,7 +302,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
     {
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
-        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V3');
+        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V4');
         $assessment->update(['publish_status' => Assessment::PUBLISH_PUBLISHED]);
         $token = Str::random(32);
         AssessmentRespondentToken::create(['token' => $token, 'assessment_id' => $assessment->assessment_id]);
@@ -304,14 +327,14 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->seedOfficialCatalogue();
         [$user, $workspace] = $this->userWithWorkspace();
 
-        foreach (['VYTTE_MHD_SCHOOL_V3', 'VYTTE_MHD_PHC_V3'] as $code) {
+        foreach (['VYTTE_MHD_SCHOOL_V4', 'VYTTE_MHD_PHC_V4'] as $code) {
             $release = AssessmentCatalogueRelease::where('release_code', $code)->firstOrFail();
             $this->assertTrue($release->collection_config['allows_multi_respondent']);
             $this->assertSame(1, $release->collection_config['minimum_completed_respondents']);
         }
 
         // Three people at one school: a nurse, a teacher and a girl. Their section scores are averaged.
-        $assessment = $this->survey($this->project($user, $workspace, 'Kwali school', 'Kwali'), $user, 3, best: [true, true, false], releaseCode: 'VYTTE_MHD_SCHOOL_V3');
+        $assessment = $this->survey($this->project($user, $workspace, 'Kwali school', 'Kwali'), $user, 3, best: [true, true, false], releaseCode: 'VYTTE_MHD_SCHOOL_V4');
         $report = app(ProgrammeReportService::class)->forAssessment($assessment);
 
         $this->assertSame(3, $assessment->aggregationResult->eligible_respondent_count);
@@ -328,11 +351,11 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         [$user, $workspace] = $this->userWithWorkspace();
 
         // One of three says there is no girls' toilet: outvoted, so the school is not held back.
-        $outvoted = $this->survey($this->project($user, $workspace, 'Abaji school one', 'Abaji'), $user, 3, best: [true, true, false], releaseCode: 'VYTTE_MHD_SCHOOL_V3');
+        $outvoted = $this->survey($this->project($user, $workspace, 'Abaji school one', 'Abaji'), $user, 3, best: [true, true, false], releaseCode: 'VYTTE_MHD_SCHOOL_V4');
         $this->assertSame([], app(ProgrammeReportService::class)->forAssessment($outvoted)['flags']);
 
         // Two of three say so: the must-have is missing and the school is not ready.
-        $missing = $this->survey($this->project($user, $workspace, 'Abaji school two', 'Abaji'), $user, 3, best: [true, false, false], releaseCode: 'VYTTE_MHD_SCHOOL_V3');
+        $missing = $this->survey($this->project($user, $workspace, 'Abaji school two', 'Abaji'), $user, 3, best: [true, false, false], releaseCode: 'VYTTE_MHD_SCHOOL_V4');
         $report = app(ProgrammeReportService::class)->forAssessment($missing);
         $this->assertContains('There is no toilet used only by girls.', $report['flags']);
         $this->assertSame('HIGH_NEED_NOT_READY', $report['classification']['key']);
@@ -401,7 +424,7 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
      * strongest, otherwise the weakest. The first $skipCount respondents give no direct answer to
      * $skipCode (an "I cannot give a direct answer" state).
      */
-    private function survey(Project $project, User $user, int $respondents, bool|array $best, ?string $skipCode = null, int $skipCount = 0, bool $finalize = true, string $releaseCode = 'VYTTE_MHD_SCHOOL_V3'): Assessment
+    private function survey(Project $project, User $user, int $respondents, bool|array $best, ?string $skipCode = null, int $skipCount = 0, bool $finalize = true, string $releaseCode = 'VYTTE_MHD_SCHOOL_V4'): Assessment
     {
         $release = AssessmentCatalogueRelease::where('release_code', $releaseCode)->firstOrFail();
         $assessment = app(AssessmentCreationService::class)->createFromCatalogue($project, $release, creatorId: $user->user_id);

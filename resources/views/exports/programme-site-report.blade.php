@@ -134,15 +134,17 @@
     @endforeach
 </table>
 
-<h2 style="margin-top: 20px;">What to do next</h2>
-<table>
-    @foreach ($programme['next_steps'] as $i => $step)
-        <tr>
-            <td class="item" style="width: 24px;"><span class="num">{{ $i + 1 }}</span></td>
-            <td class="item">{{ $step }}</td>
-        </tr>
-    @endforeach
-</table>
+@if ($programme['next_steps'])
+    <h2 style="margin-top: 20px;">What to do next</h2>
+    <table>
+        @foreach ($programme['next_steps'] as $i => $step)
+            <tr>
+                <td class="item" style="width: 24px;"><span class="num">{{ $i + 1 }}</span></td>
+                <td class="item">{{ $step }}</td>
+            </tr>
+        @endforeach
+    </table>
+@endif
 
 {{-- Findings --}}
 <div class="break"></div>

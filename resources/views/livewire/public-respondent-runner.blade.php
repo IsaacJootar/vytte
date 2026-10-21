@@ -302,7 +302,7 @@
             <details class="mt-4 border-t border-slate-100 pt-3">
                 <summary class="cursor-pointer text-xs font-semibold text-slate-500 hover:text-vytte-700">I cannot give a direct answer</summary>
                 <div class="mt-2 flex flex-wrap gap-2">
-                    @foreach (['NOT_APPLICABLE' => 'Not applicable', 'UNKNOWN' => 'Unknown', 'NOT_ASSESSED' => 'Not assessed', 'NOT_OBSERVED' => 'Not observed', 'DECLINED' => 'Prefer not to answer'] as $state => $label)
+                    @foreach ($this->answerAlternatives() as $state => $label)
                         <button type="button" wire:click="setResponseState('{{ $q['question_id'] }}', '{{ $state }}')"
                                 class="rounded-lg border px-3 py-1.5 text-xs font-semibold {{ ($savedResponseStates[$q['question_id']] ?? null) === $state ? 'border-vytte-600 bg-vytte-50 text-vytte-800' : 'border-slate-200 text-slate-600' }}">{{ $label }}</button>
                     @endforeach

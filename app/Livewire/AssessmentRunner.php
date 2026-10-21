@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\HasAnswerAlternatives;
 use App\Models\Assessment;
 use App\Models\RespondentConsent;
 use App\Models\Response;
@@ -14,6 +15,8 @@ use Livewire\Component;
 
 class AssessmentRunner extends Component
 {
+    use HasAnswerAlternatives;
+
     public const CONSENT_TEXT = 'This assessment asks questions about health and community topics. Taking part is voluntary. Your answers will be kept anonymous and will not be linked to your name or identity. The information is collected only to improve health services in this area. You can stop at any time, or skip any question you do not wish to answer, without any consequence.';
 
     #[Locked]
@@ -290,7 +293,7 @@ class AssessmentRunner extends Component
     public function setResponseState(string $questionId, string $state): void
     {
         $this->authorizeAssessmentAccess();
-        if ($this->isComplete || ! $this->hasRequiredConsent() || ! in_array($state, array_diff(ResponseInputContract::RESPONSE_STATES, ['ANSWERED', 'MISSING']), true)) {
+        if ($this->isComplete || ! $this->hasRequiredConsent() || ! array_key_exists($state, $this->answerAlternatives())) {
             return;
         }
         if (! $this->snapshotQuestion($questionId)) {
@@ -688,6 +691,12 @@ class AssessmentRunner extends Component
         }
 
         return $missing;
+    }
+
+    /** @return array<string, string> the "cannot give a direct answer" choices this assessment offers */
+    public function answerAlternatives(): array
+    {
+        return $this->answerAlternativesFor($this->assessment);
     }
 
     /** How many questions must be answered before Submit appears (the rest are optional). */

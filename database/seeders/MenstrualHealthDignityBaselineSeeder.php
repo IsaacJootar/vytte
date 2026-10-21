@@ -48,9 +48,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             'prefix' => 'MHS',
             'noun' => 'school',
             'framework' => 'Menstrual Health & Dignity Assessment — School',
-            'release' => 'VYTTE_MHD_SCHOOL_V3',
-            'previous_release' => 'VYTTE_MHD_SCHOOL_V2',
-            'revision' => 3,
+            'release' => 'VYTTE_MHD_SCHOOL_V4',
+            'previous_release' => 'VYTTE_MHD_SCHOOL_V3',
+            'revision' => 4,
             'respondent' => 'School focal person',
         ],
         'phc' => [
@@ -58,9 +58,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             'prefix' => 'MHP',
             'noun' => 'PHC',
             'framework' => 'Menstrual Health & Dignity Assessment — PHC',
-            'release' => 'VYTTE_MHD_PHC_V3',
-            'previous_release' => 'VYTTE_MHD_PHC_V2',
-            'revision' => 3,
+            'release' => 'VYTTE_MHD_PHC_V4',
+            'previous_release' => 'VYTTE_MHD_PHC_V3',
+            'revision' => 4,
             'respondent' => 'PHC focal person',
         ],
         'girls' => [
@@ -291,6 +291,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
                     'minimum_completed_respondents' => $site === 'girls' ? 10 : 1,
                     'aggregation_method' => 'ARITHMETIC_MEAN',
                     'scoring_profile_version' => ScoringService::ALGORITHM_VERSION,
+                    // People answering about themselves, or from memory, are offered two honest ways out
+                    // rather than the five an assessor needs; neither counts as a no.
+                    'answer_alternatives' => ['UNKNOWN' => "I don't know", 'DECLINED' => 'I prefer not to say'],
                 ],
             ]);
 
@@ -342,7 +345,7 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
                 'classification' => [
                     'HIGH_NEED_READY' => ['label' => 'Start here', 'detail' => 'Girls here have a high need and the '.$config['noun'].' is ready to host a Dignity Bank.'],
                     'HIGH_NEED_NOT_READY' => ['label' => 'Prepare first', 'detail' => 'Girls here have a high need, but the '.$config['noun'].' must fix its must-haves before a Dignity Bank can start.'],
-                    'LOWER_NEED_READY' => ['label' => 'Later', 'detail' => 'Needs are lower here and the '.$config['noun'].' is ready. A possible later site.'],
+                    'LOWER_NEED_READY' => ['label' => 'Later', 'detail' => 'Needs are lower here and the '.$config['noun'].' is ready. A possible later place.'],
                     'LOWER_NEED_NOT_READY' => ['label' => 'Not a priority now', 'detail' => 'Needs are lower here and the '.$config['noun'].' is not yet ready.'],
                 ],
                 'gap_count' => 5,
