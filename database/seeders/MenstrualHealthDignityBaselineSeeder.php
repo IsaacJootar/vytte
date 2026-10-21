@@ -48,8 +48,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             'prefix' => 'MHS',
             'noun' => 'school',
             'framework' => 'Menstrual Health & Dignity Assessment — School',
-            'release' => 'VYTTE_MHD_SCHOOL_V2',
-            'previous_release' => 'VYTTE_MHD_SCHOOL_V1',
+            'release' => 'VYTTE_MHD_SCHOOL_V3',
+            'previous_release' => 'VYTTE_MHD_SCHOOL_V2',
+            'revision' => 3,
             'respondent' => 'School focal person',
         ],
         'phc' => [
@@ -57,8 +58,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             'prefix' => 'MHP',
             'noun' => 'PHC',
             'framework' => 'Menstrual Health & Dignity Assessment — PHC',
-            'release' => 'VYTTE_MHD_PHC_V2',
-            'previous_release' => 'VYTTE_MHD_PHC_V1',
+            'release' => 'VYTTE_MHD_PHC_V3',
+            'previous_release' => 'VYTTE_MHD_PHC_V2',
+            'revision' => 3,
             'respondent' => 'PHC focal person',
         ],
         'girls' => [
@@ -243,6 +245,7 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
                 ? 'Short anonymous survey of girls and women about their own menstrual health: products, privacy, support, taking part and knowledge. One link per school or PHC.'
                 : "Baseline assessment of menstrual health provision and readiness to host a Dignity Bank at a {$config['noun']}, completed by one focal person.",
             'type' => 'FOCUSED',
+            'revision' => $config['revision'] ?? 1,
             'sections' => $sections,
         ]);
     }
@@ -255,6 +258,7 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
 
         $framework = DepartmentFrameworkVersion::where('display_name', $config['framework'])
             ->where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)
+            ->orderByDesc('version_number')
             ->first();
 
         if (! $framework) {
@@ -347,6 +351,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
                 // What the girls and women themselves report, taken from the same assessment.
                 'min_respondents_to_report' => 10,
                 'indicators' => self::indicators(),
+                'outcome_notes' => self::outcomeNotes(),
+                'endline_indicators' => self::endlineIndicators(),
+                'next_steps' => self::nextSteps($config['noun']),
             ],
         ];
     }
@@ -633,64 +640,125 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
     }
 
     /**
-     * The core outcome indicators a girls' and women's survey can measure, each tied to the
-     * question(s) that answer it. `direction` says which way is better (UP or DOWN); `tests` list
-     * the answers that count as the indicator happening, matched by the exact option label, and
-     * `mode` says whether ALL or ANY of the tests must hold for one respondent. The KNOWLEDGE kind is
-     * the average share of the knowledge questions a respondent got right. The three indicators that
-     * measure the Dignity Bank itself are measured by the school or PHC assessment, not here.
+     * The outcome indicators measured from what girls and women themselves answer, grouped by the
+     * programme's outcomes. `direction` says which way is better (UP or DOWN); `tests` list the answers
+     * that count as the indicator happening, matched by the exact option label, and `mode` says whether
+     * ALL or ANY of the tests must hold for one person. KNOWLEDGE is the average share of the knowledge
+     * questions a person got right. The indicators about the Dignity Bank itself (outcome 4) are
+     * measured by the endline follow-up, so they are listed separately.
      *
      * @return array<int, array<string, mixed>>
      */
     private static function indicators(): array
     {
+        $o1 = 'Reliable access to menstrual products';
+        $o2 = 'Managing menstruation safely, privately and with dignity';
+        $o3 = 'Knowledge and knowing where to get help';
+        $o5 = 'Taking part (secondary outcome)';
+
         return [
-            ['code' => 'I1', 'outcome' => 'Reliable access to menstrual products', 'label' => 'Had enough menstrual materials during the last period', 'direction' => 'UP', 'mode' => 'ALL',
+            ['code' => 'I1', 'outcome' => $o1, 'label' => 'Had enough menstrual materials during the last period', 'direction' => 'UP', 'mode' => 'ALL',
                 'tests' => [['question' => 'MHG.B1', 'answers' => ['Yes, enough for the whole period']]]],
-            ['code' => 'I2', 'outcome' => 'Reliable access to menstrual products', 'label' => 'Could get menstrual materials if their period came unexpectedly', 'direction' => 'UP', 'mode' => 'ANY',
+            ['code' => 'I2', 'outcome' => $o1, 'label' => 'Could get menstrual materials if their period came unexpectedly', 'direction' => 'UP', 'mode' => 'ANY',
                 'tests' => [['question' => 'MHG.B2', 'answers' => ['Yes, easily', 'Yes, but it would be difficult']]]],
-            ['code' => 'I3', 'outcome' => 'Reliable access to menstrual products', 'label' => 'Ran out of menstrual materials during the last period', 'direction' => 'DOWN', 'mode' => 'ANY',
+            ['code' => 'I3', 'outcome' => $o1, 'label' => 'Ran out of menstrual materials during the last period', 'direction' => 'DOWN', 'mode' => 'ANY',
                 'tests' => [['question' => 'MHG.B3', 'answers' => ['Yes, I ran out']]]],
-            ['code' => 'I4', 'outcome' => 'Managing menstruation safely and with dignity', 'label' => 'Have a private place to change when away from home', 'direction' => 'UP', 'mode' => 'ALL',
+            ['code' => 'I4', 'outcome' => $o2, 'label' => 'Have a private place to change when away from home', 'direction' => 'UP', 'mode' => 'ALL',
                 'tests' => [['question' => 'MHG.C1', 'answers' => ['Yes, always']]]],
-            ['code' => 'I5', 'outcome' => 'Managing menstruation safely and with dignity', 'label' => 'Have water, soap and a way to throw away used pads', 'direction' => 'UP', 'mode' => 'ALL',
-                'tests' => [['question' => 'MHG.C2', 'answers' => ['Yes, always']], ['question' => 'MHG.C3', 'answers' => ['Yes, always']]]],
-            ['code' => 'I6', 'outcome' => 'Managing menstruation safely and with dignity', 'label' => 'Face teasing, shame or restrictions because of their period', 'direction' => 'DOWN', 'mode' => 'ANY',
-                'tests' => [['question' => 'MHG.D1', 'answers' => ['Yes, one or two things', 'Yes, many things']], ['question' => 'MHG.D2', 'answers' => ['Once or twice', 'Often']]]],
-            ['code' => 'I7', 'outcome' => 'Knowledge and knowing where to get help', 'label' => 'Average menstrual health knowledge score', 'direction' => 'UP', 'kind' => 'KNOWLEDGE',
+            ['code' => 'I5', 'outcome' => $o2, 'label' => 'Have water and soap where they change', 'direction' => 'UP', 'mode' => 'ALL',
+                'tests' => [['question' => 'MHG.C2', 'answers' => ['Yes, always']]]],
+            ['code' => 'I6', 'outcome' => $o2, 'label' => 'Have a safe way to throw away used pads', 'direction' => 'UP', 'mode' => 'ALL',
+                'tests' => [['question' => 'MHG.C3', 'answers' => ['Yes, always']]]],
+            ['code' => 'I7', 'outcome' => $o2, 'label' => 'Feel comfortable asking a trusted adult or health worker for help', 'direction' => 'UP', 'mode' => 'ALL',
+                'tests' => [['question' => 'MHG.D3', 'answers' => ['Yes']]]],
+            ['code' => 'I8', 'outcome' => $o2, 'label' => 'Have been teased or shamed because of their period', 'direction' => 'DOWN', 'mode' => 'ANY',
+                'tests' => [['question' => 'MHG.D2', 'answers' => ['Once or twice', 'Often']]]],
+            ['code' => 'I9', 'outcome' => $o2, 'label' => 'Are not allowed, or feel unable, to do things during their period', 'direction' => 'DOWN', 'mode' => 'ANY',
+                'tests' => [['question' => 'MHG.D1', 'answers' => ['Yes, one or two things', 'Yes, many things']]]],
+            ['code' => 'I10', 'outcome' => $o3, 'label' => 'Average menstrual health knowledge score', 'direction' => 'UP', 'kind' => 'KNOWLEDGE',
                 'questions' => ['MHG.F1', 'MHG.F2', 'MHG.F3', 'MHG.F4', 'MHG.F5']],
-            ['code' => 'I8', 'outcome' => 'Knowledge and knowing where to get help', 'label' => 'Know where to get help or information about periods', 'direction' => 'UP', 'mode' => 'ALL',
+            ['code' => 'I11', 'outcome' => $o3, 'label' => 'Know where to get help or information about periods', 'direction' => 'UP', 'mode' => 'ALL',
                 'tests' => [['question' => 'MHG.F6', 'answers' => ['Yes, I can name a place or person']]]],
-            ['code' => 'I9', 'outcome' => 'Taking part (secondary outcome)', 'label' => 'Missed school, work or an activity because of their period', 'direction' => 'DOWN', 'mode' => 'ANY',
-                'tests' => [['question' => 'MHG.E1', 'answers' => ['Once or twice', 'Several times', 'Almost every period']], ['question' => 'MHG.E2', 'answers' => ['Sometimes', 'Often']]]],
+            ['code' => 'I12', 'outcome' => $o3, 'label' => 'Know when a period problem needs a health worker', 'direction' => 'UP', 'mode' => 'ALL',
+                'tests' => [['question' => 'MHG.F5', 'answers' => ['When bleeding is very heavy, very painful, or her periods stop']]]],
+            ['code' => 'I13', 'outcome' => $o5, 'label' => 'Missed school, work or normal activities because of their period', 'direction' => 'DOWN', 'mode' => 'ANY',
+                'tests' => [['question' => 'MHG.E1', 'answers' => ['Once or twice', 'Several times', 'Almost every period']]]],
+            ['code' => 'I14', 'outcome' => $o5, 'label' => 'Stayed away from sports, class discussions or community events', 'direction' => 'DOWN', 'mode' => 'ANY',
+                'tests' => [['question' => 'MHG.E2', 'answers' => ['Sometimes', 'Often']]]],
         ];
     }
 
+    /** What each outcome asks, in a sentence, for the report. @return array<string, string> */
+    private static function outcomeNotes(): array
+    {
+        return [
+            'Reliable access to menstrual products' => 'Are girls and women better able to get enough menstrual products when they need them?',
+            'Managing menstruation safely, privately and with dignity' => 'Can a girl or woman manage her period in a safe, private and supportive place?',
+            'Knowledge and knowing where to get help' => 'Do girls and women know how to manage their periods and where to get help?',
+            'Taking part (secondary outcome)' => 'Do fewer girls and women miss school or normal activities because of their period? Shown for information. Many things affect attendance, so this is not the main measure of success.',
+        ];
+    }
+
+    /** The Dignity Bank indicators the endline follow-up will measure. @return array<int, string> */
+    private static function endlineIndicators(): array
+    {
+        return [
+            'Dignity Bank still working after 12 months',
+            'An active focal person looking after it',
+            'Stock records being kept',
+            'A working way to restock',
+            'The school or PHC manages it as its own',
+            'Restocking from sources other than the programme',
+            'Menstrual health part of routine school or PHC activities',
+        ];
+    }
+
+    /** What to do next, by the label a school or PHC receives. @return array<string, array<int, string>> */
+    private static function nextSteps(string $noun): array
+    {
+        return [
+            'HIGH_NEED_READY' => [
+                "Make this {$noun} an early place to set up a Dignity Bank.",
+                'Confirm the staff member who will run it and the secure place to keep stock.',
+                'Work on the biggest gaps below alongside the set-up.',
+            ],
+            'HIGH_NEED_NOT_READY' => [
+                'Fix the must-have problems first. A Dignity Bank cannot start until they are solved.',
+                "Meet the {$noun} leadership to agree who will run the Dignity Bank and where stock will be kept.",
+                'Return for a short follow-up once the must-haves are in place.',
+            ],
+            'LOWER_NEED_READY' => [
+                "Keep this {$noun} as a later place, once the higher-need places have started.",
+                'Share what is already working here with other places.',
+            ],
+            'LOWER_NEED_NOT_READY' => [
+                'No action needed now.',
+                'Look again if needs change, or after the first Dignity Banks are running.',
+            ],
+        ];
+    }
     /**
      * The girls' and women's own questions, placed after the facility questions in the School and PHC
-     * assessments. Whoever answers (one person or several), these ask about her own experience. The
-     * experience questions are scored in their own section and kept out of the school's or PHC's two
-     * headline scores; the knowledge questions are not scored at all (a school's score should not be
-     * a quiz result) and their correct answer is declared by the indicator, not by a score.
+     * assessments. Whoever answers (one person or several), these ask about her own experience. They
+     * are scored in their own section, which is kept out of the school's or PHC's two headline scores,
+     * so every outcome question has to be answered and none can be skipped by mistake.
      *
      * @return array<int, array<string, mixed>>
      */
     private static function personalSections(): array
     {
-        $girls = self::girlsSections();
-        $by = collect($girls)->keyBy('name');
+        $by = collect(self::girlsSections())->keyBy('name');
 
-        $experience = array_merge(
+        $own = array_merge(
             $by['Pads and other materials']['questions'],
             $by['Privacy, water and disposal']['questions'],
             $by['Feeling respected and supported']['questions'],
+            $by['What you know about periods']['questions'],
         );
-        $knowledge = array_map(fn ($q) => array_merge($q, ['scored' => false]), $by['What you know about periods']['questions']);
 
         return [
             ['domain' => 'INFO', 'name' => 'About you', 'instructions' => 'The next questions are for girls and women, about their own experience. Answer for yourself. Your answers are private and do not carry your name. If you are not sure of an answer in the earlier sections, ask someone who knows.', 'questions' => $by['About you']['questions']],
-            ['domain' => 'PCOM', 'name' => 'Your own experience', 'instructions' => 'Pick the answer that is true for you. There are no right or wrong answers.', 'questions' => $experience],
-            ['domain' => 'INFO', 'name' => 'What you know about periods', 'instructions' => 'These questions check what people know. Pick the answer you think is right. You can skip any you are not sure of.', 'questions' => $knowledge],
+            ['domain' => 'PCOM', 'name' => 'Your own experience and what you know', 'instructions' => 'Pick the answer that is true for you. There are no right or wrong answers, except in the last few questions about what people know: pick the answer you think is right.', 'questions' => $own],
         ];
     }
     /** @return array<int, array{domain: string, name: string, instructions: ?string, questions: array<int, array<string, mixed>>}> */

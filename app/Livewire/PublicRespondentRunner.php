@@ -30,6 +30,11 @@ class PublicRespondentRunner extends Component
     #[Locked]
     public string $assessmentId = '';
 
+    /** What the person is answering and for which place, shown at the top of the page. */
+    public string $assessmentTitle = '';
+
+    public string $placeName = '';
+
     /** @var array<int, int> */
     #[Locked]
     public array $moduleIds = [];
@@ -104,6 +109,8 @@ class PublicRespondentRunner extends Component
         }
 
         $this->assessmentId = $assessment->assessment_id;
+        $this->assessmentTitle = (string) ($assessment->catalogueRelease?->release_name ?? $assessment->title ?? 'Assessment');
+        $this->placeName = (string) ($assessment->target?->name ?? $assessment->project?->name ?? '');
         // A respondent may answer only while collection is open: published, not closed,
         // not finalised. Closing an assessment therefore stops new answers even on links
         // already shared.
@@ -450,6 +457,12 @@ class PublicRespondentRunner extends Component
         }
 
         return $missing;
+    }
+
+    /** How many questions must be answered before Submit appears (the rest are optional). */
+    public function requiredTotal(): int
+    {
+        return count(array_filter($this->questionData, fn ($question) => $question['is_scored']));
     }
 
     public function isAnswered(array $question): bool

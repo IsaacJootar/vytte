@@ -48,8 +48,90 @@ class ProgrammeReportService
         $report['outcomes'] = $withOutcomes && ! empty($config['indicators'])
             ? app(ProgrammeOutcomeService::class)->forAssessment($assessment)
             : null;
+        $report['must_haves'] = $this->mustHaves($assessment, $report['flags'], (array) ($config['findings'] ?? []), $codeById);
+        $report['next_steps'] = (array) ($config['next_steps'][$report['classification']['key'] ?? ''] ?? []);
+        $report['summary'] = $this->summary($report);
 
         return $report;
+    }
+
+    /**
+     * Every must-have the template checks, each marked missing or in place, so the report can show the
+     * whole checklist rather than only the problems.
+     *
+     * @param  array<int, string>  $flags
+     * @param  array<string, array{gap: string, good: string}>  $findings
+     * @param  array<string, string>  $codeById
+     * @return array<int, array{label: string, missing: bool, ok: string}>
+     */
+    private function mustHaves(Assessment $assessment, array $flags, array $findings, array $codeById): array
+    {
+        return collect((array) ($assessment->snapshot?->aggregation_policy['compound_critical_rules'] ?? []))
+            ->filter(fn (array $rule) => ! empty($rule['label']))
+            ->map(function (array $rule) use ($flags, $findings, $codeById): array {
+                $code = $codeById[$rule['conditions'][0]['source_question_id'] ?? ''] ?? '';
+
+                return [
+                    'label' => $rule['label'],
+                    'missing' => in_array($rule['label'], $flags, true),
+                    // How the same must-have reads when it is in place.
+                    'ok' => $findings[$code]['good'] ?? $rule['label'],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The few plain sentences that open the report: where this place stands, whether it could host a
+     * Dignity Bank, and (when girls and women answered) the things they reported that worry most.
+     *
+     * @param  array<string, mixed>  $report
+     * @return array<int, string>
+     */
+    private function summary(array $report): array
+    {
+        $lines = [];
+        if ($report['classification']) {
+            $lines[] = $report['classification']['detail'];
+        }
+
+        $provision = $report['provision']['score'];
+        if ($provision !== null) {
+            $state = ['strong' => 'well met', 'fair' => 'partly met'][$report['provision']['band']] ?? 'not well met';
+            $lines[] = "Girls' needs are $state today (".round($provision).' out of 100).';
+        }
+
+        $flags = $report['flags'];
+        if ($flags !== []) {
+            $lines[] = count($flags) === 1
+                ? 'One must-have is missing before a Dignity Bank can start.'
+                : count($flags).' must-haves are missing before a Dignity Bank can start.';
+        } elseif ($report['readiness']['score'] !== null) {
+            $lines[] = 'Every must-have for a Dignity Bank is in place (readiness '.round($report['readiness']['score']).' out of 100).';
+        }
+
+        $outcomes = $report['outcomes'] ?? null;
+        if ($outcomes) {
+            if (! $outcomes['enough']) {
+                $lines[] = 'Fewer than '.$outcomes['minimum'].' girls and women answered, so what they reported is a rough guide.';
+            } else {
+                $rows = collect($outcomes['outcomes'])->flatMap(fn ($group) => $group['indicators'])->filter(fn ($row) => $row['value'] !== null);
+                $worst = $rows
+                    ->map(fn ($row) => $row + ['concern' => $row['direction'] === 'DOWN' ? $row['value'] : 100 - $row['value']])
+                    ->filter(fn ($row) => $row['concern'] >= 40)
+                    ->sortByDesc('concern')
+                    ->take(2);
+                foreach ($worst as $row) {
+                    $figure = round($row['value']).'%';
+                    $lines[] = $row['kind'] === 'KNOWLEDGE'
+                        ? 'The average knowledge score was '.$figure.'.'
+                        : ($row['direction'] === 'DOWN' ? '' : 'Only ').$figure.' of the girls and women '.lcfirst($row['label']).'.';
+                }
+            }
+        }
+
+        return $lines;
     }
 
     /**

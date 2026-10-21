@@ -77,7 +77,7 @@
             @php $missing = $this->unansweredRequired(); @endphp
             @if (! $isComplete && count($missing) > 0)
                 <div class="mt-2 flex items-center justify-between gap-3 text-xs">
-                    <span class="font-semibold text-amber-700 dark:text-amber-300">{{ count($missing) }} required {{ count($missing) === 1 ? 'question' : 'questions' }} still to answer</span>
+                    <span class="font-semibold text-amber-700 dark:text-amber-300">{{ count($missing) }} more required {{ count($missing) === 1 ? 'question' : 'questions' }} to answer ({{ count($questionData) - $this->requiredTotal() }} optional)</span>
                     <button type="button" wire:click="goToQuestion({{ $missing[0]['index'] }})" class="font-semibold text-vytte-700 hover:text-vytte-800 dark:text-vytte-400">Take me to the next one</button>
                 </div>
             @endif

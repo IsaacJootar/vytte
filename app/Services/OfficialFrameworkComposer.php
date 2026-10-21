@@ -69,10 +69,14 @@ class OfficialFrameworkComposer
 
             // Idempotent: a published framework of this name is left untouched, because a
             // published framework version is immutable.
+            // A spec may carry a `revision`: the same name at a higher revision is new content, composed as
+            // a new version, and never edits the published one.
+            $revision = (int) ($spec['revision'] ?? 1);
             $existing = DepartmentFrameworkVersion::where('module_id', $module->module_id)
                 ->where('display_name', $spec['name'])
                 ->where('status', DepartmentFrameworkVersion::STATUS_PUBLISHED)
-                ->first();
+                ->get()
+                ->first(fn (DepartmentFrameworkVersion $published) => (int) ($published->provenance['revision'] ?? 1) === $revision);
 
             if ($existing) {
                 return ['status' => 'already_published', 'framework' => $existing, 'placed' => 0, 'missing' => []];
@@ -108,7 +112,7 @@ class OfficialFrameworkComposer
             'scoring_version' => 'vytte-4.0-numeric-bands',
             'methodology_notes' => 'Composed from the official Vytte question library, informed by recognised international health assessment practice.',
             'source_summary' => 'Vytte official framework. No copyrighted instrument is reproduced.',
-            'provenance' => ['content_kind' => 'official', 'code' => $spec['code']],
+            'provenance' => ['content_kind' => 'official', 'code' => $spec['code'], 'revision' => (int) ($spec['revision'] ?? 1)],
             'critical_failure_rules' => ['uses_flagged_options' => true],
             'effective_date' => now()->toDateString(),
         ]);

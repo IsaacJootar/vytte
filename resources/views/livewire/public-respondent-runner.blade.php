@@ -1,4 +1,14 @@
 <div>
+    @if ($assessmentTitle !== '')
+        <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-4">
+            <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">You are answering</p>
+            <h1 class="mt-1 text-lg font-bold leading-snug text-slate-900">{{ $assessmentTitle }}</h1>
+            @if ($placeName !== '')
+                <p class="mt-0.5 text-sm text-slate-600">{{ $placeName }}</p>
+            @endif
+        </div>
+    @endif
+
     @if (! $tokenValid)
 
         <div class="text-center py-12">
@@ -191,7 +201,7 @@
         <div class="mb-5">
             <div class="flex items-center justify-between text-xs text-slate-500 mb-1.5">
                 <span class="font-semibold">Question {{ $currentIndex + 1 }} of {{ count($questionData) }}</span>
-                <span>{{ $this->answeredCount() }} answered</span>
+                <span>{{ $this->answeredCount() }} of {{ count($questionData) }} answered</span>
             </div>
             <div class="h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 @php $pct = count($questionData) > 0 ? ($this->answeredCount() / count($questionData)) * 100 : 0; @endphp
@@ -200,7 +210,7 @@
             @php $missing = $this->unansweredRequired(); @endphp
             @if (count($missing) > 0)
                 <div class="mt-2 flex items-center justify-between gap-3 text-xs">
-                    <span class="font-semibold text-amber-700">{{ count($missing) }} required {{ count($missing) === 1 ? 'question' : 'questions' }} still to answer</span>
+                    <span class="font-semibold text-amber-700">{{ count($missing) }} more required {{ count($missing) === 1 ? 'question' : 'questions' }} to answer ({{ count($questionData) - $this->requiredTotal() }} optional)</span>
                     <button type="button" wire:click="goToQuestion({{ $missing[0]['index'] }})" class="font-semibold text-vytte-700 hover:text-vytte-800">Take me to the next one</button>
                 </div>
             @endif

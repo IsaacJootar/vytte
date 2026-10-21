@@ -690,6 +690,12 @@ class AssessmentRunner extends Component
         return $missing;
     }
 
+    /** How many questions must be answered before Submit appears (the rest are optional). */
+    public function requiredTotal(): int
+    {
+        return count(array_filter($this->questionData, fn ($question) => $question['is_scored']));
+    }
+
     public function isAnswered(array $q): bool
     {
         return isset($this->savedResponses[$q['question_id']])

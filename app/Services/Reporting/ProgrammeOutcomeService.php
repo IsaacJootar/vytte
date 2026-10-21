@@ -3,6 +3,7 @@
 namespace App\Services\Reporting;
 
 use App\Models\Assessment;
+use App\Support\ReportType;
 
 /**
  * What the girls and women themselves reported, for the report of one school or PHC: how many took
@@ -19,10 +20,12 @@ class ProgrammeOutcomeService
     public function forAssessment(Assessment $assessment): array
     {
         $results = app(ProgrammeIndicatorService::class)->withComparison($assessment);
+        $config = ReportType::config($assessment);
+        $notes = (array) ($config['outcome_notes'] ?? []);
 
         $outcomes = collect($results['indicators'])
             ->groupBy('outcome')
-            ->map(fn ($rows, $name) => ['name' => $name ?: 'Other', 'indicators' => $rows->values()->all()])
+            ->map(fn ($rows, $name) => ['name' => $name ?: 'Other', 'note' => $notes[$name] ?? null, 'indicators' => $rows->values()->all()])
             ->values()
             ->all();
 
@@ -32,6 +35,7 @@ class ProgrammeOutcomeService
             'minimum' => $results['minimum'],
             'previous' => $results['previous'] ?? null,
             'outcomes' => $outcomes,
+            'endline_indicators' => (array) ($config['endline_indicators'] ?? []),
         ];
     }
 }
