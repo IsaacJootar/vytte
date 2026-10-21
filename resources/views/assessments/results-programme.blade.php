@@ -123,6 +123,10 @@
         </div>
     @endif
 
+    @if ($programme['outcomes'])
+        @include('assessments.partials.programme-outcomes', ['outcomes' => $programme['outcomes']])
+    @endif
+
     @if ($programme['profile'])
         <div class="mb-5 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
             <h2 class="text-sm font-bold text-slate-900 dark:text-white">About this {{ $programme['noun'] }}</h2>

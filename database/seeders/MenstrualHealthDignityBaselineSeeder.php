@@ -47,24 +47,30 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             'module' => 'MHDS',
             'prefix' => 'MHS',
             'noun' => 'school',
-            'framework' => 'Menstrual Health & Dignity Baseline — School',
-            'release' => 'VYTTE_MHD_SCHOOL_V1',
+            'framework' => 'Menstrual Health & Dignity Assessment — School',
+            'release' => 'VYTTE_MHD_SCHOOL_V2',
+            'previous_release' => 'VYTTE_MHD_SCHOOL_V1',
             'respondent' => 'School focal person',
         ],
         'phc' => [
             'module' => 'MHDP',
             'prefix' => 'MHP',
             'noun' => 'PHC',
-            'framework' => 'Menstrual Health & Dignity Baseline — PHC',
-            'release' => 'VYTTE_MHD_PHC_V1',
+            'framework' => 'Menstrual Health & Dignity Assessment — PHC',
+            'release' => 'VYTTE_MHD_PHC_V2',
+            'previous_release' => 'VYTTE_MHD_PHC_V1',
             'respondent' => 'PHC focal person',
         ],
         'girls' => [
             'module' => 'MHDG',
             'prefix' => 'MHG',
             'noun' => 'school or PHC',
+            // Not an assessment of its own any more: its questions are placed inside the School and PHC
+            // assessments, answered by the girls and women themselves. The module and its questions stay
+            // published as the source of those questions; the release it once had is retired.
             'framework' => 'Menstrual Health & Dignity Survey — Girls and Women',
-            'release' => 'VYTTE_MHD_GIRLS_V1',
+            'previous_release' => 'VYTTE_MHD_GIRLS_V1',
+            'questions_only' => true,
             'respondent' => 'Girls and women',
         ],
     ];
@@ -73,14 +79,24 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
     {
         $this->seedHealthDomain();
 
-        foreach (array_keys(self::SITES) as $site) {
+        // The girls' questions are published first: the School and PHC assessments place them.
+        foreach (['girls', 'school', 'phc'] as $site) {
             $config = self::SITES[$site];
             $this->seedModule($config);
             $this->publishQuestions($site, $config);
+
+            if ($config['questions_only'] ?? false) {
+                $this->retireRelease($config['previous_release']);
+
+                continue;
+            }
+
             $result = $this->composeFramework($site, $config);
 
             if ($result['status'] === 'published') {
                 $this->command?->info("{$config['framework']}: {$result['placed']} questions placed.");
+                $this->publishRelease($site, $config);
+            } elseif ($result['status'] === 'already_published') {
                 $this->publishRelease($site, $config);
             } else {
                 $this->command?->warn("{$config['framework']}: {$result['status']}.");
@@ -207,7 +223,7 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
     private function composeFramework(string $site, array $config): array
     {
         $sections = [];
-        foreach (self::sections($site) as $section) {
+        foreach (array_merge(self::sections($site), self::personalSections()) as $section) {
             $sections[] = [
                 'domain' => $section['domain'],
                 'name' => $section['name'],
@@ -250,7 +266,10 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
         $domainId = DB::table('health_domains')->where('domain_code', self::HEALTH_DOMAIN_CODE)->value('health_domain_id');
 
         DB::transaction(function () use ($site, $config, $framework, $domainId): void {
+            $previous = AssessmentCatalogueRelease::where('release_code', $config['previous_release'] ?? '')->first();
+
             $release = AssessmentCatalogueRelease::create([
+                'parent_release_id' => $previous?->catalogue_release_id,
                 'release_code' => $config['release'],
                 'release_name' => $config['framework'],
                 'description' => $site === 'girls'
@@ -281,27 +300,25 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             ]);
 
             app(CataloguePublishingService::class)->publish($release->fresh());
+            $this->retireRelease($config['previous_release'] ?? null);
         });
 
         $this->command?->info("{$config['release']} published.");
     }
 
+    /** Retire a first-version release once its replacement is published. Nobody can start it any more. */
+    private function retireRelease(?string $code): void
+    {
+        $release = $code ? AssessmentCatalogueRelease::where('release_code', $code)->first() : null;
+
+        if ($release && $release->status === AssessmentCatalogueRelease::STATUS_PUBLISHED) {
+            $release->update(['status' => AssessmentCatalogueRelease::STATUS_SUPERSEDED]);
+            $this->command?->info("{$code} retired.");
+        }
+    }
+
     private function aggregationPolicy(string $site, array $config): array
     {
-        if ($site === 'girls') {
-            return [
-                'method' => 'MEAN_OF_SCORED_SUB_INDICES',
-                'report' => [
-                    'type' => 'PROGRAMME',
-                    'kind' => 'SURVEY',
-                    'programme' => 'Menstrual Health & Dignity Bank baseline',
-                    'site_noun' => 'school or PHC',
-                    'min_respondents_to_report' => 10,
-                    'indicators' => self::indicators(),
-                ],
-            ];
-        }
-
         return [
             'method' => 'MEAN_OF_SCORED_SUB_INDICES',
             // Enabled so the must-have rules can fire. No per-answer threshold and no flagged
@@ -327,6 +344,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
                 'gap_count' => 5,
                 'findings' => self::findings($site),
                 'profile' => self::profileLines($site),
+                // What the girls and women themselves report, taken from the same assessment.
+                'min_respondents_to_report' => 10,
+                'indicators' => self::indicators(),
             ],
         ];
     }
@@ -399,13 +419,16 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
      */
     private static function profileLines(string $site): array
     {
-        return $site === 'school'
+        $p = self::SITES[$site]['prefix'];
+        $lines = $site === 'school'
             ? ['{A1}', '{A2} · {A3}', 'Boarding students: {A4}', 'Serves: {A5}',
                 'Existing menstrual health activity: {E1}', 'It includes: {E2}', 'Supported by: {E3}',
                 'Products now supplied by another programme: {E4}']
             : ['{A1}', 'Serves about {A2}', 'Services: {A3}', 'Also serves: {A4}',
                 'Existing menstrual health activity: {E1}', 'It includes: {E2}', 'Supported by: {E3}',
                 'Products now supplied by another programme: {E4}'];
+
+        return array_map(fn ($line) => preg_replace('/\{(\w+)\}/', '{'.$p.'.$1}', $line), $lines);
     }
     /**
      * One single-condition rule per must-have, so each missing must-have is named on its own.
@@ -643,6 +666,33 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
         ];
     }
 
+    /**
+     * The girls' and women's own questions, placed after the facility questions in the School and PHC
+     * assessments. Whoever answers (one person or several), these ask about her own experience. The
+     * experience questions are scored in their own section and kept out of the school's or PHC's two
+     * headline scores; the knowledge questions are not scored at all (a school's score should not be
+     * a quiz result) and their correct answer is declared by the indicator, not by a score.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function personalSections(): array
+    {
+        $girls = self::girlsSections();
+        $by = collect($girls)->keyBy('name');
+
+        $experience = array_merge(
+            $by['Pads and other materials']['questions'],
+            $by['Privacy, water and disposal']['questions'],
+            $by['Feeling respected and supported']['questions'],
+        );
+        $knowledge = array_map(fn ($q) => array_merge($q, ['scored' => false]), $by['What you know about periods']['questions']);
+
+        return [
+            ['domain' => 'INFO', 'name' => 'About you', 'instructions' => 'The next questions are for girls and women, about their own experience. Answer for yourself. Your answers are private and do not carry your name. If you are not sure of an answer in the earlier sections, ask someone who knows.', 'questions' => $by['About you']['questions']],
+            ['domain' => 'PCOM', 'name' => 'Your own experience', 'instructions' => 'Pick the answer that is true for you. There are no right or wrong answers.', 'questions' => $experience],
+            ['domain' => 'INFO', 'name' => 'What you know about periods', 'instructions' => 'These questions check what people know. Pick the answer you think is right. You can skip any you are not sure of.', 'questions' => $knowledge],
+        ];
+    }
     /** @return array<int, array{domain: string, name: string, instructions: ?string, questions: array<int, array<string, mixed>>}> */
     private static function girlsSections(): array
     {

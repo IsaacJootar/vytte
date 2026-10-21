@@ -71,15 +71,10 @@ class CataloguePublishingService
             $reportType = strtoupper((string) ($reportPolicy['type'] ?? ''));
             if (! in_array($reportType, ReportType::ALL, true)) {
                 $errors['report'][] = 'Report type must be one of: '.implode(', ', ReportType::ALL).'.';
-            } elseif (strtoupper((string) ($reportPolicy['kind'] ?? '')) === ReportType::KIND_SURVEY) {
-                if (empty($reportPolicy['indicators'])) {
-                    $errors['report'][] = 'A survey report must declare its indicators.';
-                }
-                if (($release->collection_config['allows_multi_respondent'] ?? false) !== true) {
-                    $errors['report'][] = 'A survey report needs multi-respondent collection.';
-                }
             } elseif ($reportType === ReportType::PROGRAMME && empty($reportPolicy['roles'])) {
                 $errors['report'][] = 'A programme report must declare which section groups are provision and which are readiness.';
+            } elseif (! empty($reportPolicy['indicators']) && ($release->collection_config['allows_multi_respondent'] ?? false) !== true) {
+                $errors['report'][] = 'Report indicators are read from respondents\' answers, so the template must allow respondent collection.';
             }
         }
 

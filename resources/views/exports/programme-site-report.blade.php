@@ -108,6 +108,10 @@
     @endforeach
 @endif
 
+@if ($programme['outcomes'])
+    @include('exports.partials.programme-outcomes', ['outcomes' => $programme['outcomes']])
+@endif
+
 @if ($programme['profile'])
     <h2>About this {{ $programme['noun'] }}</h2>
     @foreach ($programme['profile'] as $line)

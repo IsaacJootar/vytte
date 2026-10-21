@@ -24,7 +24,6 @@ use App\Services\Reporting\LensCatalog;
 use App\Services\Reporting\ProgrammeReportService;
 use App\Services\Reporting\ReportComposer;
 use App\Services\ReportSnapshotService;
-use App\Services\Reporting\ProgrammeSurveyReportService;
 use App\Support\ReportType;
 use App\Support\ResponseInputContract;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -367,12 +366,6 @@ class AssessmentController extends Controller
 
         // A template declares its report type once, frozen with it. Programme templates get the
         // programme evaluation report; every other template keeps the standard diagnostic report.
-        if (ReportType::isSurvey($assessment)) {
-            $survey = app(ProgrammeSurveyReportService::class)->forAssessment($assessment);
-
-            return view('assessments.results-programme-survey', compact('assessment', 'survey'));
-        }
-
         if (ReportType::isProgramme($assessment)) {
             $programme = app(ProgrammeReportService::class)->forAssessment($assessment);
 

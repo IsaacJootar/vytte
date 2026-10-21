@@ -24,9 +24,6 @@ final class ReportType
 
     public const ALL = [self::STANDARD, self::PROGRAMME];
 
-    /** A programme report built from many respondents' answers, not one focal person's. */
-    public const KIND_SURVEY = 'SURVEY';
-
     public static function of(Assessment $assessment): string
     {
         $type = strtoupper((string) data_get($assessment->snapshot?->aggregation_policy, 'report.type', self::STANDARD));
@@ -37,12 +34,6 @@ final class ReportType
     public static function isProgramme(Assessment $assessment): bool
     {
         return self::of($assessment) === self::PROGRAMME;
-    }
-
-    public static function isSurvey(Assessment $assessment): bool
-    {
-        return self::isProgramme($assessment)
-            && strtoupper((string) data_get(self::config($assessment), 'kind', '')) === self::KIND_SURVEY;
     }
 
     /** @return array<string, mixed> */

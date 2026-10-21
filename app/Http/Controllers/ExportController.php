@@ -13,7 +13,6 @@ use App\Services\Reporting\CustomSectionScoringService;
 use App\Services\Reporting\ProgrammeReportService;
 use App\Services\Reporting\ReportDocumentExporter;
 use App\Services\ReportSnapshotService;
-use App\Services\Reporting\ProgrammeSurveyReportService;
 use App\Support\ReportType;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
@@ -28,13 +27,6 @@ class ExportController extends Controller
     public function assessmentPdf(Assessment $assessment, ReportSnapshotService $reports): Response
     {
         $this->authorizeAssessmentAccess($assessment);
-
-        if (ReportType::isSurvey($assessment)) {
-            $survey = app(ProgrammeSurveyReportService::class)->forAssessment($assessment);
-            $pdf = Pdf::loadView('exports.programme-survey-report', compact('survey'))->setPaper('a4', 'portrait');
-
-            return $pdf->download(Str::slug($survey['site']['name'] ?: 'survey').'-survey-report.pdf');
-        }
 
         if (ReportType::isProgramme($assessment)) {
             $programme = app(ProgrammeReportService::class)->forAssessment($assessment);

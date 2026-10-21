@@ -63,9 +63,7 @@ class ProgrammeOverviewService
         }
 
         $name = (string) data_get(ReportType::config($all->first()), 'programme');
-        // Girls' surveys are summarised on their own; the school and PHC rows come from site assessments.
-        $assessments = $all->reject(fn (Assessment $assessment) => ReportType::isSurvey($assessment))->values();
-        $surveys = $all->filter(fn (Assessment $assessment) => ReportType::isSurvey($assessment) && $assessment->status === Assessment::STATUS_COMPLETE);
+        $assessments = $all;
         $inProgress = $assessments->where('status', '!=', Assessment::STATUS_COMPLETE)->pluck('project_id')->unique()->count();
 
         // One row per site: its most recent completed assessment.
@@ -75,7 +73,7 @@ class ProgrammeOverviewService
             ->values();
 
         $rows = $latest->map(function (Assessment $assessment) {
-            $report = $this->reports->forAssessment($assessment);
+            $report = $this->reports->forAssessment($assessment, withOutcomes: false);
 
             return [
                 'assessment' => $assessment,
@@ -130,7 +128,7 @@ class ProgrammeOverviewService
             'by_area_council' => $rows->groupBy('area_council')->map(fn ($group, $area) => $this->summarise($area, $group))->sortKeys()->values()->all(),
             'by_site_type' => $rows->groupBy('type')->map(fn ($group, $type) => $this->summarise($type, $group))->sortKeys()->values()->all(),
             'common_gaps' => $commonGaps,
-            'survey' => $this->surveySummary($surveys),
+            'survey' => $this->surveySummary($latest),
         ];
     }
 
@@ -140,9 +138,9 @@ class ProgrammeOverviewService
      *
      * @return array<string, mixed>|null null when no survey has been completed
      */
-    private function surveySummary($surveys): ?array
+    private function surveySummary($latest): ?array
     {
-        $latest = $surveys->sortByDesc('completed_at')->unique('project_id')->values();
+        $latest = $latest->filter(fn (Assessment $assessment) => ! empty(data_get(ReportType::config($assessment), 'indicators')))->values();
         if ($latest->isEmpty()) {
             return null;
         }

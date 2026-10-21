@@ -22,7 +22,7 @@ class ProgrammeReportService
 
     public const WEAK = 45.0;
 
-    public function forAssessment(Assessment $assessment): array
+    public function forAssessment(Assessment $assessment, bool $withOutcomes = true): array
     {
         $assessment->loadMissing(['snapshot', 'reportSnapshot', 'project', 'target.targetType']);
         $payload = app(ReportSnapshotService::class)->payloadFor($assessment);
@@ -44,6 +44,10 @@ class ProgrammeReportService
             ->all();
         $report = $this->build($payload, $config, $pooled, $codeById);
         $report['profile'] = $this->profile($report['context'], $config['profile'] ?? [], $assessment);
+        // What the girls and women themselves reported, when the template declares indicators for it.
+        $report['outcomes'] = $withOutcomes && ! empty($config['indicators'])
+            ? app(ProgrammeOutcomeService::class)->forAssessment($assessment)
+            : null;
 
         return $report;
     }
@@ -61,7 +65,7 @@ class ProgrammeReportService
     {
         $codeByText = collect((array) $assessment->snapshot?->payload)
             ->flatMap(fn ($module) => $module['questions'] ?? [])
-            ->mapWithKeys(fn ($question) => [$question['question_text'] => substr($question['question_code'], strrpos($question['question_code'], '.') + 1)])
+            ->mapWithKeys(fn ($question) => [$question['question_text'] => $question['question_code']])
             ->all();
         $answers = [];
         foreach ($context as $group) {
@@ -75,7 +79,7 @@ class ProgrammeReportService
         $lines = [];
         foreach ($templates as $template) {
             $complete = true;
-            $line = preg_replace_callback('/\{(\w+)\}/', function ($match) use ($answers, &$complete) {
+            $line = preg_replace_callback('/\{([\w.]+)\}/', function ($match) use ($answers, &$complete) {
                 $value = $answers[$match[1]] ?? null;
                 if ($value === null || $value === '' || $value === "Don't know") {
                     $complete = false;
