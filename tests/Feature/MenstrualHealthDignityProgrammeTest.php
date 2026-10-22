@@ -258,6 +258,35 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
             ->assertSee('43 more required questions to answer (15 optional)');
     }
 
+    public function test_choosing_an_answer_never_moves_on_by_itself_and_next_is_always_the_persons_own(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V4');
+        $assessment->update(['publish_status' => Assessment::PUBLISH_PUBLISHED]);
+        $token = Str::random(32);
+        AssessmentRespondentToken::create(['token' => $token, 'assessment_id' => $assessment->assessment_id]);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $component->call('giveConsent');
+
+        // A single-choice question, then a multiple-choice one: neither moves on by itself.
+        $questions = collect($component->get('questionData'));
+        $single = $questions->search(fn ($q) => $q['response_type'] === 'SINGLE_SELECT');
+        $component->call('goToQuestion', $single)
+            ->call('selectOption', $questions[$single]['question_id'], $questions[$single]['options'][0]['option_id'])
+            ->assertSet('currentIndex', $single);
+
+        $multi = $questions->search(fn ($q) => $q['response_type'] === 'MULTI_SELECT');
+        $component->call('goToQuestion', $multi)
+            ->call('toggleMultiOption', $questions[$multi]['question_id'], $questions[$multi]['options'][0]['option_id'])
+            ->assertSet('currentIndex', $multi)
+            ->call('goToQuestion', $multi + 1)
+            ->assertSet('currentIndex', $multi + 1);
+
+        // The page no longer carries the whole question list a second time in its state.
+        $this->assertFalse(property_exists(PublicRespondentRunner::class, 'allQuestionData'));
+    }
     public function test_people_answering_are_offered_two_ways_out_not_five_and_others_are_refused(): void
     {
         $this->seedOfficialCatalogue();

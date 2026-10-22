@@ -244,11 +244,6 @@ class AssessmentRunner extends Component
         unset($this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->lastSavedAt = now()->format('g:i A');
         $this->refreshVisibleQuestions();
-
-        // Auto-advance to next question
-        if ($this->currentIndex < count($this->questionData) - 1) {
-            $this->currentIndex++;
-        }
     }
 
     public function toggleMultiOption(string $questionId, int $optionId): void

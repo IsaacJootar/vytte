@@ -16,6 +16,7 @@ use App\Support\LocalQuestionFormat;
 use App\Support\ResponseInputContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
@@ -69,7 +70,8 @@ class PublicRespondentRunner extends Component
     public array $questionData = [];
 
     #[Locked]
-    public array $allQuestionData = [];
+    /** Question definitions by locale, rebuilt (from cache) when needed rather than carried in the page state. */
+    protected array $allQuestionsMemo = [];
 
     public array $savedResponses = [];
 
@@ -255,9 +257,6 @@ class PublicRespondentRunner extends Component
         unset($this->savedTextResponses[$questionId], $this->savedNumericResponses[$questionId], $this->savedMultiResponses[$questionId], $this->savedResponseStates[$questionId]);
         $this->markSaved();
         $this->refreshVisibleQuestions();
-        if ($this->currentIndex < count($this->questionData) - 1) {
-            $this->currentIndex++;
-        }
     }
 
     public function toggleMultiOption(string $questionId, int $optionId): void
@@ -534,8 +533,7 @@ class PublicRespondentRunner extends Component
 
     private function loadQuestions(): void
     {
-        $this->allQuestionData = $this->questionDefinitions($this->currentLocale);
-        $this->questionData = $this->allQuestionData;
+        $this->questionData = $this->allQuestions();
         $this->loadCustomSection();
     }
 
@@ -596,7 +594,38 @@ class PublicRespondentRunner extends Component
         $this->onCustomStep = false;
     }
 
+    /** @return array<int, array<string, mixed>> */
+    private function allQuestions(): array
+    {
+        return $this->questionDefinitions($this->currentLocale);
+    }
+
+    /**
+     * The respondent-facing question list for one language. A frozen snapshot never changes, so the
+     * list is cached against the snapshot's own id: tapping an answer no longer reads and re-parses
+     * the whole snapshot (a few hundred KB) each time.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     private function questionDefinitions(string $locale): array
+    {
+        if (isset($this->allQuestionsMemo[$locale])) {
+            return $this->allQuestionsMemo[$locale];
+        }
+
+        $snapshotId = Assessment::find($this->assessmentId)?->snapshot()->value('snapshot_id');
+        if (! $snapshotId) {
+            return [];
+        }
+
+        return $this->allQuestionsMemo[$locale] = Cache::remember(
+            'respondent-questions:'.$snapshotId.':'.$locale.':'.md5(json_encode($this->moduleIds)),
+            now()->addHours(6),
+            fn () => $this->buildQuestionDefinitions($locale),
+        );
+    }
+
+    private function buildQuestionDefinitions(string $locale): array
     {
         $assessment = Assessment::with('snapshot')->find($this->assessmentId);
         if (! $assessment?->snapshot) {
@@ -791,13 +820,13 @@ class PublicRespondentRunner extends Component
 
     private function refreshVisibleQuestions(): void
     {
-        $this->questionData = app(AssessmentLogicService::class)->visibleQuestions($this->allQuestionData, $this->responseFacts());
+        $this->questionData = app(AssessmentLogicService::class)->visibleQuestions($this->allQuestions(), $this->responseFacts());
         $this->currentIndex = max(0, min($this->currentIndex, max(0, count($this->questionData) - 1)));
     }
 
     private function responseFacts(): array
     {
-        return collect($this->allQuestionData)->mapWithKeys(function (array $question): array {
+        return collect($this->allQuestions())->mapWithKeys(function (array $question): array {
             $questionId = $question['question_id'];
             $optionIds = isset($this->savedResponses[$questionId])
                 ? [(int) $this->savedResponses[$questionId]]

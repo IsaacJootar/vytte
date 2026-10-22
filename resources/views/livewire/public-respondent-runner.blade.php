@@ -273,26 +273,26 @@
                     placeholder="Type your answer here...">{{ $savedTextResponses[$q['question_id']] ?? '' }}</textarea>
             @elseif (($q['response_type'] ?? null) === 'MULTI_SELECT')
                 <p class="mb-3 text-xs font-semibold text-slate-500">Choose all that apply.</p>
-                <div class="space-y-2">
+                <div class="space-y-2" wire:key="multi-{{ $q['question_id'] }}" x-data="{ chosen: @js(array_map('intval', $savedMultiResponses[$q['question_id']] ?? [])) }">
                     @foreach ($q['options'] as $option)
-                        @php $isSelected = in_array($option['option_id'], $savedMultiResponses[$q['question_id']] ?? [], true); @endphp
-                        <button type="button" wire:click="toggleMultiOption('{{ $q['question_id'] }}', {{ $option['option_id'] }})"
-                                class="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition-all {{ $isSelected ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-slate-200 bg-white text-slate-800 hover:border-vytte-400' }}">
-                            <span class="flex h-5 w-5 items-center justify-center rounded border border-current">{{ $isSelected ? '✓' : '' }}</span>
+                        <button type="button"
+                                x-on:click="chosen.includes({{ $option['option_id'] }}) ? chosen = chosen.filter(id => id !== {{ $option['option_id'] }}) : chosen.push({{ $option['option_id'] }})"
+                                wire:click="toggleMultiOption('{{ $q['question_id'] }}', {{ $option['option_id'] }})"
+                                x-bind:class="chosen.includes({{ $option['option_id'] }}) ? 'border-vytte-700 bg-vytte-700 text-white' : 'border-slate-200 bg-white text-slate-800 hover:border-vytte-400'"
+                                class="flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition-all">
+                            <span class="flex h-5 w-5 items-center justify-center rounded border border-current" x-text="chosen.includes({{ $option['option_id'] }}) ? '✓' : ''"></span>
                             {{ $option['option_label'] }}
                         </button>
                     @endforeach
                 </div>
             @elseif (! empty($q['options']))
-                <div class="space-y-2">
+                <div class="space-y-2" wire:key="single-{{ $q['question_id'] }}" x-data="{ picked: @js((int) ($savedResponses[$q['question_id']] ?? 0)) }">
                     @foreach ($q['options'] as $option)
-                        @php $isSelected = ($savedResponses[$q['question_id']] ?? null) === $option['option_id']; @endphp
                         <button
+                            x-on:click="picked = {{ $option['option_id'] }}"
                             wire:click="selectOption('{{ $q['question_id'] }}', {{ $option['option_id'] }})"
-                            class="w-full text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-400 focus-visible:ring-offset-1
-                                {{ $isSelected
-                                    ? 'bg-vytte-700 border-vytte-700 text-white shadow-sm'
-                                    : 'bg-white border-slate-200 text-slate-800 hover:border-vytte-400 hover:bg-vytte-50' }}">
+                            x-bind:class="picked === {{ $option['option_id'] }} ? 'bg-vytte-700 border-vytte-700 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-800 hover:border-vytte-400 hover:bg-vytte-50'"
+                            class="w-full text-left px-4 py-3 rounded-xl border text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-400 focus-visible:ring-offset-1">
                             {{ $option['option_label'] }}
                         </button>
                     @endforeach

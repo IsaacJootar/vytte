@@ -494,7 +494,7 @@ class AssessmentTest extends TestCase
             ->assertCount('questionData', 4);
     }
 
-    public function test_livewire_select_option_saves_response_and_advances(): void
+    public function test_livewire_select_option_saves_response_and_stays_on_the_question(): void
     {
         [$user, $workspace] = $this->userWithWorkspace();
         [$project, $target] = $this->createProjectWithTarget($workspace, $user);
@@ -509,6 +509,9 @@ class AssessmentTest extends TestCase
         $firstOptionId = $firstQuestion['options'][0]['option_id'];
 
         $component->call('selectOption', $firstQuestion['question_id'], $firstOptionId)
+            // Choosing an answer never moves on by itself: going forward is always the person's own Next.
+            ->assertSet('currentIndex', 0)
+            ->call('goToQuestion', 1)
             ->assertSet('currentIndex', 1);
 
         $this->assertDatabaseHas('responses', [
