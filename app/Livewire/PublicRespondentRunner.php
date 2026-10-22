@@ -272,7 +272,35 @@ class PublicRespondentRunner extends Component
 
         $selected = collect($this->savedMultiResponses[$questionId] ?? [])->map(fn ($id) => (int) $id);
         $selected = $selected->contains($optionId) ? $selected->reject(fn ($id) => $id === $optionId) : $selected->push($optionId);
-        $selected = $selected->unique()->sort()->values()->all();
+
+        $this->storeMultiSelection($questionId, $selected->all());
+    }
+
+    /**
+     * Save the whole set of ticked options for a multiple-choice question. The page keeps its own
+     * ticks and sends the full set after each tap, so quick taps cannot get out of step with the
+     * server: the last set sent is the set saved. Choices that do not belong to the question are ignored.
+     *
+     * @param  array<int, int|string>  $optionIds
+     */
+    public function saveMultiOptions(string $questionId, array $optionIds): void
+    {
+        if (! $this->hasValidPublicContext() || ! $this->consentGiven) {
+            return;
+        }
+        $question = $this->authoritativeQuestion($questionId);
+        if (! $question || ($question['response_type'] ?? null) !== 'MULTI_SELECT') {
+            return;
+        }
+
+        $valid = collect($question['options'] ?? [])->pluck('option_id')->map(fn ($id) => (int) $id);
+        $this->storeMultiSelection($questionId, collect($optionIds)->map(fn ($id) => (int) $id)->filter(fn ($id) => $valid->contains($id))->all());
+    }
+
+    /** @param  array<int, int>  $selected */
+    private function storeMultiSelection(string $questionId, array $selected): void
+    {
+        $selected = collect($selected)->unique()->sort()->values()->all();
 
         if ($selected === []) {
             Response::where('assessment_id', $this->assessmentId)->where('question_id', $questionId)

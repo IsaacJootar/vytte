@@ -258,6 +258,32 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
             ->assertSee('43 more required questions to answer (15 optional)');
     }
 
+    public function test_ticked_boxes_are_saved_as_a_whole_set_so_quick_taps_cannot_get_out_of_step(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V4');
+        $assessment->update(['publish_status' => Assessment::PUBLISH_PUBLISHED]);
+        $token = Str::random(32);
+        AssessmentRespondentToken::create(['token' => $token, 'assessment_id' => $assessment->assessment_id]);
+
+        $component = Livewire::test(PublicRespondentRunner::class, ['token' => $token]);
+        $component->call('giveConsent');
+        $question = collect($component->get('questionData'))->firstWhere('response_type', 'MULTI_SELECT');
+        $ids = collect($question['options'])->pluck('option_id')->all();
+        $saved = fn () => Response::where('assessment_id', $assessment->assessment_id)->where('question_id', $question['question_id'])->first()?->typed_value['option_ids'];
+
+        $component->call('saveMultiOptions', $question['question_id'], [$ids[0], $ids[1], $ids[2], $ids[3], $ids[4]]);
+        $this->assertSame([$ids[0], $ids[1], $ids[2], $ids[3], $ids[4]], $saved());
+
+        // The last set sent is the set saved, whatever was ticked before; choices from elsewhere are ignored.
+        $component->call('saveMultiOptions', $question['question_id'], [$ids[4], $ids[0], 999999]);
+        $this->assertSame([$ids[0], $ids[4]], $saved());
+
+        // Un-ticking everything removes the answer.
+        $component->call('saveMultiOptions', $question['question_id'], []);
+        $this->assertNull($saved());
+    }
     public function test_choosing_an_answer_never_moves_on_by_itself_and_next_is_always_the_persons_own(): void
     {
         $this->seedOfficialCatalogue();
