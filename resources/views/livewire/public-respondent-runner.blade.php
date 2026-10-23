@@ -9,6 +9,15 @@
         </div>
     @endif
 
+    @if ($sharedDevice && $tokenValid && ! $isSubmitted && ! $assessmentClosed)
+        <div class="mb-4 flex items-center justify-between gap-3 text-xs text-slate-500">
+            <span>Shared phone · {{ $deviceCount }} already answered</span>
+            <button type="button" wire:click="startNextPerson"
+                    wire:confirm="Throw away the answers so far and start a new sheet for the next person?"
+                    class="font-semibold text-vytte-700 hover:text-vytte-800">Start over</button>
+        </div>
+    @endif
+
     @if (! $tokenValid)
 
         <div class="text-center py-12">
@@ -43,6 +52,14 @@
             </div>
             <h2 class="text-lg font-bold text-slate-800 mb-2">Thank you!</h2>
             <p class="text-sm text-slate-500 max-w-xs mx-auto">Your responses have been submitted. Your answers are anonymous and will be used only for this assessment.</p>
+            @if ($sharedDevice)
+                @php $onThisPhone = max($deviceCount, 1); @endphp
+                <p class="mt-4 text-xs text-slate-500">{{ $onThisPhone }} {{ $onThisPhone === 1 ? 'person has' : 'people have' }} answered on this phone.</p>
+                <button type="button" wire:click="startNextPerson"
+                        class="mt-4 inline-flex items-center gap-2 rounded-lg bg-vytte-700 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-vytte-800">
+                    Start the next person
+                </button>
+            @endif
         </div>
 
     @elseif (count($availableLocales) > 1 && ! $languageChosen)

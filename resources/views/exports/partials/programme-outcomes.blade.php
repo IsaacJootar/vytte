@@ -21,6 +21,9 @@
     @else
         This is the first assessment here, so it is the starting point. The next one will show what changed.
     @endif
+    @if ($outcomes['assistance'] && $outcomes['assistance']['answered'] > 0)
+        {{ $outcomes['assistance']['helped'] }} of {{ $outcomes['assistance']['answered'] }} said someone helped them answer (read the questions to them or answered for them).
+    @endif
     @unless ($outcomes['enough'])
         <span style="color: #b45309; font-weight: bold;">Fewer than {{ $outcomes['minimum'] }} answered: a rough guide only.</span>
     @endunless

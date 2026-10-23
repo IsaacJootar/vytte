@@ -112,6 +112,20 @@
                             :label="$respondentTokens->count() === 1 ? 'Assessment response link' : 'Link '.($loop->iteration)"
                             :hint="'Created '.$respondentToken->created_at?->diffForHumans()" />
 
+                        <form method="POST" action="{{ route('assessments.respondent-link.shared-device', [$assessment, $respondentToken]) }}"
+                              class="mt-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="shared_device" value="0">
+                            <label class="flex cursor-pointer items-start gap-3">
+                                <input type="checkbox" name="shared_device" value="1" @checked($respondentToken->shared_device) onchange="this.form.submit()"
+                                       class="mt-0.5 h-4 w-4 rounded border-slate-300 text-vytte-700 focus:ring-vytte-500">
+                                <span>
+                                    <span class="text-sm font-semibold text-slate-900 dark:text-white">Shared device</span>
+                                    <span class="block text-xs text-slate-500 dark:text-slate-400">Turn this on when several people will answer on the same phone or tablet, one after another. After each person submits, the phone shows a Start the next person button.</span>
+                                </span>
+                            </label>
+                        </form>
+
                         <form method="POST" action="{{ route('assessments.respondent-link.destroy', [$assessment, $respondentToken]) }}"
                               class="mt-1 text-right"
                               onsubmit="return confirm('Deactivate this link? It will stop future access. Completed responses remain available for review and can still count unless you exclude them.')">

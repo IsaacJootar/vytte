@@ -30,6 +30,12 @@
             @endif
         </p>
     </div>
+    @if ($outcomes['assistance'] && $outcomes['assistance']['answered'] > 0)
+        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+            {{ $outcomes['assistance']['helped'] }} of {{ $outcomes['assistance']['answered'] }} said someone helped them answer
+            (read the questions to them or answered for them).
+        </p>
+    @endif
     @unless ($outcomes['enough'])
         <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Fewer than {{ $outcomes['minimum'] }} answered: a rough guide only</span>
     @endunless

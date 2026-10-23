@@ -35,6 +35,7 @@ class ProgrammeOutcomeService
             'minimum' => $results['minimum'],
             'previous' => $results['previous'] ?? null,
             'outcomes' => $outcomes,
+            'assistance' => app(ProgrammeIndicatorService::class)->assistance($assessment),
             'endline_indicators' => (array) ($config['endline_indicators'] ?? []),
         ];
     }

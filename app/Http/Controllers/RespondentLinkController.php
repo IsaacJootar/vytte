@@ -7,6 +7,7 @@ use App\Models\AssessmentRespondentToken;
 use App\Services\AuditService;
 use App\Services\PlanService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -152,6 +153,30 @@ class RespondentLinkController extends Controller
         ]);
 
         return back()->with('success', 'The respondent link has been deactivated. Completed responses remain available for review.');
+    }
+
+    /**
+     * Switch "shared device" on or off for a link: when on, the respondent page offers a
+     * "Start the next person" button after each submission so several people can answer on one phone.
+     */
+    public function updateSharedDevice(Request $request, Assessment $assessment, AssessmentRespondentToken $respondentToken): RedirectResponse
+    {
+        $this->authorizeWorkspaceAssessment($assessment);
+
+        if ($respondentToken->assessment_id !== $assessment->assessment_id) {
+            abort(404);
+        }
+
+        $enabled = $request->boolean('shared_device');
+        $respondentToken->update(['shared_device' => $enabled]);
+        app(AuditService::class)->record('assessment.respondent_link.shared_device', $assessment, newValues: [
+            'token_prefix' => substr($respondentToken->token, 0, 8),
+            'shared_device' => $enabled,
+        ]);
+
+        return back()->with('success', $enabled
+            ? 'Shared device is on. After each person submits, the phone will offer a Start the next person button.'
+            : 'Shared device is off. This link works as before: one response per phone.');
     }
 
     private function authorizeWorkspaceAssessment(Assessment $assessment): void

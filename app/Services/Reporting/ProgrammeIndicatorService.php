@@ -52,6 +52,34 @@ class ProgrammeIndicatorService
     }
 
     /**
+     * How many people answered the "who helped you" question, and how many of them had help. A person
+     * who skipped the question is left out of both numbers.
+     *
+     * @return array{answered: int, helped: int}|null null when the template has no such question
+     */
+    public function assistance(Assessment $assessment): ?array
+    {
+        $config = ReportType::config($assessment)['assistance'] ?? null;
+        if (! $config) {
+            return null;
+        }
+
+        $questions = $this->questionMap($assessment);
+        $answered = 0;
+        $helped = 0;
+        foreach ($this->eligibleSessions($assessment) as $session) {
+            $given = $this->answersBySession($session, $questions)[$config['question']] ?? null;
+            if ($given === null) {
+                continue;
+            }
+            $answered++;
+            $helped += $given === $config['unassisted'] ? 0 : 1;
+        }
+
+        return ['answered' => $answered, 'helped' => $helped];
+    }
+
+    /**
      * The same results with the earlier comparable survey for this school or PHC alongside, so the
      * report can show before and after. "Comparable" is decided by ComparisonSeriesService, the same
      * rule Progress and Portfolio use.

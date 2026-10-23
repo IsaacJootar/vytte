@@ -25,6 +25,7 @@ class AssessmentRespondentToken extends Model
         'revoked_at',
         'use_count',
         'last_used_at',
+        'shared_device',
     ];
 
     protected function casts(): array
@@ -34,6 +35,7 @@ class AssessmentRespondentToken extends Model
             'revoked_at' => 'datetime',
             'last_used_at' => 'datetime',
             'created_at' => 'datetime',
+            'shared_device' => 'boolean',
         ];
     }
 

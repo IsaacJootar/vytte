@@ -125,6 +125,7 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/open-and-create-link', [RespondentLinkController::class, 'openAndCreate'])->name('assessments.open-and-create-link');
     Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');
     Route::delete('assessments/{assessment}/respondent-links/{respondentToken}', [RespondentLinkController::class, 'destroy'])->name('assessments.respondent-link.destroy');
+    Route::patch('assessments/{assessment}/respondent-links/{respondentToken}/shared-device', [RespondentLinkController::class, 'updateSharedDevice'])->name('assessments.respondent-link.shared-device');
     Route::get('projects/{project}/export/csv', [ExportController::class, 'projectCsv'])->name('projects.export.csv');
 
     // Action plan — the living domain drawn from frozen recommendations.

@@ -48,9 +48,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             'prefix' => 'MHS',
             'noun' => 'school',
             'framework' => 'Menstrual Health & Dignity Assessment — School',
-            'release' => 'VYTTE_MHD_SCHOOL_V4',
-            'previous_release' => 'VYTTE_MHD_SCHOOL_V3',
-            'revision' => 4,
+            'release' => 'VYTTE_MHD_SCHOOL_V5',
+            'previous_release' => 'VYTTE_MHD_SCHOOL_V4',
+            'revision' => 5,
             'respondent' => 'School focal person',
         ],
         'phc' => [
@@ -58,9 +58,9 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
             'prefix' => 'MHP',
             'noun' => 'PHC',
             'framework' => 'Menstrual Health & Dignity Assessment — PHC',
-            'release' => 'VYTTE_MHD_PHC_V4',
-            'previous_release' => 'VYTTE_MHD_PHC_V3',
-            'revision' => 4,
+            'release' => 'VYTTE_MHD_PHC_V5',
+            'previous_release' => 'VYTTE_MHD_PHC_V4',
+            'revision' => 5,
             'respondent' => 'PHC focal person',
         ],
         'girls' => [
@@ -355,6 +355,8 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
                 'min_respondents_to_report' => 10,
                 'indicators' => self::indicators(),
                 'outcome_notes' => self::outcomeNotes(),
+                // How many answered without help, from the "who helped you" question.
+                'assistance' => ['question' => 'MHG.A3', 'unassisted' => 'Nobody, I answered it myself'],
                 'endline_indicators' => self::endlineIndicators(),
                 'next_steps' => self::nextSteps($config['noun']),
             ],
@@ -772,6 +774,7 @@ class MenstrualHealthDignityBaselineSeeder extends Seeder
         $about = [
             self::q($p, 'A1', 'How old are you?', 'SINGLE_SELECT', self::ctx(['10 to 14 years', '15 to 19 years', '20 to 24 years', '25 to 49 years', '50 years or older']), false),
             self::q($p, 'A2', 'Which of these describes you best?', 'SINGLE_SELECT', self::ctx(['A girl in school', 'A girl not in school', 'A woman using this health centre', 'A woman from this community', 'Other']), false),
+            self::q($p, 'A3', 'Who helped you answer this assessment?', 'SINGLE_SELECT', self::ctx(['Nobody, I answered it myself', 'Someone read the questions to me', 'Someone answered for me']), false),
         ];
 
         $products = [

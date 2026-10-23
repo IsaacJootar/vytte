@@ -54,6 +54,14 @@ class PublicRespondentRunner extends Component
 
     public bool $isSubmitted = false;
 
+    /** The owner has switched on "shared device" for this link: several people answer on one phone. */
+    #[Locked]
+    public bool $sharedDevice = false;
+
+    /** How many people have already submitted from this browser (shared device only). */
+    #[Locked]
+    public int $deviceCount = 0;
+
     #[Locked]
     public string $respondentId = '';
 
@@ -105,6 +113,9 @@ class PublicRespondentRunner extends Component
 
             return;
         }
+
+        $this->sharedDevice = (bool) $tokenRecord->shared_device;
+        $this->deviceCount = $this->sharedDevice ? (int) session("respondent.{$token}.device_count", 0) : 0;
 
         $assessment = Assessment::find($tokenRecord->assessment_id);
         if (! $assessment || ! $assessment->snapshot) {
@@ -531,6 +542,29 @@ class PublicRespondentRunner extends Component
         $this->persistCustomAnswers();
         $submission->submit($session);
         $this->isSubmitted = true;
+
+        if ($this->sharedDevice) {
+            $this->deviceCount++;
+            session()->put("respondent.{$this->token}.device_count", $this->deviceCount);
+        }
+    }
+
+    /**
+     * Shared device: hand the phone to the next person. The browser forgets the current response
+     * (a submitted one stays saved and counted; an unfinished one is left incomplete and never counts)
+     * and the page reloads with a fresh, empty answer sheet. Allowed only while the owner has the
+     * switch on, which is read from the link itself rather than trusted from the page.
+     */
+    public function startNextPerson(): void
+    {
+        $link = AssessmentRespondentToken::where('token', $this->token)->first();
+
+        if (! $link?->isUsable() || ! $link->shared_device) {
+            return;
+        }
+
+        session()->forget("respondent.{$this->token}.session_id");
+        $this->redirect(route('respondent.show', $this->token));
     }
 
     /**
