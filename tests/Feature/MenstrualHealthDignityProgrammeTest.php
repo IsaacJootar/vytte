@@ -284,6 +284,58 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $component->call('saveMultiOptions', $question['question_id'], []);
         $this->assertNull($saved());
     }
+    public function test_choosing_just_me_or_my_team_on_a_link_assessment_does_not_end_in_an_error_page(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V5');
+        $self = route('assessments.setup', ['assessment' => $assessment, 'step' => 4, 'mode' => 'self']);
+
+        // The old on-screen answer page cannot take an assessment that is answered through a link,
+        // so asking for it now explains and offers the right way instead of a 404.
+        $this->actingAs($user)->get(route('assessments.run', $assessment))->assertRedirect($self);
+
+        $this->actingAs($user)->get($self)
+            ->assertOk()
+            ->assertSee('Open and answer now')
+            ->assertDontSee('Start answering now');
+    }
+
+    public function test_answer_now_opens_the_link_for_a_shared_device_and_goes_straight_to_the_questions(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V5');
+
+        $response = $this->actingAs($user)->post(route('assessments.open-and-create-link', $assessment), ['answer_now' => '1']);
+
+        $token = AssessmentRespondentToken::where('assessment_id', $assessment->assessment_id)->firstOrFail();
+        $response->assertRedirect(route('respondent.show', $token->token));
+        $this->assertTrue($assessment->fresh()->isCollecting());
+        // "Me and my team" answering on the spot share one device, so the next-person button is on.
+        $this->assertTrue($token->shared_device);
+
+        // The ordinary "share a link" path is unchanged: it goes to the collection page, one response per phone.
+        $other = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V5');
+        $this->actingAs($user)->post(route('assessments.open-and-create-link', $other))
+            ->assertRedirect(route('assessments.respondent-collection', $other));
+        $this->assertFalse((bool) AssessmentRespondentToken::where('assessment_id', $other->assessment_id)->firstOrFail()->shared_device);
+    }
+    public function test_refreshing_a_form_only_address_goes_somewhere_useful_instead_of_a_405(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->createAssessment($user, $workspace, 'VYTTE_MHD_SCHOOL_V5');
+
+        $this->actingAs($user)->get(route('assessments.open-and-create-link', $assessment))
+            ->assertRedirect(route('assessments.show', $assessment));
+        $this->actingAs($user)->get(route('assessments.respondent-link', $assessment))
+            ->assertRedirect(route('assessments.respondent-collection', $assessment));
+
+        // Someone from another workspace is still refused.
+        [$stranger] = $this->userWithWorkspace();
+        $this->actingAs($stranger)->get(route('assessments.show', $assessment))->assertNotFound();
+    }
     public function test_the_owner_can_switch_shared_device_on_for_a_link_and_nobody_else_can(): void
     {
         $this->seedOfficialCatalogue();

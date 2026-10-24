@@ -266,6 +266,12 @@ class AssessmentController extends Controller
             return redirect()->route('assessments.results', $assessment);
         }
 
+        // Assessments answered through a link (School and PHC, for example) cannot be worked through on the
+        // old on-screen page. "Just me / my team" for those means opening the link and answering it now.
+        if (! $assessment->isPublished() && ($assessment->snapshot()->first()?->collection_config['allows_multi_respondent'] ?? false)) {
+            return redirect()->route('assessments.setup', ['assessment' => $assessment, 'step' => 4, 'mode' => 'self']);
+        }
+
         // Once an assessment is published it is being collected by shared link and is managed
         // from its collection page — self-answering no longer applies. While it is still a draft,
         // anyone on the workspace may answer it themselves, whatever the template's default.

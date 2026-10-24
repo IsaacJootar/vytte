@@ -17,7 +17,7 @@ class RespondentLinkController extends Controller
      * Open a draft for collection and make its first respondent link in one deliberate action.
      * Locking the assessment makes retries idempotent instead of silently creating extra links.
      */
-    public function openAndCreate(Assessment $assessment): RedirectResponse
+    public function openAndCreate(Request $request, Assessment $assessment): RedirectResponse
     {
         $this->authorizeWorkspaceAssessment($assessment);
         $workspace = app('current.workspace');
@@ -72,6 +72,14 @@ class RespondentLinkController extends Controller
         if ($result['token'] === null) {
             return redirect()->route('assessments.respondent-collection', $assessment)
                 ->with('error', 'This assessment is no longer open for new responses.');
+        }
+
+        // "Just me / my team": the person answers on the spot, so open the questions straight away. People
+        // taking turns on this device is the normal case, so the next-person button is switched on.
+        if ($request->boolean('answer_now')) {
+            $result['token']->update(['shared_device' => true]);
+
+            return redirect()->route('respondent.show', $result['token']->token);
         }
 
         $message = $result['created']

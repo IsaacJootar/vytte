@@ -123,6 +123,10 @@ Route::middleware('auth')->group(function () {
     Route::post('assessments/{assessment}/email', [ExportController::class, 'emailReport'])->name('assessments.email');
     Route::delete('assessments/{assessment}/share-links/{shareLink}', [ExportController::class, 'revokeShareLink'])->name('assessments.share.revoke');
     Route::post('assessments/{assessment}/open-and-create-link', [RespondentLinkController::class, 'openAndCreate'])->name('assessments.open-and-create-link');
+    // These two only act on a form submission. Refreshing the page after one (or following its address
+    // later) used to show "405 Method Not Allowed"; send the person to where the assessment now stands.
+    Route::get('assessments/{assessment}/open-and-create-link', fn (\App\Models\Assessment $assessment) => redirect()->route('assessments.show', $assessment));
+    Route::get('assessments/{assessment}/respondent-link', fn (\App\Models\Assessment $assessment) => redirect()->route('assessments.respondent-collection', $assessment));
     Route::post('assessments/{assessment}/respondent-link', [RespondentLinkController::class, 'store'])->name('assessments.respondent-link');
     Route::delete('assessments/{assessment}/respondent-links/{respondentToken}', [RespondentLinkController::class, 'destroy'])->name('assessments.respondent-link.destroy');
     Route::patch('assessments/{assessment}/respondent-links/{respondentToken}/shared-device', [RespondentLinkController::class, 'updateSharedDevice'])->name('assessments.respondent-link.shared-device');

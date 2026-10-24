@@ -179,6 +179,24 @@
                             Save as draft for later
                         </a>
                     </div>
+                @elseif ($assessment->snapshot?->collection_config['allows_multi_respondent'] ?? false)
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white">Answer it now, with your team</h2>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">This assessment is answered through a link, so you and your team can answer it one after another on this phone, and every answer is combined into one report. We will open it and take you straight to the questions.</p>
+                    <p class="mt-3 rounded-xl bg-vytte-50 px-4 py-3 text-xs text-vytte-800 dark:bg-vytte-900/20 dark:text-vytte-200">When everyone has answered, come back to this assessment and choose Collect &amp; review responses to check the answers and create the final report. Opening locks the assessment questions.</p>
+                    <div class="mt-5 flex flex-col sm:flex-row gap-3">
+                        <form method="POST" action="{{ route('assessments.open-and-create-link', $assessment) }}"
+                              onsubmit="return confirm('Open this assessment and start answering? Its questions will be locked.')">
+                            @csrf
+                            <input type="hidden" name="answer_now" value="1">
+                            <button class="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-vytte-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-vytte-800 transition-colors">
+                                Open and answer now →
+                            </button>
+                        </form>
+                        <a href="{{ route('assessments.show', ['assessment' => $assessment, 'saved' => 1]) }}"
+                           class="inline-flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                            Save as draft for later
+                        </a>
+                    </div>
                 @else
                     <h2 class="text-base font-bold text-slate-900 dark:text-white">Answer it yourself</h2>
                     <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Work through the questions now. Your report appears the moment you submit. You can stop and come back — your answers are saved.</p>
