@@ -200,6 +200,29 @@
                         @endforeach
                     @endforeach
                 </nav>
+
+                {{-- The desktop sidebar carries the account and Log out; the phone needs them here too. --}}
+                <div class="border-t border-slate-200 dark:border-slate-700 px-4 pt-3" style="padding-bottom: max(16px, env(safe-area-inset-bottom));">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <div class="w-8 h-8 rounded-full bg-vytte-700 flex items-center justify-center text-xs font-bold text-white uppercase flex-shrink-0">
+                            {{ substr($user?->name ?? '?', 0, 1) }}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ $user?->name }}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 truncate">{{ $user?->email }}</div>
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit"
+                                class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-vytte-500">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            Log out
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
