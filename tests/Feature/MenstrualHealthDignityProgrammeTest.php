@@ -376,6 +376,27 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->assertSame(1, app(ProgrammeOverviewService::class)->forProgramme($workspaceA, 'menstrual-health-dignity-bank-baseline')['assessed']);
     }
 
+    public function test_the_programme_lists_read_only_what_they_need_so_they_fit_in_a_small_web_memory_limit(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $this->site($user, $workspace, 'VYTTE_MHD_PHC_V5', 'best', 'Kuje PHC', 'Kuje');
+
+        $lean = (new \ReflectionMethod(ProgrammeOverviewService::class, 'leanProgrammeAssessments'))
+            ->invoke(app(ProgrammeOverviewService::class));
+
+        $this->assertCount(1, $lean);
+        // The stored snapshot and result payloads are the big parts; the light read leaves them behind.
+        $this->assertArrayNotHasKey('payload', $lean->first()->snapshot->getAttributes());
+        $this->assertArrayNotHasKey('payload', $lean->first()->aggregationResult->getAttributes());
+        $this->assertSame(1, $lean->first()->aggregationResult->eligible_respondent_count);
+
+        // The lists still work, and the portfolio (which needs the full reports) still reads them in full.
+        $this->assertSame(1, app(ProgrammeOverviewService::class)->programmesAcrossWorkspaces()[0]['reports']);
+        $this->assertCount(1, app(ProgrammeOverviewService::class)->finishedReportsAcrossWorkspaces('menstrual-health-dignity-bank-baseline'));
+        $this->assertSame(1, app(ProgrammeOverviewService::class)->forAllWorkspaces('menstrual-health-dignity-bank-baseline')['assessed']);
+    }
+
     public function test_a_platform_admin_finds_programme_reports_in_the_sidebar_and_chooses_the_places(): void
     {
         $this->seedOfficialCatalogue();

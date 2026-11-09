@@ -87,19 +87,21 @@ class ProgrammeOverviewService
         $projectIds = $workspaceIds === null ? null
             : Project::withoutGlobalScopes()->whereIn('workspace_id', $workspaceIds)->pluck('project_id')->all();
 
-        $all = Assessment::withoutGlobalScopes()->with(['snapshot', 'reportSnapshot', 'aggregationResult'])
-            ->when($projectIds !== null, fn ($query) => $query->whereIn('project_id', $projectIds))
-            ->get()
-            ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment))
+        // Choose the assessments from the light read, then load the full stored reports for just those.
+        $ids = $this->leanProgrammeAssessments($projectIds)
             ->filter(fn (Assessment $assessment) => Str::slug((string) data_get(ReportType::config($assessment), 'programme')) === $slug)
             ->when($siteType !== null, fn ($set) => $set->filter(
                 fn (Assessment $assessment) => strcasecmp((string) data_get(ReportType::config($assessment), 'site_noun'), $siteType) === 0
             ))
-            ->values();
+            ->pluck('assessment_id')
+            ->all();
 
-        if ($all->isEmpty()) {
+        if ($ids === []) {
             return null;
         }
+
+        $all = Assessment::withoutGlobalScopes()->with(['snapshot', 'reportSnapshot', 'aggregationResult'])
+            ->whereIn('assessment_id', $ids)->get()->values();
 
         return $this->compile($all, $slug, crossWorkspace: true, leaveOut: $leaveOut) + ['site_type' => $siteType];
     }
@@ -111,8 +113,7 @@ class ProgrammeOverviewService
      */
     public function programmesAcrossWorkspaces(): array
     {
-        return Assessment::withoutGlobalScopes()->with(['snapshot', 'aggregationResult'])->get()
-            ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment))
+        return $this->leanProgrammeAssessments()
             ->groupBy(fn (Assessment $assessment) => (string) data_get(ReportType::config($assessment), 'programme'))
             ->map(fn ($group, $name) => [
                 'name' => $name,
@@ -134,8 +135,8 @@ class ProgrammeOverviewService
         $projectWorkspace = Project::withoutGlobalScopes()->pluck('workspace_id', 'project_id');
         $workspaceNames = Workspace::withoutGlobalScopes()->pluck('name', 'workspace_id');
 
-        return Assessment::withoutGlobalScopes()->with(['snapshot', 'aggregationResult'])->get()
-            ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment) && $assessment->aggregationResult !== null)
+        return $this->leanProgrammeAssessments()
+            ->filter(fn (Assessment $assessment) => $assessment->aggregationResult !== null)
             ->filter(fn (Assessment $assessment) => Str::slug((string) data_get(ReportType::config($assessment), 'programme')) === $slug)
             ->map(function (Assessment $assessment) use ($projectWorkspace, $workspaceNames) {
                 $workspaceId = (string) ($projectWorkspace[$assessment->project_id] ?? '');
@@ -326,6 +327,27 @@ class ProgrammeOverviewService
                 'enough' => $row['enough'],
             ])->sortBy('name')->values()->all(),
         ];
+    }
+
+    /**
+     * Every programme assessment, read light: only the report type and the respondent count, never the stored
+     * snapshot or result payloads. A list of places across all workspaces would otherwise pull every workspace's
+     * full stored data into memory. Do not feed these into the report builders, which need the full payloads.
+     *
+     * @param  array<int, string>|null  $projectIds  limit to these projects; null reads every project
+     * @return \Illuminate\Support\Collection<int, Assessment>
+     */
+    private function leanProgrammeAssessments(?array $projectIds = null)
+    {
+        return Assessment::withoutGlobalScopes()
+            ->with([
+                'snapshot:snapshot_id,assessment_id,aggregation_policy',
+                'aggregationResult:aggregation_result_id,assessment_id,eligible_respondent_count',
+            ])
+            ->when($projectIds !== null, fn ($query) => $query->whereIn('project_id', $projectIds))
+            ->get()
+            ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment))
+            ->values();
     }
 
     /** Reading another workspace's assessment: make that workspace the current one, as it is for its own people. */
