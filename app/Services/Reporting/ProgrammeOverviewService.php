@@ -78,11 +78,17 @@ class ProgrammeOverviewService
      * of the rankings and listed under `left_out`, for example a board that is not itself a school or PHC.
      *
      * @param  (callable(string): ?string)|null  $leaveOut  place name => the reason it is left out, or null to keep it
+     * @param  array<int, string>|null  $workspaceIds  read only these workspaces; null reads them all
      * @return array<string, mixed>|null null when no workspace has such a programme
      */
-    public function forAllWorkspaces(string $slug, ?callable $leaveOut = null): ?array
+    public function forAllWorkspaces(string $slug, ?callable $leaveOut = null, ?array $workspaceIds = null): ?array
     {
-        $all = Assessment::withoutGlobalScopes()->with(['snapshot', 'reportSnapshot', 'aggregationResult'])->get()
+        $projectIds = $workspaceIds === null ? null
+            : Project::withoutGlobalScopes()->whereIn('workspace_id', $workspaceIds)->pluck('project_id')->all();
+
+        $all = Assessment::withoutGlobalScopes()->with(['snapshot', 'reportSnapshot', 'aggregationResult'])
+            ->when($projectIds !== null, fn ($query) => $query->whereIn('project_id', $projectIds))
+            ->get()
             ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment))
             ->filter(fn (Assessment $assessment) => Str::slug((string) data_get(ReportType::config($assessment), 'programme')) === $slug)
             ->values();

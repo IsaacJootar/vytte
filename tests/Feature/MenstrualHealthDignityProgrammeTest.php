@@ -356,6 +356,12 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         // The girls' survey counts each place once too: the kept Kuje assessment (3) and the school (1).
         $this->assertSame(4, $portfolio['survey']['respondents']);
 
+        // The portfolio can be limited to chosen workspaces.
+        $onlyA = app(ProgrammeOverviewService::class)->forAllWorkspaces('menstrual-health-dignity-bank-baseline', null, [$workspaceA->workspace_id]);
+        $this->assertSame(1, $onlyA['assessed']);
+        $this->assertSame(1, collect($onlyA['rows'])->first()['respondents']);
+        $this->assertSame([], $onlyA['merged']);
+
         // One workspace's own overview is unchanged: it still sees only its own place.
         app()->instance('current.workspace', $workspaceA);
         $this->assertSame(1, app(ProgrammeOverviewService::class)->forProgramme($workspaceA, 'menstrual-health-dignity-bank-baseline')['assessed']);

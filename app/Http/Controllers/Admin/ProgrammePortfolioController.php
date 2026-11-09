@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\Reporting\ProgrammeOverviewService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
@@ -14,9 +15,11 @@ use Illuminate\Support\Str;
  */
 class ProgrammePortfolioController extends Controller
 {
-    public function pdf(string $programme, ProgrammeOverviewService $overview): Response
+    /** Every workspace by default; `?workspaces[]=<id>` limits the portfolio to those workspaces. */
+    public function pdf(string $programme, Request $request, ProgrammeOverviewService $overview): Response
     {
-        $portfolio = $overview->forAllWorkspaces($programme, self::leaveOut(...));
+        $only = array_values(array_filter((array) $request->query('workspaces', [])));
+        $portfolio = $overview->forAllWorkspaces($programme, self::leaveOut(...), $only === [] ? null : $only);
 
         abort_if($portfolio === null, 404);
 
