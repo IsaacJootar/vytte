@@ -87,7 +87,8 @@
 <h2 style="margin-top: 20px;">In short</h2>
 @php
     $lines = [];
-    $lines[] = $placeCount.' '.($placeCount === 1 ? $singular.' was' : $plural.' were').' assessed. '.($counts['HIGH_NEED_READY'] + $counts['HIGH_NEED_NOT_READY']).' of them have a high need among girls and women, and '.$counts['HIGH_NEED_READY'].' of those '.($counts['HIGH_NEED_READY'] === 1 ? 'is' : 'are').' ready to host a Dignity Bank now.';
+    $highNeed = $counts['HIGH_NEED_READY'] + $counts['HIGH_NEED_NOT_READY'];
+    $lines[] = $placeCount.' '.($placeCount === 1 ? $singular.' was' : $plural.' were').' assessed. '.$highNeed.' of them '.($highNeed === 1 ? 'has' : 'have').' a high need among girls and women, and '.$counts['HIGH_NEED_READY'].' of those '.($counts['HIGH_NEED_READY'] === 1 ? 'is' : 'are').' ready to host a Dignity Bank now.';
     if ($counts['HIGH_NEED_NOT_READY'] > 0) { $lines[] = $counts['HIGH_NEED_NOT_READY'].' '.($counts['HIGH_NEED_NOT_READY'] === 1 ? $singular.' has' : $plural.' have').' a high need but '.($counts['HIGH_NEED_NOT_READY'] === 1 ? 'is' : 'are').' not ready yet: at least one must-have is missing.'; }
     if ($portfolio['common_gap_actions']) { $top = $portfolio['common_gap_actions'][0]; $lines[] = 'The most common gap, found at '.$top['sites'].' of '.$placeCount.' '.($placeCount === 1 ? $singular : $plural).': '.lcfirst(rtrim($top['finding'], '.')).'.'; }
     foreach ($worst as $row) { $lines[] = ($row['direction'] === 'DOWN' ? '' : 'Only ').round($row['value']).'% of the girls and women '.lcfirst($row['label']).'.'; }
