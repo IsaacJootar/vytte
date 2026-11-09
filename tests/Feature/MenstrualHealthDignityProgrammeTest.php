@@ -298,6 +298,24 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->actingAs($user)->get(route('assessments.results', $assessment))->assertOk()->assertSee('Answers collected');
     }
 
+    public function test_a_corrected_place_name_and_area_council_show_on_a_report_already_made(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_PHC_V5', 'best', 'KUJE PHC', 'Bwari');
+        $before = app(ProgrammeReportService::class)->forAssessment($assessment);
+        $this->assertSame('KUJE PHC', $before['site']['name']);
+
+        $assessment->target->update(['name' => 'Kuje PHC', 'sub_region' => 'Kuje']);
+        $after = app(ProgrammeReportService::class)->forAssessment($assessment->fresh());
+
+        $this->assertSame('Kuje PHC', $after['site']['name']);
+        $this->assertSame('Kuje', $after['site']['area_council']);
+        // Nothing that was scored changes.
+        $this->assertSame($before['provision']['score'], $after['provision']['score']);
+        $this->assertSame($before['classification'], $after['classification']);
+    }
+
     public function test_none_of_these_and_dont_know_are_dropped_from_a_ticked_list_unless_they_are_all_there_is(): void
     {
         $tidy = new \ReflectionMethod(ProgrammeReportService::class, 'tidyList');

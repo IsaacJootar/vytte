@@ -54,6 +54,7 @@ class ProgrammeReportService
         $report['next_steps'] = (array) ($config['next_steps'][$report['classification']['key'] ?? ''] ?? []);
         $report['summary'] = $this->summary($report);
         $report['fieldwork'] = $this->fieldwork($assessment);
+        $this->useCurrentPlaceDetails($report, $assessment);
         $report['actions'] = app(ProgrammeActionPlan::class)->forFindings(
             $report['weak_items'],
             collect($report['must_haves'])->where('missing', true)->pluck('code')->filter()->values()->all(),
@@ -61,6 +62,27 @@ class ProgrammeReportService
         );
 
         return $report;
+    }
+
+    /**
+     * The place's name and area council as they are now, not as they were typed when the report was made.
+     * A misspelt name or a missing area council can then be corrected on the place without redoing anything:
+     * these are descriptive details, not results, so no score or finding is affected.
+     *
+     * @param  array<string, mixed>  $report
+     */
+    private function useCurrentPlaceDetails(array &$report, Assessment $assessment): void
+    {
+        $place = $assessment->target;
+        if (! $place) {
+            return;
+        }
+        if (filled($place->name)) {
+            $report['site']['name'] = $place->name;
+        }
+        if (filled($place->sub_region)) {
+            $report['site']['area_council'] = $place->sub_region;
+        }
     }
 
     /**
