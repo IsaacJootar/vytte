@@ -362,6 +362,15 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->assertSame(1, collect($onlyA['rows'])->first()['respondents']);
         $this->assertSame([], $onlyA['merged']);
 
+        // One portfolio for the PHCs and one for the schools.
+        $leaveOut = fn (string $name) => str_contains(strtolower($name), 'board') ? 'Not a school or PHC.' : null;
+        $phcOnly = app(ProgrammeOverviewService::class)->forAllWorkspaces('menstrual-health-dignity-bank-baseline', $leaveOut, null, 'PHC');
+        $this->assertSame(['kuje phc'], collect($phcOnly['rows'])->pluck('name')->all());
+        $this->assertSame('PHC', $phcOnly['site_type']);
+        $schoolOnly = app(ProgrammeOverviewService::class)->forAllWorkspaces('menstrual-health-dignity-bank-baseline', $leaveOut, null, 'school');
+        $this->assertSame(['Bwari school'], collect($schoolOnly['rows'])->pluck('name')->all());
+        $this->assertSame([], $schoolOnly['merged']);
+
         // One workspace's own overview is unchanged: it still sees only its own place.
         app()->instance('current.workspace', $workspaceA);
         $this->assertSame(1, app(ProgrammeOverviewService::class)->forProgramme($workspaceA, 'menstrual-health-dignity-bank-baseline')['assessed']);
@@ -380,11 +389,59 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->actingAs($admin)->get(route('admin.programmes.index'))->assertOk()
             ->assertSee('Menstrual Health & Dignity Bank baseline')->assertSee('2 finished reports');
         $this->actingAs($admin)->get(route('admin.programmes.show', $slug))->assertOk()
-            ->assertSee('Kuje PHC')->assertSee('Bwari school')->assertSee('workspaces[]')->assertSee('Download portfolio report');
+            ->assertSee('Kuje PHC')->assertSee('Bwari school')->assertSee('workspaces[]')
+            ->assertSee('Download PHC portfolio')->assertSee('Download School portfolio');
         $this->actingAs($admin)->get(route('admin.programmes.show', 'no-such-programme'))->assertNotFound();
 
         $this->actingAs($user)->get(route('admin.programmes.index'))->assertForbidden();
         $this->actingAs($user)->get(route('admin.programmes.show', $slug))->assertForbidden();
+    }
+
+    public function test_the_saved_field_team_accounts_decide_what_the_two_portfolios_include(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$userA, $workspaceA] = $this->userWithWorkspace();
+        $this->site($userA, $workspaceA, 'VYTTE_MHD_PHC_V5', 'worst', 'Kuje PHC', 'Kuje');
+        [$userB, $workspaceB] = $this->userWithWorkspace();
+        $this->site($userB, $workspaceB, 'VYTTE_MHD_SCHOOL_V5', 'best', 'Bwari school', 'Bwari');
+        $admin = User::factory()->create(['platform_role' => 'PLATFORM_ADMIN']);
+        $slug = 'menstrual-health-dignity-bank-baseline';
+
+        // Nothing saved: every workspace counts, so the school (in workspace B) has a portfolio.
+        $this->actingAs($admin)->get(route('admin.programmes.portfolio', [$slug, 'type' => 'school']))->assertOk();
+
+        // Only workspace A is saved as the field team: tests and trials elsewhere are left out.
+        // (The restored catalogue snapshot already holds settings, so bring the id counter up to them first.)
+        \Illuminate\Support\Facades\DB::statement("select setval(pg_get_serial_sequence('platform_settings', 'id'), coalesce((select max(id) from platform_settings), 1))");
+        \App\Models\PlatformSetting::set('portfolio.workspaces.'.$slug, [$workspaceA->workspace_id], 'json');
+        $this->actingAs($admin)->get(route('admin.programmes.portfolio', [$slug, 'type' => 'phc']))
+            ->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->actingAs($admin)->get(route('admin.programmes.portfolio', [$slug, 'type' => 'school']))->assertNotFound();
+        // The page ticks the saved account and leaves the other unticked.
+        $page = $this->actingAs($admin)->get(route('admin.programmes.show', $slug))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/value="'.$workspaceA->workspace_id.'"\s+checked/', $page);
+        $this->assertDoesNotMatchRegularExpression('/value="'.$workspaceB->workspace_id.'"\s+checked/', $page);
+        // Ticking it by hand still works.
+        $this->actingAs($admin)->get(route('admin.programmes.portfolio', [$slug, 'type' => 'school', 'workspaces' => [$workspaceB->workspace_id]]))->assertOk();
+    }
+
+    public function test_the_portfolio_describes_groups_in_plain_words_with_nothing_that_reads_as_a_button(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $this->site($user, $workspace, 'VYTTE_MHD_PHC_V5', 'best', 'Kuje PHC', 'Kuje');
+        $this->site($user, $workspace, 'VYTTE_MHD_PHC_V5', 'worst', 'Gaube PHC', 'Gwagwalada');
+        $portfolio = app(ProgrammeOverviewService::class)->forAllWorkspaces('menstrual-health-dignity-bank-baseline', null, null, 'PHC');
+
+        $html = view('exports.programme-portfolio', ['portfolio' => $portfolio])->render();
+
+        $this->assertStringContainsString('How to read this report', $html);
+        $this->assertStringContainsString('High need, not ready yet', $html);
+        $this->assertStringContainsString('Lower need, ready', $html);
+        $this->assertStringContainsString('All PHCs, read together', $html);
+        $this->assertStringContainsString('there is nothing to click', $html);
+        $this->assertStringNotContainsString('Start here', $html);
+        $this->assertStringNotContainsString('Prepare first', $html);
     }
 
     public function test_only_a_platform_admin_can_download_the_portfolio_pdf(): void

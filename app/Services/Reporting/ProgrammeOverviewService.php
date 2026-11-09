@@ -79,9 +79,10 @@ class ProgrammeOverviewService
      *
      * @param  (callable(string): ?string)|null  $leaveOut  place name => the reason it is left out, or null to keep it
      * @param  array<int, string>|null  $workspaceIds  read only these workspaces; null reads them all
+     * @param  string|null  $siteType  only this kind of place ("PHC" or "school"); null reads both
      * @return array<string, mixed>|null null when no workspace has such a programme
      */
-    public function forAllWorkspaces(string $slug, ?callable $leaveOut = null, ?array $workspaceIds = null): ?array
+    public function forAllWorkspaces(string $slug, ?callable $leaveOut = null, ?array $workspaceIds = null, ?string $siteType = null): ?array
     {
         $projectIds = $workspaceIds === null ? null
             : Project::withoutGlobalScopes()->whereIn('workspace_id', $workspaceIds)->pluck('project_id')->all();
@@ -91,13 +92,16 @@ class ProgrammeOverviewService
             ->get()
             ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment))
             ->filter(fn (Assessment $assessment) => Str::slug((string) data_get(ReportType::config($assessment), 'programme')) === $slug)
+            ->when($siteType !== null, fn ($set) => $set->filter(
+                fn (Assessment $assessment) => strcasecmp((string) data_get(ReportType::config($assessment), 'site_noun'), $siteType) === 0
+            ))
             ->values();
 
         if ($all->isEmpty()) {
             return null;
         }
 
-        return $this->compile($all, $slug, crossWorkspace: true, leaveOut: $leaveOut);
+        return $this->compile($all, $slug, crossWorkspace: true, leaveOut: $leaveOut) + ['site_type' => $siteType];
     }
 
     /**

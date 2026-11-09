@@ -1,25 +1,28 @@
 @php
     $bandColor = ['strong' => '#16a34a', 'fair' => '#d97706', 'weak' => '#dc2626', 'none' => '#94a3b8'];
-    $labelColor = [
-        'HIGH_NEED_READY' => ['#065f46', '#d1fae5'],
-        'HIGH_NEED_NOT_READY' => ['#78350f', '#fef3c7'],
-        'LOWER_NEED_READY' => ['#0c4a6e', '#e0f2fe'],
-        'LOWER_NEED_NOT_READY' => ['#1e293b', '#e2e8f0'],
+    // Plain names for the four groups. These describe a place; they are not buttons or instructions.
+    $groups = [
+        'HIGH_NEED_READY' => ['High need, ready', "Girls' needs are not well met today, and the place has everything needed to set up a Dignity Bank now."],
+        'HIGH_NEED_NOT_READY' => ['High need, not ready yet', "Girls' needs are not well met today, but at least one must-have for a Dignity Bank is missing."],
+        'LOWER_NEED_READY' => ['Lower need, ready', "Girls' needs are better met today. The place is ready if a Dignity Bank is wanted later."],
+        'LOWER_NEED_NOT_READY' => ['Lower need, not ready yet', "Girls' needs are better met today, and the place is not yet ready."],
     ];
-    $band = fn ($score) => $score === null ? 'none' : ($score >= 70 ? 'strong' : ($score >= 45 ? 'fair' : 'weak'));
     $rows = collect($portfolio['rows']);
     $counts = $portfolio['counts'];
     $survey = $portfolio['survey'];
     $minimum = 10;
     $placeCount = $portfolio['assessed'];
-    $typeLabel = fn ($type) => $type === 'school' ? 'school' : $type;
+    $siteType = $portfolio['site_type'] ?? null;
+    $plural = $siteType === 'school' ? 'schools' : ($siteType === 'PHC' ? 'PHCs' : 'places');
+    $singular = $siteType === 'school' ? 'school' : ($siteType === 'PHC' ? 'PHC' : 'place');
+    $titleSuffix = $siteType === 'school' ? 'Schools' : ($siteType === 'PHC' ? 'PHCs' : 'All places');
     $byType = collect($portfolio['by_site_type']);
-    $typeText = $byType->map(fn ($t) => $t['sites'].' '.($t['name'] === 'school' ? ($t['sites'] === 1 ? 'school' : 'schools') : ($t['sites'] === 1 ? $t['name'] : $t['name'].'s')))->implode(' and ');
     $areas = collect($portfolio['by_area_council'])->pluck('name')->reject(fn ($n) => $n === 'Area council not set')->values();
     $thin = $rows->filter(fn ($r) => $r['respondents'] < $minimum)->values();
-    $startHere = $rows->filter(fn ($r) => ($r['classification']['key'] ?? null) === 'HIGH_NEED_READY')->values();
-    $prepare = $rows->filter(fn ($r) => ($r['classification']['key'] ?? null) === 'HIGH_NEED_NOT_READY')->values();
-    $later = $rows->filter(fn ($r) => in_array($r['classification']['key'] ?? null, ['LOWER_NEED_READY', 'LOWER_NEED_NOT_READY'], true))->values();
+    $inGroup = fn (string $key) => $rows->filter(fn ($r) => ($r['classification']['key'] ?? null) === $key)->values();
+    $highNeedReady = $inGroup('HIGH_NEED_READY');
+    $highNeedNotReady = $inGroup('HIGH_NEED_NOT_READY');
+    $lowerNeed = $rows->filter(fn ($r) => in_array($r['classification']['key'] ?? null, ['LOWER_NEED_READY', 'LOWER_NEED_NOT_READY'], true))->values();
     $worst = collect($survey['indicators'] ?? [])->filter(fn ($i) => $i['value'] !== null && ($i['kind'] ?? '') !== 'KNOWLEDGE')
         ->map(fn ($i) => $i + ['concern' => $i['direction'] === 'DOWN' ? $i['value'] : 100 - $i['value']])
         ->sortByDesc('concern')->take(3)->values();
@@ -43,11 +46,8 @@
     th { background: #0f2c4a; color: #fff; font-size: 8.5px; text-align: left; padding: 5px 6px; }
     td.c { padding: 5px 6px; border-bottom: 1px solid #e2e8f0; }
     .cover { background: #0f2c4a; color: #ffffff; border-radius: 10px; padding: 34px 32px 30px 32px; }
-    .tile { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; text-align: center; }
-    .big { font-size: 30px; font-weight: bold; line-height: 1; }
-    .pill { padding: 2px 7px; border-radius: 8px; font-size: 8px; font-weight: bold; }
-    .item { padding: 5px 0 5px 12px; border-top: 1px solid #eef2f7; }
     .box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 11px; margin-bottom: 7px; }
+    .guide { background: #f1f5f9; border-radius: 6px; padding: 9px 12px; margin-top: 14px; }
     .footer { position: fixed; bottom: -34px; left: 0; right: 0; font-size: 8px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 5px; }
     .pagenum:before { content: counter(page); }
 </style>
@@ -56,7 +56,7 @@
 
 <div class="footer">
     <table><tr>
-        <td>{{ $portfolio['programme'] }} · Portfolio report</td>
+        <td>{{ $portfolio['programme'] }} · Portfolio report · {{ $titleSuffix }}</td>
         <td style="text-align: right;">Page <span class="pagenum"></span></td>
     </tr></table>
 </div>
@@ -65,103 +65,102 @@
 <div class="cover">
     <div class="eyebrow" style="color: #93c5fd;">{{ $portfolio['programme'] }}</div>
     <div style="font-size: 12px; margin-top: 6px; color: #cbd5e1;">Portfolio report</div>
-    <div style="font-size: 26px; font-weight: bold; line-height: 1.2; margin-top: 18px;">All places, read together</div>
+    <div style="font-size: 26px; font-weight: bold; line-height: 1.2; margin-top: 18px;">All {{ $plural }}, read together</div>
     <div style="margin-top: 16px; font-size: 11px; color: #e2e8f0;">
-        {{ $placeCount }} {{ $placeCount === 1 ? 'place' : 'places' }} assessed ({{ $typeText }})
+        {{ $placeCount }} {{ $placeCount === 1 ? $singular : $plural }} assessed
         @if ($areas->isNotEmpty()) across {{ $areas->count() }} area {{ $areas->count() === 1 ? 'council' : 'councils' }}@endif.
         @if ($survey) {{ $survey['respondents'] }} {{ $survey['respondents'] === 1 ? 'person' : 'people' }} answered.@endif
     </div>
     <div style="margin-top: 6px; font-size: 9px; color: #93c5fd;">Prepared {{ $date }}</div>
 </div>
 
-{{-- The result in numbers --}}
-<table style="margin-top: 14px; border-collapse: separate; border-spacing: 8px 0; margin-left: -8px; width: 103%;"><tr>
-    @foreach ([['HIGH_NEED_READY', $portfolio['labels']['HIGH_NEED_READY'], 'High need, ready now'], ['HIGH_NEED_NOT_READY', $portfolio['labels']['HIGH_NEED_NOT_READY'], 'High need, must-haves missing'], ['LATER', 'Later', 'Lower need']] as [$key, $label, $note])
-        @php
-            $n = $key === 'LATER' ? $counts['LOWER_NEED_READY'] + $counts['LOWER_NEED_NOT_READY'] : $counts[$key];
-            $tone = $labelColor[$key === 'LATER' ? 'LOWER_NEED_READY' : $key];
-        @endphp
-        <td style="width: 33%;">
-            <div class="tile" style="background: {{ $tone[1] }}; border-color: {{ $tone[1] }};">
-                <div class="big" style="color: {{ $tone[0] }};">{{ $n }}</div>
-                <div style="font-weight: bold; margin-top: 4px; color: {{ $tone[0] }}; font-size: 11px;">{{ $label }}</div>
-                <div class="small" style="color: {{ $tone[0] }};">{{ $note }}</div>
-            </div>
-        </td>
-    @endforeach
-</tr></table>
+{{-- How to read this report --}}
+<div class="guide">
+    <strong>How to read this report.</strong>
+    Every {{ $singular }} was given two scores out of 100.
+    <strong>Needs met</strong> shows how well girls' needs for menstrual products, information and a safe toilet are met today: the higher, the better.
+    <strong>Ready</strong> shows whether the {{ $singular }} could host a Dignity Bank (leaders' support, a person to run it, a secure place for stock).
+    A {{ $singular }} has a <strong>high need</strong> when its needs-met score is below 60, and is <strong>ready</strong> when its ready score is 60 or more and no must-have is missing.
+    That puts each {{ $singular }} into one of four groups, shown below. The groups only describe where a {{ $singular }} stands; there is nothing to click.
+</div>
 
 <h2 style="margin-top: 20px;">In short</h2>
 @php
     $lines = [];
-    $lines[] = $placeCount.' '.($placeCount === 1 ? 'place was' : 'places were').' assessed. '.($counts['HIGH_NEED_READY'] + $counts['HIGH_NEED_NOT_READY']).' of them have a high need among girls and women, and '.$counts['HIGH_NEED_READY'].' of those are ready to host a Dignity Bank now.';
-    if ($counts['HIGH_NEED_NOT_READY'] > 0) { $lines[] = $counts['HIGH_NEED_NOT_READY'].' '.($counts['HIGH_NEED_NOT_READY'] === 1 ? 'place has' : 'places have').' a high need but '.($counts['HIGH_NEED_NOT_READY'] === 1 ? 'is' : 'are').' not ready yet: at least one must-have is missing.'; }
-    if ($portfolio['common_gap_actions']) { $top = $portfolio['common_gap_actions'][0]; $lines[] = 'The most common gap, found at '.$top['sites'].' of '.$placeCount.' places: '.lcfirst(rtrim($top['finding'], '.')).'.'; }
+    $lines[] = $placeCount.' '.($placeCount === 1 ? $singular.' was' : $plural.' were').' assessed. '.($counts['HIGH_NEED_READY'] + $counts['HIGH_NEED_NOT_READY']).' of them have a high need among girls and women, and '.$counts['HIGH_NEED_READY'].' of those '.($counts['HIGH_NEED_READY'] === 1 ? 'is' : 'are').' ready to host a Dignity Bank now.';
+    if ($counts['HIGH_NEED_NOT_READY'] > 0) { $lines[] = $counts['HIGH_NEED_NOT_READY'].' '.($counts['HIGH_NEED_NOT_READY'] === 1 ? $singular.' has' : $plural.' have').' a high need but '.($counts['HIGH_NEED_NOT_READY'] === 1 ? 'is' : 'are').' not ready yet: at least one must-have is missing.'; }
+    if ($portfolio['common_gap_actions']) { $top = $portfolio['common_gap_actions'][0]; $lines[] = 'The most common gap, found at '.$top['sites'].' of '.$placeCount.' '.($placeCount === 1 ? $singular : $plural).': '.lcfirst(rtrim($top['finding'], '.')).'.'; }
     foreach ($worst as $row) { $lines[] = ($row['direction'] === 'DOWN' ? '' : 'Only ').round($row['value']).'% of the girls and women '.lcfirst($row['label']).'.'; }
-    if ($thin->isNotEmpty()) { $lines[] = $thin->count().' of the '.$placeCount.' places had fewer than '.$minimum.' people answering, so their own results are a rough guide.'; }
+    if ($thin->isNotEmpty()) { $lines[] = $thin->count().' of the '.$placeCount.' '.($placeCount === 1 ? $singular : $plural).' had fewer than '.$minimum.' people answering, so '.($thin->count() === 1 ? 'its' : 'their').' own results are a rough guide.'; }
+    if ($placeCount < 5) { $lines[] = 'Only '.$placeCount.' '.($placeCount === 1 ? $singular : $plural).' took part, so treat this report as a small sample, not a general picture.'; }
 @endphp
 @foreach ($lines as $line)
     <div style="padding: 3px 0 3px 12px;"><span style="color: #1d6fa5; font-weight: bold;">•</span> {{ $line }}</div>
 @endforeach
 
+{{-- How the places group --}}
+<h2 style="margin-top: 20px;">How the {{ $plural }} group</h2>
+<table>
+    <tr><th style="width: 22%;">Group</th><th style="width: 8%;">Number</th><th style="width: 40%;">What it means</th><th>Which</th></tr>
+    @foreach ($groups as $key => [$name, $meaning])
+        @php $members = $inGroup($key); @endphp
+        <tr>
+            <td class="c"><strong>{{ $name }}</strong></td>
+            <td class="c"><strong>{{ $counts[$key] }}</strong></td>
+            <td class="c muted">{{ $meaning }}</td>
+            <td class="c">{{ $members->isEmpty() ? '—' : $members->pluck('name')->implode(', ') }}</td>
+        </tr>
+    @endforeach
+</table>
+
 {{-- Place by place --}}
 <div class="break"></div>
-<h2>Place by place</h2>
-<div class="lead small">Listed with the places to start at first. "Needs met" is how well girls' needs are met today (higher is better). "Ready" is readiness to host a Dignity Bank.</div>
+<h2>{{ ucfirst($singular) }} by {{ $singular }}</h2>
+<div class="lead small">Ordered with the highest need and the most ready first. "Needs met" and "Ready" are scores out of 100.</div>
 <table>
     <tr>
-        <th style="width: 24%;">Place</th><th style="width: 8%;">Type</th><th style="width: 14%;">Area council</th>
-        <th style="width: 8%;">Needs met</th><th style="width: 7%;">Ready</th><th style="width: 15%;">Result</th><th style="width: 16%;">Must-haves missing</th><th style="width: 8%;">People</th>
+        <th style="width: 25%;">{{ ucfirst($singular) }}</th><th style="width: 15%;">Area council</th>
+        <th style="width: 9%;">Needs met</th><th style="width: 8%;">Ready</th><th style="width: 22%;">Group</th><th style="width: 12%;">Must-haves missing</th><th style="width: 9%;">People</th>
     </tr>
     @foreach ($rows as $row)
-        @php $tone = $labelColor[$row['classification']['key'] ?? 'LOWER_NEED_NOT_READY'] ?? $labelColor['LOWER_NEED_NOT_READY']; @endphp
         <tr>
             <td class="c"><strong>{{ $row['name'] }}</strong></td>
-            <td class="c">{{ ucfirst($row['type']) }}</td>
             <td class="c">{{ $row['area_council'] === 'Area council not set' ? '—' : $row['area_council'] }}</td>
             <td class="c" style="font-weight: bold; color: {{ $bandColor[$row['provision_band']] }};">{{ $row['provision'] !== null ? round($row['provision']) : '—' }}</td>
             <td class="c" style="font-weight: bold; color: {{ $bandColor[$row['readiness_band']] }};">{{ $row['readiness'] !== null ? round($row['readiness']) : '—' }}</td>
-            <td class="c"><span class="pill" style="background: {{ $tone[1] }}; color: {{ $tone[0] }};">{{ $row['classification']['label'] ?? '—' }}</span></td>
+            <td class="c">{{ $groups[$row['classification']['key'] ?? ''][0] ?? '—' }}</td>
             <td class="c">{{ $row['flag_count'] ? $row['flag_count'] : 'None' }}</td>
             <td class="c" style="{{ $row['respondents'] < $minimum ? 'color: #b45309; font-weight: bold;' : '' }}">{{ $row['respondents'] }}</td>
         </tr>
     @endforeach
 </table>
-<div class="muted small" style="margin-top: 5px;">A number in amber under "People" means fewer than {{ $minimum }} people answered at that place.</div>
+<div class="muted small" style="margin-top: 5px;">A number in amber under "People" means fewer than {{ $minimum }} people answered there.</div>
 
-{{-- Groups --}}
-<table style="margin-top: 18px; border-collapse: separate; border-spacing: 14px 0; margin-left: -14px; width: 106%;"><tr>
-    <td style="width: 50%;">
-        <h2>By area council</h2>
-        <table>
-            <tr><th>Area council</th><th>Places</th><th>Start here</th><th>Needs met</th></tr>
-            @foreach ($portfolio['by_area_council'] as $a)
-                <tr><td class="c">{{ $a['name'] === 'Area council not set' ? 'Not recorded' : $a['name'] }}</td><td class="c">{{ $a['sites'] }}</td><td class="c">{{ $a['start_here'] }}</td><td class="c">{{ $a['provision'] ?? '—' }}</td></tr>
-            @endforeach
-        </table>
-    </td>
-    <td style="width: 50%;">
-        <h2>PHCs and schools</h2>
-        <table>
-            <tr><th>Type</th><th>Places</th><th>Start here</th><th>Needs met</th><th>Ready</th></tr>
-            @foreach ($portfolio['by_site_type'] as $t)
-                <tr><td class="c">{{ ucfirst($t['name']) }}</td><td class="c">{{ $t['sites'] }}</td><td class="c">{{ $t['start_here'] }}</td><td class="c">{{ $t['provision'] ?? '—' }}</td><td class="c">{{ $t['readiness'] ?? '—' }}</td></tr>
-            @endforeach
-        </table>
-        @php $schools = $byType->firstWhere('name', 'school'); @endphp
-        @if (! $schools || $schools['sites'] < 5)
-            <div class="muted small" style="margin-top: 5px;">Only {{ $schools['sites'] ?? 0 }} {{ ($schools['sites'] ?? 0) === 1 ? 'school' : 'schools' }} took part, so what this says about schools is thin. It is strong for PHCs.</div>
-        @endif
-    </td>
-</tr></table>
+{{-- By area council --}}
+<h2 style="margin-top: 18px;">By area council</h2>
+<table style="width: 70%;">
+    <tr><th>Area council</th><th>{{ ucfirst($plural) }}</th><th>High need, ready</th><th>Average needs met</th></tr>
+    @foreach ($portfolio['by_area_council'] as $a)
+        <tr><td class="c">{{ $a['name'] === 'Area council not set' ? 'Not recorded' : $a['name'] }}</td><td class="c">{{ $a['sites'] }}</td><td class="c">{{ $a['start_here'] }}</td><td class="c">{{ $a['provision'] ?? '—' }}</td></tr>
+    @endforeach
+</table>
+@if ($byType->count() > 1)
+    <h2 style="margin-top: 18px;">PHCs and schools</h2>
+    <table style="width: 70%;">
+        <tr><th>Type</th><th>Places</th><th>High need, ready</th><th>Average needs met</th><th>Average ready</th></tr>
+        @foreach ($portfolio['by_site_type'] as $t)
+            <tr><td class="c">{{ ucfirst($t['name']) }}</td><td class="c">{{ $t['sites'] }}</td><td class="c">{{ $t['start_here'] }}</td><td class="c">{{ $t['provision'] ?? '—' }}</td><td class="c">{{ $t['readiness'] ?? '—' }}</td></tr>
+        @endforeach
+    </table>
+@endif
 
 {{-- Common gaps and what to do --}}
 @if ($portfolio['common_gap_actions'])
     <div class="break"></div>
     <h2>The gaps found most often, and what answers them</h2>
-    <div class="lead small">Each of these is a gap found at several places, so it is worth solving once for the whole programme rather than place by place.</div>
+    <div class="lead small">Each of these is a gap found at several {{ $plural }}, so it is worth solving once for the whole programme rather than one {{ $singular }} at a time.</div>
     <table>
-        <tr><th style="width: 40%;">What was found</th><th style="width: 12%;">Places</th><th>What to do</th></tr>
+        <tr><th style="width: 40%;">What was found</th><th style="width: 12%;">{{ ucfirst($plural) }}</th><th>What to do</th></tr>
         @foreach ($portfolio['common_gap_actions'] as $gap)
             <tr>
                 <td class="c">{{ $gap['finding'] }}</td>
@@ -175,7 +174,7 @@
 {{-- What girls and women told us --}}
 @if ($survey)
     <h2 style="margin-top: 22px;">What girls and women told us</h2>
-    <div class="lead small">{{ $survey['respondents'] }} {{ $survey['respondents'] === 1 ? 'answer' : 'answers' }} from {{ $survey['schools'] }} {{ $survey['schools'] === 1 ? 'place' : 'places' }}, added together. Each place counts once. Answers are anonymous.</div>
+    <div class="lead small">{{ $survey['respondents'] }} {{ $survey['respondents'] === 1 ? 'answer' : 'answers' }} from {{ $survey['schools'] }} {{ $survey['schools'] === 1 ? $singular : $plural }}, added together. Each {{ $singular }} counts once. Answers are anonymous.</div>
     @foreach (collect($survey['indicators'])->groupBy('outcome') as $outcome => $indicators)
         <div style="margin: 10px 0 3px 0; font-weight: bold; color: #0f2c4a; font-size: 10.5px;">{{ $outcome }}</div>
         <table>
@@ -194,37 +193,37 @@
 <div class="break"></div>
 <h2>What the programme should do next</h2>
 <div class="box">
-    @if ($startHere->isNotEmpty())
-        <strong>1. Start Dignity Banks at the {{ $startHere->count() }} "Start here" {{ $startHere->count() === 1 ? 'place' : 'places' }}.</strong>
-        <div class="muted" style="margin-top: 3px;">{{ $startHere->pluck('name')->implode(', ') }}.</div>
-        <div style="margin-top: 3px;">{{ $startHere->count() === 1 ? 'This has' : 'These have' }} a high need and every must-have in place. Confirm the person who will run it and the secure place for stock at each, then begin.</div>
+    @if ($highNeedReady->isNotEmpty())
+        <strong>1. Set up Dignity Banks first at the {{ $highNeedReady->count() }} high-need {{ $highNeedReady->count() === 1 ? $singular : $plural }} that {{ $highNeedReady->count() === 1 ? 'is' : 'are' }} ready.</strong>
+        <div class="muted" style="margin-top: 3px;">{{ $highNeedReady->pluck('name')->implode(', ') }}.</div>
+        <div style="margin-top: 3px;">Girls' needs are least met {{ $highNeedReady->count() === 1 ? 'here' : 'at these places' }}, and every must-have is in place. Confirm the person who will run the Dignity Bank and the secure place for stock, then begin.</div>
     @else
-        <strong>1. No place is both high need and ready yet.</strong>
-        <div style="margin-top: 3px;">Begin with the places that are closest to ready, as listed in step 2.</div>
+        <strong>1. No {{ $singular }} is both high need and ready yet.</strong>
+        <div style="margin-top: 3px;">Begin with the {{ $plural }} that are closest to ready, as listed in step 2.</div>
     @endif
 </div>
 <div class="box">
-    <strong>2. Prepare the {{ $prepare->count() }} "Prepare first" {{ $prepare->count() === 1 ? 'place' : 'places' }} before starting.</strong>
-    @forelse ($prepare as $row)
+    <strong>2. Fix what is missing at the {{ $highNeedNotReady->count() }} high-need {{ $highNeedNotReady->count() === 1 ? $singular : $plural }} that {{ $highNeedNotReady->count() === 1 ? 'is' : 'are' }} not ready, then set up.</strong>
+    @forelse ($highNeedNotReady as $row)
         <div style="margin-top: 3px;"><strong>{{ $row['name'] }}:</strong> {{ implode(' ', $row['flags']) }}</div>
     @empty
-        <div class="muted" style="margin-top: 3px;">None: every place with a high need is ready.</div>
+        <div class="muted" style="margin-top: 3px;">None: every high-need {{ $singular }} is ready.</div>
     @endforelse
 </div>
 <div class="box">
     <strong>3. Solve the common gaps together.</strong>
     @foreach (array_slice($portfolio['common_gap_actions'], 0, 5) as $gap)
-        <div style="margin-top: 3px;">– {{ $gap['action'] }} <span class="muted">({{ $gap['sites'] }} of {{ $placeCount }} places)</span></div>
+        <div style="margin-top: 3px;">– {{ $gap['action'] }} <span class="muted">({{ $gap['sites'] }} of {{ $placeCount }})</span></div>
     @endforeach
 </div>
 <div class="box">
-    <strong>4. Leave the {{ $later->count() }} lower-need {{ $later->count() === 1 ? 'place' : 'places' }} for later.</strong>
-    <div style="margin-top: 3px;">Needs are lower {{ $later->count() === 1 ? 'here' : 'at these places' }}. Share what is already working with the others, and return once the higher-need places have started.</div>
+    <strong>4. The {{ $lowerNeed->count() }} lower-need {{ $lowerNeed->count() === 1 ? $singular : $plural }} can wait.</strong>
+    <div style="margin-top: 3px;">Girls' needs are better met {{ $lowerNeed->count() === 1 ? 'here' : 'at these places' }}. Share what is already working with the others, and come back once the higher-need places have started.</div>
 </div>
 <div class="box">
-    <strong>5. Fill the gaps in the evidence.</strong>
+    <strong>5. Strengthen the evidence.</strong>
     @if ($thin->isNotEmpty())
-        <div style="margin-top: 3px;">{{ $thin->count() }} {{ $thin->count() === 1 ? 'place' : 'places' }} had fewer than {{ $minimum }} people answering: {{ $thin->pluck('name')->implode(', ') }}. Collect more answers there before relying on their girls' survey figures.</div>
+        <div style="margin-top: 3px;">{{ $thin->count() }} {{ $thin->count() === 1 ? $singular : $plural }} had fewer than {{ $minimum }} people answering: {{ $thin->pluck('name')->implode(', ') }}. Collect more answers there before relying on their girls' survey figures.</div>
     @endif
     @if ($portfolio['in_progress'] > 0)
         <div style="margin-top: 3px;">{{ $portfolio['in_progress'] }} more {{ $portfolio['in_progress'] === 1 ? 'place was' : 'places were' }} set up but {{ $portfolio['in_progress'] === 1 ? 'has' : 'have' }} no completed report yet, so {{ $portfolio['in_progress'] === 1 ? 'it is' : 'they are' }} not part of this picture.</div>
@@ -235,13 +234,13 @@
 {{-- How the portfolio was put together --}}
 <h2 style="margin-top: 22px;">How this portfolio was put together</h2>
 <div class="muted small">
-    This report adds together the final reports already produced for each place; no number here is calculated differently from the place's own report.
-    A place appears once. Scores are out of 100. High need means the needs-met score is below 60. A place is ready only when its readiness score is 60 or more and no must-have is missing.
+    This report adds together the final reports already produced for each {{ $singular }}; no number here is calculated differently from the {{ $singular }}'s own report.
+    A {{ $singular }} appears once. Scores are out of 100.
 </div>
 @if (! empty($portfolio['merged']))
     <div style="margin-top: 8px;"><strong>Counted once.</strong>
         @foreach ($portfolio['merged'] as $m)
-            <div class="small">{{ $m['name'] }} was assessed more than once. The assessment answered by the most people ({{ $m['kept_respondents'] }}) is used; the other ({{ implode(', ', $m['other_respondents']) }} {{ count($m['other_respondents']) === 1 ? 'person' : 'people' }}) is left out so the place is not counted twice.</div>
+            <div class="small">{{ $m['name'] }} was assessed more than once. The assessment answered by the most people ({{ $m['kept_respondents'] }}) is used; the other ({{ implode(', ', $m['other_respondents']) }} {{ count($m['other_respondents']) === 1 ? 'person' : 'people' }}) is left out so it is not counted twice.</div>
         @endforeach
     </div>
 @endif
