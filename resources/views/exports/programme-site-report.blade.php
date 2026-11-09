@@ -10,13 +10,23 @@
     $classification = $programme['classification'];
     $outcomes = $programme['outcomes'];
     $tone = $classification ? ($labelColor[$classification['key']] ?? $labelColor['LOWER_NEED_NOT_READY']) : ['#1e293b', '#cbd5e1'];
+    $fieldwork = $programme['fieldwork'] ?? ['from' => null, 'to' => null];
+    $fieldworkText = null;
+    if ($fieldwork['from']) {
+        $from = \Illuminate\Support\Carbon::parse($fieldwork['from']);
+        $to = \Illuminate\Support\Carbon::parse($fieldwork['to'] ?? $fieldwork['from']);
+        $fieldworkText = $from->isSameDay($to) ? $from->format('d M Y')
+            : ($from->year === $to->year ? $from->format('d M').' – '.$to->format('d M Y') : $from->format('d M Y').' – '.$to->format('d M Y'));
+    }
     $details = array_filter([
         'Area council' => $site['area_council'],
         'State' => $site['state'],
         'Type' => $site['type'],
-        'Assessed on' => $site['assessed_on'] ? \Illuminate\Support\Carbon::parse($site['assessed_on'])->format('d M Y') : null,
+        'Answers collected' => $fieldworkText,
+        'Report created' => $site['assessed_on'] ? \Illuminate\Support\Carbon::parse($site['assessed_on'])->format('d M Y') : null,
         'People who answered' => $outcomes ? $outcomes['respondents'] : null,
     ], fn ($value) => $value !== null && $value !== '');
+    $actions = $programme['actions'] ?? null;
 @endphp
 <!DOCTYPE html>
 <html>
@@ -115,6 +125,17 @@
     <div style="padding: 3px 0 3px 12px; position: relative;"><span style="color: #1d6fa5; font-weight: bold;">•</span> {{ $line }}</div>
 @endforeach
 
+@if ($outcomes)
+    <div style="margin-top: 10px; padding: 8px 12px; border-radius: 6px; background: {{ $outcomes['enough'] ? '#ecfdf5' : '#fffbeb' }}; color: {{ $outcomes['enough'] ? '#065f46' : '#92400e' }};">
+        <strong>How much to trust this.</strong>
+        @if ($outcomes['enough'])
+            {{ $outcomes['respondents'] }} girls and women answered, enough for the figures about them to be a fair picture of this {{ $programme['noun'] }}.
+        @else
+            Only {{ $outcomes['respondents'] }} {{ $outcomes['respondents'] === 1 ? 'person' : 'people' }} answered (at least {{ $outcomes['minimum'] }} are needed). The figures about girls and women are a rough guide only, and the scores should be read with care.
+        @endif
+    </div>
+@endif
+
 <h2 style="margin-top: 20px;">Must-haves for a Dignity Bank</h2>
 <div class="lead small">A Dignity Bank cannot start until each of these is in place.</div>
 <table>
@@ -144,6 +165,34 @@
             </tr>
         @endforeach
     </table>
+@endif
+
+{{-- Action plan: what, how, who and when --}}
+@if ($actions && $actions['horizons'])
+    <div class="break"></div>
+    <h2>Action plan</h2>
+    <div class="lead small">What to do about the biggest gaps, how to go about it, who does it and by when. Must-haves come first because a Dignity Bank cannot start without them.</div>
+    @foreach ($actions['horizons'] as $horizon)
+        <div style="margin: 12px 0 4px 0; font-size: 11px; font-weight: bold; color: #1d6fa5;">{{ $horizon['label'] }}</div>
+        @foreach ($horizon['actions'] as $action)
+            <div class="outcome" style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 11px; margin-bottom: 7px;">
+                <div style="font-weight: bold; color: #0f2c4a; font-size: 10.5px;">
+                    {{ $action['what'] }}
+                    @if ($action['must_have'])<span style="background: #fee2e2; color: #b91c1c; font-size: 7.5px; padding: 1px 6px; border-radius: 6px; margin-left: 6px;">MUST-HAVE</span>@endif
+                </div>
+                <div class="muted small" style="margin-top: 2px;">What we found: {{ $action['finding'] }}</div>
+                <div style="margin-top: 4px;"><strong>How:</strong>
+                    @foreach ($action['how'] as $step)
+                        <div style="padding-left: 10px;">– {{ $step }}</div>
+                    @endforeach
+                </div>
+                <div style="margin-top: 4px;"><strong>Who:</strong> {{ $action['who'] }} &nbsp;&nbsp; <strong>When:</strong> {{ $action['when'] }}</div>
+            </div>
+        @endforeach
+    @endforeach
+    @if ($actions['more'] > 0)
+        <div class="muted small" style="margin-top: 6px;">{{ $actions['more'] }} further smaller {{ $actions['more'] === 1 ? 'gap was' : 'gaps were' }} also found. Deal with {{ $actions['more'] === 1 ? 'it' : 'them' }} after the actions above.</div>
+    @endif
 @endif
 
 {{-- Findings --}}

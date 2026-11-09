@@ -24,11 +24,22 @@
                 <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-white/60">{{ $programme['programme'] }}</p>
                 <h1 class="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{{ $site['name'] }}</h1>
                 <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                    @php
+                        $fieldwork = $programme['fieldwork'] ?? ['from' => null, 'to' => null];
+                        $fieldworkText = null;
+                        if ($fieldwork['from']) {
+                            $from = \Illuminate\Support\Carbon::parse($fieldwork['from']);
+                            $to = \Illuminate\Support\Carbon::parse($fieldwork['to'] ?? $fieldwork['from']);
+                            $fieldworkText = $from->isSameDay($to) ? $from->format('d M Y')
+                                : ($from->year === $to->year ? $from->format('d M').' – '.$to->format('d M Y') : $from->format('d M Y').' – '.$to->format('d M Y'));
+                        }
+                        $actions = $programme['actions'] ?? null;
+                    @endphp
                     @foreach (array_filter([
                         $site['area_council'] ? $site['area_council'].' area council' : null,
                         $site['state'],
                         $site['type'],
-                        $site['assessed_on'] ? \Illuminate\Support\Carbon::parse($site['assessed_on'])->format('d M Y') : null,
+                        $fieldworkText ? 'Answers collected '.$fieldworkText : ($site['assessed_on'] ? \Illuminate\Support\Carbon::parse($site['assessed_on'])->format('d M Y') : null),
                         $outcomes ? $outcomes['respondents'].' '.($outcomes['respondents'] === 1 ? 'person answered' : 'people answered') : null,
                     ]) as $chip)
                         <span class="rounded-full bg-white/10 px-3 py-1 font-medium text-white/90 ring-1 ring-white/15">{{ $chip }}</span>
@@ -122,6 +133,51 @@
         </div>
         @endif
     </div>
+
+    @if ($outcomes)
+        <div class="mb-5 rounded-2xl border px-5 py-3 text-sm {{ $outcomes['enough'] ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200' : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200' }}">
+            <span class="font-semibold">How much to trust this.</span>
+            @if ($outcomes['enough'])
+                {{ $outcomes['respondents'] }} girls and women answered, enough for the figures about them to be a fair picture of this {{ $programme['noun'] }}.
+            @else
+                Only {{ $outcomes['respondents'] }} {{ $outcomes['respondents'] === 1 ? 'person' : 'people' }} answered (at least {{ $outcomes['minimum'] }} are needed). The figures about girls and women are a rough guide only, and the scores should be read with care.
+            @endif
+        </div>
+    @endif
+
+    {{-- Action plan: what, how, who and when --}}
+    @if ($actions && $actions['horizons'])
+        <div class="{{ $card }} mb-5">
+            <h2 class="{{ $cardTitle }}">Action plan</h2>
+            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">What to do about the biggest gaps, how to go about it, who does it and by when. Must-haves come first because a Dignity Bank cannot start without them.</p>
+            @foreach ($actions['horizons'] as $horizon)
+                <h3 class="mt-4 text-xs font-bold uppercase tracking-wide text-vytte-700 dark:text-vytte-300">{{ $horizon['label'] }}</h3>
+                <div class="mt-2 space-y-3">
+                    @foreach ($horizon['actions'] as $action)
+                        <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                            <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                                {{ $action['what'] }}
+                                @if ($action['must_have'])
+                                    <span class="ml-1.5 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:bg-red-900/40 dark:text-red-300">MUST-HAVE</span>
+                                @endif
+                            </p>
+                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">What we found: {{ $action['finding'] }}</p>
+                            <p class="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-200">How</p>
+                            <ul class="mt-0.5 list-disc space-y-0.5 pl-5 text-sm text-slate-700 dark:text-slate-200">
+                                @foreach ($action['how'] as $step)
+                                    <li>{{ $step }}</li>
+                                @endforeach
+                            </ul>
+                            <p class="mt-2 text-sm text-slate-700 dark:text-slate-200"><span class="font-semibold">Who:</span> {{ $action['who'] }} <span class="mx-1.5 text-slate-300">·</span> <span class="font-semibold">When:</span> {{ $action['when'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            @endforeach
+            @if ($actions['more'] > 0)
+                <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">{{ $actions['more'] }} further smaller {{ $actions['more'] === 1 ? 'gap was' : 'gaps were' }} also found. Deal with {{ $actions['more'] === 1 ? 'it' : 'them' }} after the actions above.</p>
+            @endif
+        </div>
+    @endif
 
     {{-- Section scores --}}
     <div class="{{ $card }} mb-5">

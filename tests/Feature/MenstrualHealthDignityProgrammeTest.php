@@ -238,6 +238,126 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
             ->assertSee('Dignity Banks that keep working');
     }
 
+    public function test_the_report_gives_an_action_plan_of_what_to_do_how_who_and_when(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_PHC_V5', 'worst');
+        $report = app(ProgrammeReportService::class)->forAssessment($assessment);
+
+        $plan = $report['actions'];
+        $actions = collect($plan['horizons'])->flatMap(fn ($horizon) => $horizon['actions']);
+
+        $this->assertNotEmpty($actions);
+        $this->assertLessThanOrEqual(\App\Services\Reporting\ProgrammeActionPlan::MAX_ACTIONS, $actions->count());
+        $this->assertSame($actions->count(), $plan['shown']);
+        // Every action says what to do, how, who does it and by when, in this place's own words.
+        foreach ($actions as $action) {
+            $this->assertNotSame('', $action['what']);
+            $this->assertNotEmpty($action['how']);
+            $this->assertNotSame('', $action['who']);
+            $this->assertContains($action['when'], \App\Services\Reporting\ProgrammeActionPlan::HORIZONS);
+            $this->assertStringNotContainsString('{', $action['what'].$action['who'].implode('', $action['how']));
+        }
+        $this->assertStringContainsString('PHC in-charge', $actions->pluck('who')->implode(' '));
+        // The four must-haves are all missing here, so they lead the plan.
+        $this->assertSame(4, $actions->where('must_have', true)->count());
+        $this->assertSame(['D1', 'F1', 'F2', 'F3'], $actions->where('must_have', true)->pluck('code')->sort()->values()->all());
+
+        // A school is spoken to as a school.
+        $school = app(ProgrammeReportService::class)->forAssessment($this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V5', 'worst'));
+        $this->assertStringContainsString('head teacher', collect($school['actions']['horizons'])->flatMap(fn ($h) => $h['actions'])->pluck('who')->implode(' '));
+
+        // The one question that means something different in a school reads differently there.
+        $plans = app(\App\Services\Reporting\ProgrammeActionPlan::class);
+        $this->assertStringContainsString('trusted adult', $plans->headline('C5', 'school'));
+        $this->assertStringContainsString('menstrual pain', $plans->headline('C5', 'PHC'));
+        $this->assertStringNotContainsString('school assembly', $plans->headline('C1', 'PHC').implode(' ', collect($report['actions']['horizons'])->flatMap(fn ($h) => $h['actions'])->flatMap(fn ($a) => $a['how'])->all()));
+
+        // A place with nothing weak has no plan to show.
+        $best = app(ProgrammeReportService::class)->forAssessment($this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V5', 'best'));
+        $this->assertSame([], $best['actions']['horizons']);
+
+        $this->actingAs($user)->get(route('assessments.results', $assessment))
+            ->assertOk()
+            ->assertSee('Action plan')
+            ->assertSee('MUST-HAVE');
+        $this->actingAs($user)->get(route('assessments.export.pdf', $assessment))->assertOk()->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_the_report_says_when_the_answers_were_collected_not_just_when_it_was_created(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $assessment = $this->site($user, $workspace, 'VYTTE_MHD_PHC_V5', 'best');
+
+        $report = app(ProgrammeReportService::class)->forAssessment($assessment);
+
+        $this->assertSame(now()->toDateString(), $report['fieldwork']['from']);
+        $this->assertSame(now()->toDateString(), $report['fieldwork']['to']);
+        $this->actingAs($user)->get(route('assessments.results', $assessment))->assertOk()->assertSee('Answers collected');
+    }
+
+    public function test_none_of_these_and_dont_know_are_dropped_from_a_ticked_list_unless_they_are_all_there_is(): void
+    {
+        $tidy = new \ReflectionMethod(ProgrammeReportService::class, 'tidyList');
+        $service = app(ProgrammeReportService::class);
+
+        $this->assertSame('Antenatal care, Family planning', $tidy->invoke($service, 'Antenatal care, Family planning, None of these'));
+        $this->assertSame('Hard-to-reach communities', $tidy->invoke($service, "Hard-to-reach communities, None of these, Don't know"));
+        $this->assertSame('None of these', $tidy->invoke($service, 'None of these'));
+        // A single answer that happens to contain a comma is left alone.
+        $this->assertSame('Yes, active', $tidy->invoke($service, 'Yes, active'));
+    }
+
+    public function test_the_portfolio_reads_every_workspace_counts_each_place_once_and_sets_aside_a_board(): void
+    {
+        $this->seedOfficialCatalogue();
+
+        [$userA, $workspaceA] = $this->userWithWorkspace();
+        $this->site($userA, $workspaceA, 'VYTTE_MHD_PHC_V5', 'worst', 'Kuje PHC', 'Kuje');
+
+        [$userB, $workspaceB] = $this->userWithWorkspace();
+        // The same place assessed again in another workspace, by more people: that one is kept.
+        $this->survey($this->project($userB, $workspaceB, 'kuje phc', 'Kuje'), $userB, 3, best: true, releaseCode: 'VYTTE_MHD_PHC_V5');
+        $this->site($userB, $workspaceB, 'VYTTE_MHD_SCHOOL_V5', 'best', 'Bwari school', 'Bwari');
+        $this->site($userB, $workspaceB, 'VYTTE_MHD_PHC_V5', 'best', 'Primary Health Care Board', 'AMAC');
+
+        $portfolio = app(ProgrammeOverviewService::class)->forAllWorkspaces(
+            'menstrual-health-dignity-bank-baseline',
+            fn (string $name) => str_contains(strtolower($name), 'board') ? 'Not a school or PHC.' : null,
+        );
+
+        $this->assertSame(2, $portfolio['assessed']);
+        $this->assertEqualsCanonicalizing(['kuje phc', 'Bwari school'], collect($portfolio['rows'])->pluck('name')->all());
+        $this->assertSame(3, collect($portfolio['rows'])->firstWhere('name', 'kuje phc')['respondents']);
+        $this->assertCount(1, $portfolio['merged']);
+        $this->assertSame(3, $portfolio['merged'][0]['kept_respondents']);
+        $this->assertSame([1], $portfolio['merged'][0]['other_respondents']);
+        $this->assertSame('Primary Health Care Board', $portfolio['left_out'][0]['name']);
+        // The girls' survey counts each place once too: the kept Kuje assessment (3) and the school (1).
+        $this->assertSame(4, $portfolio['survey']['respondents']);
+
+        // One workspace's own overview is unchanged: it still sees only its own place.
+        app()->instance('current.workspace', $workspaceA);
+        $this->assertSame(1, app(ProgrammeOverviewService::class)->forProgramme($workspaceA, 'menstrual-health-dignity-bank-baseline')['assessed']);
+    }
+
+    public function test_only_a_platform_admin_can_download_the_portfolio_pdf(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $this->site($user, $workspace, 'VYTTE_MHD_PHC_V5', 'worst', 'Kuje PHC', 'Kuje');
+        $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V5', 'best', 'Bwari school', 'Bwari');
+        $url = route('admin.programmes.portfolio', 'menstrual-health-dignity-bank-baseline');
+
+        $this->actingAs($user)->get($url)->assertForbidden();
+
+        $admin = User::factory()->create(['platform_role' => 'PLATFORM_ADMIN']);
+        $this->actingAs($admin)->get($url)->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->actingAs($admin)->get(route('admin.programmes.portfolio', 'no-such-programme'))->assertNotFound();
+    }
+
     public function test_the_respondent_page_names_what_is_being_answered_and_explains_the_counts(): void
     {
         $this->seedOfficialCatalogue();

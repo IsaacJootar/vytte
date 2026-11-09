@@ -3,6 +3,7 @@
 namespace App\Services\Reporting;
 
 use App\Models\Assessment;
+use App\Models\Project;
 use App\Models\Workspace;
 use App\Support\ReportType;
 use Illuminate\Support\Str;
@@ -17,6 +18,10 @@ use Illuminate\Support\Str;
  * matches the site report it came from. Where a site has been assessed more than once, its most
  * recent completed assessment is shown. Schools and PHCs are listed and counted together for
  * prioritising, and summarised separately by site type.
+ *
+ * It can be read for one workspace (forProgramme) or, for the people who run the whole programme,
+ * across every workspace (forAllWorkspaces). Across workspaces each place is counted once even if
+ * more than one workspace assessed it: the assessment with the most people answering is kept.
  */
 class ProgrammeOverviewService
 {
@@ -31,6 +36,7 @@ class ProgrammeOverviewService
     public function __construct(
         private readonly ProgrammeReportService $reports,
         private readonly ProgrammeIndicatorService $indicators,
+        private readonly ProgrammeActionPlan $actionPlan,
     ) {}
 
     /**
@@ -62,33 +68,79 @@ class ProgrammeOverviewService
             return null;
         }
 
+        return $this->compile($all, $slug);
+    }
+
+    /**
+     * The whole programme across every workspace, for the people who run it. Each place appears once:
+     * where several assessments describe the same place (same name), the one answered by the most people is
+     * kept and the others are listed under `merged`. A place for which $leaveOut returns a reason is kept out
+     * of the rankings and listed under `left_out`, for example a board that is not itself a school or PHC.
+     *
+     * @param  (callable(string): ?string)|null  $leaveOut  place name => the reason it is left out, or null to keep it
+     * @return array<string, mixed>|null null when no workspace has such a programme
+     */
+    public function forAllWorkspaces(string $slug, ?callable $leaveOut = null): ?array
+    {
+        $all = Assessment::withoutGlobalScopes()->with(['snapshot', 'reportSnapshot', 'aggregationResult'])->get()
+            ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment))
+            ->filter(fn (Assessment $assessment) => Str::slug((string) data_get(ReportType::config($assessment), 'programme')) === $slug)
+            ->values();
+
+        if ($all->isEmpty()) {
+            return null;
+        }
+
+        return $this->compile($all, $slug, crossWorkspace: true, leaveOut: $leaveOut);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, Assessment>  $all
+     * @param  (callable(string): ?string)|null  $leaveOut
+     * @return array<string, mixed>
+     */
+    private function compile($all, string $slug, bool $crossWorkspace = false, ?callable $leaveOut = null): array
+    {
         $name = (string) data_get(ReportType::config($all->first()), 'programme');
         $assessments = $all;
         $inProgress = $assessments->where('status', '!=', Assessment::STATUS_COMPLETE)->pluck('project_id')->unique()->count();
 
-        // One row per site: its most recent completed assessment.
-        $latest = $assessments->where('status', Assessment::STATUS_COMPLETE)
+        $completed = $assessments->where('status', Assessment::STATUS_COMPLETE)
+            ->when($crossWorkspace, fn ($set) => $set->filter(fn (Assessment $assessment) => $assessment->aggregationResult !== null))
             ->sortByDesc('completed_at')
-            ->unique('project_id')
             ->values();
 
-        $rows = $latest->map(function (Assessment $assessment) {
-            $report = $this->reports->forAssessment($assessment, withOutcomes: false);
+        $merged = [];
+        $leftOut = [];
 
-            return [
-                'assessment' => $assessment,
-                'name' => $report['site']['name'],
-                'area_council' => $report['site']['area_council'] ?: 'Area council not set',
-                'type' => $report['noun'],
-                'provision' => $report['provision']['score'],
-                'readiness' => $report['readiness']['score'],
-                'provision_band' => $report['provision']['band'],
-                'readiness_band' => $report['readiness']['band'],
-                'classification' => $report['classification'],
-                'flag_count' => count($report['flags']),
-                'all_gaps' => $report['all_gaps'],
-            ];
-        })->values();
+        if ($crossWorkspace) {
+            // Every completed assessment becomes a row first; places are then counted once by name.
+            $built = $completed->map(fn (Assessment $assessment) => $this->row($assessment, true));
+            $kept = collect();
+            foreach ($built->groupBy(fn (array $row) => Str::lower(trim($row['name']))) as $key => $group) {
+                $group = $group->sortByDesc(fn (array $row) => [$row['respondents'], (string) $row['assessment']->completed_at])->values();
+                $reason = $leaveOut ? $leaveOut($group->first()['name']) : null;
+                if ($reason !== null) {
+                    $leftOut[] = ['name' => $group->first()['name'], 'reason' => $reason, 'respondents' => $group->first()['respondents']];
+
+                    continue;
+                }
+                $kept->push($group->first());
+                if ($group->count() > 1) {
+                    $merged[] = [
+                        'name' => $group->first()['name'],
+                        'kept_respondents' => $group->first()['respondents'],
+                        'other_respondents' => $group->slice(1)->pluck('respondents')->all(),
+                    ];
+                }
+            }
+            $rows = $kept->values();
+            $latest = $rows->pluck('assessment')->values();
+        } else {
+            // One row per site: its most recent completed assessment.
+            $latest = $completed->unique('project_id')->values();
+            $rows = $latest->map(fn (Assessment $assessment) => $this->row($assessment, false))->values();
+        }
 
         $ordered = $rows->sortBy([
             fn ($a, $b) => (self::PRIORITY[$a['classification']['key'] ?? ''] ?? 9) <=> (self::PRIORITY[$b['classification']['key'] ?? ''] ?? 9),
@@ -117,6 +169,19 @@ class ProgrammeOverviewService
             ->map(fn ($count, $question) => ['question' => $question, 'sites' => $count])
             ->values()->all();
 
+        // The same, by question code, so each common gap can carry the action that answers it.
+        $noun = $rows->pluck('type')->countBy()->sortDesc()->keys()->first() ?? 'PHC';
+        $gapSentence = $rows->reduce(fn (array $carry, array $row) => $carry + $row['gap_by_code'], []);
+        $commonGapActions = $rows->flatMap(fn ($row) => collect($row['gap_codes'])->unique())
+            ->countBy()->sortDesc()->take(8)
+            ->map(fn ($count, $code) => [
+                'code' => $code,
+                'finding' => $gapSentence[$code] ?? $code,
+                'sites' => $count,
+                'action' => $this->actionPlan->headline($code, $noun),
+            ])
+            ->values()->all();
+
         return [
             'programme' => $name,
             'slug' => $slug,
@@ -128,7 +193,38 @@ class ProgrammeOverviewService
             'by_area_council' => $rows->groupBy('area_council')->map(fn ($group, $area) => $this->summarise($area, $group))->sortKeys()->values()->all(),
             'by_site_type' => $rows->groupBy('type')->map(fn ($group, $type) => $this->summarise($type, $group))->sortKeys()->values()->all(),
             'common_gaps' => $commonGaps,
-            'survey' => $this->surveySummary($latest),
+            'common_gap_actions' => $commonGapActions,
+            'survey' => $this->surveySummary($latest, $crossWorkspace),
+            'merged' => $merged,
+            'left_out' => $leftOut,
+        ];
+    }
+
+    /** @return array<string, mixed> one place's row in the overview */
+    private function row(Assessment $assessment, bool $crossWorkspace): array
+    {
+        if ($crossWorkspace) {
+            $this->bindWorkspaceOf($assessment);
+        }
+        $report = $this->reports->forAssessment($assessment, withOutcomes: false);
+
+        return [
+            'assessment' => $assessment,
+            'name' => $report['site']['name'],
+            'area_council' => $report['site']['area_council'] ?: 'Area council not set',
+            'type' => $report['noun'],
+            'provision' => $report['provision']['score'],
+            'readiness' => $report['readiness']['score'],
+            'provision_band' => $report['provision']['band'],
+            'readiness_band' => $report['readiness']['band'],
+            'classification' => $report['classification'],
+            'flag_count' => count($report['flags']),
+            'flags' => $report['flags'],
+            'all_gaps' => $report['all_gaps'],
+            'gap_codes' => $report['all_gap_codes'] ?? [],
+            'gap_by_code' => collect($report['weak_items'] ?? [])->pluck('gap', 'code')->all(),
+            'respondents' => (int) ($assessment->aggregationResult?->eligible_respondent_count ?? 0),
+            'fieldwork' => $report['fieldwork'] ?? ['from' => null, 'to' => null],
         ];
     }
 
@@ -138,18 +234,24 @@ class ProgrammeOverviewService
      *
      * @return array<string, mixed>|null null when no survey has been completed
      */
-    private function surveySummary($latest): ?array
+    private function surveySummary($latest, bool $crossWorkspace = false): ?array
     {
         $latest = $latest->filter(fn (Assessment $assessment) => ! empty(data_get(ReportType::config($assessment), 'indicators')))->values();
         if ($latest->isEmpty()) {
             return null;
         }
 
-        $results = $latest->map(fn (Assessment $assessment) => [
-            'assessment' => $assessment,
-            'name' => $assessment->target?->name ?? $assessment->project?->name ?? 'School or PHC',
-            'area_council' => $assessment->target?->sub_region ?: 'Area council not set',
-        ] + $this->indicators->forAssessment($assessment));
+        $results = $latest->map(function (Assessment $assessment) use ($crossWorkspace) {
+            if ($crossWorkspace) {
+                $this->bindWorkspaceOf($assessment);
+            }
+
+            return [
+                'assessment' => $assessment,
+                'name' => $assessment->target?->name ?? $assessment->project?->name ?? 'School or PHC',
+                'area_council' => $assessment->target?->sub_region ?: 'Area council not set',
+            ] + $this->indicators->forAssessment($assessment);
+        });
 
         return [
             'schools' => $results->count(),
@@ -163,6 +265,16 @@ class ProgrammeOverviewService
                 'enough' => $row['enough'],
             ])->sortBy('name')->values()->all(),
         ];
+    }
+
+    /** Reading another workspace's assessment: make that workspace the current one, as it is for its own people. */
+    private function bindWorkspaceOf(Assessment $assessment): void
+    {
+        $workspaceId = Project::withoutGlobalScopes()->where('project_id', $assessment->project_id)->value('workspace_id');
+        $workspace = Workspace::withoutGlobalScopes()->find($workspaceId);
+        if ($workspace) {
+            app()->instance('current.workspace', $workspace);
+        }
     }
 
     /** All programme-type assessments in the workspace, with what the report needs eager-loaded. */

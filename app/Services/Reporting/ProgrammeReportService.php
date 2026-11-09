@@ -3,8 +3,10 @@
 namespace App\Services\Reporting;
 
 use App\Models\Assessment;
+use App\Models\PublicResponseSession;
 use App\Services\ReportSnapshotService;
 use App\Support\ReportType;
+use Illuminate\Support\Carbon;
 
 /**
  * Builds the programme-evaluation site report from an assessment's frozen report payload.
@@ -51,8 +53,38 @@ class ProgrammeReportService
         $report['must_haves'] = $this->mustHaves($assessment, $report['flags'], (array) ($config['findings'] ?? []), $codeById);
         $report['next_steps'] = (array) ($config['next_steps'][$report['classification']['key'] ?? ''] ?? []);
         $report['summary'] = $this->summary($report);
+        $report['fieldwork'] = $this->fieldwork($assessment);
+        $report['actions'] = app(ProgrammeActionPlan::class)->forFindings(
+            $report['weak_items'],
+            collect($report['must_haves'])->where('missing', true)->pluck('code')->filter()->values()->all(),
+            $report['noun'],
+        );
 
         return $report;
+    }
+
+    /**
+     * When the answers were collected: the first and last day an eligible person finished. A report is
+     * often created days after the fieldwork, so its own completion date would say the wrong thing.
+     *
+     * @return array{from: ?string, to: ?string}
+     */
+    private function fieldwork(Assessment $assessment): array
+    {
+        $sessionIds = collect((array) $assessment->aggregationResult?->payload['eligible_session_references'] ?? [])->pluck('session_id')->filter()->all();
+
+        $query = PublicResponseSession::where('assessment_id', $assessment->assessment_id)->whereNotNull('submitted_at');
+        if ($sessionIds !== []) {
+            $query->whereIn('session_id', $sessionIds);
+        }
+
+        $from = $query->min('submitted_at');
+        $to = $query->max('submitted_at');
+
+        return [
+            'from' => $from ? Carbon::parse($from)->toDateString() : null,
+            'to' => $to ? Carbon::parse($to)->toDateString() : null,
+        ];
     }
 
     /**
@@ -72,6 +104,7 @@ class ProgrammeReportService
                 $code = $codeById[$rule['conditions'][0]['source_question_id'] ?? ''] ?? '';
 
                 return [
+                    'code' => $this->codeSuffix($code),
                     'label' => $rule['label'],
                     'missing' => in_array($rule['label'], $flags, true),
                     // How the same must-have reads when it is in place.
@@ -169,7 +202,7 @@ class ProgrammeReportService
                     return '';
                 }
 
-                return $value;
+                return $this->tidyList((string) $value);
             }, $template);
             if ($complete) {
                 $lines[] = $line;
@@ -239,6 +272,16 @@ class ProgrammeReportService
         $strengths = $items->filter(fn ($item) => $item['score'] >= 100)
             ->groupBy('section')->map(fn ($group) => $group->first())->take(4)->values()->all();
         $allGaps = $items->filter(fn ($item) => $item['score'] < self::STRONG)->pluck('gap')->values()->all();
+        // Every weak answer with its question code's suffix (B1, D6, F3 ...), for the action plan and the portfolio.
+        $weakItems = $items->filter(fn ($item) => $item['score'] < self::STRONG)
+            ->map(fn ($item) => [
+                'code' => $this->codeSuffix($codeById[$item['question_id'] ?? ''] ?? ''),
+                'score' => (float) $item['score'],
+                'role' => $item['role'] ?? null,
+                'gap' => $item['gap'],
+            ])
+            ->filter(fn ($item) => $item['code'] !== '')
+            ->values()->all();
 
         $target = $payload['target'] ?? [];
 
@@ -272,6 +315,8 @@ class ProgrammeReportService
             'readiness_gaps' => $readinessGaps,
             'strengths' => $strengths,
             'all_gaps' => $allGaps,
+            'weak_items' => $weakItems,
+            'all_gap_codes' => collect($weakItems)->pluck('code')->unique()->values()->all(),
             'context' => $pooled['context'] ?? $this->context($payload),
             'thresholds' => ['provision_good_at_or_above' => $goodAt, 'readiness_ready_at_or_above' => $readyAt],
         ];
@@ -306,6 +351,27 @@ class ProgrammeReportService
                     'answer' => preg_replace('/(\d)\.0+(?=\s|$)/', '$1', (string) $item['answer']),
                 ])->values()->all(),
             ])->values()->all();
+    }
+
+    /**
+     * When several people tick boxes their answers are combined, so a list can say "Antenatal care, Family
+     * planning, None of these". "None of these" and "Don't know" mean nothing next to a real answer, so they
+     * are dropped unless they are all there is.
+     */
+    private function tidyList(string $value): string
+    {
+        $parts = array_map('trim', explode(', ', $value));
+        $real = array_values(array_filter($parts, fn (string $part) => ! in_array($part, ['None of these', "Don't know"], true)));
+
+        return ($real !== [] && count($real) < count($parts)) ? implode(', ', $real) : $value;
+    }
+
+    /** "MHP.D6" becomes "D6": the part of a question code that is the same in the School and PHC templates. */
+    private function codeSuffix(string $code): string
+    {
+        $dot = strrpos($code, '.');
+
+        return $dot === false ? $code : substr($code, $dot + 1);
     }
 
     private function mean($sections): ?float

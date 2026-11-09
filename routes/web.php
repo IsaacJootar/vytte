@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\QuestionController as AdminQuestionController;
 use App\Http\Controllers\Admin\QuestionGroupController as AdminQuestionGroupController;
 use App\Http\Controllers\Admin\QuestionIdentityController as AdminQuestionIdentityController;
 use App\Http\Controllers\Admin\QuestionVersionController as AdminQuestionVersionController;
+use App\Http\Controllers\Admin\ProgrammePortfolioController as AdminProgrammePortfolioController;
 use App\Http\Controllers\Admin\ReportShareController as AdminReportShareController;
 use App\Http\Controllers\Admin\ScoreController as AdminScoreController;
 use App\Http\Controllers\Admin\ScoringPolicyController as AdminScoringPolicyController;
@@ -171,6 +172,9 @@ Route::middleware('auth')->group(function () {
 // Platform admin routes
 Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+    // The whole programme across every workspace, as one portfolio report.
+    Route::get('programmes/{programme}/portfolio.pdf', [AdminProgrammePortfolioController::class, 'pdf'])->name('programmes.portfolio');
 
     // Assessment Builder - the simple authoring surface over governed framework versions.
     Route::get('assessments', [AdminAssessmentBuilderController::class, 'index'])->name('assessments.index');
