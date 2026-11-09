@@ -40,6 +40,7 @@ final class RoleNavigation
                         self::item('admin.assessments.index', 'Governance Studio', 'clipboard-document-list', 'admin.assessments.*'),
                         self::item('admin.question-identities.index', 'Question Library', 'question-mark-circle', 'admin.question-identities.*'),
                         self::item('admin.catalogue-releases.index', 'Publishing', 'arrow-up-tray', 'admin.catalogue-releases.*'),
+                        self::item('admin.programmes.index', 'Programme Reports', 'document-chart-bar', 'admin.programmes.*'),
                         self::item('admin.contributions.index', 'Contributions', 'light-bulb', 'admin.contributions.*'),
                         self::item('scoring-model.index', 'How Scoring Works', 'academic-cap', 'scoring-model.*'),
                     ],

@@ -174,6 +174,8 @@ Route::middleware(['auth', EnsurePlatformAdmin::class])->prefix('admin')->name('
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // The whole programme across every workspace, as one portfolio report.
+    Route::get('programmes', [AdminProgrammePortfolioController::class, 'index'])->name('programmes.index');
+    Route::get('programmes/{programme}', [AdminProgrammePortfolioController::class, 'show'])->name('programmes.show');
     Route::get('programmes/{programme}/portfolio.pdf', [AdminProgrammePortfolioController::class, 'pdf'])->name('programmes.portfolio');
 
     // Assessment Builder - the simple authoring surface over governed framework versions.

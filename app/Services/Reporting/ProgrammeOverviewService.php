@@ -101,6 +101,57 @@ class ProgrammeOverviewService
     }
 
     /**
+     * Every programme that has a finished report in any workspace, for the platform admin's list.
+     *
+     * @return array<int, array{name: string, slug: string, reports: int}>
+     */
+    public function programmesAcrossWorkspaces(): array
+    {
+        return Assessment::withoutGlobalScopes()->with(['snapshot', 'aggregationResult'])->get()
+            ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment))
+            ->groupBy(fn (Assessment $assessment) => (string) data_get(ReportType::config($assessment), 'programme'))
+            ->map(fn ($group, $name) => [
+                'name' => $name,
+                'slug' => Str::slug($name),
+                'reports' => $group->filter(fn (Assessment $assessment) => $assessment->aggregationResult !== null)->count(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Each finished report of the programme, with the workspace it lives in, so a platform admin can choose which
+     * to include in the portfolio. Light on purpose: it reads names and counts, not the full reports.
+     *
+     * @return array<int, array{workspace_id: string, workspace: string, place: string, type: string, respondents: int, completed_at: ?string}>
+     */
+    public function finishedReportsAcrossWorkspaces(string $slug): array
+    {
+        $projectWorkspace = Project::withoutGlobalScopes()->pluck('workspace_id', 'project_id');
+        $workspaceNames = Workspace::withoutGlobalScopes()->pluck('name', 'workspace_id');
+
+        return Assessment::withoutGlobalScopes()->with(['snapshot', 'aggregationResult'])->get()
+            ->filter(fn (Assessment $assessment) => ReportType::isProgramme($assessment) && $assessment->aggregationResult !== null)
+            ->filter(fn (Assessment $assessment) => Str::slug((string) data_get(ReportType::config($assessment), 'programme')) === $slug)
+            ->map(function (Assessment $assessment) use ($projectWorkspace, $workspaceNames) {
+                $workspaceId = (string) ($projectWorkspace[$assessment->project_id] ?? '');
+                $target = \App\Models\Target::withoutGlobalScopes()->find($assessment->target_id);
+
+                return [
+                    'workspace_id' => $workspaceId,
+                    'workspace' => (string) ($workspaceNames[$workspaceId] ?? 'Unknown workspace'),
+                    'place' => $target?->name ?? 'Place not named',
+                    'type' => (string) data_get(ReportType::config($assessment), 'site_noun', 'site'),
+                    'respondents' => (int) $assessment->aggregationResult->eligible_respondent_count,
+                    'completed_at' => $assessment->completed_at?->toDateString(),
+                ];
+            })
+            ->sortBy([['place', 'asc']])
+            ->values()
+            ->all();
+    }
+
+    /**
      * @param  \Illuminate\Support\Collection<int, Assessment>  $all
      * @param  (callable(string): ?string)|null  $leaveOut
      * @return array<string, mixed>

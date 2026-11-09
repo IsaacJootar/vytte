@@ -367,6 +367,26 @@ class MenstrualHealthDignityProgrammeTest extends TestCase
         $this->assertSame(1, app(ProgrammeOverviewService::class)->forProgramme($workspaceA, 'menstrual-health-dignity-bank-baseline')['assessed']);
     }
 
+    public function test_a_platform_admin_finds_programme_reports_in_the_sidebar_and_chooses_the_places(): void
+    {
+        $this->seedOfficialCatalogue();
+        [$user, $workspace] = $this->userWithWorkspace();
+        $this->site($user, $workspace, 'VYTTE_MHD_PHC_V5', 'best', 'Kuje PHC', 'Kuje');
+        $this->site($user, $workspace, 'VYTTE_MHD_SCHOOL_V5', 'best', 'Bwari school', 'Bwari');
+        $admin = User::factory()->create(['platform_role' => 'PLATFORM_ADMIN']);
+        $slug = 'menstrual-health-dignity-bank-baseline';
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))->assertOk()->assertSee('Programme Reports');
+        $this->actingAs($admin)->get(route('admin.programmes.index'))->assertOk()
+            ->assertSee('Menstrual Health & Dignity Bank baseline')->assertSee('2 finished reports');
+        $this->actingAs($admin)->get(route('admin.programmes.show', $slug))->assertOk()
+            ->assertSee('Kuje PHC')->assertSee('Bwari school')->assertSee('workspaces[]')->assertSee('Download portfolio report');
+        $this->actingAs($admin)->get(route('admin.programmes.show', 'no-such-programme'))->assertNotFound();
+
+        $this->actingAs($user)->get(route('admin.programmes.index'))->assertForbidden();
+        $this->actingAs($user)->get(route('admin.programmes.show', $slug))->assertForbidden();
+    }
+
     public function test_only_a_platform_admin_can_download_the_portfolio_pdf(): void
     {
         $this->seedOfficialCatalogue();

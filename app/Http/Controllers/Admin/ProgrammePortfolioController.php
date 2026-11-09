@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\Reporting\ProgrammeOverviewService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
@@ -15,6 +16,24 @@ use Illuminate\Support\Str;
  */
 class ProgrammePortfolioController extends Controller
 {
+    /** The programmes with finished reports, as a list to open. */
+    public function index(ProgrammeOverviewService $overview): View
+    {
+        return view('admin.programmes.index', ['programmes' => $overview->programmesAcrossWorkspaces()]);
+    }
+
+    /** One programme's finished reports, to choose from before downloading the portfolio. */
+    public function show(string $programme, ProgrammeOverviewService $overview): View
+    {
+        $programmes = collect($overview->programmesAcrossWorkspaces())->firstWhere('slug', $programme);
+        abort_if($programmes === null, 404);
+
+        return view('admin.programmes.show', [
+            'programme' => $programmes,
+            'reports' => $overview->finishedReportsAcrossWorkspaces($programme),
+        ]);
+    }
+
     /** Every workspace by default; `?workspaces[]=<id>` limits the portfolio to those workspaces. */
     public function pdf(string $programme, Request $request, ProgrammeOverviewService $overview): Response
     {
